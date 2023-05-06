@@ -4,14 +4,19 @@ const Opt = @import("Option.zig");
 const Val = @import("Value.zig");
 
 pub const In = struct {
-    name: []u8,
-    sub_cmds: ?[]In = null,
-    opts: ?[]Opt.In = null,
-    vals: ?[]Val = null,
+    sub_cmds: ?[]const In = null,
+    opts: ?[]const Opt.In = null,
+    vals: ?[]const Val = null,
 
-    description: []u8 = "",
+    name: []const u8,
+    help_prefix: []const u8 = "",
+    description: []const u8 = "",
 
-    pub fn help(self: *@This(), writer: anytype) !void {
+    pub fn help(self: *const @This(), writer: anytype) !void {
+        try writer.print("{s}\n", .{ self.help_prefix });
+
+        try self.usage(writer);
+
         try writer.print(\\HELP:
                          \\   Command: {s}
                          \\
@@ -20,33 +25,34 @@ pub const In = struct {
                          \\
                          , .{ self.name, self.description });
 
-        self.usage(writer);
-
         try writer.print("    Options:\n", .{});
         for (self.opts) |opt| {
+            try writer.print("        ", .{});
             opt.help(writer);
-            try writer.print("\n\n", .{});
+            try writer.print("\n", .{});
         }
+        try writer.print("\n\n", .{});
 
         try writer.print("    Values:\n", .{});
         for (self.vals) |val| {
-            try writer.print("        {s}: {s}\n", .{ val.name, val.description });
-            try writer.print("\n\n", .{});
+            try writer.print("        {s} ({s}): {s}\n", .{ val.name, @typeName(val.val_type), val.description });
+            try writer.print("\n", .{});
         }
+        try writer.print("\n\n", .{});
     }
 
-    pub fn usage(self: *@This(), writer: anytype) !void {
-        try writer.print("    Usage: {s} ", .{ self.name });
-        for (self.opts) |opt| opt.usage(writer);
+    pub fn usage(self: *const @This(), writer: anytype) !void {
+        try writer.print("USAGE: {s} ", .{ self.name });
+        for (self.opts) |opt| try opt.usage(writer);
         try writer.print(" ", .{});
-        for (self.vals) |val| try writer.print("[{s}] ", .{val.name});
+        for (self.vals) |val| try writer.print("[{s} ({s})] ", .{ val.name, val.val_type });
         try writer.print("\n\n", .{});
     }
 };
 
 pub const Out = struct {
     name: []u8,
-    sub_cmd: ?Out = null,
+    sub_cmd: ?*Out = null,
     opts: ?[]Opt.Out = null,
     vals: ?[]Val = null,
 };

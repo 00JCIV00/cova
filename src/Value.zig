@@ -11,36 +11,44 @@ const parseInt = fmt.parseInt;
 const parseFloat = fmt.parseFloat;
 
 
-raw_arg: []u8 = "",
+raw_arg: []const u8 = "",
 val_type: type = bool,
 is_set: bool = false,
-val_fn: *const fn(val_type) bool,
-name: []u8 = "",
-description: []u8 = "",
+val_fn: ?*const fn(anytype) bool = null,
+    
+name: []const u8 = "",
+description: []const u8 = "",
 
-/// Parse the set Raw Argument to the given Value Type.
-pub fn parse(self: *@This()) !val_type {
+/// Parse the given Argument to this Value's Type.
+pub fn parse(self: *@This(), arg: []u8) !self.val_type {
     var san_arg_buf: [100]u8 = undefined;
-    const san_arg = toLower(san_val_buf[0..], raw_arg.?);
-    return switch (@typeInfo(val_type)) {
+    const san_arg = toLower(san_arg_buf[0..], arg);
+    return switch (@typeInfo(self.val_type)) {
         .Null => error.ValueNotSet,
         .Bool => eql(u8, san_arg, "false"),
-        .Pointer => raw_arg,
-        .Int => parseInt(val_type, san_arg, 0),
-        .Float => parseFloat(val_type, san_arg),
+        .Pointer => arg,
+        .Int => parseInt(self.val_type, arg, 0),
+        .Float => parseFloat(self.val_type, arg),
         else => error.CannotParseArgToValue,
     };
 }
 
-/// Validate the Parsed Value.
-pub fn validate(self: *@This()) bool {
-    const parsed_val = self.asType() catch return false;
-    return val_fn(parsed_val);
+/// Set this Value if the Argument can be Parsed and Validated.
+/// Blank ("") Arguments will be treated as the current Raw Argument of the Value.
+pub fn set(self: *@This(), arg: []u8) !void {
+    const set_arg = if(eql(u8, arg, "")) self.raw_arg else arg;
+    const parsed_val = try self.parse(set_arg) catch return false;
+    self.is_set =
+        if (self.val_fn != null) self.val_fn.?(parsed_val)
+        else true;
+    if (self.is_set) self.raw_arg = set_arg
+    else return error.InvalidValue;
 }
 
 /// Get the Parsed and Validated Value.
-pub fn get(self: *@This()) !val_type {
-    return if (self.validate()) self.parse()
-           else error.InvalidValue;
+pub fn get(self: *@This()) !self.val_type {
+    return 
+        if (self.is_set) try self.parse(self.raw_arg)
+        else error.ValueNotSet;
 }
 
