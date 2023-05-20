@@ -13,90 +13,109 @@ pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
 /// Parse provided arguments into Commands, Options, and Values.
-pub fn parseArgs(alloc: mem.Allocator, args: *proc.ArgIterator, comptime in_cmd: Command.In, writer: anytype) !Command.Out {
-    var out_cmd = Command.Out { .name = in_cmd.name };
-    var out_opts = std.ArrayList(Option.Out).init(alloc);
-    var out_vals = std.ArrayList(Value).init(alloc);
+pub fn parseArgs(args: *const proc.ArgIterator, comptime cmd: *const Command, writer: anytype) !void {
     var val_idx: u8 = 0;
+    var unmatched = false;
 
-    parseArg: while (args.*.next()) |arg| {
+    parseArg: while (@constCast(args).*.next()) |arg| {
         // Check for a Sub Command first...
-        if (in_cmd.sub_cmds != null) {
-            for (in_cmd.?.sub_cmds) |sub_cmd| {
-                if (eql(u8, sub_cmd.name, arg)) out_cmd.sub_cmd = parseArgs(args, sub_cmd, writer);
-                continue :parseArg;
+        if (cmd.sub_cmds != null) {
+            inline for (cmd.sub_cmds.?) |sub_cmd| {
+                if (eql(u8, sub_cmd.name, arg)) {
+                    parseArgs(args, sub_cmd, writer) catch { 
+                        try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
+                        try sub_cmd.usage(writer);
+                        try writer.print("\n\n", .{});
+                        return error.CouldNotParseCommand;
+                    };
+                    try writer.print("Parsed Command '{s}'\n", .{ sub_cmd.name });
+                    cmd.setSubCmd(sub_cmd); 
+                    continue :parseArg;
+                }
             }
+            unmatched = true;
         }
         // ...Then for any Options...
-        if (in_cmd.opts != null) {
+        else if (cmd.opts != null) {
             // - Short Options
             if (arg[0] == '-' and arg[1] != '-') {
                 const short_opts = arg[1..];
                 for (short_opts, 0..) |short_opt, short_idx| {
-                    for (in_cmd.?.opts) |opt| {
+                    inline for (cmd.opts.?) |*opt| {
                         if (short_opt == opt.short_name) {
                             if (short_idx == short_opts.len - 1) {
-                                out_opts.append(parseOpt(args, opt) catch {
-                                    try writer.print("Could not parse Option '{s}'.", .{ opt.short_name });
+                                parseOpt(args, opt) catch {
+                                    try writer.print("Could not parse Option '{s}'.\n", .{ opt.short_name });
                                     try opt.usage(writer);
                                     try writer.print("\n\n");
                                     return error.CouldNotParseOption;
-                                });
+                                };
                             }
-                            else {
-                                var out_opt = opt.getOpt();
-                                out_opt.val.is_set = true;
-                                out_opts.append(out_opt);
-                            }
+                            else opt.*.val.set("");
                         }
                     }
                 }
             }
             // - Long Options
-            if (eql(u8, args[0..2], "--")) {
+            else if (eql(u8, args[0..2], "--")) {
                 const opt_arg = arg[2..];
-                for (in_cmd.?.opts) |opt| {
+                inline for (cmd.opts.?) |*opt| {
                     if (eql(u8, opt_arg, opt.long_name)) {
-                        out_opts.append(parseOpt(args, opt) catch {
+                        parseOpt(args, opt) catch {
                             try writer.print("Could not parse Option '{s}'.", .{ opt.long_name });
                             try opt.usage(writer);
                             try writer.print("\n\n");
                             return error.CouldNotParseOption;
-                        });
+                        };
                     }
                 }
             }
+            unmatched = true;
         }
         // ...Finally, for any Values.
-        if (in_cmd.vals != null) {
-            if (val_idx >= in_cmd.vals.?.len) {
-                try writer.print("Too many values provided for Command '{s}'.\n", .{ in_cmd.name });
-                try in_cmd.usage(writer);
+        else if (cmd.vals != null) {
+            if (val_idx >= cmd.vals.?.len) {
+                try writer.print("Too many Values provided for Command '{s}'.\n", .{ cmd.name });
+                try cmd.usage(writer);
                 return error.TooManyValues;
             }
-            
-        }
-    }
 
-    out_cmd.opts = try out_opts.toOwnedSlice();
-    out_cmd.vals = try out_vals.toOwnedSlice();
-    return out_cmd;
+            val_idx += 1;
+
+            unmatched = true;
+        }
+
+        // Check if the Command expected an argument but didn't get a match.
+        else if (unmatched) {
+            try writer.print("Unrecognized Argument '{s}' for Command '{s}'.\n", .{ arg, cmd.name });
+            try cmd.help(writer);
+            return error.UnrecognizedArgument;
+        }
+        // For Commands that expect no arguments but are given one, fail to usage
+        //else {
+            try writer.print("Command '{s}' does not expect any arguments.\n", .{ cmd.name });
+            try cmd.help(writer);
+            return error.UnexpectedArgument;
+        //}
+    }
 }
 
 /// Parse an Option for the given Command.
-fn parseOpt(args: *proc.ArgIterator, in_opt: Option.In) !Option.Out {
-    var out_opt = in_opt.getOpt();
+fn parseOpt(args: *const proc.ArgIterator, opt: *Option) !void {
+    try parseVal(args, &opt.*.val);
+}
+
+/// Parse a Value for the given Command.
+fn parseVal(args: *const proc.ArgIterator, val: *Value) !void {
     const peak_arg = argsPeak(args);
     const set_arg = 
         if (peak_arg == null or peak_arg.?[0] == '-') ""
         else args.next();
-    try out_opt.val.set(set_arg);
-
-    return out_opt;
+    try val.set(set_arg);
 }
 
 /// Peak at the next Argument in the provided ArgIterator without advancing the index.
-fn argsPeak(args: *proc.ArgIterator) ?[]u8 {
+fn argsPeak(args: *const proc.ArgIterator) ?[]u8 {
     const peak_arg = args.next();
     args.inner.index -= 1;
     return peak_arg;

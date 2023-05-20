@@ -13,55 +13,70 @@ const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
 
-const cmd_in = Command.In{
+const cmd = Command{
     .name = "main",
     .help_prefix = "CovaDemo",
-    .description = "A demo of the Cova command line argumnet parser.",
-    .sub_cmds = &.{
-        Command.In{
-            .name = "help",
-            .help_prefix = "CovaDemo",
-            .description = "Show the CovaDemo help display.",
-        }
+    .description = "A demo of the Cova command line argument parser.",
+    .sub_cmds = subCmdsSetup: {
+        var setup_cmds = [_]*const Command{
+            &Command{
+                .name = "help",
+                .help_prefix = "CovaDemo",
+                .description = "Show the CovaDemo help display.",
+            },
+            &Command{
+                .name = "demo_cmd",
+                .help_prefix = "CovaDemo",
+                .description = "Really just a placeholder.",
+            }
+        };
+        break :subCmdsSetup setup_cmds[0..];
     },
-    .opts = &.{
-        Option.In{ 
-            .short_name = 's',
-            .long_name = "stringOpt",
-            .val = Value{
-                .name = "stringVal",
-                .description = "A string value.",
-                .val_type = []u8,
+    .opts = optsSetup: {
+        var setup_opts = [_]*const Option{
+            &Option{ 
+                .short_name = 's',
+                .long_name = "stringOpt",
+                .val = &Value.init([]const u8, .{
+                    .name = "stringVal",
+                    .description = "A string value.",
+                }),
+                .description = "A string option.",
             },
-            .description = "A string option.",
-        },
-        Option.In{
-            .short_name = 'i',
-            .long_name = "intOpt",
-            .val = Value{
-                .name = "intVal",
-                .description = "An integer value.",
-                .val_type = u16,
+            &Option{
+                .short_name = 'i',
+                .long_name = "intOpt",
+                .val = &Value.init(i16, .{
+                    .name = "intVal",
+                    .description = "An integer value.",
+                }),
+                .description = "An integer option.",
             },
-            .description = "An integer option.",
-        },
-        Option.In{
-            .short_name = 't',
-            .long_name = "toggle",
-            .val = Value{
-                .name = "toggleVal",
-                .description = "A toggle/boolean value.",
-                .val_type = bool,
-            },
-            .description = "A toggle/boolean option.",
-        }
+            &Option{
+                .short_name = 't',
+                .long_name = "toggle",
+                .val = &Value.init(bool, .{
+                    .name = "toggleVal",
+                    .description = "A toggle/boolean value.",
+                }),
+                .description = "A toggle/boolean option.",
+            }
+        };
+        break :optsSetup setup_opts[0..];
     },
-    .vals = &.{
-        Value{
-            .name = "cmd_val",
-            .description = "A command value.",
-            .val_type = []u8,
-        }
+    .vals = valsSetup: {
+        var setup_vals = [_]*const Value.Generic{
+            &Value.init([]const u8, .{
+                .name = "cmd_str",
+                .description = "A string value for the command.",
+            }),
+            &Value.init(u128, .{
+                .name = "cmd_u128",
+                .description = "A u128 value for the command.",
+                .raw_arg = "654321",
+            }),
+        };
+        break :valsSetup setup_vals[0..];
     }
 }; 
 
@@ -72,7 +87,7 @@ pub fn main() !void {
 
     const args = try proc.argsWithAllocator(alloc);
 
-    const cmd_out = cova.parseArgs(alloc, &args, cmd_in, stdout);
+    try cova.parseArgs(&args, &cmd, stdout);
 
-    if (eql(cmd_out.sub_cmd.name, "help")) try cmd_in.help(stdout);
+    if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
 }
