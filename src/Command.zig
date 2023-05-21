@@ -1,4 +1,7 @@
 //! Input and Output Command Structure.
+const std = @import("std");
+const mem = std.mem;
+const StringHashMap = std.StringHashMap;
 
 const Opt = @import("Option.zig");
 const Val = @import("Value.zig");
@@ -16,6 +19,22 @@ description: []const u8 = "",
 /// Sets the active Sub-Command for this Command.
 pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
     @constCast(self).*.sub_cmd = @constCast(set_cmd);
+}
+
+/// Gets a StringHashMap of this Command's Options.
+pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Opt) {
+    if (self.opts == null) return error.NoOptionsInCommand;
+    var map = StringHashMap(*const Opt).init(alloc);
+    for (self.opts.?) |opt| { try map.put(opt.name, opt); }
+    return map;
+}
+
+/// Gets a StringHashMap of this Command's Values.
+pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Val) {
+    if (self.vals == null) return error.NoValuesInCommand;
+    var map = StringHashMap(*const Val).init(alloc);
+    for (self.vals.?) |val| { try map.put(val.name, val); }
+    return map;
 }
 
 /// Creates the Help message for this Command and Writes it to the provided Writer.

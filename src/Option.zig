@@ -7,7 +7,7 @@ const toUpper = ascii.upperString;
 
 const Val = @import("Value.zig");
 
-
+name: []const u8,
 short_name: ?u8,
 long_name: ?[]const u8,
 val: *const Val.Generic = &Val.init(bool, .{}),
@@ -20,11 +20,10 @@ pub fn get(self: *const @This()) !self.val.val_type {
 
 /// Creates the Help message for this Option and Writes it to the provided Writer.
 pub fn help(self: *const @This(), writer: anytype) !void {
-    if (self.long_name != null) {
-        var upper_name_buf: [100]u8 = undefined;
-        var upper_name = toUpper(upper_name_buf[0..], self.long_name.?);
+    var upper_name_buf: [100]u8 = undefined;
+    var upper_name = toUpper(upper_name_buf[0..], self.name);
     try writer.print("{s}: ", .{ upper_name });
-    }
+    
     try self.usage(writer);
     try writer.print(": {s}", .{ self.description });
 }

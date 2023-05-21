@@ -5,6 +5,7 @@ const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
 const stdout = std.io.getStdOut().writer();
+const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 
 const eql = mem.eql;
@@ -58,10 +59,11 @@ pub fn main() !void {
                     .opts = optsSetup: {
                         var setup_opts = [_]*const Option{
                             &Option{
+                                .name = "nestedIntOpt",
                                 .short_name = 'n',
-                                .long_name = "nested_int_opt",
+                                .long_name = "nestedIntOpt",
                                 .val = &Value.init(u8, .{
-                                    .name = "nested_int_val",
+                                    .name = "nestedIntVal",
                                     .description = "A nested integer value.",
                                     .raw_arg = "203",
                                 }),
@@ -77,6 +79,7 @@ pub fn main() !void {
         .opts = optsSetup: {
             var setup_opts = [_]*const Option{
                 &Option{ 
+                    .name = "stringOpt",
                     .short_name = 's',
                     .long_name = "stringOpt",
                     .val = &Value.init([]const u8, .{
@@ -86,6 +89,7 @@ pub fn main() !void {
                     .description = "A string option.",
                 },
                 &Option{
+                    .name = "intOpt",
                     .short_name = 'i',
                     .long_name = "intOpt",
                     .val = &Value.init(i16, .{
@@ -96,6 +100,7 @@ pub fn main() !void {
                     .description = "An integer option.",
                 },
                 &Option{
+                    .name = "help",
                     .short_name = 'h',
                     .long_name = "help",
                     .val = &Value.init(bool, .{
@@ -105,6 +110,7 @@ pub fn main() !void {
                     .description = "Show the CovaDemo help display.",
                 },
                 &Option{
+                    .name = "toggle",
                     .short_name = 't',
                     .long_name = "toggle",
                     .val = &Value.init(bool, .{
@@ -131,25 +137,29 @@ pub fn main() !void {
             break :valsSetup setup_vals[0..];
         }
     };
+    defer alloc.destroy(cmd);
 
     const args = try proc.argsWithAllocator(alloc);
     try cova.parseArgs(&args, cmd, stdout);
 
     std.debug.print("\n\n", .{});
 
-    try displayCmdInfo(cmd);
+    try displayCmdInfo(cmd, alloc);
 }
 
-fn displayCmdInfo(display_cmd: *const Command) !void {
+fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
     var cur_cmd: ?*const Command = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
-        
+
         if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
         if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "usage")) try cmd.usage(stdout);
 
         std.debug.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
+            var opt_map: StringHashMap(*const Option) = try cmd.getOpts(alloc);
+            defer opt_map.deinit();
+            if (try opt_map.get("help").?.val.bool.get()) try cmd.help(stdout);
             for (cmd.opts.?) |opt| { 
                 switch (meta.activeTag(opt.val.*)) {
                     .string => {
