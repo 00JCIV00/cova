@@ -2,6 +2,7 @@
 
 const std = @import("std");
 const mem = std.mem;
+const meta = std.meta;
 const proc = std.process;
 const stdout = std.io.getStdOut().writer();
 const testing = std.testing;
@@ -13,8 +14,8 @@ const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
 
-const cmd = Command{
-    .name = "main",
+const ct_cmd = Command{
+    .name = "covademo",
     .help_prefix = "CovaDemo",
     .description = "A demo of the Cova command line argument parser.",
     .sub_cmds = subCmdsSetup: {
@@ -25,9 +26,44 @@ const cmd = Command{
                 .description = "Show the CovaDemo help display.",
             },
             &Command{
+                .name = "usage",
+                .help_prefix = "CovaDemo",
+                .description = "Show the CovaDemo usage display.",
+            },
+            &Command{
                 .name = "demo_cmd",
                 .help_prefix = "CovaDemo",
-                .description = "Really just a placeholder.",
+                .description = "A demo sub command.",
+                .sub_cmds = nestedSubCmdsSetup: {
+                    var nested_setup_cmds = [_]*const Command{
+                        &Command{
+                            .name = "help",
+                            .help_prefix = "CovaDemo -> DemoCommand",
+                            .description = "Show the DemoCommand help display.",
+                        },
+                        &Command{
+                            .name = "usage",
+                            .help_prefix = "CovaDemo -> DemoCommand",
+                            .description = "Show the DemoCommand usage display.",
+                        },
+                    };
+                    break :nestedSubCmdsSetup nested_setup_cmds[0..];
+                },
+                .opts = optsSetup: {
+                    var setup_opts = [_]*const Option{
+                        &Option{
+                            .short_name = 'n',
+                            .long_name = "nested_int_opt",
+                            .val = &Value.init(u8, .{
+                                .name = "nested_int_val",
+                                .description = "A nested integer value.",
+                                .raw_arg = "203",
+                            }),
+                            .description = "A nested integer option.",
+                        },
+                    };
+                    break :optsSetup setup_opts[0..];
+                },
             }
         };
         break :subCmdsSetup setup_cmds[0..];
@@ -49,6 +85,7 @@ const cmd = Command{
                 .val = &Value.init(i16, .{
                     .name = "intVal",
                     .description = "An integer value.",
+                    .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn
                 }),
                 .description = "An integer option.",
             },
@@ -67,7 +104,7 @@ const cmd = Command{
     .vals = valsSetup: {
         var setup_vals = [_]*const Value.Generic{
             &Value.init([]const u8, .{
-                .name = "cmd_str",
+                .name = "cmdStr",
                 .description = "A string value for the command.",
             }),
             &Value.init(u128, .{
@@ -86,8 +123,35 @@ pub fn main() !void {
     const alloc = arena.allocator();
 
     const args = try proc.argsWithAllocator(alloc);
+    const cmd = try alloc.create(Command);
+    cmd.* = ct_cmd;
+    try cova.parseArgs(&args, cmd, stdout);
 
-    try cova.parseArgs(&args, &cmd, stdout);
+    std.debug.print("\n\n", .{});
 
     if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
+    if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "usage")) try cmd.usage(stdout);
+    for (cmd.opts.?) |opt| { 
+        switch (meta.activeTag(opt.val.*)) {
+            inline else => |tag| {
+                std.debug.print("Opt: {?s}, Data: {any}\n", .{ 
+                    opt.long_name, 
+                    @field(opt.val, @tagName(tag)).get() catch null,
+                });
+            },
+        }
+    }
+    for (cmd.vals.?) |val| { 
+        switch (meta.activeTag(val.*)) {
+            inline else => |tag| {
+                std.debug.print("Val: {?s}, Data: {any}\n", .{ 
+                    val.name(), 
+                    @field(val, @tagName(tag)).get() catch null,
+                });
+            },
+        }
+    }
+
+    if (cmd.sub_cmd != null and cmd.sub_cmd.?.sub_cmd != null and eql(u8, cmd.sub_cmd.?.sub_cmd.?.name, "help")) try cmd.sub_cmd.?.help(stdout);
+    if (cmd.sub_cmd != null and cmd.sub_cmd.?.sub_cmd != null and eql(u8, cmd.sub_cmd.?.sub_cmd.?.name, "usage")) try cmd.sub_cmd.?.usage(stdout);
 }

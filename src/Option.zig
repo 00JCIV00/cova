@@ -34,8 +34,8 @@ pub fn usage(self: *const @This(), writer: anytype) !void {
     try writer.print("[-{?c},--{?s} \"{s} ({s})\"]", .{ 
         self.short_name,
         self.long_name,
-        @constCast(self.val).*.name(),
-        @constCast(self.val).*.valType(),
+        self.val.name(),
+        self.val.valType(),
     });
 }
 

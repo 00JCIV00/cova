@@ -22,34 +22,35 @@ pub fn Typed(comptime set_type: type) type {
 
         raw_arg: []const u8 = "",
         is_set: bool = false,
-        val_fn: ?*const fn(val_type) bool = null,
+        val_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
             
         name: []const u8 = "",
         description: []const u8 = "",
 
         /// Parse the given Argument to this Value's Type.
-        pub fn parse(self: *const @This(), arg: []u8) !val_type {
+        pub fn parse(self: *const @This(), arg: []const u8) !val_type {
+            _ = self;
             var san_arg_buf: [100]u8 = undefined;
             const san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(val_type)) {
                 //.Null => error.ValueNotSet,
                 .Bool => eql(u8, san_arg, "false"),
                 .Pointer => arg,
-                .Int => parseInt(self.val_type, arg, 0),
-                .Float => parseFloat(self.val_type, arg),
+                .Int => parseInt(val_type, arg, 0),
+                .Float => parseFloat(val_type, arg),
                 else => error.CannotParseArgToValue,
             };
         }
 
         /// Set this Value if the Argument can be Parsed and Validated.
         /// Blank ("") Arguments will be treated as the current Raw Argument of the Value.
-        pub fn set(self: *const @This(), arg: []u8) !void {
+        pub fn set(self: *const @This(), arg: []const u8) !void {
             const set_arg = if(eql(u8, arg, "")) self.raw_arg else arg;
-            const parsed_val = try self.parse(set_arg) catch return false;
-            self.is_set =
+            const parsed_val = try self.parse(set_arg);
+            @constCast(self).is_set =
                 if (self.val_fn != null) self.val_fn.?(parsed_val)
                 else true;
-            if (self.is_set) self.raw_arg = set_arg
+            if (self.is_set) @constCast(self).raw_arg = set_arg
             else return error.InvalidValue;
         }
 
@@ -57,6 +58,7 @@ pub fn Typed(comptime set_type: type) type {
         pub fn get(self: *const @This()) !val_type {
             return 
                 if (self.is_set) try self.parse(self.raw_arg)
+                else if (val_type == bool) false
                 else error.ValueNotSet;
         }
 
@@ -91,43 +93,43 @@ pub const Generic = genUnion: {
         f16: Typed(f16),
         f32: Typed(f32),
         f64: Typed(f64),
-        f80: Typed(f80),
         f128: Typed(f128),
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
-        pub fn get(self: *@This()) !switch (meta.activeTag(self.*)) { inline else => |tag| @TypeOf(@field(self, @tagName(tag))).getType(), } {
+        /// Comptime Only (TODO: See if this can be made Runtime)
+        pub fn get(self: *const @This()) !switch (meta.activeTag(self.*)) { inline else => |tag| @TypeOf(@field(self, @tagName(tag))).getType(), } {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| try @field(self, @tagName(tag)).get(),
             };
         }
         /// Set the inner Typed Value if the provided Argument can be Parsed and Validated.
-        pub fn set(self: *@This(), arg: []u8) !void { 
+        pub fn set(self: *const @This(), arg: []const u8) !void { 
             switch (meta.activeTag(self.*)) {
                 inline else => |tag| try @field(self, @tagName(tag)).set(arg),
             }
         }
 
         /// Get the inner Typed Value's name.
-        pub fn name(self: *@This()) []const u8 {
+        pub fn name(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @field(self, @tagName(tag)).name,
             };
         }
         /// Get the inner Typed Value's type.
-        pub fn valType(self: *@This()) []const u8 {
+        pub fn valType(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @typeName(@TypeOf(@field(self, @tagName(tag))).getType()),
             };
         }
         /// Get the inner Typed Value's description.
-        pub fn description(self: *@This()) []const u8 {
+        pub fn description(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @field(self, @tagName(tag)).description,
             };
         }
     };
 
-    // TODO: See if there's another way to add these fields procedurally
+    // TODO: See if there's another way to add these fields procedurally to avoid the declaration reification issue with @Type(builtin.Type{})
     //var fields: []const UnionField = meta.fields(gen_union);
     //@setEvalBranchQuota(2000);
     //inline for (1..255) |bit_width| {

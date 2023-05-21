@@ -5,7 +5,7 @@ const Val = @import("Value.zig");
 
 
 sub_cmds: ?[]*const @This() = null,
-sub_cmd: ?*@This() = null,
+sub_cmd: ?*const @This() = null,
 opts: ?[]*const Opt = null,
 vals: ?[]*const Val.Generic = null,
 
@@ -53,7 +53,7 @@ pub fn help(self: *const @This(), writer: anytype) !void {
     if (self.vals != null) {
         try writer.print("    Values:\n", .{});
         for (self.vals.?) |val| {
-            try writer.print("        {s} ({s}): {s}\n", .{ @constCast(val).name(), @constCast(val).valType(), @constCast(val).description() });
+            try writer.print("        {s} ({s}): {s}\n", .{ val.name(), val.valType(), val.description() });
         }
     }
     try writer.print("\n", .{});
@@ -62,10 +62,6 @@ pub fn help(self: *const @This(), writer: anytype) !void {
 /// Creates the Usage message for this Command and Writes it to the provided Writer.
 pub fn usage(self: *const @This(), writer: anytype) !void {
     try writer.print("USAGE: {s} ", .{ self.name });
-    if (self.sub_cmds != null) {
-        for (self.sub_cmds.?) |cmd| try writer.print("'{s}' ", .{ cmd.name });
-        try writer.print("| ", .{});
-    } 
     if (self.opts != null) {
         for (self.opts.?) |opt| {
             try opt.usage(writer);
@@ -73,8 +69,15 @@ pub fn usage(self: *const @This(), writer: anytype) !void {
         }
         try writer.print("| ", .{});
     }
-    if (self.vals != null)
-        for (self.vals.?) |val| try writer.print("\"{s} ({s})\" ", .{ @constCast(val).name(), @constCast(val).valType() });
+    if (self.vals != null) {
+        for (self.vals.?) |val| try writer.print("\"{s} ({s})\" ", .{ val.name(), val.valType() });
+        try writer.print("| ", .{});
+    }
+    if (self.sub_cmds != null) {
+        for (self.sub_cmds.?) |cmd| try writer.print("'{s}' ", .{ cmd.name });
+        //try writer.print("| ", .{});
+    } 
+
     try writer.print("\n\n", .{});
 }
 
