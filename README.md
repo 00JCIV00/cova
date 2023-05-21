@@ -42,7 +42,7 @@ cmd.* = .{
                 .description = "Show the CovaDemo usage display.",
             },
         };
-        break :subCmdsSetup setup_cmds;
+        break :subCmdsSetup setup_cmds[0..];
     },
     .opts = { ... },
     .vals = { ... }
@@ -52,7 +52,7 @@ defer alloc.destroy(cmd);
 
 ### Option
 An Option is an Argument which wraps a Value and is ALWAYS optional. In the current implementation, an Option may have a Short Name (ex: `-h`), a Long Name (ex: `--name "Lilly"`), or both. If the wrapped Value has a Boolean type it will default to False and can be set to True using the Option without a following Argument (ex: `-t` or `--toggle`). They also provide `usage()` and `help()` methods similar to Commands.
-#### Example
+#### Example:
 ```zig
 .opts = optsSetup: {
     var setup_opts = [_]*const Option{
@@ -103,7 +103,7 @@ An Option is an Argument which wraps a Value and is ALWAYS optional. In the curr
 
 ### Value
 A Value is an Argument that should be interpreted as a specific type. The list of available types can be seen in src/Value.zig/Generic. A values will be parsed to corresponding type and be retrieved using `get()`. They can also be given a Default value as a String using the `.raw_arg` field and a Validation Function using the `.val_fn` field.
-#### Example
+#### Example:
 ```zig
 .vals = valsSetup: {
     var setup_vals = [_]*const Value.Generic{
@@ -126,7 +126,7 @@ A Value is an Argument that should be interpreted as a specific type. The list o
 
 ### Parsing
 Parsing is handled by the `parseArgs()` function in cova.zig. It takes in an ArgIterator, a Command, and a Writer, then parses each token sequentially. The results of a successful parse are stored in provided Command which can then be analyzed by the user.
-#### Example
+#### Example:
 ```zig
 pub fn main() !void {
     // Parse Arguments
