@@ -34,7 +34,7 @@ pub fn Typed(comptime set_type: type) type {
             const san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(val_type)) {
                 //.Null => error.ValueNotSet,
-                .Bool => eql(u8, san_arg, "false"),
+                .Bool => eql(u8, san_arg, "true"),
                 .Pointer => arg,
                 .Int => parseInt(val_type, arg, 0),
                 .Float => parseFloat(val_type, arg),

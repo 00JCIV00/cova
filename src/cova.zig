@@ -18,9 +18,9 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
     var unmatched = false;
 
     // Bypass argument 0 (the filename being executed);
-    if (@constCast(args).*.inner.index == 0) _ = @constCast(args).*.next();
+    if (@constCast(args).inner.index == 0) _ = @constCast(args).next();
 
-    parseArg: while (@constCast(args).*.next()) |arg| {
+    parseArg: while (@constCast(args).next()) |arg| {
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
             try writer.print("Attempting to Parse Commands...\n", .{});
@@ -33,7 +33,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                         return error.CouldNotParseCommand;
                     };
                     try writer.print("Parsed Command '{s}'\n", .{ sub_cmd.name });
-                    //@constCast(cmd).*.sub_cmd = @constCast(sub_cmd);
+                    //@constCast(cmd).sub_cmd = @constCast(sub_cmd);
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
                 }
@@ -46,10 +46,10 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
             // - Short Options
             if (arg[0] == '-' and arg[1] != '-') {
                 const short_opts = arg[1..];
-                for (short_opts, 0..) |short_opt, short_idx| {
+                shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
                     for (cmd.opts.?) |opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
-                            try if (short_idx == short_opts.len - 1) {
+                            try if (short_idx == short_opts.len - 1) { //TODO: Figure out why this if statement needs a "try." Possibly due to subtraction underflow?
                                 parseOpt(args, opt) catch {
                                     try writer.print("Could not parse Option '{?c}'.\n", .{ opt.short_name });
                                     try opt.usage(writer);
@@ -59,9 +59,15 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                                 try writer.print("Parsed Option '{?c}'.\n", .{ opt.short_name });
                                 continue :parseArg;
                             }
-                            else @constCast(opt).*.val.set("");
+                            else @constCast(opt).val.set("true");
+                            try writer.print("Parsed Option '{?c}'.\n", .{ opt.short_name });
+                            continue :shortOpts;
                         }
                     }
+                    try writer.print("Could not parse Option '-{?c}'.\n", .{ short_opt });
+                    try cmd.usage(writer);
+                    try writer.print("\n\n", .{});
+                    return error.CouldNotParseOption;
                 }
             }
             // - Long Options
@@ -79,6 +85,10 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                         continue :parseArg;
                     }
                 }
+                try writer.print("Could not parse Option '--{?s}'.\n", .{ opt_arg });
+                try cmd.usage(writer);
+                try writer.print("\n\n", .{});
+                return error.CouldNotParseOption;
             }
             unmatched = true;
         }
@@ -121,14 +131,17 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
 fn parseOpt(args: *const proc.ArgIterator, opt: *const Option) !void {
     const peak_arg = argsPeak(args);
     const set_arg = 
-        if (peak_arg == null or peak_arg.?[0] == '-') ""
-        else @constCast(args).*.next().?;
-    try opt.*.val.set(set_arg);
+        if (peak_arg == null or peak_arg.?[0] == '-') setArg: {
+            _ = @constCast(args).next();
+            break :setArg "true";
+        }
+        else @constCast(args).next().?;
+    try opt.val.set(set_arg);
 }
 
 /// Peak at the next Argument in the provided ArgIterator without advancing the index.
 fn argsPeak(args: *const proc.ArgIterator) ?[]const u8 {
-    const peak_arg = @constCast(args).*.next();
-    @constCast(args).*.inner.index -= 1;
+    const peak_arg = @constCast(args).next();
+    @constCast(args).inner.index -= 1;
     return peak_arg;
 }
