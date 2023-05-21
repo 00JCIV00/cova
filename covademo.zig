@@ -9,7 +9,7 @@ const testing = std.testing;
 
 const eql = mem.eql;
 
-const cova = @import("cova.zig");
+const cova = @import("src/cova.zig");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
@@ -142,15 +142,22 @@ pub fn main() !void {
 
 fn displayCmdInfo(display_cmd: *const Command) !void {
     var cur_cmd: ?*const Command = display_cmd;
-    std.debug.print("DATA:\n", .{});
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
-        std.debug.print("- Command: {s}\n", .{ cmd.name });
+        
         if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
         if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "usage")) try cmd.usage(stdout);
+
+        std.debug.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
             for (cmd.opts.?) |opt| { 
                 switch (meta.activeTag(opt.val.*)) {
+                    .string => {
+                        std.debug.print("    Opt: {?s}, Data: {s}\n", .{ 
+                            opt.long_name, 
+                            opt.val.string.get() catch "",
+                        });
+                    },
                     inline else => |tag| {
                         std.debug.print("    Opt: {?s}, Data: {any}\n", .{ 
                             opt.long_name, 
@@ -163,6 +170,12 @@ fn displayCmdInfo(display_cmd: *const Command) !void {
         if (cmd.vals != null) {
             for (cmd.vals.?) |val| { 
                 switch (meta.activeTag(val.*)) {
+                    .string => {
+                        std.debug.print("    Val: {?s}, Data: {s}\n", .{ 
+                            val.name(), 
+                            val.string.get() catch "",
+                        });
+                    },
                     inline else => |tag| {
                         std.debug.print("    Val: {?s}, Data: {any}\n", .{ 
                             val.name(), 
