@@ -17,13 +17,20 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 - [ ] Parsing Customization:
   - [ ] Mandate Values be filled.
   - [ ] Custom prefixes for Options.
+  - [ ] Custom separator between Options and Values. (Currently accepts ' ' or '=').
   - [ ] Choose behavior for having the same option given multiple times.
   - [ ] Choose whether or not to skip the first Argument (the executable's name).
-- [ ] Library Features:
+- [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
+  - [ ] Initialization methods for Commands and Options.
+    - [ ] Validate unique sub Commands, Options, and Values.
+    - [ ] Generate Usage/Help sub Commands.
+    - [ ] Generate Usage/Help Options.
+    - [ ] User formatting options for Usage/Help messages.
   - [ ] Generate Commands from a struct and vice versa.
-  - [ ] User formatting options for Usage/Help messages.
-
+    - [ ] Compatible nullable fields become Options.
+    - [ ] Compatible non-nullable fields become Values.
+  
 ## Documentation
 [Docs](https://00jciv00.github.io/cova/#A;cova)
 
