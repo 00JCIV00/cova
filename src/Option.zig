@@ -7,9 +7,9 @@ const toUpper = ascii.upperString;
 
 const Val = @import("Value.zig");
 
-/// This Options Short Name (ex: `-s`).
+/// This Option's Short Name (ex: `-s`).
 short_name: ?u8,
-/// This Options long name (ex: `--intOpt`).
+/// This Option's long name (ex: `--intOpt`).
 long_name: ?[]const u8,
 /// This Option's wrapped Value.
 val: *const Val.Generic = &Val.init(bool, .{}),
@@ -23,10 +23,10 @@ description: []const u8 = "",
 pub fn help(self: *const @This(), writer: anytype) !void {
     var upper_name_buf: [100]u8 = undefined;
     var upper_name = toUpper(upper_name_buf[0..], self.name);
-    try writer.print("{s}: ", .{ upper_name });
+    try writer.print("{s}:\n            ", .{ upper_name });
     
     try self.usage(writer);
-    try writer.print(": {s}", .{ self.description });
+    try writer.print("\n            {s}", .{ self.description });
 }
 
 /// Creates the Usage message for this Option and Writes it to the provided Writer.

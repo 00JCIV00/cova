@@ -21,9 +21,24 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 - [ ] Library Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
   - [ ] Generate Commands from a struct and vice versa.
+  - [ ] User formatting options for Usage/Help messages.
 
 ## Install
+### Package Manager
 (WIP) Will use the Zig Package Manager in Zig v0.11.
+
+### Build the Demo from source
+1. Use Zig v0.11 for your system. Available [here](https://ziglang.org/download/).
+2. Run the following in whichever directory you'd like to install to:
+```bash
+git clone https://github.com/00JCIV00/cova.git
+cd cova
+zig build-exe -O ReleaseSafe covademo.zig
+```
+3. Try it out!
+```bash
+./covademo help
+```
 
 ## Usage
 ### Command

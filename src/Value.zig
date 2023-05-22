@@ -18,6 +18,7 @@ const UnionField = Type.UnionField;
 /// Create a Value with a specific Type.
 pub fn Typed(comptime set_type: type) type {
     return struct {
+        /// The inner Type of this Value.
         pub const val_type = set_type;
 
         /// The Raw Argument provided to this Value for Parsing and Validation.

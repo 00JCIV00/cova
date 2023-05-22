@@ -120,9 +120,9 @@
 <span class="line" id="L7"></span>
 <span class="line" id="L8"><span class="tok-kw">const</span> Val = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Value.zig&quot;</span>);</span>
 <span class="line" id="L9"></span>
-<span class="line" id="L10"><span class="tok-comment">/// This Options Short Name (ex: `-s`).</span></span>
+<span class="line" id="L10"><span class="tok-comment">/// This Option's Short Name (ex: `-s`).</span></span>
 <span class="line" id="L11">short_name: ?<span class="tok-type">u8</span>,</span>
-<span class="line" id="L12"><span class="tok-comment">/// This Options long name (ex: `--intOpt`).</span></span>
+<span class="line" id="L12"><span class="tok-comment">/// This Option's long name (ex: `--intOpt`).</span></span>
 <span class="line" id="L13">long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L14"><span class="tok-comment">/// This Option's wrapped Value.</span></span>
 <span class="line" id="L15">val: *<span class="tok-kw">const</span> Val.Generic = &amp;Val.init(<span class="tok-type">bool</span>, .{}),</span>
@@ -139,7 +139,7 @@
 <span class="line" id="L26">    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{s}: &quot;</span>, .{ upper_name });</span>
 <span class="line" id="L27">    </span>
 <span class="line" id="L28">    <span class="tok-kw">try</span> self.usage(writer);</span>
-<span class="line" id="L29">    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;: {s}&quot;</span>, .{ self.description });</span>
+<span class="line" id="L29">    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;:\n            {s}&quot;</span>, .{ self.description });</span>
 <span class="line" id="L30">}</span>
 <span class="line" id="L31"></span>
 <span class="line" id="L32"><span class="tok-comment">/// Creates the Usage message for this Option and Writes it to the provided Writer.</span></span>
