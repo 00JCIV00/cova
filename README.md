@@ -1,5 +1,5 @@
 # cova
-Commands, Options, Values, Arguments. A simple command line argument parser for Zig.
+Commands, Options, Values, Arguments. A simple command line argument parsing library for Zig.
 ___
 
 ## Overview
@@ -7,16 +7,19 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 
 ## Goals
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
-- [ ] Advanced Parsing
+- [ ] Advanced Parsing:
   - [ ] Handle '=' instead of ' ' between an Option and its Value.
   - [ ] Handle the same Option given multiple times. 
-- [ ] Enable Parsing customization:
+- [ ] Parsing Customization:
   - [ ] Mandate Values be filled.
   - [ ] Custom prefixes for Options.
   - [ ] Choose behavior for having the same option given multiple times.
-- [ ] Set up the build.zig and build.zig.zon for use in other codebases.
+  - [ ] Choose whether or not to skip the first Argument (the executable's name).
+- [ ] Library Features:
+  - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
+  - [ ] Generate Commands from a struct and vice versa.
 
-## Implement
+## Install
 (WIP) Will use the Zig Package Manager in Zig v0.11.
 
 ## Usage
@@ -86,23 +89,13 @@ An Option is an Argument which wraps a Value and is ALWAYS optional. In the curr
             }),
             .description = "Show the CovaDemo help display.",
         },
-        &Option{
-            .name = "toggle",
-            .short_name = 't',
-            .long_name = "toggle",
-            .val = &Value.init(bool, .{
-                .name = "toggleVal",
-                .description = "A toggle/boolean value.",
-            }),
-            .description = "A toggle/boolean option.",
-        }
     };
     break :optsSetup setup_opts[0..];
 },
 ```
 
 ### Value
-A Value is an Argument that should be interpreted as a specific type. The list of available types can be seen in src/Value.zig/Generic. A values will be parsed to corresponding type and be retrieved using `get()`. They can also be given a Default value as a String using the `.raw_arg` field and a Validation Function using the `.val_fn` field.
+A Value (also known as a Positional Argument) is an Argument that is expected in a specific order and should be interpreted as a specific type. The full list of available types can be seen in src/Value.zig/Generic, but the basics are Boolean, String ([]const u8), Integer (u/i##), or Float (f##). A Value will be parsed to its corresponding type and can be retrieved using `get()`. They can also be given a Default value using the `.default_val` field and a Validation Function using the `.val_fn` field.
 #### Example:
 ```zig
 .vals = valsSetup: {
@@ -115,7 +108,7 @@ A Value is an Argument that should be interpreted as a specific type. The list o
             .name = "cmd_u128",
             .description = "A u128 value for the command.",
             // Default Value
-            .raw_arg = "654321",
+            .default_val = 654321,
             // Validation Function
             .val_fn = struct{ fn valFn(val: u128) bool { return val > 123456 and val < 987654; } }.valFn,
         }),
@@ -125,7 +118,7 @@ A Value is an Argument that should be interpreted as a specific type. The list o
 ```
 
 ### Parsing
-Parsing is handled by the `parseArgs()` function in cova.zig. It takes in an ArgIterator, a Command, and a Writer, then parses each token sequentially. The results of a successful parse are stored in provided Command which can then be analyzed by the user.
+Parsing is handled by the `parseArgs()` function in cova.zig. It takes in an ArgIterator, a Command, and a Writer, then parses each token sequentially. The results of a successful parse are stored in the provided Command which can then be analyzed by the user.
 #### Example:
 ```zig
 pub fn main() !void {
@@ -143,7 +136,7 @@ pub fn main() !void {
     
     // Analyze Data
     // - Check for the "help" Sub Command and run its help() method
-    if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
+    if (cmd.sub_cmd != null and std.mem.eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
     // - Get a HashMap of the Command's Options
     if (cmd.opts != null) {
         var opt_map: StringHashMap(*const Option) = try cmd.getOpts(alloc);
