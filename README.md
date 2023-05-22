@@ -6,13 +6,14 @@ ___
 Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These componenets are assembled into a single struct which is then used to parse argument tokens.
 
 ## Demo
-![cova_demo](./cova_demo.gif)
+![docs/cova_demo](./cova_demo.gif)
 
 ## Goals
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
 - [ ] Advanced Parsing:
   - [ ] Handle '=' instead of ' ' between an Option and its Value.
   - [ ] Handle the same Option given multiple times. 
+  - [ ] Tab Completion (long-term goal).
 - [ ] Parsing Customization:
   - [ ] Mandate Values be filled.
   - [ ] Custom prefixes for Options.
