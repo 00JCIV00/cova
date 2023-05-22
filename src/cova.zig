@@ -8,7 +8,7 @@ const proc = std.process;
 
 const eql = mem.eql;
 
-//Cova
+// Cova
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
@@ -50,11 +50,31 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                 shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
                     for (cmd.opts.?) |opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
-                            try if (short_idx == short_opts.len - 1) { //TODO: Figure out why this if statement needs a "try." Possibly due to subtraction underflow?
+                            //TODO: Figure out why these if statements need a "try". Possibly due to subtraction underflow?
+                            // Handle Argument provided to this Option with '=' instead of ' '.
+                            try if (short_opts[short_idx + 1] == '=') {
+                                if (eql(u8, opt.val.valType(), "bool")) {
+                                    try writer.print("The Option '{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ opt.short_name, opt.name });
+                                    try opt.usage(writer);
+                                    try writer.print("\n\n", .{});
+                                    return error.BoolCannotTakeArgument;
+                                }
+                                if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
+                                const opt_arg = short_opts[(short_idx + 2)..];
+                                opt.val.set(opt_arg) catch {
+                                    try writer.print("Could not parse Option '{?c}: {s}'.\n", .{ opt.short_name, opt.name });
+                                    try opt.usage(writer);
+                                    try writer.print("\n\n", .{});
+                                    return error.CouldNotParseOption;
+                                };
+                                continue :parseArg;
+                            }
+                            // Handle final Option in a chain of Short Options
+                            else if (short_idx == short_opts.len - 1) { 
                                 try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, opt) catch {
-                                        try writer.print("Could not parse Option '{?c}: {s}'.\n", .{ opt.short_name, opt.name });
+                                        try writer.print("Could not parse Option '-{?c}: {s}'.\n", .{ opt.short_name, opt.name });
                                         try opt.usage(writer);
                                         try writer.print("\n\n", .{});
                                         return error.CouldNotParseOption;
@@ -76,10 +96,31 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
             }
             // - Long Options
             else if (eql(u8, arg[0..2], "--")) {
-                const opt_arg = arg[2..];
+                const long_opt = arg[2..];
                 for (cmd.opts.?) |opt| {
-                    if (opt.long_name != null and eql(u8, opt_arg, opt.long_name.?)) {
-                        try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                    const long_len = opt.long_name.?.len;
+                    if (opt.long_name != null and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
+                        // Handle Argument provided to this Option with '=' instead of ' '.
+                        try if (long_opt[long_len] == '=') {
+                            if (eql(u8, opt.val.valType(), "bool")) {
+                                try writer.print("The Option '--{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ opt.long_name, opt.name });
+                                try opt.usage(writer);
+                                try writer.print("\n\n", .{});
+                                return error.BoolCannotTakeArgument;
+                            }
+                            if (long_len + 1 >= long_opt.len) return error.EmptyArgumentProvidedToOption;
+                            const opt_arg = long_opt[(long_len + 1)..];
+                            opt.val.set(opt_arg) catch {
+                                try writer.print("Could not parse Option '--{?s}: {s}'.\n", .{ opt.long_name, opt.name });
+                                try opt.usage(writer);
+                                try writer.print("\n\n", .{});
+                                return error.CouldNotParseOption;
+                            };
+                            continue :parseArg;
+                        }
+                        // Handle Boolean/Toggle Option.
+                        else if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                        // Handle Option with normal Argument.
                         else {
                             parseOpt(args, opt) catch {
                                 try writer.print("Could not parse Option '{?s}: {s}'.\n", .{ opt.long_name, opt.name });
@@ -92,7 +133,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                         continue :parseArg;
                     }
                 }
-                try writer.print("Could not parse Option '--{?s}'.\n", .{ opt_arg });
+                try writer.print("Could not parse Option '--{?s}'.\n", .{ long_opt });
                 try cmd.usage(writer);
                 try writer.print("\n\n", .{});
                 return error.CouldNotParseOption;

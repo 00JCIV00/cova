@@ -11,7 +11,7 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 ## Goals
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
 - [ ] Advanced Parsing:
-  - [ ] Handle '=' instead of ' ' between an Option and its Value.
+  - [x] Handle '=' instead of ' ' between an Option and its Value.
   - [ ] Handle the same Option given multiple times. 
   - [ ] Tab Completion (long-term goal).
 - [ ] Parsing Customization:
