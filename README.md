@@ -22,6 +22,9 @@ Cova is based on the idea that Arguments will fall into one of three categories:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
   - [ ] Generate Commands from a struct and vice versa.
 
+## Documentation
+[Docs](https://00jciv00.github.io/cova/#A;cova)
+
 ## Install
 (WIP) Will use the Zig Package Manager in Zig v0.11.
 
