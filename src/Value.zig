@@ -20,11 +20,18 @@ pub fn Typed(comptime set_type: type) type {
     return struct {
         pub const val_type = set_type;
 
+        /// The Raw Argument provided to this Value for Parsing and Validation.
         raw_arg: []const u8 = "",
+        /// An optional Default Value.
+        default_val: ?val_type = null,
+        /// Flag to determine if this Value has been Parsed and Validated.
         is_set: bool = false,
+        /// A Validation Function to be used in set() following normal Parsing.
         val_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
             
+        /// The Name of this Value for user identification and Usage/Help messages.
         name: []const u8 = "",
+        /// The Description of this Value for Usage/Help messages.
         description: []const u8 = "",
 
         /// Parse the given Argument to this Value's Type.
@@ -59,6 +66,7 @@ pub fn Typed(comptime set_type: type) type {
             return 
                 if (self.is_set) try self.parse(self.raw_arg)
                 else if (val_type == bool) false
+                else if (self.default_val != null) self.default_val.?
                 else error.ValueNotSet;
         }
 
@@ -150,7 +158,7 @@ pub const Generic = genUnion: {
     break :genUnion gen_union;
 };
 
-/// Initialize a Generic Value with a specific Type
+/// Initialize a Generic Value with a specific Type.
 /// TODO: Coerce Typed([]u8) to Typed([]const u8) 
 pub fn init(comptime T: type, comptime typed_val: Typed(T)) Generic {
     const active_tag = if (T == []const u8 or T == []u8) "string" else @typeName(T);

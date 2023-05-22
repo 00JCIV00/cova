@@ -6,14 +6,20 @@ const StringHashMap = std.StringHashMap;
 const Opt = @import("Option.zig");
 const Val = @import("Value.zig");
 
-
+/// The list of Sub Commands this Command can take.
 sub_cmds: ?[]*const @This() = null,
+/// The Sub Command assigned to this Command during Parsing (optional).
 sub_cmd: ?*const @This() = null,
+/// The list of Options this Command can take.
 opts: ?[]*const Opt = null,
+/// The list of Values this Command can take.
 vals: ?[]*const Val.Generic = null,
 
+/// The Name of this Command for user identification and Usage/Help messages.
 name: []const u8,
+/// The Prefix used immediately before a Usage/Help message is displayed.
 help_prefix: []const u8 = "",
+/// The Description of this Command for Usage/Help messages.
 description: []const u8 = "",
 
 /// Sets the active Sub-Command for this Command.

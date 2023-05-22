@@ -1,6 +1,7 @@
 //! Example usage of Cova.
 
 const std = @import("std");
+const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
@@ -14,6 +15,8 @@ const cova = @import("src/cova.zig");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
+
+pub const log_level: log.Level = .err;
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -65,9 +68,19 @@ pub fn main() !void {
                                 .val = &Value.init(u8, .{
                                     .name = "nestedIntVal",
                                     .description = "A nested integer value.",
-                                    .raw_arg = "203",
+                                    .default_val = 203,
                                 }),
                                 .description = "A nested integer option.",
+                            },
+                            &Option{
+                                .name = "help",
+                                .short_name = 'h',
+                                .long_name = "help",
+                                .val = &Value.init(bool, .{
+                                    .name = "helpFlag",
+                                    .description = "Flag for help!",
+                                }),
+                                .description = "Show the DemoCommand help display.",
                             },
                         };
                         break :optsSetup setup_opts[0..];
@@ -100,6 +113,16 @@ pub fn main() !void {
                     .description = "An integer option.",
                 },
                 &Option{
+                    .name = "toggle",
+                    .short_name = 't',
+                    .long_name = "toggle",
+                    .val = &Value.init(bool, .{
+                        .name = "toggleVal",
+                        .description = "A toggle/boolean value.",
+                    }),
+                    .description = "A toggle/boolean option.",
+                },
+                &Option{
                     .name = "help",
                     .short_name = 'h',
                     .long_name = "help",
@@ -110,15 +133,17 @@ pub fn main() !void {
                     .description = "Show the CovaDemo help display.",
                 },
                 &Option{
-                    .name = "toggle",
-                    .short_name = 't',
-                    .long_name = "toggle",
-                    .val = &Value.init(bool, .{
-                        .name = "toggleVal",
-                        .description = "A toggle/boolean value.",
+                    .name = "verbosity",
+                    .short_name = 'v',
+                    .long_name = "verbosity",
+                    .val = &Value.init(u4, .{
+                        .name = "verbosityLevel",
+                        .description = "The verbosity level from 0 (err) to 3 (debug).",
+                        .default_val = 3,
+                        .val_fn = struct{ fn valFn(val: u4) bool { return val >= 0 and val <= 3; } }.valFn,
                     }),
-                    .description = "A toggle/boolean option.",
-                }
+                    .description = "Set the CovaDemo verbosity level.",
+                },
             };
             break :optsSetup setup_opts[0..];
         },
@@ -131,7 +156,8 @@ pub fn main() !void {
                 &Value.init(u128, .{
                     .name = "cmd_u128",
                     .description = "A u128 value for the command.",
-                    .raw_arg = "654321",
+                    .default_val = 654321,
+                    .val_fn = struct{ fn valFn(val: u128) bool { return val > 123456 and val < 987654; } }.valFn,
                 }),
             };
             break :valsSetup setup_vals[0..];
@@ -141,10 +167,21 @@ pub fn main() !void {
 
     const args = try proc.argsWithAllocator(alloc);
     try cova.parseArgs(&args, cmd, stdout);
-
-    std.debug.print("\n\n", .{});
-
+    try stdout.print("\n", .{});
     try displayCmdInfo(cmd, alloc);
+
+    // Verbosity Change (WIP)
+    //@constCast(&log_level).* = verbosity: {
+    //    var opt_map = try cmd.getOpts(alloc);
+    //    defer opt_map.deinit();
+    //    const log_lvl = try opt_map.get("verbosity").?.val.u4.get();
+    //    break :verbosity @intToEnum(log.Level, log_lvl);
+    //};
+    //try stdout.print("\n\nLogging Level ({any}):\n", .{ log.default_level });
+    //log.err("Err", .{});
+    //log.warn("Warn", .{});
+    //log.info("Info", .{});
+    //log.debug("Debug", .{});
 }
 
 fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
@@ -155,7 +192,7 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
         if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
         if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "usage")) try cmd.usage(stdout);
 
-        std.debug.print("- Command: {s}\n", .{ cmd.name });
+        try stdout.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
             var opt_map: StringHashMap(*const Option) = try cmd.getOpts(alloc);
             defer opt_map.deinit();
@@ -163,13 +200,13 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
             for (cmd.opts.?) |opt| { 
                 switch (meta.activeTag(opt.val.*)) {
                     .string => {
-                        std.debug.print("    Opt: {?s}, Data: {s}\n", .{ 
+                        try stdout.print("    Opt: {?s}, Data: {s}\n", .{ 
                             opt.long_name, 
                             opt.val.string.get() catch "",
                         });
                     },
                     inline else => |tag| {
-                        std.debug.print("    Opt: {?s}, Data: {any}\n", .{ 
+                        try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
                             opt.long_name, 
                             @field(opt.val, @tagName(tag)).get() catch null,
                         });
@@ -181,13 +218,13 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
             for (cmd.vals.?) |val| { 
                 switch (meta.activeTag(val.*)) {
                     .string => {
-                        std.debug.print("    Val: {?s}, Data: {s}\n", .{ 
+                        try stdout.print("    Val: {?s}, Data: {s}\n", .{ 
                             val.name(), 
                             val.string.get() catch "",
                         });
                     },
                     inline else => |tag| {
-                        std.debug.print("    Val: {?s}, Data: {any}\n", .{ 
+                        try stdout.print("    Val: {?s}, Data: {any}\n", .{ 
                             val.name(), 
                             @field(val, @tagName(tag)).get() catch null,
                         });
@@ -195,7 +232,7 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
                 }
             }
         }
-        std.debug.print("\n", .{});
+        try stdout.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
     }
 }

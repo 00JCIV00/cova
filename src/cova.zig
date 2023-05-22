@@ -2,6 +2,7 @@
 
 // Standard
 const std = @import("std");
+const log = std.log;
 const mem = std.mem;
 const proc = std.process;
 
@@ -12,7 +13,7 @@ pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
-/// Parse provided arguments into Commands, Options, and Values.
+/// Parse provided Argument tokens into Commands, Options, and Values.
 pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: anytype) !void {
     var val_idx: u8 = 0;
     var unmatched = false;
@@ -23,7 +24,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
     parseArg: while (@constCast(args).next()) |arg| {
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
-            try writer.print("Attempting to Parse Commands...\n", .{});
+            log.debug("Attempting to Parse Commands...\n", .{});
             for (cmd.sub_cmds.?) |sub_cmd| {
                 if (eql(u8, sub_cmd.name, arg)) {
                     parseArgs(args, sub_cmd, writer) catch { 
@@ -32,7 +33,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                         try writer.print("\n\n", .{});
                         return error.CouldNotParseCommand;
                     };
-                    try writer.print("Parsed Command '{s}'\n", .{ sub_cmd.name });
+                    log.debug("Parsed Command '{s}'\n", .{ sub_cmd.name });
                     //@constCast(cmd).sub_cmd = @constCast(sub_cmd);
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
@@ -42,7 +43,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
         }
         // ...Then for any Options...
         if (cmd.opts != null) {
-            try writer.print("Attempting to Parse Options...\n", .{});
+            log.debug("Attempting to Parse Options...\n", .{});
             // - Short Options
             if (arg[0] == '-' and arg[1] != '-') {
                 const short_opts = arg[1..];
@@ -50,17 +51,20 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                     for (cmd.opts.?) |opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             try if (short_idx == short_opts.len - 1) { //TODO: Figure out why this if statement needs a "try." Possibly due to subtraction underflow?
-                                parseOpt(args, opt) catch {
-                                    try writer.print("Could not parse Option '{?c}: {s}'.\n", .{ opt.short_name, opt.name });
-                                    try opt.usage(writer);
-                                    try writer.print("\n\n", .{});
-                                    return error.CouldNotParseOption;
+                                try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                                else {
+                                    parseOpt(args, opt) catch {
+                                        try writer.print("Could not parse Option '{?c}: {s}'.\n", .{ opt.short_name, opt.name });
+                                        try opt.usage(writer);
+                                        try writer.print("\n\n", .{});
+                                        return error.CouldNotParseOption;
+                                    };
                                 };
-                                try writer.print("Parsed Option '{?c}'.\n", .{ opt.short_name });
+                                log.debug("Parsed Option '{?c}'.\n", .{ opt.short_name });
                                 continue :parseArg;
                             }
                             else @constCast(opt).val.set("true");
-                            try writer.print("Parsed Option '{?c}'.\n", .{ opt.short_name });
+                            log.debug("Parsed Option '{?c}'.\n", .{ opt.short_name });
                             continue :shortOpts;
                         }
                     }
@@ -75,13 +79,16 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                 const opt_arg = arg[2..];
                 for (cmd.opts.?) |opt| {
                     if (opt.long_name != null and eql(u8, opt_arg, opt.long_name.?)) {
-                        parseOpt(args, opt) catch {
-                            try writer.print("Could not parse Option '{?s}: {s}'.\n", .{ opt.long_name, opt.name });
-                            try opt.usage(writer);
-                            try writer.print("\n\n", .{});
-                            return error.CouldNotParseOption;
+                        try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                        else {
+                            parseOpt(args, opt) catch {
+                                try writer.print("Could not parse Option '{?s}: {s}'.\n", .{ opt.long_name, opt.name });
+                                try opt.usage(writer);
+                                try writer.print("\n\n", .{});
+                                return error.CouldNotParseOption;
+                            };
                         };
-                        try writer.print("Parsed Option '{?s}'.\n", .{ opt.long_name });
+                        log.debug("Parsed Option '{?s}'.\n", .{ opt.long_name });
                         continue :parseArg;
                     }
                 }
@@ -94,7 +101,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
         }
         // ...Finally, for any Values.
         if (cmd.vals != null) {
-            try writer.print("Attempting to Parse Values...\n", .{});
+            log.debug("Attempting to Parse Values...\n", .{});
             if (val_idx >= cmd.vals.?.len) {
                 try writer.print("Too many Values provided for Command '{s}'.\n", .{ cmd.name });
                 try cmd.usage(writer);
@@ -108,7 +115,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
             };
             val_idx += 1;
 
-            try writer.print("Parsed Value '{?s}'.\n", .{ val.name() });
+            log.debug("Parsed Value '{?s}'.\n", .{ val.name() });
             continue :parseArg;
         }
 

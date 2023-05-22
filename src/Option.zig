@@ -7,16 +7,17 @@ const toUpper = ascii.upperString;
 
 const Val = @import("Value.zig");
 
-name: []const u8,
+/// This Options Short Name (ex: `-s`).
 short_name: ?u8,
+/// This Options long name (ex: `--intOpt`).
 long_name: ?[]const u8,
+/// This Option's wrapped Value.
 val: *const Val.Generic = &Val.init(bool, .{}),
-description: []const u8 = "",
 
-/// Gets the inner value of the Value of this Option.
-pub fn get(self: *const @This()) !self.val.val_type {
-    return try self.val.get();
-}
+/// The Name of this Option for user identification and Usage/Help messages.
+name: []const u8,
+/// The Description of this Option for Usage/Help messages.
+description: []const u8 = "",
 
 /// Creates the Help message for this Option and Writes it to the provided Writer.
 pub fn help(self: *const @This(), writer: anytype) !void {
