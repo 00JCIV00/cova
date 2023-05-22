@@ -83,7 +83,8 @@ An Option is an Argument which wraps a Value and is ALWAYS optional. In the curr
         &Option{
             .name = "help",
             .short_name = 'h',
-            .long_name = "help",.val = &Value.init(bool, .{
+            .long_name = "help",
+            .val = &Value.init(bool, .{
                 .name = "helpFlag",
                 .description = "Flag for help!",
             }),
