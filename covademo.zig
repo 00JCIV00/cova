@@ -100,6 +100,7 @@ pub fn main() !void {
                         .description = "A string value.",
                     }),
                     .description = "A string option.",
+                    //.usage_fmt = "-{?c} or --{?s}: ({s} {s})",
                 },
                 &Option{
                     .name = "intOpt",
