@@ -3,15 +3,22 @@ const std = @import("std");
 const mem = std.mem;
 const StringHashMap = std.StringHashMap;
 
-const Opt = @import("Option.zig");
+const Option = @import("Option.zig");
 const Val = @import("Value.zig");
+
+
+pub const CustomOption = Option.init(.{
+    .help_fmt = "{s} -> {s}",
+    .short_prefix = '_',
+    .long_prefix = "__",
+});
 
 /// The list of Sub Commands this Command can take.
 sub_cmds: ?[]*const @This() = null,
 /// The Sub Command assigned to this Command during Parsing (optional).
 sub_cmd: ?*const @This() = null,
 /// The list of Options this Command can take.
-opts: ?[]*const Opt = null,
+opts: ?[]*const CustomOption = null,
 /// The list of Values this Command can take.
 vals: ?[]*const Val.Generic = null,
 
@@ -28,9 +35,9 @@ pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
 }
 
 /// Gets a StringHashMap of this Command's Options.
-pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Opt) {
+pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const CustomOption) {
     if (self.opts == null) return error.NoOptionsInCommand;
-    var map = StringHashMap(*const Opt).init(alloc);
+    var map = StringHashMap(*const CustomOption).init(alloc);
     for (self.opts.?) |opt| { try map.put(opt.name, opt); }
     return map;
 }

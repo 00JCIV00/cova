@@ -60,8 +60,8 @@ pub fn main() !void {
                         break :nestedSubCmdsSetup nested_setup_cmds[0..];
                     },
                     .opts = optsSetup: {
-                        var setup_opts = [_]*const Option{
-                            &Option{
+                        var setup_opts = [_]*const Command.CustomOption{
+                            &Command.CustomOption{
                                 .name = "nestedIntOpt",
                                 .short_name = 'n',
                                 .long_name = "nestedIntOpt",
@@ -72,7 +72,7 @@ pub fn main() !void {
                                 }),
                                 .description = "A nested integer option.",
                             },
-                            &Option{
+                            &Command.CustomOption{
                                 .name = "help",
                                 .short_name = 'h',
                                 .long_name = "help",
@@ -90,8 +90,8 @@ pub fn main() !void {
             break :subCmdsSetup setup_cmds[0..];
         },
         .opts = optsSetup: {
-            var setup_opts = [_]*const Option{
-                &Option{ 
+            var setup_opts = [_]*const Command.CustomOption{
+                &Command.CustomOption{ 
                     .name = "stringOpt",
                     .short_name = 's',
                     .long_name = "stringOpt",
@@ -102,7 +102,7 @@ pub fn main() !void {
                     .description = "A string option.",
                     //.usage_fmt = "-{?c} or --{?s}: ({s} {s})",
                 },
-                &Option{
+                &Command.CustomOption{
                     .name = "intOpt",
                     .short_name = 'i',
                     .long_name = "intOpt",
@@ -113,7 +113,7 @@ pub fn main() !void {
                     }),
                     .description = "An integer option.",
                 },
-                &Option{
+                &Command.CustomOption{
                     .name = "toggle",
                     .short_name = 't',
                     .long_name = "toggle",
@@ -123,7 +123,7 @@ pub fn main() !void {
                     }),
                     .description = "A toggle/boolean option.",
                 },
-                &Option{
+                &Command.CustomOption{
                     .name = "help",
                     .short_name = 'h',
                     .long_name = "help",
@@ -133,7 +133,7 @@ pub fn main() !void {
                     }),
                     .description = "Show the CovaDemo help display.",
                 },
-                &Option{
+                &Command.CustomOption{
                     .name = "verbosity",
                     .short_name = 'v',
                     .long_name = "verbosity",
@@ -195,7 +195,7 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
 
         try stdout.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            var opt_map: StringHashMap(*const Option) = try cmd.getOpts(alloc);
+            var opt_map: StringHashMap(*const @TypeOf(cmd.*).CustomOption) = try cmd.getOpts(alloc);
             defer opt_map.deinit();
             if (try opt_map.get("help").?.val.bool.get()) try cmd.help(stdout);
             for (cmd.opts.?) |opt| { 
