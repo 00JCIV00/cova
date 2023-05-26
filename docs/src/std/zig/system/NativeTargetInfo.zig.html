@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>zig/system/NativeTargetInfo.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -1103,17 +1103,17 @@
 <span class="line" id="L877">        <span class="tok-kw">const</span> cpu_arch = <span class="tok-builtin">@tagName</span>(result.target.cpu.arch);</span>
 <span class="line" id="L878">        <span class="tok-kw">const</span> os_tag = <span class="tok-builtin">@tagName</span>(result.target.os.tag);</span>
 <span class="line" id="L879">        <span class="tok-kw">const</span> abi = <span class="tok-builtin">@tagName</span>(result.target.abi);</span>
-<span class="line" id="L880">        mem.copy(<span class="tok-type">u8</span>, path_buf[index..], prefix);</span>
+<span class="line" id="L880">        <span class="tok-builtin">@memcpy</span>(path_buf[index..][<span class="tok-number">0</span>..prefix.len], prefix);</span>
 <span class="line" id="L881">        index += prefix.len;</span>
-<span class="line" id="L882">        mem.copy(<span class="tok-type">u8</span>, path_buf[index..], cpu_arch);</span>
+<span class="line" id="L882">        <span class="tok-builtin">@memcpy</span>(path_buf[index..][<span class="tok-number">0</span>..cpu_arch.len], cpu_arch);</span>
 <span class="line" id="L883">        index += cpu_arch.len;</span>
 <span class="line" id="L884">        path_buf[index] = <span class="tok-str">'-'</span>;</span>
 <span class="line" id="L885">        index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L886">        mem.copy(<span class="tok-type">u8</span>, path_buf[index..], os_tag);</span>
+<span class="line" id="L886">        <span class="tok-builtin">@memcpy</span>(path_buf[index..][<span class="tok-number">0</span>..os_tag.len], os_tag);</span>
 <span class="line" id="L887">        index += os_tag.len;</span>
 <span class="line" id="L888">        path_buf[index] = <span class="tok-str">'-'</span>;</span>
 <span class="line" id="L889">        index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L890">        mem.copy(<span class="tok-type">u8</span>, path_buf[index..], abi);</span>
+<span class="line" id="L890">        <span class="tok-builtin">@memcpy</span>(path_buf[index..][<span class="tok-number">0</span>..abi.len], abi);</span>
 <span class="line" id="L891">        index += abi.len;</span>
 <span class="line" id="L892">        <span class="tok-kw">const</span> rpath = path_buf[<span class="tok-number">0</span>..index];</span>
 <span class="line" id="L893">        <span class="tok-kw">if</span> (glibcVerFromRPath(rpath)) |ver| {</span>

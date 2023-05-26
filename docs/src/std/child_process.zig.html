@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>child_process.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -373,7 +373,7 @@
 <span class="line" id="L259"></span>
 <span class="line" id="L260">    <span class="tok-kw">fn</span> <span class="tok-fn">fifoToOwnedArrayList</span>(fifo: *std.io.PollFifo) std.ArrayList(<span class="tok-type">u8</span>) {</span>
 <span class="line" id="L261">        <span class="tok-kw">if</span> (fifo.head &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L262">            std.mem.copy(<span class="tok-type">u8</span>, fifo.buf[<span class="tok-number">0</span>..fifo.count], fifo.buf[fifo.head .. fifo.head + fifo.count]);</span>
+<span class="line" id="L262">            <span class="tok-builtin">@memcpy</span>(fifo.buf[<span class="tok-number">0</span>..fifo.count], fifo.buf[fifo.head..][<span class="tok-number">0</span>..fifo.count]);</span>
 <span class="line" id="L263">        }</span>
 <span class="line" id="L264">        <span class="tok-kw">const</span> result = std.ArrayList(<span class="tok-type">u8</span>){</span>
 <span class="line" id="L265">            .items = fifo.buf[<span class="tok-number">0</span>..fifo.count],</span>
@@ -1416,7 +1416,7 @@
 <span class="line" id="L1174">    );</span>
 <span class="line" id="L1175">}</span>
 <span class="line" id="L1176"></span>
-<span class="line" id="L1177"><span class="tok-comment">/// Case-insenstive UTF-16 lookup</span></span>
+<span class="line" id="L1177"><span class="tok-comment">/// Case-insensitive UTF-16 lookup</span></span>
 <span class="line" id="L1178"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcessSupportsExtension</span>(ext: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L1179">    <span class="tok-kw">if</span> (ext.len != <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
 <span class="line" id="L1180">    <span class="tok-kw">const</span> State = <span class="tok-kw">enum</span> {</span>
@@ -1699,9 +1699,9 @@
 <span class="line" id="L1436">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1437">        <span class="tok-kw">while</span> (it.next()) |pair| : (i += <span class="tok-number">1</span>) {</span>
 <span class="line" id="L1438">            <span class="tok-kw">const</span> env_buf = <span class="tok-kw">try</span> arena.allocSentinel(<span class="tok-type">u8</span>, pair.key_ptr.len + pair.value_ptr.len + <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1439">            mem.copy(<span class="tok-type">u8</span>, env_buf, pair.key_ptr.*);</span>
+<span class="line" id="L1439">            <span class="tok-builtin">@memcpy</span>(env_buf[<span class="tok-number">0</span>..pair.key_ptr.len], pair.key_ptr.*);</span>
 <span class="line" id="L1440">            env_buf[pair.key_ptr.len] = <span class="tok-str">'='</span>;</span>
-<span class="line" id="L1441">            mem.copy(<span class="tok-type">u8</span>, env_buf[pair.key_ptr.len + <span class="tok-number">1</span> ..], pair.value_ptr.*);</span>
+<span class="line" id="L1441">            <span class="tok-builtin">@memcpy</span>(env_buf[pair.key_ptr.len + <span class="tok-number">1</span> ..][<span class="tok-number">0</span>..pair.value_ptr.len], pair.value_ptr.*);</span>
 <span class="line" id="L1442">            envp_buf[i] = env_buf.ptr;</span>
 <span class="line" id="L1443">        }</span>
 <span class="line" id="L1444">        assert(i == envp_count);</span>

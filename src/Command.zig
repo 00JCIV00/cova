@@ -1,4 +1,18 @@
-//! Input and Output Command Structure.
+//! Container Argument for sub Commands, Options, and Values.
+//!
+//! A Command may contain any mix of those Arguments or none at all if it's to be used as a standalone Command.
+//!
+//! End User Example:
+//!
+//! ```
+//! # Standalone Command
+//! myapp help
+//! # Command w/ Options and Values
+//! myapp -d "This Value belongs to the 'd' Option." --toggle "This is a standalone Value."
+//! # Command w/ sub Command
+//! myapp --opt "Option for 'myapp' Command." subcmd --subcmd_opt "Option for 'subcmd' sub Command."
+//! ```
+
 const std = @import("std");
 const log = std.log;
 const mem = std.mem;
@@ -10,29 +24,29 @@ const Val = @import("Value.zig");
 
 /// Config for custom Command types. 
 pub const Config = struct {
-    /// Option Config for this Command and all sub Commands.
+    /// Option Config for this Command type.
     opt_config: Option.Config = .{},
 
-    // Sub Commands Help Format.
-    // Must support the following format types in this order:
-    // - String (Command Name)
-    // - String (Command Description)
+    /// Sub Commands Help Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Command Name)
+    /// 2. String (Command Description)
     subcmds_help_fmt: []const u8 = "{s}: {s}",
-    // Values Help Format.
-    // Must support the following format types in this order:
-    // - String (Value Name)
-    // - String (Value Type)
-    // - String (Value Description)
+    /// Values Help Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Value Name)
+    /// 2. String (Value Type)
+    /// 3. String (Value Description)
     vals_help_fmt: []const u8 = "{s} ({s}): {s}",
     
-    // Sub Commands Usage Format.
-    // Must support the following format types in this order:
-    // - String (Command Name)
+    /// Sub Commands Usage Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Command Name)
     subcmds_usage_fmt: []const u8 ="'{s}'", 
-    // Values Usage Format.
-    // Must support the following format types in this order:
-    // - String (Value Name)
-    // - String (Value Type)
+    /// Values Usage Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Value Name)
+    /// 2. String (Value Type)
     vals_usage_fmt: []const u8 = "\"{s} ({s})\"", 
 
 };
@@ -40,10 +54,19 @@ pub const Config = struct {
 /// Create an Custom Command type from the provided Config.
 pub fn Custom(comptime config: Config) type {
     return struct {
+        /// The Custom Option type to be used by this Custom Command type.
         pub const CustomOption = Option.Custom(config.opt_config);
+        /// Sub Commands Help Format.
+        /// Check `Command.Config` for details.
         pub const subcmds_help_fmt = config.subcmds_help_fmt;
+        /// Values Help Format.
+        /// Check `Command.Config` for details.
         pub const vals_help_fmt = config.vals_help_fmt;
+        /// Sub Commands Usage Format.
+        /// Check `Command.Config` for details.
         pub const subcmds_usage_fmt = config.subcmds_usage_fmt;
+        /// Values Usage Format.
+        /// Check `Command.Config` for details.
         pub const vals_usage_fmt = config.vals_usage_fmt;
 
         /// The list of Sub Commands this Command can take.
