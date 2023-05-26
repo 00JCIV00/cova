@@ -18,9 +18,7 @@ const Value = cova.Value;
 
 pub const log_level: log.Level = .err;
     
-pub const CustomCommand = Command.Custom(.{
-    .subcmds_help_fmt = "Name: {s}, Description: {s}",
-}); 
+pub const CustomCommand = Command.Custom(.{}); 
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);

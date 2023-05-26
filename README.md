@@ -3,7 +3,7 @@ Commands, Options, Values, Arguments. A simple command line argument parsing lib
 ___
 
 ## Overview
-Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These componenets are assembled into a single struct which is then used to parse argument tokens.
+Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These components are assembled into a single struct which is then used to parse argument tokens.
 
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
