@@ -14,29 +14,31 @@ pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
 /// Parse provided Argument tokens into Commands, Options, and Values.
-pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: anytype) !void {
+pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cmd: *const CustomCommand, writer: anytype) !void {
     var val_idx: u8 = 0;
-    var unmatched = false;
 
     const optType = @TypeOf(cmd.*).CustomOption;
 
     // Bypass argument 0 (the filename being executed);
-    if (@constCast(args).inner.index == 0) _ = @constCast(args).next();
+    const init_arg = if (@constCast(args).inner.index == 0) @constCast(args).next()
+                     else argsPeak(args); 
+    log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
 
     parseArg: while (@constCast(args).next()) |arg| {
+        if (init_arg == null) return;
+        var unmatched = false;
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
             log.debug("Attempting to Parse Commands...\n", .{});
             for (cmd.sub_cmds.?) |sub_cmd| {
                 if (eql(u8, sub_cmd.name, arg)) {
-                    parseArgs(args, sub_cmd, writer) catch { 
+                    parseArgs(args, CustomCommand, sub_cmd, writer) catch { 
                         try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
                         try sub_cmd.usage(writer);
                         try writer.print("\n\n", .{});
                         return error.CouldNotParseCommand;
                     };
                     log.debug("Parsed Command '{s}'\n", .{ sub_cmd.name });
-                    //@constCast(cmd).sub_cmd = @constCast(sub_cmd);
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
                 }
@@ -115,53 +117,59 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
                 const long_opt = arg[2..];
                 for (cmd.opts.?) |opt| {
                     const long_len = opt.long_name.?.len;
-                    if (opt.long_name != null and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
-                        // Handle Argument provided to this Option with '=' instead of ' '.
-                        try if (long_opt[long_len] == '=') {
-                            if (eql(u8, opt.val.valType(), "bool")) {
-                                try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                    long_pf, 
-                                    opt.long_name, 
-                                    opt.name 
-                                });
-                                try opt.usage(writer);
-                                try writer.print("\n\n", .{});
-                                return error.BoolCannotTakeArgument;
+                    if (opt.long_name != null) {
+                        // Handle Value provided to this Option with '=' instead of ' '.
+                        if (long_opt.len > opt.long_name.?.len and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
+                            if (long_opt[long_len] == '=') {
+                                if (eql(u8, opt.val.valType(), "bool")) {
+                                    try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                        long_pf, 
+                                        opt.long_name, 
+                                        opt.name 
+                                    });
+                                    try opt.usage(writer);
+                                    try writer.print("\n\n", .{});
+                                    return error.BoolCannotTakeArgument;
+                                }
+                                if (long_len + 1 >= long_opt.len) return error.EmptyArgumentProvidedToOption;
+                                const opt_arg = long_opt[(long_len + 1)..];
+                                opt.val.set(opt_arg) catch {
+                                    try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
+                                        long_pf,
+                                        opt.long_name, 
+                                        opt.name 
+                                    });
+                                    try opt.usage(writer);
+                                    try writer.print("\n\n", .{});
+                                    return error.CouldNotParseOption;
+                                };
+                                log.debug("Parsed Option '{?s}'.\n", .{ opt.long_name });
+                                continue :parseArg;
                             }
-                            if (long_len + 1 >= long_opt.len) return error.EmptyArgumentProvidedToOption;
-                            const opt_arg = long_opt[(long_len + 1)..];
-                            opt.val.set(opt_arg) catch {
-                                try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
-                                    long_pf,
-                                    opt.long_name, 
-                                    opt.name 
-                                });
-                                try opt.usage(writer);
-                                try writer.print("\n\n", .{});
-                                return error.CouldNotParseOption;
+                        }
+                        // Handle normally provided Value to Option
+                        else if (eql(u8, long_opt, opt.long_name.?)) {
+                            // Handle Boolean/Toggle Option.
+                            try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                            // Handle Option with normal Argument.
+                            else {
+                                parseOpt(args, @TypeOf(opt.*), opt) catch {
+                                    try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
+                                        long_pf,
+                                        opt.long_name, 
+                                        opt.name 
+                                    });
+                                    try opt.usage(writer);
+                                    try writer.print("\n\n", .{});
+                                    return error.CouldNotParseOption;
+                                };
                             };
+                            log.debug("Parsed Option '{?s}'.\n", .{ opt.long_name });
                             continue :parseArg;
                         }
-                        // Handle Boolean/Toggle Option.
-                        else if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
-                        // Handle Option with normal Argument.
-                        else {
-                            parseOpt(args, @TypeOf(opt.*), opt) catch {
-                                try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
-                                    long_pf,
-                                    opt.long_name, 
-                                    opt.name 
-                                });
-                                try opt.usage(writer);
-                                try writer.print("\n\n", .{});
-                                return error.CouldNotParseOption;
-                            };
-                        };
-                        log.debug("Parsed Option '{?s}'.\n", .{ opt.long_name });
-                        continue :parseArg;
                     }
                 }
-                try writer.print("Could not parse Option '{s}{?s}'.\n", .{ long_pf, long_opt });
+                try writer.print("Could not parse Argument '{s}{?s}' to an Option.\n", .{ long_pf, long_opt });
                 try cmd.usage(writer);
                 try writer.print("\n\n", .{});
                 return error.CouldNotParseOption;
@@ -196,7 +204,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, cmd: *const Command, writer: any
         }
         // For Commands that expect no arguments but are given one, fail to usage
         else {
-            try writer.print("Command '{s}' does not expect any arguments.\n", .{ cmd.name });
+            try writer.print("Command '{s}' does not expect any arguments, but '{s}' was passed.\n", .{ cmd.name, arg });
             try cmd.help(writer);
             return error.UnexpectedArgument;
         }

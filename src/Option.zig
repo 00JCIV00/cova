@@ -7,7 +7,7 @@ const toUpper = ascii.upperString;
 
 const Val = @import("Value.zig");
     
-/// Config for customizing Options.
+/// Config for custom Option types.
 pub const Config = struct {
     /// Format for the Help message. (Comptime Only! null = default format)
     /// Must support the following format types in this order:
@@ -32,8 +32,8 @@ pub const Config = struct {
     long_prefix: []const u8 = "--",
 };
 
-/// Initialize an Option with custom settings from the provided Config.
-pub fn init(comptime config: Config) type {
+/// Create a Custom Option type from the provided Config.
+pub fn Custom(comptime config: Config) type {
     return struct {
         /// This Option's Short Name (ex: `-s`).
         short_name: ?u8,
