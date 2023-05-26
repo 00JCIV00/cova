@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>os/windows.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -883,10 +883,10 @@
 <span class="line" id="L754">        .Flags = <span class="tok-kw">if</span> (dir) |_| SYMLINK_FLAG_RELATIVE <span class="tok-kw">else</span> <span class="tok-number">0</span>,</span>
 <span class="line" id="L755">    };</span>
 <span class="line" id="L756"></span>
-<span class="line" id="L757">    std.mem.copy(<span class="tok-type">u8</span>, buffer[<span class="tok-number">0</span>..], std.mem.asBytes(&amp;symlink_data));</span>
-<span class="line" id="L758">    <span class="tok-builtin">@memcpy</span>(buffer[<span class="tok-builtin">@sizeOf</span>(SYMLINK_DATA)..], <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, target_path), target_path.len * <span class="tok-number">2</span>);</span>
+<span class="line" id="L757">    <span class="tok-builtin">@memcpy</span>(buffer[<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(SYMLINK_DATA)], std.mem.asBytes(&amp;symlink_data));</span>
+<span class="line" id="L758">    <span class="tok-builtin">@memcpy</span>(buffer[<span class="tok-builtin">@sizeOf</span>(SYMLINK_DATA)..][<span class="tok-number">0</span> .. target_path.len * <span class="tok-number">2</span>], <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, target_path));</span>
 <span class="line" id="L759">    <span class="tok-kw">const</span> paths_start = <span class="tok-builtin">@sizeOf</span>(SYMLINK_DATA) + target_path.len * <span class="tok-number">2</span>;</span>
-<span class="line" id="L760">    <span class="tok-builtin">@memcpy</span>(buffer[paths_start..].ptr, <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, target_path), target_path.len * <span class="tok-number">2</span>);</span>
+<span class="line" id="L760">    <span class="tok-builtin">@memcpy</span>(buffer[paths_start..][<span class="tok-number">0</span> .. target_path.len * <span class="tok-number">2</span>], <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, target_path));</span>
 <span class="line" id="L761">    _ = <span class="tok-kw">try</span> DeviceIoControl(symlink_handle, FSCTL_SET_REPARSE_POINT, buffer[<span class="tok-number">0</span>..buf_len], <span class="tok-null">null</span>);</span>
 <span class="line" id="L762">}</span>
 <span class="line" id="L763"></span>
@@ -969,14 +969,14 @@
 <span class="line" id="L835">            <span class="tok-kw">const</span> len = buf.SubstituteNameLength &gt;&gt; <span class="tok-number">1</span>;</span>
 <span class="line" id="L836">            <span class="tok-kw">const</span> path_buf = <span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, &amp;buf.PathBuffer);</span>
 <span class="line" id="L837">            <span class="tok-kw">const</span> is_relative = buf.Flags &amp; SYMLINK_FLAG_RELATIVE != <span class="tok-number">0</span>;</span>
-<span class="line" id="L838">            <span class="tok-kw">return</span> parseReadlinkPath(path_buf[offset .. offset + len], is_relative, out_buffer);</span>
+<span class="line" id="L838">            <span class="tok-kw">return</span> parseReadlinkPath(path_buf[offset..][<span class="tok-number">0</span>..len], is_relative, out_buffer);</span>
 <span class="line" id="L839">        },</span>
 <span class="line" id="L840">        IO_REPARSE_TAG_MOUNT_POINT =&gt; {</span>
 <span class="line" id="L841">            <span class="tok-kw">const</span> buf = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> MOUNT_POINT_REPARSE_BUFFER, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(MOUNT_POINT_REPARSE_BUFFER), &amp;reparse_struct.DataBuffer[<span class="tok-number">0</span>]));</span>
 <span class="line" id="L842">            <span class="tok-kw">const</span> offset = buf.SubstituteNameOffset &gt;&gt; <span class="tok-number">1</span>;</span>
 <span class="line" id="L843">            <span class="tok-kw">const</span> len = buf.SubstituteNameLength &gt;&gt; <span class="tok-number">1</span>;</span>
 <span class="line" id="L844">            <span class="tok-kw">const</span> path_buf = <span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, &amp;buf.PathBuffer);</span>
-<span class="line" id="L845">            <span class="tok-kw">return</span> parseReadlinkPath(path_buf[offset .. offset + len], <span class="tok-null">false</span>, out_buffer);</span>
+<span class="line" id="L845">            <span class="tok-kw">return</span> parseReadlinkPath(path_buf[offset..][<span class="tok-number">0</span>..len], <span class="tok-null">false</span>, out_buffer);</span>
 <span class="line" id="L846">        },</span>
 <span class="line" id="L847">        <span class="tok-kw">else</span> =&gt; |value| {</span>
 <span class="line" id="L848">            std.debug.print(<span class="tok-str">&quot;unsupported symlink type: {}&quot;</span>, .{value});</span>
@@ -1347,7 +1347,7 @@
 <span class="line" id="L1179">            <span class="tok-kw">var</span> input_struct = <span class="tok-builtin">@ptrCast</span>(*MOUNTMGR_MOUNT_POINT, &amp;input_buf[<span class="tok-number">0</span>]);</span>
 <span class="line" id="L1180">            input_struct.DeviceNameOffset = <span class="tok-builtin">@sizeOf</span>(MOUNTMGR_MOUNT_POINT);</span>
 <span class="line" id="L1181">            input_struct.DeviceNameLength = <span class="tok-builtin">@intCast</span>(USHORT, volume_name_u16.len * <span class="tok-number">2</span>);</span>
-<span class="line" id="L1182">            <span class="tok-builtin">@memcpy</span>(input_buf[<span class="tok-builtin">@sizeOf</span>(MOUNTMGR_MOUNT_POINT)..], <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, volume_name_u16.ptr), volume_name_u16.len * <span class="tok-number">2</span>);</span>
+<span class="line" id="L1182">            <span class="tok-builtin">@memcpy</span>(input_buf[<span class="tok-builtin">@sizeOf</span>(MOUNTMGR_MOUNT_POINT)..][<span class="tok-number">0</span> .. volume_name_u16.len * <span class="tok-number">2</span>], <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, volume_name_u16.ptr));</span>
 <span class="line" id="L1183"></span>
 <span class="line" id="L1184">            DeviceIoControl(mgmt_handle, IOCTL_MOUNTMGR_QUERY_POINTS, &amp;input_buf, &amp;output_buf) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L1185">                <span class="tok-kw">error</span>.AccessDenied =&gt; <span class="tok-kw">unreachable</span>,</span>
@@ -1378,8 +1378,8 @@
 <span class="line" id="L1208"></span>
 <span class="line" id="L1209">                    <span class="tok-kw">if</span> (out_buffer.len &lt; drive_letter.len + file_name_u16.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
 <span class="line" id="L1210"></span>
-<span class="line" id="L1211">                    mem.copy(<span class="tok-type">u16</span>, out_buffer, drive_letter);</span>
-<span class="line" id="L1212">                    mem.copy(<span class="tok-type">u16</span>, out_buffer[drive_letter.len..], file_name_u16);</span>
+<span class="line" id="L1211">                    <span class="tok-builtin">@memcpy</span>(out_buffer[<span class="tok-number">0</span>..drive_letter.len], drive_letter);</span>
+<span class="line" id="L1212">                    mem.copyForwards(<span class="tok-type">u16</span>, out_buffer[drive_letter.len..][<span class="tok-number">0</span>..file_name_u16.len], file_name_u16);</span>
 <span class="line" id="L1213">                    <span class="tok-kw">const</span> total_len = drive_letter.len + file_name_u16.len;</span>
 <span class="line" id="L1214"></span>
 <span class="line" id="L1215">                    <span class="tok-comment">// Validate that DOS does not contain any spurious nul bytes.</span>
@@ -2216,7 +2216,7 @@
 <span class="line" id="L2012">    }</span>
 <span class="line" id="L2013">    <span class="tok-kw">const</span> prefix_u16 = [_]<span class="tok-type">u16</span>{ <span class="tok-str">'\\'</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'\\'</span> };</span>
 <span class="line" id="L2014">    <span class="tok-kw">const</span> start_index = <span class="tok-kw">if</span> (prefix_index &gt; <span class="tok-number">0</span> <span class="tok-kw">or</span> !std.fs.path.isAbsolute(s)) <span class="tok-number">0</span> <span class="tok-kw">else</span> blk: {</span>
-<span class="line" id="L2015">        mem.copy(<span class="tok-type">u16</span>, path_space.data[<span class="tok-number">0</span>..], prefix_u16[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L2015">        path_space.data[<span class="tok-number">0</span>..prefix_u16.len].* = prefix_u16;</span>
 <span class="line" id="L2016">        <span class="tok-kw">break</span> :blk prefix_u16.len;</span>
 <span class="line" id="L2017">    };</span>
 <span class="line" id="L2018">    path_space.len = start_index + <span class="tok-kw">try</span> std.unicode.utf8ToUtf16Le(path_space.data[start_index..], s);</span>
@@ -2229,7 +2229,7 @@
 <span class="line" id="L2025">                std.debug.assert(temp_path.len == path_space.len);</span>
 <span class="line" id="L2026">                temp_path.data[path_space.len] = <span class="tok-number">0</span>;</span>
 <span class="line" id="L2027">                path_space.len = prefix_u16.len + <span class="tok-kw">try</span> getFullPathNameW(&amp;temp_path.data, path_space.data[prefix_u16.len..]);</span>
-<span class="line" id="L2028">                mem.copy(<span class="tok-type">u16</span>, &amp;path_space.data, &amp;prefix_u16);</span>
+<span class="line" id="L2028">                path_space.data[<span class="tok-number">0</span>..prefix_u16.len].* = prefix_u16;</span>
 <span class="line" id="L2029">                std.debug.assert(path_space.data[path_space.len] == <span class="tok-number">0</span>);</span>
 <span class="line" id="L2030">                <span class="tok-kw">return</span> path_space;</span>
 <span class="line" id="L2031">            }</span>
@@ -2258,12 +2258,12 @@
 <span class="line" id="L2053"></span>
 <span class="line" id="L2054">    <span class="tok-kw">const</span> start_index = <span class="tok-kw">if</span> (mem.startsWith(<span class="tok-type">u16</span>, s, &amp;[_]<span class="tok-type">u16</span>{ <span class="tok-str">'\\'</span>, <span class="tok-str">'?'</span> })) <span class="tok-number">0</span> <span class="tok-kw">else</span> blk: {</span>
 <span class="line" id="L2055">        <span class="tok-kw">const</span> prefix = [_]<span class="tok-type">u16</span>{ <span class="tok-str">'\\'</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'\\'</span> };</span>
-<span class="line" id="L2056">        mem.copy(<span class="tok-type">u16</span>, path_space.data[<span class="tok-number">0</span>..], &amp;prefix);</span>
+<span class="line" id="L2056">        path_space.data[<span class="tok-number">0</span>..prefix.len].* = prefix;</span>
 <span class="line" id="L2057">        <span class="tok-kw">break</span> :blk prefix.len;</span>
 <span class="line" id="L2058">    };</span>
 <span class="line" id="L2059">    path_space.len = start_index + s.len;</span>
 <span class="line" id="L2060">    <span class="tok-kw">if</span> (path_space.len &gt; path_space.data.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L2061">    mem.copy(<span class="tok-type">u16</span>, path_space.data[start_index..], s);</span>
+<span class="line" id="L2061">    <span class="tok-builtin">@memcpy</span>(path_space.data[start_index..][<span class="tok-number">0</span>..s.len], s);</span>
 <span class="line" id="L2062">    <span class="tok-comment">// &gt; File I/O functions in the Windows API convert &quot;/&quot; to &quot;\&quot; as part of</span>
 </span>
 <span class="line" id="L2063">    <span class="tok-comment">// &gt; converting the name to an NT-style name, except when using the &quot;\\?\&quot;</span>
@@ -2325,7 +2325,7 @@
 <span class="line" id="L2114"><span class="tok-comment">/// and you get an unexpected error.</span></span>
 <span class="line" id="L2115"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">unexpectedError</span>(err: Win32Error) std.os.UnexpectedError {</span>
 <span class="line" id="L2116">    <span class="tok-kw">if</span> (std.os.unexpected_error_tracing) {</span>
-<span class="line" id="L2117">        <span class="tok-comment">// 614 is the length of the longest windows error desciption</span>
+<span class="line" id="L2117">        <span class="tok-comment">// 614 is the length of the longest windows error description</span>
 </span>
 <span class="line" id="L2118">        <span class="tok-kw">var</span> buf_wstr: [<span class="tok-number">614</span>]WCHAR = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L2119">        <span class="tok-kw">var</span> buf_utf8: [<span class="tok-number">614</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>

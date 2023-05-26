@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>event/loop.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -1045,7 +1045,7 @@
 <span class="line" id="L903">            }</span>
 <span class="line" id="L904">        }</span>
 <span class="line" id="L905"></span>
-<span class="line" id="L906">        <span class="tok-comment">// TODO: use a tickless heirarchical timer wheel:</span>
+<span class="line" id="L906">        <span class="tok-comment">// TODO: use a tickless hierarchical timer wheel:</span>
 </span>
 <span class="line" id="L907">        <span class="tok-comment">// https://github.com/wahern/timeout/</span>
 </span>
@@ -1092,7 +1092,7 @@
 </span>
 <span class="line" id="L948">                <span class="tok-kw">var</span> head = self.entries.head <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L949"></span>
-<span class="line" id="L950">                <span class="tok-comment">// traverse the list of waiting entires to</span>
+<span class="line" id="L950">                <span class="tok-comment">// traverse the list of waiting entries to</span>
 </span>
 <span class="line" id="L951">                <span class="tok-comment">// find the Node with the smallest `expires` field</span>
 </span>
@@ -1914,7 +1914,7 @@
 <span class="line" id="L1757"></span>
 <span class="line" id="L1758">    <span class="tok-comment">// Now we can start the event loop. The function will return only</span>
 </span>
-<span class="line" id="L1759">    <span class="tok-comment">// after all tasks have been completed, allowing us to synchonize</span>
+<span class="line" id="L1759">    <span class="tok-comment">// after all tasks have been completed, allowing us to synchronize</span>
 </span>
 <span class="line" id="L1760">    <span class="tok-comment">// with the previous runDetached.</span>
 </span>

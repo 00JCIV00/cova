@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>math/big/int.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -301,7 +301,7 @@
 <span class="line" id="L176">    <span class="tok-comment">/// Asserts the value fits in the limbs buffer.</span></span>
 <span class="line" id="L177">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">copy</span>(self: *Mutable, other: Const) <span class="tok-type">void</span> {</span>
 <span class="line" id="L178">        <span class="tok-kw">if</span> (self.limbs.ptr != other.limbs.ptr) {</span>
-<span class="line" id="L179">            mem.copy(Limb, self.limbs[<span class="tok-number">0</span>..], other.limbs[<span class="tok-number">0</span>..other.limbs.len]);</span>
+<span class="line" id="L179">            <span class="tok-builtin">@memcpy</span>(self.limbs[<span class="tok-number">0</span>..other.limbs.len], other.limbs[<span class="tok-number">0</span>..other.limbs.len]);</span>
 <span class="line" id="L180">        }</span>
 <span class="line" id="L181">        self.positive = other.positive;</span>
 <span class="line" id="L182">        self.len = other.limbs.len;</span>
@@ -324,7 +324,7 @@
 <span class="line" id="L199">    <span class="tok-comment">/// can be modified separately from the original.</span></span>
 <span class="line" id="L200">    <span class="tok-comment">/// Asserts that limbs is big enough to store the value.</span></span>
 <span class="line" id="L201">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">clone</span>(other: Mutable, limbs: []Limb) Mutable {</span>
-<span class="line" id="L202">        mem.copy(Limb, limbs, other.limbs[<span class="tok-number">0</span>..other.len]);</span>
+<span class="line" id="L202">        <span class="tok-builtin">@memcpy</span>(limbs[<span class="tok-number">0</span>..other.len], other.limbs[<span class="tok-number">0</span>..other.len]);</span>
 <span class="line" id="L203">        <span class="tok-kw">return</span> .{</span>
 <span class="line" id="L204">            .limbs = limbs,</span>
 <span class="line" id="L205">            .len = other.len,</span>
@@ -474,7 +474,7 @@
 <span class="line" id="L345">                    <span class="tok-comment">// Negative bound, signed = -0x80.</span>
 </span>
 <span class="line" id="L346">                    r.len = req_limbs;</span>
-<span class="line" id="L347">                    mem.set(Limb, r.limbs[<span class="tok-number">0</span> .. r.len - <span class="tok-number">1</span>], <span class="tok-number">0</span>);</span>
+<span class="line" id="L347">                    <span class="tok-builtin">@memset</span>(r.limbs[<span class="tok-number">0</span> .. r.len - <span class="tok-number">1</span>], <span class="tok-number">0</span>);</span>
 <span class="line" id="L348">                    r.limbs[r.len - <span class="tok-number">1</span>] = signmask;</span>
 <span class="line" id="L349">                    r.positive = <span class="tok-null">false</span>;</span>
 <span class="line" id="L350">                },</span>
@@ -499,7 +499,7 @@
 </span>
 <span class="line" id="L364"></span>
 <span class="line" id="L365">                        r.len = new_req_limbs;</span>
-<span class="line" id="L366">                        std.mem.set(Limb, r.limbs[<span class="tok-number">0</span> .. r.len - <span class="tok-number">1</span>], maxInt(Limb));</span>
+<span class="line" id="L366">                        <span class="tok-builtin">@memset</span>(r.limbs[<span class="tok-number">0</span> .. r.len - <span class="tok-number">1</span>], maxInt(Limb));</span>
 <span class="line" id="L367">                        r.limbs[r.len - <span class="tok-number">1</span>] = new_mask;</span>
 <span class="line" id="L368">                    }</span>
 <span class="line" id="L369">                },</span>
@@ -514,7 +514,7 @@
 <span class="line" id="L377">                    <span class="tok-comment">// Max bound, unsigned = 0xFF</span>
 </span>
 <span class="line" id="L378">                    r.len = req_limbs;</span>
-<span class="line" id="L379">                    std.mem.set(Limb, r.limbs[<span class="tok-number">0</span> .. r.len - <span class="tok-number">1</span>], maxInt(Limb));</span>
+<span class="line" id="L379">                    <span class="tok-builtin">@memset</span>(r.limbs[<span class="tok-number">0</span> .. r.len - <span class="tok-number">1</span>], maxInt(Limb));</span>
 <span class="line" id="L380">                    r.limbs[r.len - <span class="tok-number">1</span>] = mask;</span>
 <span class="line" id="L381">                },</span>
 <span class="line" id="L382">            },</span>
@@ -552,7 +552,7 @@
 <span class="line" id="L408">    }</span>
 <span class="line" id="L409"></span>
 <span class="line" id="L410">    <span class="tok-comment">/// Base implementation for addition. Adds `max(a.limbs.len, b.limbs.len)` elements from a and b,</span></span>
-<span class="line" id="L411">    <span class="tok-comment">/// and returns whether any overflow occured.</span></span>
+<span class="line" id="L411">    <span class="tok-comment">/// and returns whether any overflow occurred.</span></span>
 <span class="line" id="L412">    <span class="tok-comment">/// r, a and b may be aliases.</span></span>
 <span class="line" id="L413">    <span class="tok-comment">///</span></span>
 <span class="line" id="L414">    <span class="tok-comment">/// Asserts r has enough elements to hold the result. The upper bound is `max(a.limbs.len, b.limbs.len)`.</span></span>
@@ -619,7 +619,7 @@
 <span class="line" id="L468"></span>
 <span class="line" id="L469">        <span class="tok-comment">// Slice of the upper bits if they exist, these will be ignored and allows us to use addCarry to determine</span>
 </span>
-<span class="line" id="L470">        <span class="tok-comment">// if an overflow occured.</span>
+<span class="line" id="L470">        <span class="tok-comment">// if an overflow occurred.</span>
 </span>
 <span class="line" id="L471">        <span class="tok-kw">const</span> x = Const{</span>
 <span class="line" id="L472">            .positive = a.positive,</span>
@@ -647,7 +647,7 @@
 <span class="line" id="L489">            <span class="tok-kw">if</span> (msl &lt; req_limbs) {</span>
 <span class="line" id="L490">                r.limbs[msl] = <span class="tok-number">1</span>;</span>
 <span class="line" id="L491">                r.len = req_limbs;</span>
-<span class="line" id="L492">                mem.set(Limb, r.limbs[msl + <span class="tok-number">1</span> .. req_limbs], <span class="tok-number">0</span>);</span>
+<span class="line" id="L492">                <span class="tok-builtin">@memset</span>(r.limbs[msl + <span class="tok-number">1</span> .. req_limbs], <span class="tok-number">0</span>);</span>
 <span class="line" id="L493">            } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L494">                carry_truncated = <span class="tok-null">true</span>;</span>
 <span class="line" id="L495">            }</span>
@@ -671,7 +671,7 @@
 <span class="line" id="L513"></span>
 <span class="line" id="L514">        <span class="tok-comment">// Slice of the upper bits if they exist, these will be ignored and allows us to use addCarry to determine</span>
 </span>
-<span class="line" id="L515">        <span class="tok-comment">// if an overflow occured.</span>
+<span class="line" id="L515">        <span class="tok-comment">// if an overflow occurred.</span>
 </span>
 <span class="line" id="L516">        <span class="tok-kw">const</span> x = Const{</span>
 <span class="line" id="L517">            .positive = a.positive,</span>
@@ -711,7 +711,7 @@
 <span class="line" id="L544">    }</span>
 <span class="line" id="L545"></span>
 <span class="line" id="L546">    <span class="tok-comment">/// Base implementation for subtraction. Subtracts `max(a.limbs.len, b.limbs.len)` elements from a and b,</span></span>
-<span class="line" id="L547">    <span class="tok-comment">/// and returns whether any overflow occured.</span></span>
+<span class="line" id="L547">    <span class="tok-comment">/// and returns whether any overflow occurred.</span></span>
 <span class="line" id="L548">    <span class="tok-comment">/// r, a and b may be aliases.</span></span>
 <span class="line" id="L549">    <span class="tok-comment">///</span></span>
 <span class="line" id="L550">    <span class="tok-comment">/// Asserts r has enough elements to hold the result. The upper bound is `max(a.limbs.len, b.limbs.len)`.</span></span>
@@ -778,7 +778,7 @@
 <span class="line" id="L605">        r.add(a, b.negate());</span>
 <span class="line" id="L606">    }</span>
 <span class="line" id="L607"></span>
-<span class="line" id="L608">    <span class="tok-comment">/// r = a - b with 2s-complement wrapping semantics. Returns whether any overflow occured.</span></span>
+<span class="line" id="L608">    <span class="tok-comment">/// r = a - b with 2s-complement wrapping semantics. Returns whether any overflow occurred.</span></span>
 <span class="line" id="L609">    <span class="tok-comment">///</span></span>
 <span class="line" id="L610">    <span class="tok-comment">/// r, a and b may be aliases</span></span>
 <span class="line" id="L611">    <span class="tok-comment">/// Asserts the result fits in `r`. An upper bound on the number of limbs needed by</span></span>
@@ -810,14 +810,14 @@
 <span class="line" id="L637"></span>
 <span class="line" id="L638">        <span class="tok-kw">const</span> a_copy = <span class="tok-kw">if</span> (rma.limbs.ptr == a.limbs.ptr) blk: {</span>
 <span class="line" id="L639">            <span class="tok-kw">const</span> start = buf_index;</span>
-<span class="line" id="L640">            mem.copy(Limb, limbs_buffer[buf_index..], a.limbs);</span>
+<span class="line" id="L640">            <span class="tok-builtin">@memcpy</span>(limbs_buffer[buf_index..][<span class="tok-number">0</span>..a.limbs.len], a.limbs);</span>
 <span class="line" id="L641">            buf_index += a.limbs.len;</span>
 <span class="line" id="L642">            <span class="tok-kw">break</span> :blk a.toMutable(limbs_buffer[start..buf_index]).toConst();</span>
 <span class="line" id="L643">        } <span class="tok-kw">else</span> a;</span>
 <span class="line" id="L644"></span>
 <span class="line" id="L645">        <span class="tok-kw">const</span> b_copy = <span class="tok-kw">if</span> (rma.limbs.ptr == b.limbs.ptr) blk: {</span>
 <span class="line" id="L646">            <span class="tok-kw">const</span> start = buf_index;</span>
-<span class="line" id="L647">            mem.copy(Limb, limbs_buffer[buf_index..], b.limbs);</span>
+<span class="line" id="L647">            <span class="tok-builtin">@memcpy</span>(limbs_buffer[buf_index..][<span class="tok-number">0</span>..b.limbs.len], b.limbs);</span>
 <span class="line" id="L648">            buf_index += b.limbs.len;</span>
 <span class="line" id="L649">            <span class="tok-kw">break</span> :blk b.toMutable(limbs_buffer[start..buf_index]).toConst();</span>
 <span class="line" id="L650">        } <span class="tok-kw">else</span> b;</span>
@@ -851,7 +851,7 @@
 <span class="line" id="L676">            }</span>
 <span class="line" id="L677">        }</span>
 <span class="line" id="L678"></span>
-<span class="line" id="L679">        mem.set(Limb, rma.limbs[<span class="tok-number">0</span> .. a.limbs.len + b.limbs.len], <span class="tok-number">0</span>);</span>
+<span class="line" id="L679">        <span class="tok-builtin">@memset</span>(rma.limbs[<span class="tok-number">0</span> .. a.limbs.len + b.limbs.len], <span class="tok-number">0</span>);</span>
 <span class="line" id="L680"></span>
 <span class="line" id="L681">        llmulacc(.add, allocator, rma.limbs, a.limbs, b.limbs);</span>
 <span class="line" id="L682"></span>
@@ -883,7 +883,7 @@
 <span class="line" id="L708">        <span class="tok-kw">const</span> a_copy = <span class="tok-kw">if</span> (rma.limbs.ptr == a.limbs.ptr) blk: {</span>
 <span class="line" id="L709">            <span class="tok-kw">const</span> start = buf_index;</span>
 <span class="line" id="L710">            <span class="tok-kw">const</span> a_len = math.min(req_limbs, a.limbs.len);</span>
-<span class="line" id="L711">            mem.copy(Limb, limbs_buffer[buf_index..], a.limbs[<span class="tok-number">0</span>..a_len]);</span>
+<span class="line" id="L711">            <span class="tok-builtin">@memcpy</span>(limbs_buffer[buf_index..][<span class="tok-number">0</span>..a_len], a.limbs[<span class="tok-number">0</span>..a_len]);</span>
 <span class="line" id="L712">            buf_index += a_len;</span>
 <span class="line" id="L713">            <span class="tok-kw">break</span> :blk a.toMutable(limbs_buffer[start..buf_index]).toConst();</span>
 <span class="line" id="L714">        } <span class="tok-kw">else</span> a;</span>
@@ -891,7 +891,7 @@
 <span class="line" id="L716">        <span class="tok-kw">const</span> b_copy = <span class="tok-kw">if</span> (rma.limbs.ptr == b.limbs.ptr) blk: {</span>
 <span class="line" id="L717">            <span class="tok-kw">const</span> start = buf_index;</span>
 <span class="line" id="L718">            <span class="tok-kw">const</span> b_len = math.min(req_limbs, b.limbs.len);</span>
-<span class="line" id="L719">            mem.copy(Limb, limbs_buffer[buf_index..], b.limbs[<span class="tok-number">0</span>..b_len]);</span>
+<span class="line" id="L719">            <span class="tok-builtin">@memcpy</span>(limbs_buffer[buf_index..][<span class="tok-number">0</span>..b_len], b.limbs[<span class="tok-number">0</span>..b_len]);</span>
 <span class="line" id="L720">            buf_index += b_len;</span>
 <span class="line" id="L721">            <span class="tok-kw">break</span> :blk a.toMutable(limbs_buffer[start..buf_index]).toConst();</span>
 <span class="line" id="L722">        } <span class="tok-kw">else</span> b;</span>
@@ -929,7 +929,7 @@
 <span class="line" id="L751">        <span class="tok-kw">const</span> a_limbs = a.limbs[<span class="tok-number">0</span>..math.min(req_limbs, a.limbs.len)];</span>
 <span class="line" id="L752">        <span class="tok-kw">const</span> b_limbs = b.limbs[<span class="tok-number">0</span>..math.min(req_limbs, b.limbs.len)];</span>
 <span class="line" id="L753"></span>
-<span class="line" id="L754">        mem.set(Limb, rma.limbs[<span class="tok-number">0</span>..req_limbs], <span class="tok-number">0</span>);</span>
+<span class="line" id="L754">        <span class="tok-builtin">@memset</span>(rma.limbs[<span class="tok-number">0</span>..req_limbs], <span class="tok-number">0</span>);</span>
 <span class="line" id="L755"></span>
 <span class="line" id="L756">        llmulacc(.add, allocator, rma.limbs, a_limbs, b_limbs);</span>
 <span class="line" id="L757">        rma.normalize(math.min(req_limbs, a.limbs.len + b.limbs.len));</span>
@@ -1124,7 +1124,7 @@
 <span class="line" id="L920">        assert(rma.limbs.ptr != a.limbs.ptr); <span class="tok-comment">// illegal aliasing</span>
 </span>
 <span class="line" id="L921"></span>
-<span class="line" id="L922">        mem.set(Limb, rma.limbs, <span class="tok-number">0</span>);</span>
+<span class="line" id="L922">        <span class="tok-builtin">@memset</span>(rma.limbs, <span class="tok-number">0</span>);</span>
 <span class="line" id="L923"></span>
 <span class="line" id="L924">        llsquareBasecase(rma.limbs, a.limbs);</span>
 <span class="line" id="L925"></span>
@@ -1437,7 +1437,7 @@
 <span class="line" id="L1141">            <span class="tok-kw">return</span>;</span>
 <span class="line" id="L1142">        }</span>
 <span class="line" id="L1143"></span>
-<span class="line" id="L1144">        <span class="tok-comment">// Generate a mask with the bits to check in the most signficant limb. We'll need to check</span>
+<span class="line" id="L1144">        <span class="tok-comment">// Generate a mask with the bits to check in the most significant limb. We'll need to check</span>
 </span>
 <span class="line" id="L1145">        <span class="tok-comment">// all bits with equal or more significance than checkbit.</span>
 </span>
@@ -1852,11 +1852,11 @@
 <span class="line" id="L1519">            r.positive = r_positive;</span>
 <span class="line" id="L1520">        }</span>
 <span class="line" id="L1521"></span>
-<span class="line" id="L1522">        <span class="tok-kw">if</span> (xy_trailing != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1522">        <span class="tok-kw">if</span> (xy_trailing != <span class="tok-number">0</span> <span class="tok-kw">and</span> r.limbs[r.len - <span class="tok-number">1</span>] != <span class="tok-number">0</span>) {</span>
 <span class="line" id="L1523">            <span class="tok-comment">// Manually shift here since we know its limb aligned.</span>
 </span>
 <span class="line" id="L1524">            mem.copyBackwards(Limb, r.limbs[xy_trailing..], r.limbs[<span class="tok-number">0</span>..r.len]);</span>
-<span class="line" id="L1525">            mem.set(Limb, r.limbs[<span class="tok-number">0</span>..xy_trailing], <span class="tok-number">0</span>);</span>
+<span class="line" id="L1525">            <span class="tok-builtin">@memset</span>(r.limbs[<span class="tok-number">0</span>..xy_trailing], <span class="tok-number">0</span>);</span>
 <span class="line" id="L1526">            r.len += xy_trailing;</span>
 <span class="line" id="L1527">        }</span>
 <span class="line" id="L1528">    }</span>
@@ -1895,7 +1895,7 @@
 </span>
 <span class="line" id="L1557">        q.len = shift + <span class="tok-number">1</span>;</span>
 <span class="line" id="L1558">        q.positive = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1559">        mem.set(Limb, q.limbs[<span class="tok-number">0</span>..q.len], <span class="tok-number">0</span>);</span>
+<span class="line" id="L1559">        <span class="tok-builtin">@memset</span>(q.limbs[<span class="tok-number">0</span>..q.len], <span class="tok-number">0</span>);</span>
 <span class="line" id="L1560"></span>
 <span class="line" id="L1561">        <span class="tok-comment">// 2.</span>
 </span>
@@ -2075,7 +2075,7 @@
 <span class="line" id="L1691"></span>
 <span class="line" id="L1692">        r.addScalar(a.abs(), -<span class="tok-number">1</span>);</span>
 <span class="line" id="L1693">        <span class="tok-kw">if</span> (req_limbs &gt; r.len) {</span>
-<span class="line" id="L1694">            mem.set(Limb, r.limbs[r.len..req_limbs], <span class="tok-number">0</span>);</span>
+<span class="line" id="L1694">            <span class="tok-builtin">@memset</span>(r.limbs[r.len..req_limbs], <span class="tok-number">0</span>);</span>
 <span class="line" id="L1695">        }</span>
 <span class="line" id="L1696"></span>
 <span class="line" id="L1697">        assert(r.limbs.len &gt;= req_limbs);</span>
@@ -2122,7 +2122,7 @@
 <span class="line" id="L1731">            <span class="tok-comment">// Zero-extend the result</span>
 </span>
 <span class="line" id="L1732">            <span class="tok-kw">if</span> (req_limbs &gt; r.len) {</span>
-<span class="line" id="L1733">                mem.set(Limb, r.limbs[r.len..req_limbs], <span class="tok-number">0</span>);</span>
+<span class="line" id="L1733">                <span class="tok-builtin">@memset</span>(r.limbs[r.len..req_limbs], <span class="tok-number">0</span>);</span>
 <span class="line" id="L1734">            }</span>
 <span class="line" id="L1735"></span>
 <span class="line" id="L1736">            <span class="tok-comment">// Truncate to required number of limbs.</span>
@@ -2339,8 +2339,8 @@
 <span class="line" id="L1921"></span>
 <span class="line" id="L1922">    <span class="tok-comment">/// The result is an independent resource which is managed by the caller.</span></span>
 <span class="line" id="L1923">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">toManaged</span>(self: Const, allocator: Allocator) Allocator.Error!Managed {</span>
-<span class="line" id="L1924">        <span class="tok-kw">const</span> limbs = <span class="tok-kw">try</span> allocator.alloc(Limb, math.max(Managed.default_capacity, self.limbs.len));</span>
-<span class="line" id="L1925">        mem.copy(Limb, limbs, self.limbs);</span>
+<span class="line" id="L1924">        <span class="tok-kw">const</span> limbs = <span class="tok-kw">try</span> allocator.alloc(Limb, <span class="tok-builtin">@max</span>(Managed.default_capacity, self.limbs.len));</span>
+<span class="line" id="L1925">        <span class="tok-builtin">@memcpy</span>(limbs[<span class="tok-number">0</span>..self.limbs.len], self.limbs);</span>
 <span class="line" id="L1926">        <span class="tok-kw">return</span> Managed{</span>
 <span class="line" id="L1927">            .allocator = allocator,</span>
 <span class="line" id="L1928">            .limbs = limbs,</span>
@@ -2353,7 +2353,7 @@
 <span class="line" id="L1935"></span>
 <span class="line" id="L1936">    <span class="tok-comment">/// Asserts `limbs` is big enough to store the value.</span></span>
 <span class="line" id="L1937">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">toMutable</span>(self: Const, limbs: []Limb) Mutable {</span>
-<span class="line" id="L1938">        mem.copy(Limb, limbs, self.limbs[<span class="tok-number">0</span>..self.limbs.len]);</span>
+<span class="line" id="L1938">        <span class="tok-builtin">@memcpy</span>(limbs[<span class="tok-number">0</span>..self.limbs.len], self.limbs[<span class="tok-number">0</span>..self.limbs.len]);</span>
 <span class="line" id="L1939">        <span class="tok-kw">return</span> .{</span>
 <span class="line" id="L1940">            .limbs = limbs,</span>
 <span class="line" id="L1941">            .positive = self.positive,</span>
@@ -2458,7 +2458,7 @@
 <span class="line" id="L2037">                add_res = ov[<span class="tok-number">0</span>];</span>
 <span class="line" id="L2038">                carry = ov[<span class="tok-number">1</span>];</span>
 <span class="line" id="L2039">                sum += <span class="tok-builtin">@popCount</span>(add_res);</span>
-<span class="line" id="L2040">                remaining_bits -= limb_bits; <span class="tok-comment">// Asserted not to undeflow by fitsInTwosComp</span>
+<span class="line" id="L2040">                remaining_bits -= limb_bits; <span class="tok-comment">// Asserted not to underflow by fitsInTwosComp</span>
 </span>
 <span class="line" id="L2041">            }</span>
 <span class="line" id="L2042"></span>
@@ -2689,7 +2689,7 @@
 </span>
 <span class="line" id="L2254">                .len = self.limbs.len,</span>
 <span class="line" id="L2255">            };</span>
-<span class="line" id="L2256">            mem.copy(Limb, q.limbs, self.limbs);</span>
+<span class="line" id="L2256">            <span class="tok-builtin">@memcpy</span>(q.limbs[<span class="tok-number">0</span>..self.limbs.len], self.limbs);</span>
 <span class="line" id="L2257"></span>
 <span class="line" id="L2258">            <span class="tok-kw">var</span> r: Mutable = .{</span>
 <span class="line" id="L2259">                .limbs = limbs_buffer[q.limbs.len..][<span class="tok-number">0</span>..self.limbs.len],</span>
@@ -3040,8 +3040,8 @@
 <span class="line" id="L2587">            .allocator = allocator,</span>
 <span class="line" id="L2588">            .metadata = other.metadata,</span>
 <span class="line" id="L2589">            .limbs = block: {</span>
-<span class="line" id="L2590">                <span class="tok-kw">var</span> limbs = <span class="tok-kw">try</span> allocator.alloc(Limb, other.len());</span>
-<span class="line" id="L2591">                mem.copy(Limb, limbs[<span class="tok-number">0</span>..], other.limbs[<span class="tok-number">0</span>..other.len()]);</span>
+<span class="line" id="L2590">                <span class="tok-kw">const</span> limbs = <span class="tok-kw">try</span> allocator.alloc(Limb, other.len());</span>
+<span class="line" id="L2591">                <span class="tok-builtin">@memcpy</span>(limbs, other.limbs[<span class="tok-number">0</span>..other.len()]);</span>
 <span class="line" id="L2592">                <span class="tok-kw">break</span> :block limbs;</span>
 <span class="line" id="L2593">            },</span>
 <span class="line" id="L2594">        };</span>
@@ -3053,7 +3053,7 @@
 <span class="line" id="L2600">        <span class="tok-kw">if</span> (self.limbs.ptr == other.limbs.ptr) <span class="tok-kw">return</span>;</span>
 <span class="line" id="L2601"></span>
 <span class="line" id="L2602">        <span class="tok-kw">try</span> self.ensureCapacity(other.limbs.len);</span>
-<span class="line" id="L2603">        mem.copy(Limb, self.limbs[<span class="tok-number">0</span>..], other.limbs[<span class="tok-number">0</span>..other.limbs.len]);</span>
+<span class="line" id="L2603">        <span class="tok-builtin">@memcpy</span>(self.limbs[<span class="tok-number">0</span>..other.limbs.len], other.limbs[<span class="tok-number">0</span>..other.limbs.len]);</span>
 <span class="line" id="L2604">        self.setMetadata(other.positive, other.limbs.len);</span>
 <span class="line" id="L2605">    }</span>
 <span class="line" id="L2606"></span>
@@ -3267,7 +3267,7 @@
 <span class="line" id="L2813">        r.setMetadata(m.positive, m.len);</span>
 <span class="line" id="L2814">    }</span>
 <span class="line" id="L2815"></span>
-<span class="line" id="L2816">    <span class="tok-comment">/// r = a + b with 2s-complement wrapping semantics. Returns whether any overflow occured.</span></span>
+<span class="line" id="L2816">    <span class="tok-comment">/// r = a + b with 2s-complement wrapping semantics. Returns whether any overflow occurred.</span></span>
 <span class="line" id="L2817">    <span class="tok-comment">///</span></span>
 <span class="line" id="L2818">    <span class="tok-comment">/// r, a and b may be aliases.</span></span>
 <span class="line" id="L2819">    <span class="tok-comment">///</span></span>
@@ -3310,7 +3310,7 @@
 <span class="line" id="L2856">        r.setMetadata(m.positive, m.len);</span>
 <span class="line" id="L2857">    }</span>
 <span class="line" id="L2858"></span>
-<span class="line" id="L2859">    <span class="tok-comment">/// r = a - b with 2s-complement wrapping semantics. Returns whether any overflow occured.</span></span>
+<span class="line" id="L2859">    <span class="tok-comment">/// r = a - b with 2s-complement wrapping semantics. Returns whether any overflow occurred.</span></span>
 <span class="line" id="L2860">    <span class="tok-comment">///</span></span>
 <span class="line" id="L2861">    <span class="tok-comment">/// r, a and b may be aliases.</span></span>
 <span class="line" id="L2862">    <span class="tok-comment">///</span></span>
@@ -3809,7 +3809,7 @@
 </span>
 <span class="line" id="L3303">    <span class="tok-kw">const</span> p2_limbs = math.min(limbs_after_split, a1.len + b1.len);</span>
 <span class="line" id="L3304"></span>
-<span class="line" id="L3305">    mem.set(Limb, tmp[<span class="tok-number">0</span>..p2_limbs], <span class="tok-number">0</span>);</span>
+<span class="line" id="L3305">    <span class="tok-builtin">@memset</span>(tmp[<span class="tok-number">0</span>..p2_limbs], <span class="tok-number">0</span>);</span>
 <span class="line" id="L3306">    llmulacc(.add, allocator, tmp[<span class="tok-number">0</span>..p2_limbs], a1[<span class="tok-number">0</span>..math.min(a1.len, p2_limbs)], b1[<span class="tok-number">0</span>..math.min(b1.len, p2_limbs)]);</span>
 <span class="line" id="L3307">    <span class="tok-kw">const</span> p2 = tmp[<span class="tok-number">0</span>..llnormalize(tmp[<span class="tok-number">0</span>..p2_limbs])];</span>
 <span class="line" id="L3308"></span>
@@ -3828,7 +3828,7 @@
 <span class="line" id="L3318">    <span class="tok-comment">// Since a0.len, b0.len &lt;= split and r.len &gt;= split * 2, the full width of p0 needs to be computed.</span>
 </span>
 <span class="line" id="L3319">    <span class="tok-kw">const</span> p0_limbs = a0.len + b0.len;</span>
-<span class="line" id="L3320">    mem.set(Limb, tmp[<span class="tok-number">0</span>..p0_limbs], <span class="tok-number">0</span>);</span>
+<span class="line" id="L3320">    <span class="tok-builtin">@memset</span>(tmp[<span class="tok-number">0</span>..p0_limbs], <span class="tok-number">0</span>);</span>
 <span class="line" id="L3321">    llmulacc(.add, allocator, tmp[<span class="tok-number">0</span>..p0_limbs], a0, b0);</span>
 <span class="line" id="L3322">    <span class="tok-kw">const</span> p0 = tmp[<span class="tok-number">0</span>..llnormalize(tmp[<span class="tok-number">0</span>..p0_limbs])];</span>
 <span class="line" id="L3323"></span>
@@ -3858,7 +3858,7 @@
 <span class="line" id="L3341">        <span class="tok-kw">return</span>;</span>
 <span class="line" id="L3342">    }</span>
 <span class="line" id="L3343"></span>
-<span class="line" id="L3344">    mem.set(Limb, tmp, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3344">    <span class="tok-builtin">@memset</span>(tmp, <span class="tok-number">0</span>);</span>
 <span class="line" id="L3345"></span>
 <span class="line" id="L3346">    <span class="tok-comment">// p1 is nonzero, so compute the intermediary terms j0 = a0 - a1 and j1 = b1 - b0.</span>
 </span>
@@ -4204,7 +4204,7 @@
 <span class="line" id="L3666">    }</span>
 <span class="line" id="L3667"></span>
 <span class="line" id="L3668">    r[limb_shift - <span class="tok-number">1</span>] = carry;</span>
-<span class="line" id="L3669">    mem.set(Limb, r[<span class="tok-number">0</span> .. limb_shift - <span class="tok-number">1</span>], <span class="tok-number">0</span>);</span>
+<span class="line" id="L3669">    <span class="tok-builtin">@memset</span>(r[<span class="tok-number">0</span> .. limb_shift - <span class="tok-number">1</span>], <span class="tok-number">0</span>);</span>
 <span class="line" id="L3670">}</span>
 <span class="line" id="L3671"></span>
 <span class="line" id="L3672"><span class="tok-kw">fn</span> <span class="tok-fn">llshr</span>(r: []Limb, a: []<span class="tok-kw">const</span> Limb, shift: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
@@ -4651,7 +4651,7 @@
 <span class="line" id="L4011"></span>
 <span class="line" id="L4012">    <span class="tok-comment">// Compute the square of a N-limb bigint with only (N^2 + N)/2</span>
 </span>
-<span class="line" id="L4013">    <span class="tok-comment">// multiplications by exploting the symmetry of the coefficients around the</span>
+<span class="line" id="L4013">    <span class="tok-comment">// multiplications by exploiting the symmetry of the coefficients around the</span>
 </span>
 <span class="line" id="L4014">    <span class="tok-comment">// diagonal:</span>
 </span>
@@ -4692,7 +4692,7 @@
 <span class="line" id="L4036">    <span class="tok-kw">for</span> (x_norm, <span class="tok-number">0</span>..) |v, i| {</span>
 <span class="line" id="L4037">        <span class="tok-comment">// Compute and add the squares</span>
 </span>
-<span class="line" id="L4038">        <span class="tok-kw">const</span> overflow = llmulLimb(.add, r[<span class="tok-number">2</span> * i ..], x[i .. i + <span class="tok-number">1</span>], v);</span>
+<span class="line" id="L4038">        <span class="tok-kw">const</span> overflow = llmulLimb(.add, r[<span class="tok-number">2</span> * i ..], x[i..][<span class="tok-number">0</span>..<span class="tok-number">1</span>], v);</span>
 <span class="line" id="L4039">        assert(!overflow);</span>
 <span class="line" id="L4040">    }</span>
 <span class="line" id="L4041">}</span>
@@ -4724,8 +4724,8 @@
 <span class="line" id="L4061">        tmp2 = tmp_limbs;</span>
 <span class="line" id="L4062">    }</span>
 <span class="line" id="L4063"></span>
-<span class="line" id="L4064">    mem.copy(Limb, tmp1, a);</span>
-<span class="line" id="L4065">    mem.set(Limb, tmp1[a.len..], <span class="tok-number">0</span>);</span>
+<span class="line" id="L4064">    <span class="tok-builtin">@memcpy</span>(tmp1[<span class="tok-number">0</span>..a.len], a);</span>
+<span class="line" id="L4065">    <span class="tok-builtin">@memset</span>(tmp1[a.len..], <span class="tok-number">0</span>);</span>
 <span class="line" id="L4066"></span>
 <span class="line" id="L4067">    <span class="tok-comment">// Scan the exponent as a binary number, from left to right, dropping the</span>
 </span>
@@ -4742,7 +4742,7 @@
 <span class="line" id="L4075">    <span class="tok-kw">while</span> (i &lt; exp_bits) : (i += <span class="tok-number">1</span>) {</span>
 <span class="line" id="L4076">        <span class="tok-comment">// Square</span>
 </span>
-<span class="line" id="L4077">        mem.set(Limb, tmp2, <span class="tok-number">0</span>);</span>
+<span class="line" id="L4077">        <span class="tok-builtin">@memset</span>(tmp2, <span class="tok-number">0</span>);</span>
 <span class="line" id="L4078">        llsquareBasecase(tmp2, tmp1[<span class="tok-number">0</span>..llnormalize(tmp1)]);</span>
 <span class="line" id="L4079">        mem.swap([]Limb, &amp;tmp1, &amp;tmp2);</span>
 <span class="line" id="L4080">        <span class="tok-comment">// Multiply by a</span>
@@ -4750,7 +4750,7 @@
 <span class="line" id="L4081">        <span class="tok-kw">const</span> ov = <span class="tok-builtin">@shlWithOverflow</span>(exp, <span class="tok-number">1</span>);</span>
 <span class="line" id="L4082">        exp = ov[<span class="tok-number">0</span>];</span>
 <span class="line" id="L4083">        <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L4084">            mem.set(Limb, tmp2, <span class="tok-number">0</span>);</span>
+<span class="line" id="L4084">            <span class="tok-builtin">@memset</span>(tmp2, <span class="tok-number">0</span>);</span>
 <span class="line" id="L4085">            llmulacc(.add, <span class="tok-null">null</span>, tmp2, tmp1[<span class="tok-number">0</span>..llnormalize(tmp1)], a);</span>
 <span class="line" id="L4086">            mem.swap([]Limb, &amp;tmp1, &amp;tmp2);</span>
 <span class="line" id="L4087">        }</span>

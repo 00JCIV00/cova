@@ -1,4 +1,13 @@
-//! Parseable Values for Commands and Options.
+//! Argument that is expected in a specific order and should be interpreted as a specific type.
+//!
+//! End User Example:
+//!
+//! ```
+//! # Values belonging to a Command.
+//! myapp "This string Value and the int Value after it both belong to the 'myapp' main Command."
+//! # Values belonging to an Option.
+//! myapp --string_opt "This Value belongs to the 'string_opt' Option."
+//! ```
 
 const std = @import("std");
 const builtin = std.builtin;

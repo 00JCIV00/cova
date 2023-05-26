@@ -3,7 +3,7 @@ Commands, Options, Values, Arguments. A simple command line argument parsing lib
 ___
 
 ## Overview
-Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These componenets are assembled into a single struct which is then used to parse argument tokens.
+Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These components are assembled into a single struct which is then used to parse argument tokens.
 
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
@@ -12,21 +12,24 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
 - [ ] Advanced Parsing:
   - [x] Handle '=' instead of ' ' between an Option and its Value.
-  - [ ] Handle the same Option given multiple times. 
+  - [x] Handle the same Option given multiple times. (Currently takes last value.)
+  - [ ] Handle no space ' ' between a Short Option and its Value.
   - [ ] Tab Completion (long-term goal).
 - [ ] Parsing Customization:
   - [ ] Mandate Values be filled.
-  - [ ] Custom prefixes for Options.
+  - [x] Custom prefixes for Options.
   - [ ] Custom separator between Options and Values. (Currently accepts ' ' or '=').
   - [ ] Choose behavior for having the same option given multiple times.
   - [ ] Choose whether or not to skip the first Argument (the executable's name).
 - [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
-  - [ ] Initialization methods for Commands and Options.
+    - [ ] Proper library tests. 
+  - [ ] Initialization `Custom()` methods for Commands and Options.
+    - [ ] Setup in Comptime. Use in Runtime.
     - [ ] Validate unique sub Commands, Options, and Values.
-    - [ ] Generate Usage/Help sub Commands.
-    - [ ] Generate Usage/Help Options.
-    - [ ] User formatting options for Usage/Help messages.
+    - [x] Generate Usage/Help sub Commands.
+    - [x] Generate Usage/Help Options.
+    - [x] User formatting options for Usage/Help messages.
   - [ ] Generate Commands from a struct and vice versa.
     - [ ] Compatible nullable fields become Options.
     - [ ] Compatible non-nullable fields become Values.
@@ -83,7 +86,7 @@ defer alloc.destroy(cmd);
 ```
 
 ### Option
-An Option is an Argument which wraps a Value and is ALWAYS optional. In the current implementation, an Option may have a Short Name (ex: `-h`), a Long Name (ex: `--name "Lilly"`), or both. If the wrapped Value has a Boolean type it will default to False and can be set to True using the Option without a following Argument (ex: `-t` or `--toggle`). They also provide `usage()` and `help()` methods similar to Commands.
+An Option is an Argument which wraps a Value and is ALWAYS optional. It may have a Short Name (ex: `-h`), a Long Name (ex: `--name "Lilly"`), or both. The prefixes for both Short and Long names can be set by the library user. If the wrapped Value has a Boolean type it will default to False and can be set to True using the Option without a following Argument (ex: `-t` or `--toggle`). They also provide `usage()` and `help()` methods similar to Commands.
 #### Example:
 ```zig
 .opts = optsSetup: {
@@ -125,7 +128,7 @@ An Option is an Argument which wraps a Value and is ALWAYS optional. In the curr
 ```
 
 ### Value
-A Value (also known as a Positional Argument) is an Argument that is expected in a specific order and should be interpreted as a specific type. The full list of available types can be seen in src/Value.zig/Generic, but the basics are Boolean, String ([]const u8), Integer (u/i##), or Float (f##). A Value will be parsed to its corresponding type and can be retrieved using `get()`. They can also be given a Default value using the `.default_val` field and a Validation Function using the `.val_fn` field.
+A Value (also known as a Positional Argument) is an Argument that is expected in a specific order and should be interpreted as a specific type. The full list of available types can be seen in `src/Value.zig/Generic`, but the basics are Boolean, String (`[]const u8`), Integer (`u/i##`), or Float (`f##`). A Value will be parsed to its corresponding type and can be retrieved using `get()`. They can also be given a Default value using the `.default_val` field and a Validation Function using the `.val_fn` field.
 #### Example:
 ```zig
 .vals = valsSetup: {

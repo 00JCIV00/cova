@@ -17,41 +17,43 @@ const Option = cova.Option;
 const Value = cova.Value;
 
 pub const log_level: log.Level = .err;
+    
+pub const CustomCommand = Command.Custom(.{}); 
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    const cmd = try alloc.create(Command);
+    const cmd = try alloc.create(CustomCommand);
     cmd.* = .{
         .name = "covademo",
         .help_prefix = "CovaDemo",
         .description = "A demo of the Cova command line argument parser.",
         .sub_cmds = subCmdsSetup: {
-            var setup_cmds = [_]*const Command{
-                &Command{
-                    .name = "help",
-                    .help_prefix = "CovaDemo",
-                    .description = "Show the CovaDemo help display.",
-                },
-                &Command{
-                    .name = "usage",
-                    .help_prefix = "CovaDemo",
-                    .description = "Show the CovaDemo usage display.",
-                },
-                &Command{
+            var setup_cmds = [_]*const CustomCommand{
+                //&CustomCommand{
+                //    .name = "help",
+                //    .help_prefix = "CovaDemo",
+                //    .description = "Show the CovaDemo help display.",
+                //},
+                //&CustomCommand{
+                //    .name = "usage",
+                //    .help_prefix = "CovaDemo",
+                //    .description = "Show the CovaDemo usage display.",
+                //},
+                &CustomCommand{
                     .name = "demo_cmd",
                     .help_prefix = "CovaDemo",
                     .description = "A demo sub command.",
                     .sub_cmds = nestedSubCmdsSetup: {
-                        var nested_setup_cmds = [_]*const Command{
-                            &Command{
+                        var nested_setup_cmds = [_]*const CustomCommand{
+                            &CustomCommand{
                                 .name = "help",
                                 .help_prefix = "CovaDemo -> DemoCommand",
                                 .description = "Show the DemoCommand help display.",
                             },
-                            &Command{
+                            &CustomCommand{
                                 .name = "usage",
                                 .help_prefix = "CovaDemo -> DemoCommand",
                                 .description = "Show the DemoCommand usage display.",
@@ -60,8 +62,8 @@ pub fn main() !void {
                         break :nestedSubCmdsSetup nested_setup_cmds[0..];
                     },
                     .opts = optsSetup: {
-                        var setup_opts = [_]*const Option{
-                            &Option{
+                        var setup_opts = [_]*const CustomCommand.CustomOption{
+                            &CustomCommand.CustomOption{
                                 .name = "nestedIntOpt",
                                 .short_name = 'n',
                                 .long_name = "nestedIntOpt",
@@ -72,7 +74,7 @@ pub fn main() !void {
                                 }),
                                 .description = "A nested integer option.",
                             },
-                            &Option{
+                            &CustomCommand.CustomOption{
                                 .name = "help",
                                 .short_name = 'h',
                                 .long_name = "help",
@@ -82,6 +84,16 @@ pub fn main() !void {
                                 }),
                                 .description = "Show the DemoCommand help display.",
                             },
+                            &CustomCommand.CustomOption{
+                                .name = "usage",
+                                .short_name = 'u',
+                                .long_name = "usage",
+                                .val = &Value.init(bool, .{
+                                    .name = "usageFlag",
+                                    .description = "Flag for usage!",
+                                }),
+                                .description = "Show the DemoCommand usage display.",
+                            },
                         };
                         break :optsSetup setup_opts[0..];
                     },
@@ -90,8 +102,8 @@ pub fn main() !void {
             break :subCmdsSetup setup_cmds[0..];
         },
         .opts = optsSetup: {
-            var setup_opts = [_]*const Option{
-                &Option{ 
+            var setup_opts = [_]*const CustomCommand.CustomOption{
+                &CustomCommand.CustomOption{ 
                     .name = "stringOpt",
                     .short_name = 's',
                     .long_name = "stringOpt",
@@ -100,9 +112,8 @@ pub fn main() !void {
                         .description = "A string value.",
                     }),
                     .description = "A string option.",
-                    //.usage_fmt = "-{?c} or --{?s}: ({s} {s})",
                 },
-                &Option{
+                &CustomCommand.CustomOption{
                     .name = "intOpt",
                     .short_name = 'i',
                     .long_name = "intOpt",
@@ -113,7 +124,7 @@ pub fn main() !void {
                     }),
                     .description = "An integer option.",
                 },
-                &Option{
+                &CustomCommand.CustomOption{
                     .name = "toggle",
                     .short_name = 't',
                     .long_name = "toggle",
@@ -123,17 +134,17 @@ pub fn main() !void {
                     }),
                     .description = "A toggle/boolean option.",
                 },
-                &Option{
-                    .name = "help",
-                    .short_name = 'h',
-                    .long_name = "help",
-                    .val = &Value.init(bool, .{
-                        .name = "helpFlag",
-                        .description = "Flag for help!",
-                    }),
-                    .description = "Show the CovaDemo help display.",
-                },
-                &Option{
+                //&CustomCommand.CustomOption{
+                //    .name = "help",
+                //    .short_name = 'h',
+                //    .long_name = "help",
+                //    .val = &Value.init(bool, .{
+                //        .name = "helpFlag",
+                //        .description = "Flag for help!",
+                //    }),
+                //    .description = "Show the CovaDemo help display.",
+                //},
+                &CustomCommand.CustomOption{
                     .name = "verbosity",
                     .short_name = 'v',
                     .long_name = "verbosity",
@@ -143,7 +154,7 @@ pub fn main() !void {
                         .default_val = 3,
                         .val_fn = struct{ fn valFn(val: u4) bool { return val >= 0 and val <= 3; } }.valFn,
                     }),
-                    .description = "Set the CovaDemo verbosity level.",
+                    .description = "Set the CovaDemo verbosity level. (WIP)",
                 },
             };
             break :optsSetup setup_opts[0..];
@@ -165,9 +176,10 @@ pub fn main() !void {
         }
     };
     defer alloc.destroy(cmd);
+    try cmd.setup(alloc, .{});
 
     const args = try proc.argsWithAllocator(alloc);
-    try cova.parseArgs(&args, cmd, stdout);
+    try cova.parseArgs(&args, CustomCommand, cmd, stdout);
     try stdout.print("\n", .{});
     try displayCmdInfo(cmd, alloc);
 
@@ -185,8 +197,8 @@ pub fn main() !void {
     //log.debug("Debug", .{});
 }
 
-fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
-    var cur_cmd: ?*const Command = display_cmd;
+fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void {
+    var cur_cmd: ?*const CustomCommand = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
 
@@ -195,13 +207,14 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
 
         try stdout.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            var opt_map: StringHashMap(*const Option) = try cmd.getOpts(alloc);
+            var opt_map: StringHashMap(*const @TypeOf(cmd.*).CustomOption) = try cmd.getOpts(alloc);
             defer opt_map.deinit();
             if (try opt_map.get("help").?.val.bool.get()) try cmd.help(stdout);
+            if (try opt_map.get("usage").?.val.bool.get()) try cmd.usage(stdout);
             for (cmd.opts.?) |opt| { 
                 switch (meta.activeTag(opt.val.*)) {
                     .string => {
-                        try stdout.print("    Opt: {?s}, Data: {s}\n", .{ 
+                        try stdout.print("    Opt: {?s}, Data: \"{s}\"\n", .{ 
                             opt.long_name, 
                             opt.val.string.get() catch "",
                         });
@@ -219,7 +232,7 @@ fn displayCmdInfo(display_cmd: *const Command, alloc: mem.Allocator) !void {
             for (cmd.vals.?) |val| { 
                 switch (meta.activeTag(val.*)) {
                     .string => {
-                        try stdout.print("    Val: {?s}, Data: {s}\n", .{ 
+                        try stdout.print("    Val: {?s}, Data: \"{s}\"\n", .{ 
                             val.name(), 
                             val.string.get() catch "",
                         });

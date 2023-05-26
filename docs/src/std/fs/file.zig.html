@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>fs/file.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -205,7 +205,7 @@
 <span class="line" id="L92">        <span class="tok-comment">/// processes from acquiring a exclusive lock, but does not prevent</span></span>
 <span class="line" id="L93">        <span class="tok-comment">/// other process from getting their own shared locks.</span></span>
 <span class="line" id="L94">        <span class="tok-comment">///</span></span>
-<span class="line" id="L95">        <span class="tok-comment">/// The lock is advisory, except on Linux in very specific cirsumstances[1].</span></span>
+<span class="line" id="L95">        <span class="tok-comment">/// The lock is advisory, except on Linux in very specific circumstances[1].</span></span>
 <span class="line" id="L96">        <span class="tok-comment">/// This means that a process that does not respect the locking API can still get access</span></span>
 <span class="line" id="L97">        <span class="tok-comment">/// to the file, despite the lock.</span></span>
 <span class="line" id="L98">        <span class="tok-comment">///</span></span>
@@ -269,7 +269,7 @@
 <span class="line" id="L156">        <span class="tok-comment">/// processes from acquiring a exclusive lock, but does not prevent</span></span>
 <span class="line" id="L157">        <span class="tok-comment">/// other process from getting their own shared locks.</span></span>
 <span class="line" id="L158">        <span class="tok-comment">///</span></span>
-<span class="line" id="L159">        <span class="tok-comment">/// The lock is advisory, except on Linux in very specific cirsumstances[1].</span></span>
+<span class="line" id="L159">        <span class="tok-comment">/// The lock is advisory, except on Linux in very specific circumstances[1].</span></span>
 <span class="line" id="L160">        <span class="tok-comment">/// This means that a process that does not respect the locking API can still get access</span></span>
 <span class="line" id="L161">        <span class="tok-comment">/// to the file, despite the lock.</span></span>
 <span class="line" id="L162">        <span class="tok-comment">///</span></span>
