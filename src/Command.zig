@@ -202,7 +202,7 @@ pub fn Custom(comptime config: Config) type {
                     for (cmds, 0..) |cmd, idx| {
                         if (indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
                             @compileError("The sub Command '" ++ cmd.name ++ "' is set more than once.");
-                        cmd.validate();
+                        //cmd.validate();
                         distinct_cmd[idx] = cmd.name;
                     }
                 }
@@ -240,7 +240,7 @@ pub fn Custom(comptime config: Config) type {
         }
     
         /// Config for Setup of this Command.
-        pub const SetupConfig = struct {
+        const SetupConfig = struct {
             /// Flag to Validate this Command.
             validate_cmd: bool = true,
             /// Flag to add Usage/Help message Commands to this Command.
@@ -249,67 +249,9 @@ pub fn Custom(comptime config: Config) type {
             add_help_opts: bool = true,
         };
 
-        /// Setup this Command during Runtime based on the provided SetupConfig.
-        pub fn setupAlloc(self_const: *const @This(), alloc: mem.Allocator, setup_config: SetupConfig) !void {
-            var self = @constCast(self_const);
-            const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", self.name, "' usage display." });
-            const help_description = try mem.concat(alloc, u8, &.{ "Show the '", self.name, "' help display." });
-
-            if (setup_config.add_help_cmds) {
-                var help_sub_cmds = try alloc.alloc(*const @This(), 2);
-
-                help_sub_cmds[0] = try alloc.create(@This());
-                @constCast(help_sub_cmds[0]).* = .{
-                    .name = "usage",
-                    .help_prefix = self.name,
-                    .description = usage_description,
-                };
-                help_sub_cmds[1] = try alloc.create(@This());
-                @constCast(help_sub_cmds[1]).* = .{
-                    .name = "help",
-                    .help_prefix = self.name,
-                    .description = help_description,
-                };
-
-                self.sub_cmds = if (self.sub_cmds != null) try mem.concat(alloc, *const @This(), &.{ self.sub_cmds.?, help_sub_cmds[0..] })
-                                else help_sub_cmds[0..];
-            }
-
-            if (setup_config.add_help_opts) {
-                var help_opts = try alloc.alloc(*const @This().CustomOption, 2);
-                help_opts[0] = try alloc.create(@This().CustomOption);
-                @constCast(help_opts[0]).* = .{
-                    .name = "usage",
-                    .short_name = 'u',
-                    .long_name = "usage",
-                    .description = usage_description,
-                    .val = usageVal: {
-                        var usage_val = try alloc.create(Val.Generic);
-                        usage_val.* = Val.init(bool, .{ .name = "usageFlag" });
-                        break :usageVal usage_val;
-                    },
-                };
-                help_opts[1] = try alloc.create(@This().CustomOption);
-                @constCast(help_opts[1]).* = .{
-		    .name = "help",
-                    .short_name = 'h',
-                    .long_name = "help",
-                    .description = help_description,
-                    .val = helpVal: {
-                        var help_val = try alloc.create(Val.Generic);
-                        help_val.* = Val.init(bool, .{ .name = "helpFlag" });
-                        break :helpVal help_val;
-                    },
-                };
-
-                self.opts = if (self.opts != null) try mem.concat(alloc, *const @This().CustomOption, &.{ self.opts.?, help_opts[0..] })
-                            else help_opts[0..];
-            }
-        }
-
         /// Setup this Command during Comptime based on the provided SetupConfig.
-        /// (WIP)
-        pub fn setup(comptime self: *const @This(), comptime setup_config: SetupConfig) void {
+        /// (WIP) At this time, this functionality is rolled into `init()`. If I can figure out how to edit a struct instance at Comptime, it'll be moved to here.
+        fn setup(comptime self: *const @This(), comptime setup_config: SetupConfig) void {
             comptime {
                 const usage_description = "Show the '" ++ self.name ++ "' usage display.";
                 const help_description = "Show the '" ++ self.name ++ "' help display.";
@@ -340,7 +282,7 @@ pub fn Custom(comptime config: Config) type {
                             .name = "usage",
                             .short_name = 'u',
                             .long_name = "usage",
-                            .description = usage_description, 
+                            .description = usage_description,
                             .val = &Val.init(bool, .{ .name = "usageFlag" }),
                         },
                         &@This().CustomOption{
@@ -359,10 +301,88 @@ pub fn Custom(comptime config: Config) type {
             }
         }
 
-        /// Initialize this Command by duplicating it with an Allocator for Runtime use.
-        /// This should be used after this Command has been created in Comptime and, optionally, after `setup()` or `validate()` have been called on it.
-        pub fn init(comptime self: *const @This(), alloc: mem.Allocator) !*@This() {
-            return &(try alloc.dupe(@This(), &.{ self.* }))[0];
+        /// Config for the Initialization of this Command.
+        const InitConfig = struct {
+            /// Flag to Validate this Command.
+            validate_cmd: bool = true,
+            /// Flag to add Usage/Help message Commands to this Command.
+            add_help_cmds: bool = true,
+            /// Flag to add Usage/Help message Options to this Command.
+            add_help_opts: bool = true,
+            /// Flag to initialize sub Commands.
+            init_subcmds: bool = true,
+        };
+
+        /// Initialize this Command with the provided Config by duplicating it with an Allocator for Runtime use.
+        /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
+        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !*@This() {
+            if (init_config.validate_cmd) self.validate();
+
+            const init_cmd = &(try alloc.dupe(@This(), &.{ self.* }))[0];
+
+            if (init_config.init_subcmds and self.sub_cmds != null) {
+                var init_subcmds = try alloc.alloc(*@This(), self.sub_cmds.?.len);
+                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
+                init_cmd.sub_cmds = init_subcmds;
+            }
+
+            const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' usage display." });
+            const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
+
+            if (init_config.add_help_cmds) {
+                var help_sub_cmds = try alloc.alloc(*const @This(), 2);
+
+                help_sub_cmds[0] = try alloc.create(@This());
+                @constCast(help_sub_cmds[0]).* = .{
+                    .name = "usage",
+                    .help_prefix = init_cmd.name,
+                    .description = usage_description,
+                };
+                help_sub_cmds[1] = try alloc.create(@This());
+                @constCast(help_sub_cmds[1]).* = .{
+                    .name = "help",
+                    .help_prefix = init_cmd.name,
+                    .description = help_description,
+                };
+
+                @constCast(init_cmd).sub_cmds = 
+                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, *const @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
+                    else help_sub_cmds[0..];
+            }
+
+            if (init_config.add_help_opts) {
+                var help_opts = try alloc.alloc(*const @This().CustomOption, 2);
+                help_opts[0] = try alloc.create(@This().CustomOption);
+                @constCast(help_opts[0]).* = .{
+                    .name = "usage",
+                    .short_name = 'u',
+                    .long_name = "usage",
+                    .description = usage_description,
+                    .val = usageVal: {
+                        var usage_val = try alloc.create(Val.Generic);
+                        usage_val.* = Val.init(bool, .{ .name = "usageFlag" });
+                        break :usageVal usage_val;
+                    },
+                };
+                help_opts[1] = try alloc.create(@This().CustomOption);
+                @constCast(help_opts[1]).* = .{
+		    .name = "help",
+                    .short_name = 'h',
+                    .long_name = "help",
+                    .description = help_description,
+                    .val = helpVal: {
+                        var help_val = try alloc.create(Val.Generic);
+                        help_val.* = Val.init(bool, .{ .name = "helpFlag" });
+                        break :helpVal help_val;
+                    },
+                };
+
+                @constCast(init_cmd).opts = 
+                    if (init_cmd.opts != null) try mem.concat(alloc, *const @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
+                    else help_opts[0..];
+            }
+
+            return init_cmd; 
         }
 
         /// De-initialize this Command with its original Allocator.

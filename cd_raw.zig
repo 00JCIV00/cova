@@ -19,7 +19,7 @@ const Value = cova.Value;
 pub const log_level: log.Level = .err;
     
 pub const CustomCommand = Command.Custom(.{}); 
-const ct_cmd: CustomCommand = .{
+const setup_cmd: CustomCommand = .{
     .name = "covademo",
     .help_prefix = "CovaDemo",
     .description = "A demo of the Cova command line argument parser.",
@@ -29,21 +29,6 @@ const ct_cmd: CustomCommand = .{
                 .name = "demo_cmd",
                 .help_prefix = "CovaDemo",
                 .description = "A demo sub command.",
-                .sub_cmds = nestedSubCmdsSetup: {
-                    var nested_setup_cmds = [_]*const CustomCommand{
-                        &CustomCommand{
-                            .name = "help",
-                            .help_prefix = "CovaDemo -> DemoCommand",
-                            .description = "Show the DemoCommand help display.",
-                        },
-                        &CustomCommand{
-                            .name = "usage",
-                            .help_prefix = "CovaDemo -> DemoCommand",
-                            .description = "Show the DemoCommand usage display.",
-                        },
-                    };
-                    break :nestedSubCmdsSetup nested_setup_cmds[0..];
-                },
                 .opts = optsSetup: {
                     var setup_opts = [_]*const CustomCommand.CustomOption{
                         &CustomCommand.CustomOption{
@@ -56,26 +41,6 @@ const ct_cmd: CustomCommand = .{
                                 .default_val = 203,
                             }),
                             .description = "A nested integer option.",
-                        },
-                        &CustomCommand.CustomOption{
-                            .name = "help",
-                            .short_name = 'h',
-                            .long_name = "help",
-                            .val = &Value.init(bool, .{
-                                .name = "helpFlag",
-                                .description = "Flag for help!",
-                            }),
-                            .description = "Show the DemoCommand help display.",
-                        },
-                        &CustomCommand.CustomOption{
-                            .name = "usage",
-                            .short_name = 'u',
-                            .long_name = "usage",
-                            .val = &Value.init(bool, .{
-                                .name = "usageFlag",
-                                .description = "Flag for usage!",
-                            }),
-                            .description = "Show the DemoCommand usage display.",
                         },
                     };
                     break :optsSetup setup_opts[0..];
@@ -154,10 +119,9 @@ pub fn main() !void {
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    ct_cmd.validate();
-    //ct_cmd.setup(.{});
+    //setup_cmd.validate();
 
-    const main_cmd = try ct_cmd.init(alloc); 
+    const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit(alloc);
 
     const args = try proc.argsWithAllocator(alloc);
