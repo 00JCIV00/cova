@@ -176,7 +176,7 @@ pub fn main() !void {
         }
     };
     defer alloc.destroy(cmd);
-    try cmd.setup(alloc, .{});
+    try cmd.setupAlloc(alloc, .{});
 
     const args = try proc.argsWithAllocator(alloc);
     try cova.parseArgs(&args, CustomCommand, cmd, stdout);
