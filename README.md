@@ -24,9 +24,9 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 - [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
     - [ ] Proper library tests. 
-  - [ ] Initialization `Custom()` methods for Commands and Options.
-    - [ ] Setup in Comptime. Use in Runtime.
-    - [ ] Validate unique sub Commands, Options, and Values.
+  - [x] Initialization `Custom()` methods for Commands and Options.
+    - [x] Setup in Comptime. Use in Runtime.
+    - [x] Validate unique sub Commands, Options, and Values.
     - [x] Generate Usage/Help sub Commands.
     - [x] Generate Usage/Help Options.
     - [x] User formatting options for Usage/Help messages.
