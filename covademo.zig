@@ -134,7 +134,7 @@ pub fn main() !void {
     defer main_cmd.deinit(alloc);
 
     const args = try proc.argsWithAllocator(alloc);
-    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ .vals_mandatory = false });
+    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ .vals_mandatory = false, .allow_opt_val_no_space = true });
     try stdout.print("\n", .{});
     try displayCmdInfo(main_cmd, alloc);
 

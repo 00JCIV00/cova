@@ -22,7 +22,10 @@ pub const ParseConfig = struct {
     /// Skip the first Argument (the executable's name).
     /// This should generally be set to `true`, but the option is here for unforeseen outliers.
     skip_exe_name_arg: bool = true,
-    /// Specify custom separators between Options and their Values.
+    /// Allow there to be no space ' ' between Options and Values.
+    /// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.
+    allow_opt_val_no_space: bool = true,
+    /// Specify custom Separators between Options and their Values.
     /// Spaces ' ' are implicitly included.
     opt_val_seps: []const u8 = "=",
 };
@@ -80,9 +83,8 @@ pub fn parseArgs(
                 shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
                     for (cmd.opts.?) |opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
-                            //TODO: Figure out why these if statements need a "try". Possibly due to subtraction underflow?
                             // Handle Argument provided to this Option with '=' instead of ' '.
-                            try if (short_opts[short_idx + 1] == '=') {
+                            if (mem.indexOfScalar(u8, parse_config.opt_val_seps, short_opts[short_idx + 1]) != null) {
                                 if (eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         short_pf, 
@@ -110,7 +112,7 @@ pub fn parseArgs(
                             }
                             // Handle final Option in a chain of Short Options
                             else if (short_idx == short_opts.len - 1) { 
-                                try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                                if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, @TypeOf(opt.*), opt) catch {
                                         try writer.print("Could not parse Option '{c}{?c}: {s}'.\n", .{ 
@@ -122,14 +124,27 @@ pub fn parseArgs(
                                         try writer.print("\n\n", .{});
                                         return error.CouldNotParseOption;
                                     };
-                                };
+                                }
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
                             }
-                            // Handle an Option before the final Short Option in a chain.
-                            else @constCast(opt).val.set("true");
-                            log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                            continue :shortOpts;
+                            // Handle a boolean Option before the final Short Option in a chain.
+                            else if (eql(u8, opt.val.valType(), "bool")) {
+                                try @constCast(opt).val.set("true");
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                continue :shortOpts;
+                            }
+                            // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
+                            else if (parse_config.allow_opt_val_no_space) {
+                                var short_names_buf: [100]u8 = undefined;
+                                const short_names = short_names_buf[0..];
+                                for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
+                                if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
+                                    try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                    continue :parseArg;
+                                }
+                            }
                         }
                     }
                     try writer.print("Could not parse Option '{c}{?c}'.\n", .{ short_pf, short_opt });
@@ -144,9 +159,9 @@ pub fn parseArgs(
                 for (cmd.opts.?) |opt| {
                     const long_len = opt.long_name.?.len;
                     if (opt.long_name != null) {
-                        // Handle Value provided to this Option with '=' instead of ' '.
+                        // Handle Value provided to this Option with custom Separator (ex: '=') instead of a space ' '.
                         if (long_opt.len > opt.long_name.?.len and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
-                            if (long_opt[long_len] == '=') {
+                            if (mem.indexOfScalar(u8, parse_config.opt_val_seps, long_opt[long_len]) != null) {
                                 if (eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         long_pf, 
@@ -176,7 +191,7 @@ pub fn parseArgs(
                         // Handle normally provided Value to Option
                         else if (eql(u8, long_opt, opt.long_name.?)) {
                             // Handle Boolean/Toggle Option.
-                            try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                            if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                             // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, @TypeOf(opt.*), opt) catch {
@@ -189,7 +204,7 @@ pub fn parseArgs(
                                     try writer.print("\n\n", .{});
                                     return error.CouldNotParseOption;
                                 };
-                            };
+                            }
                             log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
                             continue :parseArg;
                         }

@@ -13,14 +13,14 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 - [ ] Advanced Parsing:
   - [x] Handle '=' instead of ' ' between an Option and its Value.
   - [x] Handle the same Option given multiple times. (Currently takes last value.)
-  - [ ] Handle no space ' ' between a Short Option and its Value.
+  - [x] Handle no space ' ' between a Short Option and its Value.
   - [ ] Tab Completion (long-term goal).
 - [ ] Parsing Customization:
-  - [ ] Mandate Values be filled.
+  - [x] Mandate Values be filled.
   - [x] Custom prefixes for Options.
-  - [ ] Custom separator between Options and Values. (Currently accepts ' ' or '=').
+  - [x] Custom separator between Options and Values. (Currently accepts ' ' or '=').
   - [ ] Choose behavior for having the same option given multiple times.
-  - [ ] Choose whether or not to skip the first Argument (the executable's name).
+  - [x] Choose whether or not to skip the first Argument (the executable's name).
 - [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
     - [ ] Proper library tests. 
