@@ -107,6 +107,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
                             }
+                            // Handle an Option before the final Short Option in a chain.
                             else @constCast(opt).val.set("true");
                             log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                             continue :shortOpts;
@@ -193,7 +194,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
             }
             const val = cmd.vals.?[val_idx];
             val.set(arg) catch {
-                try writer.print("Could not parse Argument '{s}' to Value '{s}'\n", .{ arg, val.name() });
+                try writer.print("Could not parse Argument '{s}' to Value '{s}'.\n", .{ arg, val.name() });
                 try cmd.usage(writer);
                 try writer.print("\n", .{});
             };
