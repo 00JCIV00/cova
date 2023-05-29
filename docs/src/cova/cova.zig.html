@@ -140,227 +140,232 @@
 </span>
 <span class="line" id="L25">    <span class="tok-kw">const</span> init_arg = <span class="tok-kw">if</span> (<span class="tok-builtin">@constCast</span>(args).inner.index == <span class="tok-number">0</span>) <span class="tok-builtin">@constCast</span>(args).next()</span>
 <span class="line" id="L26">                     <span class="tok-kw">else</span> argsPeak(args); </span>
-<span class="line" id="L27">    log.debug(<span class="tok-str">&quot;Initial Arg: {?s}&quot;</span>, .{ init_arg <span class="tok-kw">orelse</span> <span class="tok-str">&quot;END OF ARGS!&quot;</span> });</span>
-<span class="line" id="L28"></span>
-<span class="line" id="L29">    parseArg: <span class="tok-kw">while</span> (<span class="tok-builtin">@constCast</span>(args).next()) |arg| {</span>
-<span class="line" id="L30">        <span class="tok-kw">if</span> (init_arg == <span class="tok-null">null</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L31">        <span class="tok-kw">var</span> unmatched = <span class="tok-null">false</span>;</span>
-<span class="line" id="L32">        <span class="tok-comment">// Check for a Sub Command first...</span>
+<span class="line" id="L27">    log.debug(<span class="tok-str">&quot;Parsing Command '{s}'...&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L28">    log.debug(<span class="tok-str">&quot;Initial Arg: {?s}&quot;</span>, .{ init_arg <span class="tok-kw">orelse</span> <span class="tok-str">&quot;END OF ARGS!&quot;</span> });</span>
+<span class="line" id="L29">    <span class="tok-kw">defer</span> log.debug(<span class="tok-str">&quot;Finished Parsing '{s}'.&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31">    parseArg: <span class="tok-kw">while</span> (<span class="tok-builtin">@constCast</span>(args).next()) |arg| {</span>
+<span class="line" id="L32">        <span class="tok-kw">if</span> (init_arg == <span class="tok-null">null</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L33">        <span class="tok-kw">var</span> unmatched = <span class="tok-null">false</span>;</span>
+<span class="line" id="L34">        <span class="tok-comment">// Check for a Sub Command first...</span>
 </span>
-<span class="line" id="L33">        <span class="tok-kw">if</span> (cmd.sub_cmds != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L34">            log.debug(<span class="tok-str">&quot;Attempting to Parse Commands...\n&quot;</span>, .{});</span>
-<span class="line" id="L35">            <span class="tok-kw">for</span> (cmd.sub_cmds.?) |sub_cmd| {</span>
-<span class="line" id="L36">                <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, sub_cmd.name, arg)) {</span>
-<span class="line" id="L37">                    parseArgs(args, CustomCommand, sub_cmd, writer) <span class="tok-kw">catch</span> { </span>
-<span class="line" id="L38">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Command '{s}'.\n&quot;</span>, .{ sub_cmd.name });</span>
-<span class="line" id="L39">                        <span class="tok-kw">try</span> sub_cmd.usage(writer);</span>
-<span class="line" id="L40">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L41">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseCommand;</span>
-<span class="line" id="L42">                    };</span>
-<span class="line" id="L43">                    log.debug(<span class="tok-str">&quot;Parsed Command '{s}'\n&quot;</span>, .{ sub_cmd.name });</span>
-<span class="line" id="L44">                    cmd.setSubCmd(sub_cmd); </span>
-<span class="line" id="L45">                    <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L46">                }</span>
-<span class="line" id="L47">            }</span>
-<span class="line" id="L48">            unmatched = <span class="tok-null">true</span>;</span>
-<span class="line" id="L49">        }</span>
-<span class="line" id="L50">        <span class="tok-comment">// ...Then for any Options...</span>
+<span class="line" id="L35">        <span class="tok-kw">if</span> (cmd.sub_cmds != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L36">            log.debug(<span class="tok-str">&quot;Attempting to Parse Commands...&quot;</span>, .{});</span>
+<span class="line" id="L37">            <span class="tok-kw">for</span> (cmd.sub_cmds.?) |sub_cmd| {</span>
+<span class="line" id="L38">                <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, sub_cmd.name, arg)) {</span>
+<span class="line" id="L39">                    parseArgs(args, CustomCommand, sub_cmd, writer) <span class="tok-kw">catch</span> { </span>
+<span class="line" id="L40">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Command '{s}'.\n&quot;</span>, .{ sub_cmd.name });</span>
+<span class="line" id="L41">                        <span class="tok-kw">try</span> sub_cmd.usage(writer);</span>
+<span class="line" id="L42">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L43">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseCommand;</span>
+<span class="line" id="L44">                    };</span>
+<span class="line" id="L45">                    log.debug(<span class="tok-str">&quot;Parsed Command '{s}'.&quot;</span>, .{ sub_cmd.name });</span>
+<span class="line" id="L46">                    cmd.setSubCmd(sub_cmd); </span>
+<span class="line" id="L47">                    <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L48">                }</span>
+<span class="line" id="L49">            }</span>
+<span class="line" id="L50">            unmatched = <span class="tok-null">true</span>;</span>
+<span class="line" id="L51">            log.debug(<span class="tok-str">&quot;No Commands Matched for Command '{s}'.&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L52">        }</span>
+<span class="line" id="L53">        <span class="tok-comment">// ...Then for any Options...</span>
 </span>
-<span class="line" id="L51">        <span class="tok-kw">if</span> (cmd.opts != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L52">            log.debug(<span class="tok-str">&quot;Attempting to Parse Options...\n&quot;</span>, .{});</span>
-<span class="line" id="L53">            <span class="tok-kw">const</span> short_pf = optType.short_prefix;</span>
-<span class="line" id="L54">            <span class="tok-kw">const</span> long_pf = optType.long_prefix;</span>
-<span class="line" id="L55">            <span class="tok-comment">// - Short Options</span>
+<span class="line" id="L54">        <span class="tok-kw">if</span> (cmd.opts != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L55">            log.debug(<span class="tok-str">&quot;Attempting to Parse Options...&quot;</span>, .{});</span>
+<span class="line" id="L56">            <span class="tok-kw">const</span> short_pf = optType.short_prefix;</span>
+<span class="line" id="L57">            <span class="tok-kw">const</span> long_pf = optType.long_prefix;</span>
+<span class="line" id="L58">            <span class="tok-comment">// - Short Options</span>
 </span>
-<span class="line" id="L56">            <span class="tok-kw">if</span> (arg[<span class="tok-number">0</span>] == short_pf <span class="tok-kw">and</span> arg[<span class="tok-number">1</span>] != short_pf) {</span>
-<span class="line" id="L57">                <span class="tok-kw">const</span> short_opts = arg[<span class="tok-number">1</span>..];</span>
-<span class="line" id="L58">                shortOpts: <span class="tok-kw">for</span> (short_opts, <span class="tok-number">0</span>..) |short_opt, short_idx| {</span>
-<span class="line" id="L59">                    <span class="tok-kw">for</span> (cmd.opts.?) |opt| {</span>
-<span class="line" id="L60">                        <span class="tok-kw">if</span> (opt.short_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> short_opt == opt.short_name.?) {</span>
-<span class="line" id="L61">                            <span class="tok-comment">//TODO: Figure out why these if statements need a &quot;try&quot;. Possibly due to subtraction underflow?</span>
+<span class="line" id="L59">            <span class="tok-kw">if</span> (arg[<span class="tok-number">0</span>] == short_pf <span class="tok-kw">and</span> arg[<span class="tok-number">1</span>] != short_pf) {</span>
+<span class="line" id="L60">                <span class="tok-kw">const</span> short_opts = arg[<span class="tok-number">1</span>..];</span>
+<span class="line" id="L61">                shortOpts: <span class="tok-kw">for</span> (short_opts, <span class="tok-number">0</span>..) |short_opt, short_idx| {</span>
+<span class="line" id="L62">                    <span class="tok-kw">for</span> (cmd.opts.?) |opt| {</span>
+<span class="line" id="L63">                        <span class="tok-kw">if</span> (opt.short_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> short_opt == opt.short_name.?) {</span>
+<span class="line" id="L64">                            <span class="tok-comment">//TODO: Figure out why these if statements need a &quot;try&quot;. Possibly due to subtraction underflow?</span>
 </span>
-<span class="line" id="L62">                            <span class="tok-comment">// Handle Argument provided to this Option with '=' instead of ' '.</span>
+<span class="line" id="L65">                            <span class="tok-comment">// Handle Argument provided to this Option with '=' instead of ' '.</span>
 </span>
-<span class="line" id="L63">                            <span class="tok-kw">try</span> <span class="tok-kw">if</span> (short_opts[short_idx + <span class="tok-number">1</span>] == <span class="tok-str">'='</span>) {</span>
-<span class="line" id="L64">                                <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
-<span class="line" id="L65">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n&quot;</span>, .{ </span>
-<span class="line" id="L66">                                        short_pf, </span>
-<span class="line" id="L67">                                        opt.short_name, </span>
-<span class="line" id="L68">                                        opt.name </span>
-<span class="line" id="L69">                                    });</span>
-<span class="line" id="L70">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
-<span class="line" id="L71">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L72">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
-<span class="line" id="L73">                                }</span>
-<span class="line" id="L74">                                <span class="tok-kw">if</span> (short_idx + <span class="tok-number">2</span> &gt;= short_opts.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
-<span class="line" id="L75">                                <span class="tok-kw">const</span> opt_arg = short_opts[(short_idx + <span class="tok-number">2</span>)..];</span>
-<span class="line" id="L76">                                opt.val.set(opt_arg) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L77">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.\n&quot;</span>, .{ </span>
-<span class="line" id="L78">                                        short_pf,</span>
-<span class="line" id="L79">                                        opt.short_name, </span>
-<span class="line" id="L80">                                        opt.name </span>
-<span class="line" id="L81">                                    });</span>
-<span class="line" id="L82">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
-<span class="line" id="L83">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L84">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L85">                                };</span>
-<span class="line" id="L86">                                <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L87">                            }</span>
-<span class="line" id="L88">                            <span class="tok-comment">// Handle final Option in a chain of Short Options</span>
+<span class="line" id="L66">                            <span class="tok-kw">try</span> <span class="tok-kw">if</span> (short_opts[short_idx + <span class="tok-number">1</span>] == <span class="tok-str">'='</span>) {</span>
+<span class="line" id="L67">                                <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L68">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n&quot;</span>, .{ </span>
+<span class="line" id="L69">                                        short_pf, </span>
+<span class="line" id="L70">                                        opt.short_name, </span>
+<span class="line" id="L71">                                        opt.name </span>
+<span class="line" id="L72">                                    });</span>
+<span class="line" id="L73">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
+<span class="line" id="L74">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L75">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
+<span class="line" id="L76">                                }</span>
+<span class="line" id="L77">                                <span class="tok-kw">if</span> (short_idx + <span class="tok-number">2</span> &gt;= short_opts.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L78">                                <span class="tok-kw">const</span> opt_arg = short_opts[(short_idx + <span class="tok-number">2</span>)..];</span>
+<span class="line" id="L79">                                opt.val.set(opt_arg) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L80">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.\n&quot;</span>, .{ </span>
+<span class="line" id="L81">                                        short_pf,</span>
+<span class="line" id="L82">                                        opt.short_name, </span>
+<span class="line" id="L83">                                        opt.name </span>
+<span class="line" id="L84">                                    });</span>
+<span class="line" id="L85">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
+<span class="line" id="L86">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L87">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L88">                                };</span>
+<span class="line" id="L89">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L90">                                <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L91">                            }</span>
+<span class="line" id="L92">                            <span class="tok-comment">// Handle final Option in a chain of Short Options</span>
 </span>
-<span class="line" id="L89">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (short_idx == short_opts.len - <span class="tok-number">1</span>) { </span>
-<span class="line" id="L90">                                <span class="tok-kw">try</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
-<span class="line" id="L91">                                <span class="tok-kw">else</span> {</span>
-<span class="line" id="L92">                                    parseOpt(args, <span class="tok-builtin">@TypeOf</span>(opt.*), opt) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L93">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.\n&quot;</span>, .{ </span>
-<span class="line" id="L94">                                            short_pf,</span>
-<span class="line" id="L95">                                            opt.short_name, </span>
-<span class="line" id="L96">                                            opt.name </span>
-<span class="line" id="L97">                                        });</span>
-<span class="line" id="L98">                                        <span class="tok-kw">try</span> opt.usage(writer);</span>
-<span class="line" id="L99">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L100">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L101">                                    };</span>
-<span class="line" id="L102">                                };</span>
-<span class="line" id="L103">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.\n&quot;</span>, .{ opt.short_name });</span>
-<span class="line" id="L104">                                <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L105">                            }</span>
-<span class="line" id="L106">                            <span class="tok-kw">else</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>);</span>
-<span class="line" id="L107">                            log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.\n&quot;</span>, .{ opt.short_name });</span>
-<span class="line" id="L108">                            <span class="tok-kw">continue</span> :shortOpts;</span>
-<span class="line" id="L109">                        }</span>
-<span class="line" id="L110">                    }</span>
-<span class="line" id="L111">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{c}{?c}'.\n&quot;</span>, .{ short_pf, short_opt });</span>
-<span class="line" id="L112">                    <span class="tok-kw">try</span> cmd.usage(writer);</span>
-<span class="line" id="L113">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L114">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L115">                }</span>
-<span class="line" id="L116">            }</span>
-<span class="line" id="L117">            <span class="tok-comment">// - Long Options</span>
+<span class="line" id="L93">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (short_idx == short_opts.len - <span class="tok-number">1</span>) { </span>
+<span class="line" id="L94">                                <span class="tok-kw">try</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
+<span class="line" id="L95">                                <span class="tok-kw">else</span> {</span>
+<span class="line" id="L96">                                    parseOpt(args, <span class="tok-builtin">@TypeOf</span>(opt.*), opt) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L97">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.\n&quot;</span>, .{ </span>
+<span class="line" id="L98">                                            short_pf,</span>
+<span class="line" id="L99">                                            opt.short_name, </span>
+<span class="line" id="L100">                                            opt.name </span>
+<span class="line" id="L101">                                        });</span>
+<span class="line" id="L102">                                        <span class="tok-kw">try</span> opt.usage(writer);</span>
+<span class="line" id="L103">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L104">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L105">                                    };</span>
+<span class="line" id="L106">                                };</span>
+<span class="line" id="L107">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L108">                                <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L109">                            }</span>
+<span class="line" id="L110">                            <span class="tok-kw">else</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>);</span>
+<span class="line" id="L111">                            log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L112">                            <span class="tok-kw">continue</span> :shortOpts;</span>
+<span class="line" id="L113">                        }</span>
+<span class="line" id="L114">                    }</span>
+<span class="line" id="L115">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{c}{?c}'.\n&quot;</span>, .{ short_pf, short_opt });</span>
+<span class="line" id="L116">                    <span class="tok-kw">try</span> cmd.usage(writer);</span>
+<span class="line" id="L117">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L118">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L119">                }</span>
+<span class="line" id="L120">            }</span>
+<span class="line" id="L121">            <span class="tok-comment">// - Long Options</span>
 </span>
-<span class="line" id="L118">            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, arg[<span class="tok-number">0</span>..<span class="tok-number">2</span>], long_pf)) {</span>
-<span class="line" id="L119">                <span class="tok-kw">const</span> long_opt = arg[<span class="tok-number">2</span>..];</span>
-<span class="line" id="L120">                <span class="tok-kw">for</span> (cmd.opts.?) |opt| {</span>
-<span class="line" id="L121">                    <span class="tok-kw">const</span> long_len = opt.long_name.?.len;</span>
-<span class="line" id="L122">                    <span class="tok-kw">if</span> (opt.long_name != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L123">                        <span class="tok-comment">// Handle Value provided to this Option with '=' instead of ' '.</span>
+<span class="line" id="L122">            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, arg[<span class="tok-number">0</span>..<span class="tok-number">2</span>], long_pf)) {</span>
+<span class="line" id="L123">                <span class="tok-kw">const</span> long_opt = arg[<span class="tok-number">2</span>..];</span>
+<span class="line" id="L124">                <span class="tok-kw">for</span> (cmd.opts.?) |opt| {</span>
+<span class="line" id="L125">                    <span class="tok-kw">const</span> long_len = opt.long_name.?.len;</span>
+<span class="line" id="L126">                    <span class="tok-kw">if</span> (opt.long_name != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L127">                        <span class="tok-comment">// Handle Value provided to this Option with '=' instead of ' '.</span>
 </span>
-<span class="line" id="L124">                        <span class="tok-kw">if</span> (long_opt.len &gt; opt.long_name.?.len <span class="tok-kw">and</span> eql(<span class="tok-type">u8</span>, long_opt[<span class="tok-number">0</span>..long_len], opt.long_name.?)) {</span>
-<span class="line" id="L125">                            <span class="tok-kw">if</span> (long_opt[long_len] == <span class="tok-str">'='</span>) {</span>
-<span class="line" id="L126">                                <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
-<span class="line" id="L127">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
-<span class="line" id="L128">                                        long_pf, </span>
-<span class="line" id="L129">                                        opt.long_name, </span>
-<span class="line" id="L130">                                        opt.name </span>
-<span class="line" id="L131">                                    });</span>
-<span class="line" id="L132">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
-<span class="line" id="L133">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L134">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
-<span class="line" id="L135">                                }</span>
-<span class="line" id="L136">                                <span class="tok-kw">if</span> (long_len + <span class="tok-number">1</span> &gt;= long_opt.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
-<span class="line" id="L137">                                <span class="tok-kw">const</span> opt_arg = long_opt[(long_len + <span class="tok-number">1</span>)..];</span>
-<span class="line" id="L138">                                opt.val.set(opt_arg) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L139">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.\n&quot;</span>, .{ </span>
-<span class="line" id="L140">                                        long_pf,</span>
-<span class="line" id="L141">                                        opt.long_name, </span>
-<span class="line" id="L142">                                        opt.name </span>
-<span class="line" id="L143">                                    });</span>
-<span class="line" id="L144">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
-<span class="line" id="L145">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L146">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L147">                                };</span>
-<span class="line" id="L148">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.\n&quot;</span>, .{ opt.long_name });</span>
-<span class="line" id="L149">                                <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L150">                            }</span>
-<span class="line" id="L151">                        }</span>
-<span class="line" id="L152">                        <span class="tok-comment">// Handle normally provided Value to Option</span>
+<span class="line" id="L128">                        <span class="tok-kw">if</span> (long_opt.len &gt; opt.long_name.?.len <span class="tok-kw">and</span> eql(<span class="tok-type">u8</span>, long_opt[<span class="tok-number">0</span>..long_len], opt.long_name.?)) {</span>
+<span class="line" id="L129">                            <span class="tok-kw">if</span> (long_opt[long_len] == <span class="tok-str">'='</span>) {</span>
+<span class="line" id="L130">                                <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L131">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n&quot;</span>, .{ </span>
+<span class="line" id="L132">                                        long_pf, </span>
+<span class="line" id="L133">                                        opt.long_name, </span>
+<span class="line" id="L134">                                        opt.name </span>
+<span class="line" id="L135">                                    });</span>
+<span class="line" id="L136">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
+<span class="line" id="L137">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L138">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
+<span class="line" id="L139">                                }</span>
+<span class="line" id="L140">                                <span class="tok-kw">if</span> (long_len + <span class="tok-number">1</span> &gt;= long_opt.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L141">                                <span class="tok-kw">const</span> opt_arg = long_opt[(long_len + <span class="tok-number">1</span>)..];</span>
+<span class="line" id="L142">                                opt.val.set(opt_arg) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L143">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.\n&quot;</span>, .{ </span>
+<span class="line" id="L144">                                        long_pf,</span>
+<span class="line" id="L145">                                        opt.long_name, </span>
+<span class="line" id="L146">                                        opt.name </span>
+<span class="line" id="L147">                                    });</span>
+<span class="line" id="L148">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
+<span class="line" id="L149">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L150">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L151">                                };</span>
+<span class="line" id="L152">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.&quot;</span>, .{ opt.long_name });</span>
+<span class="line" id="L153">                                <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L154">                            }</span>
+<span class="line" id="L155">                        }</span>
+<span class="line" id="L156">                        <span class="tok-comment">// Handle normally provided Value to Option</span>
 </span>
-<span class="line" id="L153">                        <span class="tok-kw">else</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, long_opt, opt.long_name.?)) {</span>
-<span class="line" id="L154">                            <span class="tok-comment">// Handle Boolean/Toggle Option.</span>
+<span class="line" id="L157">                        <span class="tok-kw">else</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, long_opt, opt.long_name.?)) {</span>
+<span class="line" id="L158">                            <span class="tok-comment">// Handle Boolean/Toggle Option.</span>
 </span>
-<span class="line" id="L155">                            <span class="tok-kw">try</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
-<span class="line" id="L156">                            <span class="tok-comment">// Handle Option with normal Argument.</span>
+<span class="line" id="L159">                            <span class="tok-kw">try</span> <span class="tok-kw">if</span> (eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
+<span class="line" id="L160">                            <span class="tok-comment">// Handle Option with normal Argument.</span>
 </span>
-<span class="line" id="L157">                            <span class="tok-kw">else</span> {</span>
-<span class="line" id="L158">                                parseOpt(args, <span class="tok-builtin">@TypeOf</span>(opt.*), opt) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L159">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.\n&quot;</span>, .{ </span>
-<span class="line" id="L160">                                        long_pf,</span>
-<span class="line" id="L161">                                        opt.long_name, </span>
-<span class="line" id="L162">                                        opt.name </span>
-<span class="line" id="L163">                                    });</span>
-<span class="line" id="L164">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
-<span class="line" id="L165">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L166">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L167">                                };</span>
-<span class="line" id="L168">                            };</span>
-<span class="line" id="L169">                            log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.\n&quot;</span>, .{ opt.long_name });</span>
-<span class="line" id="L170">                            <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L171">                        }</span>
-<span class="line" id="L172">                    }</span>
-<span class="line" id="L173">                }</span>
-<span class="line" id="L174">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Argument '{s}{?s}' to an Option.\n&quot;</span>, .{ long_pf, long_opt });</span>
-<span class="line" id="L175">                <span class="tok-kw">try</span> cmd.usage(writer);</span>
-<span class="line" id="L176">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
-<span class="line" id="L177">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L178">            }</span>
-<span class="line" id="L179">            unmatched = <span class="tok-null">true</span>;</span>
-<span class="line" id="L180">        }</span>
-<span class="line" id="L181">        <span class="tok-comment">// ...Finally, for any Values.</span>
+<span class="line" id="L161">                            <span class="tok-kw">else</span> {</span>
+<span class="line" id="L162">                                parseOpt(args, <span class="tok-builtin">@TypeOf</span>(opt.*), opt) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L163">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.\n&quot;</span>, .{ </span>
+<span class="line" id="L164">                                        long_pf,</span>
+<span class="line" id="L165">                                        opt.long_name, </span>
+<span class="line" id="L166">                                        opt.name </span>
+<span class="line" id="L167">                                    });</span>
+<span class="line" id="L168">                                    <span class="tok-kw">try</span> opt.usage(writer);</span>
+<span class="line" id="L169">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L170">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L171">                                };</span>
+<span class="line" id="L172">                            };</span>
+<span class="line" id="L173">                            log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.&quot;</span>, .{ opt.long_name });</span>
+<span class="line" id="L174">                            <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L175">                        }</span>
+<span class="line" id="L176">                    }</span>
+<span class="line" id="L177">                }</span>
+<span class="line" id="L178">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Argument '{s}{?s}' to an Option.\n&quot;</span>, .{ long_pf, long_opt });</span>
+<span class="line" id="L179">                <span class="tok-kw">try</span> cmd.usage(writer);</span>
+<span class="line" id="L180">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
+<span class="line" id="L181">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L182">            }</span>
+<span class="line" id="L183">            unmatched = <span class="tok-null">true</span>;</span>
+<span class="line" id="L184">            log.debug(<span class="tok-str">&quot;No Options Matched for Command '{s}'.&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L185">        }</span>
+<span class="line" id="L186">        <span class="tok-comment">// ...Finally, for any Values.</span>
 </span>
-<span class="line" id="L182">        <span class="tok-kw">if</span> (cmd.vals != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L183">            log.debug(<span class="tok-str">&quot;Attempting to Parse Values...\n&quot;</span>, .{});</span>
-<span class="line" id="L184">            <span class="tok-kw">if</span> (val_idx &gt;= cmd.vals.?.len) {</span>
-<span class="line" id="L185">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Too many Values provided for Command '{s}'.\n&quot;</span>, .{ cmd.name });</span>
-<span class="line" id="L186">                <span class="tok-kw">try</span> cmd.usage(writer);</span>
-<span class="line" id="L187">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TooManyValues;</span>
-<span class="line" id="L188">            }</span>
-<span class="line" id="L189">            <span class="tok-kw">const</span> val = cmd.vals.?[val_idx];</span>
-<span class="line" id="L190">            val.set(arg) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L191">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Argument '{s}' to Value '{s}'\n&quot;</span>, .{ arg, val.name() });</span>
-<span class="line" id="L192">                <span class="tok-kw">try</span> cmd.usage(writer);</span>
-<span class="line" id="L193">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L194">            };</span>
-<span class="line" id="L195">            val_idx += <span class="tok-number">1</span>;</span>
-<span class="line" id="L196"></span>
-<span class="line" id="L197">            log.debug(<span class="tok-str">&quot;Parsed Value '{?s}'.\n&quot;</span>, .{ val.name() });</span>
-<span class="line" id="L198">            <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L199">        }</span>
-<span class="line" id="L200"></span>
-<span class="line" id="L201">        <span class="tok-comment">// Check if the Command expected an argument but didn't get a match.</span>
+<span class="line" id="L187">        <span class="tok-kw">if</span> (cmd.vals != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L188">            log.debug(<span class="tok-str">&quot;Attempting to Parse Values...&quot;</span>, .{});</span>
+<span class="line" id="L189">            <span class="tok-kw">if</span> (val_idx &gt;= cmd.vals.?.len) {</span>
+<span class="line" id="L190">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Too many Values provided for Command '{s}'.\n&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L191">                <span class="tok-kw">try</span> cmd.usage(writer);</span>
+<span class="line" id="L192">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TooManyValues;</span>
+<span class="line" id="L193">            }</span>
+<span class="line" id="L194">            <span class="tok-kw">const</span> val = cmd.vals.?[val_idx];</span>
+<span class="line" id="L195">            val.set(arg) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L196">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Could not parse Argument '{s}' to Value '{s}'\n&quot;</span>, .{ arg, val.name() });</span>
+<span class="line" id="L197">                <span class="tok-kw">try</span> cmd.usage(writer);</span>
+<span class="line" id="L198">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L199">            };</span>
+<span class="line" id="L200">            val_idx += <span class="tok-number">1</span>;</span>
+<span class="line" id="L201"></span>
+<span class="line" id="L202">            log.debug(<span class="tok-str">&quot;Parsed Value '{?s}'.&quot;</span>, .{ val.name() });</span>
+<span class="line" id="L203">            <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L204">        }</span>
+<span class="line" id="L205"></span>
+<span class="line" id="L206">        <span class="tok-comment">// Check if the Command expected an Argument but didn't get a match.</span>
 </span>
-<span class="line" id="L202">        <span class="tok-kw">if</span> (unmatched) {</span>
-<span class="line" id="L203">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Unrecognized Argument '{s}' for Command '{s}'.\n&quot;</span>, .{ arg, cmd.name });</span>
-<span class="line" id="L204">            <span class="tok-kw">try</span> cmd.help(writer);</span>
-<span class="line" id="L205">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecognizedArgument;</span>
-<span class="line" id="L206">        }</span>
-<span class="line" id="L207">        <span class="tok-comment">// For Commands that expect no arguments but are given one, fail to usage</span>
+<span class="line" id="L207">        <span class="tok-kw">if</span> (unmatched) {</span>
+<span class="line" id="L208">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Unrecognized Argument '{s}' for Command '{s}'.\n&quot;</span>, .{ arg, cmd.name });</span>
+<span class="line" id="L209">            <span class="tok-kw">try</span> cmd.help(writer);</span>
+<span class="line" id="L210">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecognizedArgument;</span>
+<span class="line" id="L211">        }</span>
+<span class="line" id="L212">        <span class="tok-comment">// For Commands that expect no arguments but are given one, fail to usage</span>
 </span>
-<span class="line" id="L208">        <span class="tok-kw">else</span> {</span>
-<span class="line" id="L209">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Command '{s}' does not expect any arguments, but '{s}' was passed.\n&quot;</span>, .{ cmd.name, arg });</span>
-<span class="line" id="L210">            <span class="tok-kw">try</span> cmd.help(writer);</span>
-<span class="line" id="L211">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedArgument;</span>
-<span class="line" id="L212">        }</span>
-<span class="line" id="L213">    }</span>
-<span class="line" id="L214">}</span>
-<span class="line" id="L215"></span>
-<span class="line" id="L216"><span class="tok-comment">/// Parse an Option for the given Command.</span></span>
-<span class="line" id="L217"><span class="tok-kw">fn</span> <span class="tok-fn">parseOpt</span>(args: *<span class="tok-kw">const</span> proc.ArgIterator, <span class="tok-kw">comptime</span> opt_type: <span class="tok-type">type</span>, opt: *<span class="tok-kw">const</span> opt_type) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L218">    <span class="tok-kw">const</span> peak_arg = argsPeak(args);</span>
-<span class="line" id="L219">    <span class="tok-kw">const</span> set_arg = </span>
-<span class="line" id="L220">        <span class="tok-kw">if</span> (peak_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peak_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>
-<span class="line" id="L221">            _ = <span class="tok-builtin">@constCast</span>(args).next();</span>
-<span class="line" id="L222">            <span class="tok-kw">break</span> :setArg <span class="tok-str">&quot;true&quot;</span>;</span>
-<span class="line" id="L223">        }</span>
-<span class="line" id="L224">        <span class="tok-kw">else</span> <span class="tok-builtin">@constCast</span>(args).next().?;</span>
-<span class="line" id="L225">    <span class="tok-kw">try</span> opt.val.set(set_arg);</span>
-<span class="line" id="L226">}</span>
-<span class="line" id="L227"></span>
-<span class="line" id="L228"><span class="tok-comment">/// Peak at the next Argument in the provided ArgIterator without advancing the index.</span></span>
-<span class="line" id="L229"><span class="tok-kw">fn</span> <span class="tok-fn">argsPeak</span>(args: *<span class="tok-kw">const</span> proc.ArgIterator) ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L230">    <span class="tok-kw">const</span> peak_arg = <span class="tok-builtin">@constCast</span>(args).next();</span>
-<span class="line" id="L231">    <span class="tok-builtin">@constCast</span>(args).inner.index -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L232">    <span class="tok-kw">return</span> peak_arg;</span>
-<span class="line" id="L233">}</span>
-<span class="line" id="L234"></span>
+<span class="line" id="L213">        <span class="tok-kw">else</span> {</span>
+<span class="line" id="L214">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Command '{s}' does not expect any arguments, but '{s}' was passed.\n&quot;</span>, .{ cmd.name, arg });</span>
+<span class="line" id="L215">            <span class="tok-kw">try</span> cmd.help(writer);</span>
+<span class="line" id="L216">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedArgument;</span>
+<span class="line" id="L217">        }</span>
+<span class="line" id="L218">    }</span>
+<span class="line" id="L219">}</span>
+<span class="line" id="L220"></span>
+<span class="line" id="L221"><span class="tok-comment">/// Parse an Option for the given Command.</span></span>
+<span class="line" id="L222"><span class="tok-kw">fn</span> <span class="tok-fn">parseOpt</span>(args: *<span class="tok-kw">const</span> proc.ArgIterator, <span class="tok-kw">comptime</span> opt_type: <span class="tok-type">type</span>, opt: *<span class="tok-kw">const</span> opt_type) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L223">    <span class="tok-kw">const</span> peak_arg = argsPeak(args);</span>
+<span class="line" id="L224">    <span class="tok-kw">const</span> set_arg = </span>
+<span class="line" id="L225">        <span class="tok-kw">if</span> (peak_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peak_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>
+<span class="line" id="L226">            _ = <span class="tok-builtin">@constCast</span>(args).next();</span>
+<span class="line" id="L227">            <span class="tok-kw">break</span> :setArg <span class="tok-str">&quot;true&quot;</span>;</span>
+<span class="line" id="L228">        }</span>
+<span class="line" id="L229">        <span class="tok-kw">else</span> <span class="tok-builtin">@constCast</span>(args).next().?;</span>
+<span class="line" id="L230">    <span class="tok-kw">try</span> opt.val.set(set_arg);</span>
+<span class="line" id="L231">}</span>
+<span class="line" id="L232"></span>
+<span class="line" id="L233"><span class="tok-comment">/// Peak at the next Argument in the provided ArgIterator without advancing the index.</span></span>
+<span class="line" id="L234"><span class="tok-kw">fn</span> <span class="tok-fn">argsPeak</span>(args: *<span class="tok-kw">const</span> proc.ArgIterator) ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L235">    <span class="tok-kw">const</span> peak_arg = <span class="tok-builtin">@constCast</span>(args).next();</span>
+<span class="line" id="L236">    <span class="tok-builtin">@constCast</span>(args).inner.index -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L237">    <span class="tok-kw">return</span> peak_arg;</span>
+<span class="line" id="L238">}</span>
+<span class="line" id="L239"></span>
 </code></pre></body>
 </html>

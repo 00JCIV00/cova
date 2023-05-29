@@ -24,14 +24,16 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
     // Bypass argument 0 (the filename being executed);
     const init_arg = if (@constCast(args).inner.index == 0) @constCast(args).next()
                      else argsPeak(args); 
+    log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
+    defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
 
     parseArg: while (@constCast(args).next()) |arg| {
         if (init_arg == null) return;
         var unmatched = false;
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
-            log.debug("Attempting to Parse Commands...\n", .{});
+            log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |sub_cmd| {
                 if (eql(u8, sub_cmd.name, arg)) {
                     parseArgs(args, CustomCommand, sub_cmd, writer) catch { 
@@ -40,16 +42,17 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                         try writer.print("\n\n", .{});
                         return error.CouldNotParseCommand;
                     };
-                    log.debug("Parsed Command '{s}'\n", .{ sub_cmd.name });
+                    log.debug("Parsed Command '{s}'.", .{ sub_cmd.name });
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
                 }
             }
             unmatched = true;
+            log.debug("No Commands Matched for Command '{s}'.", .{ cmd.name });
         }
         // ...Then for any Options...
         if (cmd.opts != null) {
-            log.debug("Attempting to Parse Options...\n", .{});
+            log.debug("Attempting to Parse Options...", .{});
             const short_pf = optType.short_prefix;
             const long_pf = optType.long_prefix;
             // - Short Options
@@ -83,6 +86,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                     try writer.print("\n\n", .{});
                                     return error.CouldNotParseOption;
                                 };
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
                             }
                             // Handle final Option in a chain of Short Options
@@ -100,11 +104,11 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                         return error.CouldNotParseOption;
                                     };
                                 };
-                                log.debug("Parsed Option '{?c}'.\n", .{ opt.short_name });
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
                             }
                             else @constCast(opt).val.set("true");
-                            log.debug("Parsed Option '{?c}'.\n", .{ opt.short_name });
+                            log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                             continue :shortOpts;
                         }
                     }
@@ -124,7 +128,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                         if (long_opt.len > opt.long_name.?.len and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
                             if (long_opt[long_len] == '=') {
                                 if (eql(u8, opt.val.valType(), "bool")) {
-                                    try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                    try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         long_pf, 
                                         opt.long_name, 
                                         opt.name 
@@ -145,7 +149,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                     try writer.print("\n\n", .{});
                                     return error.CouldNotParseOption;
                                 };
-                                log.debug("Parsed Option '{?s}'.\n", .{ opt.long_name });
+                                log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
                                 continue :parseArg;
                             }
                         }
@@ -166,7 +170,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                     return error.CouldNotParseOption;
                                 };
                             };
-                            log.debug("Parsed Option '{?s}'.\n", .{ opt.long_name });
+                            log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
                             continue :parseArg;
                         }
                     }
@@ -177,10 +181,11 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                 return error.CouldNotParseOption;
             }
             unmatched = true;
+            log.debug("No Options Matched for Command '{s}'.", .{ cmd.name });
         }
         // ...Finally, for any Values.
         if (cmd.vals != null) {
-            log.debug("Attempting to Parse Values...\n", .{});
+            log.debug("Attempting to Parse Values...", .{});
             if (val_idx >= cmd.vals.?.len) {
                 try writer.print("Too many Values provided for Command '{s}'.\n", .{ cmd.name });
                 try cmd.usage(writer);
@@ -194,11 +199,11 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
             };
             val_idx += 1;
 
-            log.debug("Parsed Value '{?s}'.\n", .{ val.name() });
+            log.debug("Parsed Value '{?s}'.", .{ val.name() });
             continue :parseArg;
         }
 
-        // Check if the Command expected an argument but didn't get a match.
+        // Check if the Command expected an Argument but didn't get a match.
         if (unmatched) {
             try writer.print("Unrecognized Argument '{s}' for Command '{s}'.\n", .{ arg, cmd.name });
             try cmd.help(writer);
