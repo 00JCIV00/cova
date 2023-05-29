@@ -179,7 +179,37 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n\n", .{});
         }
 
-        /// Find the Index of a Slice (Why is this not in std.mem?!?!?)
+        /// Check if a Flag has been set on this Command as a Command, an Option, or a Value.
+        /// This is particularly useful for checking if Help or Usage has been called.
+        pub fn checkFlag(self: *const @This(), toggle_name: []const u8) bool {
+            return (
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, toggle_name)) or
+                checkOpt: {
+                    if (self.opts != null) {
+                        for (self.opts.?) |opt| {
+                            if (mem.eql(u8, opt.name, toggle_name) and 
+                                mem.eql(u8, opt.val.valType(), "bool") and 
+                                opt.val.bool.get() catch false)
+                                    break :checkOpt true;
+                        }
+                    }
+                    break :checkOpt false;
+                } or
+                checkVal: {
+                    if (self.vals != null) {
+                        for (self.vals.?) |val| {
+                            if (mem.eql(u8, val.name(), toggle_name) and
+                                mem.eql(u8, val.valType(), "bool") and
+                                val.bool.get() catch false)
+                                    break :checkVal true;
+                        }
+                    }
+                    break :checkVal false;
+                }
+            );
+        }
+
+        /// Find the Index of a Slice (Why is this not in std.mem?!?!? Did I miss it?)
         fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
             switch (@typeInfo(T)) {
                 .Pointer => |ptr| {

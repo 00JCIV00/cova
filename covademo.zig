@@ -46,6 +46,16 @@ const setup_cmd: CustomCommand = .{
                     };
                     break :optsSetup setup_opts[0..];
                 },
+                .vals = valsSetup: {
+                    var setup_vals = [_]*const Value.Generic{
+                        &Value.init(f32, .{
+                            .name = "nestedFloatVal",
+                            .description = "A nested float value.",
+                            .default_val = 0,
+                        }),
+                    };
+                    break :valsSetup setup_vals[0..];
+                }
             }
         };
         break :subCmdsSetup setup_cmds[0..];
@@ -124,7 +134,7 @@ pub fn main() !void {
     defer main_cmd.deinit(alloc);
 
     const args = try proc.argsWithAllocator(alloc);
-    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout);
+    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ .vals_mandatory = false });
     try stdout.print("\n", .{});
     try displayCmdInfo(main_cmd, alloc);
 
@@ -143,19 +153,16 @@ pub fn main() !void {
 }
 
 fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void {
+    _ = alloc;
     var cur_cmd: ?*const CustomCommand = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
 
-        if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
-        if (cmd.sub_cmd != null and eql(u8, cmd.sub_cmd.?.name, "usage")) try cmd.usage(stdout);
+        if (cmd.checkFlag("help")) try cmd.help(stdout);
+        if (cmd.checkFlag("usage")) try cmd.usage(stdout);
 
         try stdout.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            var opt_map: StringHashMap(*const @TypeOf(cmd.*).CustomOption) = try cmd.getOpts(alloc);
-            defer opt_map.deinit();
-            if (try opt_map.get("help").?.val.bool.get()) try cmd.help(stdout);
-            if (try opt_map.get("usage").?.val.bool.get()) try cmd.usage(stdout);
             for (cmd.opts.?) |opt| { 
                 switch (meta.activeTag(opt.val.*)) {
                     .string => {

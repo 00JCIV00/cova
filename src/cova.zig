@@ -15,28 +15,47 @@ pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
+pub const ParseConfig = struct {
+    /// Mandate that all Values must be filled, otherwise error out.
+    /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
+    vals_mandatory: bool = true,
+    /// Skip the first Argument (the executable's name).
+    /// This should generally be set to `true`, but the option is here for unforeseen outliers.
+    skip_exe_name_arg: bool = true,
+    /// Specify custom separators between Options and their Values.
+    /// Spaces ' ' are implicitly included.
+    opt_val_seps: []const u8 = "=",
+};
+
 /// Parse provided Argument tokens into Commands, Options, and Values.
-pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cmd: *const CustomCommand, writer: anytype) !void {
+pub fn parseArgs(
+    args: *const proc.ArgIterator, 
+    comptime CustomCommand: type, 
+    cmd: *const CustomCommand, 
+    writer: anytype,
+    parse_config: ParseConfig,
+) !void {
     var val_idx: u8 = 0;
 
     const optType = @TypeOf(cmd.*).CustomOption;
 
     // Bypass argument 0 (the filename being executed);
-    const init_arg = if (@constCast(args).inner.index == 0) @constCast(args).next()
-                     else argsPeak(args); 
+    const init_arg = 
+        if (parse_config.skip_exe_name_arg and @constCast(args).inner.index == 0) @constCast(args).next()
+        else argsPeak(args); 
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
 
     parseArg: while (@constCast(args).next()) |arg| {
-        if (init_arg == null) return;
+        if (init_arg == null) break :parseArg;
         var unmatched = false;
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
             log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |sub_cmd| {
                 if (eql(u8, sub_cmd.name, arg)) {
-                    parseArgs(args, CustomCommand, sub_cmd, writer) catch { 
+                    parseArgs(args, CustomCommand, sub_cmd, writer, parse_config) catch { 
                         try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
                         try sub_cmd.usage(writer);
                         try writer.print("\n\n", .{});
@@ -210,12 +229,26 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
             try cmd.help(writer);
             return error.UnrecognizedArgument;
         }
-        // For Commands that expect no arguments but are given one, fail to usage
+        // For Commands that expect no Arguments but are given one, fail to usage.
         else {
             try writer.print("Command '{s}' does not expect any arguments, but '{s}' was passed.\n", .{ cmd.name, arg });
             try cmd.help(writer);
             return error.UnexpectedArgument;
         }
+    }
+    // Check for missing Values if they are Mandated.
+    if (parse_config.vals_mandatory and 
+        cmd.vals != null and 
+        val_idx < cmd.vals.?.len and !
+        (cmd.checkFlag("help") or cmd.checkFlag("usage"))
+    ) {
+        try writer.print("Command '{s}' expects {d} Values, but only recieved {d}.\n", .{
+            cmd.name,
+            cmd.vals.?.len,
+            val_idx,
+        });
+        try cmd.help(writer);
+        return error.ExpectedMoreValues;
     }
 }
 
