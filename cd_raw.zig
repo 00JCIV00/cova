@@ -119,8 +119,6 @@ pub fn main() !void {
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    //setup_cmd.validate();
-
     const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit(alloc);
 

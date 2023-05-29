@@ -1,4 +1,4 @@
-//! Container Argument for sub Commands, Options, and Values.
+//! Container Argument for Sub Commands, Options, and Values.
 //!
 //! A Command may contain any mix of those Arguments or none at all if it's to be used as a standalone Command.
 //!
@@ -9,8 +9,8 @@
 //! myapp help
 //! # Command w/ Options and Values
 //! myapp -d "This Value belongs to the 'd' Option." --toggle "This is a standalone Value."
-//! # Command w/ sub Command
-//! myapp --opt "Option for 'myapp' Command." subcmd --subcmd_opt "Option for 'subcmd' sub Command."
+//! # Command w/ Sub Command
+//! myapp --opt "Option for 'myapp' Command." subcmd --subcmd_opt "Option for 'subcmd' Sub Command."
 //! ```
 
 const std = @import("std");
@@ -51,7 +51,7 @@ pub const Config = struct {
 
 };
 
-/// Create an Custom Command type from the provided Config.
+/// Create a Custom Command type from the provided Config.
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// The Custom Option type to be used by this Custom Command type.
@@ -80,7 +80,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
-        /// The Prefix used immediately before a Usage/Help message is displayed.
+        /// The Prefix message used immediately before a Usage/Help message is displayed.
         help_prefix: []const u8 = "",
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
@@ -190,18 +190,18 @@ pub fn Custom(comptime config: Config) type {
             }
         }
 
-        /// Validate this Command during Comptime for distinct sub Commands, Options, and Values. 
-        /// This will also Validate sub Commands recursively.
+        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values. 
+        /// This will also Validate Sub Commands recursively.
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
-                // Check for distinct sub Commands and Validate them.
+                // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds != null) {
                     const cmds = self.sub_cmds.?;
                     var distinct_cmd: [100][]const u8 = .{ "" } ** 100;
                     for (cmds, 0..) |cmd, idx| {
                         if (indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
-                            @compileError("The sub Command '" ++ cmd.name ++ "' is set more than once.");
+                            @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
                         //cmd.validate();
                         distinct_cmd[idx] = cmd.name;
                     }
@@ -302,14 +302,14 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Config for the Initialization of this Command.
-        const InitConfig = struct {
+        pub const InitConfig = struct {
             /// Flag to Validate this Command.
             validate_cmd: bool = true,
             /// Flag to add Usage/Help message Commands to this Command.
             add_help_cmds: bool = true,
             /// Flag to add Usage/Help message Options to this Command.
             add_help_opts: bool = true,
-            /// Flag to initialize sub Commands.
+            /// Flag to initialize Sub Commands.
             init_subcmds: bool = true,
         };
 
@@ -390,6 +390,5 @@ pub fn Custom(comptime config: Config) type {
             alloc.destroy(self);
         }
     };
-
 }
 

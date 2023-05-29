@@ -117,7 +117,7 @@
 <span class="line" id="L4"><span class="tok-comment">//!</span></span>
 <span class="line" id="L5"><span class="tok-comment">//! ```</span></span>
 <span class="line" id="L6"><span class="tok-comment">//! # Values belonging to a Command.</span></span>
-<span class="line" id="L7"><span class="tok-comment">//! myapp &quot;This string Value and the int Value after it both belong to the 'myapp' main Command.&quot;</span></span>
+<span class="line" id="L7"><span class="tok-comment">//! myapp &quot;This string Value and the int Value after it both belong to the 'myapp' main Command.&quot; 13</span></span>
 <span class="line" id="L8"><span class="tok-comment">//! # Values belonging to an Option.</span></span>
 <span class="line" id="L9"><span class="tok-comment">//! myapp --string_opt &quot;This Value belongs to the 'string_opt' Option.&quot;</span></span>
 <span class="line" id="L10"><span class="tok-comment">//! ```</span></span>
@@ -292,18 +292,16 @@
 <span class="line" id="L164">    <span class="tok-comment">//}</span>
 </span>
 <span class="line" id="L165"></span>
-<span class="line" id="L166"></span>
-<span class="line" id="L167"></span>
-<span class="line" id="L168">    <span class="tok-kw">break</span> :genUnion gen_union;</span>
-<span class="line" id="L169">};</span>
-<span class="line" id="L170"></span>
-<span class="line" id="L171"><span class="tok-comment">/// Initialize a Generic Value with a specific Type.</span></span>
-<span class="line" id="L172"><span class="tok-comment">/// TODO: Coerce Typed([]u8) to Typed([]const u8) </span></span>
-<span class="line" id="L173"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> typed_val: Typed(T)) Generic {</span>
-<span class="line" id="L174">    <span class="tok-kw">const</span> active_tag = <span class="tok-kw">if</span> (T == []<span class="tok-kw">const</span> <span class="tok-type">u8</span> <span class="tok-kw">or</span> T == []<span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(T);</span>
-<span class="line" id="L175">    <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(Generic, active_tag, typed_val);</span>
-<span class="line" id="L176">}</span>
-<span class="line" id="L177"></span>
-<span class="line" id="L178"></span>
+<span class="line" id="L166">    <span class="tok-kw">break</span> :genUnion gen_union;</span>
+<span class="line" id="L167">};</span>
+<span class="line" id="L168"></span>
+<span class="line" id="L169"><span class="tok-comment">/// Initialize a Generic Value with a specific Type.</span></span>
+<span class="line" id="L170"><span class="tok-comment">/// TODO: Coerce Typed([]u8) to Typed([]const u8) </span></span>
+<span class="line" id="L171"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> typed_val: Typed(T)) Generic {</span>
+<span class="line" id="L172">    <span class="tok-kw">const</span> active_tag = <span class="tok-kw">if</span> (T == []<span class="tok-kw">const</span> <span class="tok-type">u8</span> <span class="tok-kw">or</span> T == []<span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(T);</span>
+<span class="line" id="L173">    <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(Generic, active_tag, typed_val);</span>
+<span class="line" id="L174">}</span>
+<span class="line" id="L175"></span>
+<span class="line" id="L176"></span>
 </code></pre></body>
 </html>

@@ -4,7 +4,7 @@
 //!
 //! ```
 //! # Values belonging to a Command.
-//! myapp "This string Value and the int Value after it both belong to the 'myapp' main Command."
+//! myapp "This string Value and the int Value after it both belong to the 'myapp' main Command." 13
 //! # Values belonging to an Option.
 //! myapp --string_opt "This Value belongs to the 'string_opt' Option."
 //! ```
@@ -162,8 +162,6 @@ pub const Generic = genUnion: {
     //       .alignment = @alignOf(meta.Int(.signed, bit_width)),
     //    } };
     //}
-
-
 
     break :genUnion gen_union;
 };
