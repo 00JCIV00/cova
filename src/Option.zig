@@ -12,7 +12,7 @@
 const std = @import("std");
 const ascii = std.ascii;
 
-const toUpper = ascii.upperString;
+const toUpper = ascii.toUpper;
 
 const Val = @import("Value.zig");
     
@@ -52,6 +52,7 @@ pub fn Custom(comptime config: Config) type {
         val: *const Val.Generic = &Val.init(bool, .{}),
 
         /// The Name of this Option for user identification and Usage/Help messages.
+        /// Limited to 100B.
         name: []const u8,
         /// The Description of this Option for Usage/Help messages.
         description: []const u8 = "",
@@ -73,7 +74,9 @@ pub fn Custom(comptime config: Config) type {
         /// Creates the Help message for this Option and Writes it to the provided Writer.
         pub fn help(self: *const @This(), writer: anytype) !void {
             var upper_name_buf: [100]u8 = undefined;
-            var upper_name = toUpper(upper_name_buf[0..], self.name);
+            const upper_name = upper_name_buf[0..];
+            upper_name[0] = toUpper(self.name[0]);
+            for(upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
             if (help_fmt == null) {
                 try writer.print("{s}:\n            ", .{ upper_name });
                 try self.usage(writer);

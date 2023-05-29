@@ -36,7 +36,7 @@ pub fn Typed(comptime set_type: type) type {
         default_val: ?val_type = null,
         /// Flag to determine if this Value has been Parsed and Validated.
         is_set: bool = false,
-        /// A Validation Function to be used in set() following normal Parsing.
+        /// A Validation Function to be used in `set()` following normal Parsing.
         val_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
             
         /// The Name of this Value for user identification and Usage/Help messages.
@@ -127,19 +127,19 @@ pub const Generic = genUnion: {
             }
         }
 
-        /// Get the inner Typed Value's name.
+        /// Get the inner Typed Value's Name.
         pub fn name(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @field(self, @tagName(tag)).name,
             };
         }
-        /// Get the inner Typed Value's type.
+        /// Get the inner Typed Value's Type.
         pub fn valType(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @typeName(@TypeOf(@field(self, @tagName(tag))).getType()),
             };
         }
-        /// Get the inner Typed Value's description.
+        /// Get the inner Typed Value's Description.
         pub fn description(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @field(self, @tagName(tag)).description,

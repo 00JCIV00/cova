@@ -113,15 +113,15 @@ pub fn Custom(comptime config: Config) type {
             try self.usage(writer);
 
             try writer.print(\\HELP:
-                             \\    Command: {s}
+                             \\    COMMAND: {s}
                              \\
-                             \\    Description: {s}
+                             \\    DESCRIPTION: {s}
                              \\
                              \\
                              , .{ self.name, self.description });
             
             if (self.sub_cmds != null) {
-                try writer.print("    Sub Commands:\n", .{});
+                try writer.print("    SUB COMMANDS:\n", .{});
                 for (self.sub_cmds.?) |cmd| {
                     try writer.print("        ", .{});
                     try writer.print(subcmds_help_fmt, .{cmd.name, cmd.description});
@@ -131,7 +131,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.opts != null) {
-                try writer.print("    Options:\n", .{});
+                try writer.print("    OPTIONS:\n", .{});
                 for (self.opts.?) |opt| {
                     try writer.print("        ", .{});
                     try opt.help(writer);
@@ -141,7 +141,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.vals != null) {
-                try writer.print("    Values:\n", .{});
+                try writer.print("    VALUES:\n", .{});
                 for (self.vals.?) |val| {
                     try writer.print("        ", .{});
                     try writer.print(vals_help_fmt, .{ val.name(), val.valType(), val.description() });
@@ -225,10 +225,12 @@ pub fn Custom(comptime config: Config) type {
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
+                // This is an arbitrary (but hopefully higher than needed) limit to the number of Arguments than be Validated each of Commands, Options, and Values.
+                const max_args = 100;
                 // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds != null) {
                     const cmds = self.sub_cmds.?;
-                    var distinct_cmd: [100][]const u8 = .{ "" } ** 100;
+                    var distinct_cmd: [max_args][]const u8 = .{ "" } ** max_args;
                     for (cmds, 0..) |cmd, idx| {
                         if (indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
                             @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
@@ -240,9 +242,9 @@ pub fn Custom(comptime config: Config) type {
                 // Check for distinct Options.
                 if (self.opts != null) {
                     const opts = self.opts.?;
-                    var distinct_name: [100][]const u8 = .{ "" } ** 100;
-                    var distinct_short: [100]u8 = .{ ' ' } ** 100;
-                    var distinct_long: [100][]const u8 = .{ "" } ** 100;
+                    var distinct_name: [max_args][]const u8 = .{ "" } ** max_args;
+                    var distinct_short: [max_args]u8 = .{ ' ' } ** max_args;
+                    var distinct_long: [max_args][]const u8 = .{ "" } ** max_args;
                     for (opts, 0..) |opt, idx| {
                         if (indexOfEql([]const u8, distinct_name[0..], opt.name) != null) 
                             @compileError("The Option '" ++ opt.name ++ "' is set more than once.");
@@ -259,7 +261,7 @@ pub fn Custom(comptime config: Config) type {
                 // Check for distinct Values.
                 if (self.vals != null) {
                     const vals = self.vals.?;
-                    var distinct_val: [100][]const u8 = .{ "" } ** 100;
+                    var distinct_val: [max_args][]const u8 = .{ "" } ** max_args;
                     for (vals, 0..) |val, idx| {
                         if (indexOfEql([]const u8, distinct_val[0..], val.name()) != null) 
                             @compileError("The Value '" ++ val.name ++ "' is set more than once.");
