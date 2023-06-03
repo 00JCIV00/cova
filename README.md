@@ -15,7 +15,7 @@ Cova is based on the idea that Arguments will fall into one of three categories:
   - [x] Handle the same Option given multiple times. (Currently takes last value.)
   - [x] Handle no space ' ' between a Short Option and its Value.
   - [ ] Tab Completion (long-term goal).
-- [ ] Parsing Customization:
+- [x] Parsing Customization:
   - [x] Mandate Values be filled.
   - [x] Custom prefixes for Options.
   - [x] Custom separator between Options and Values. (Currently accepts ' ' or '=').
