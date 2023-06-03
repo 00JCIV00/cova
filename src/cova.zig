@@ -15,28 +15,50 @@ pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
+pub const ParseConfig = struct {
+    /// Mandate that all Values must be filled, otherwise error out.
+    /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
+    vals_mandatory: bool = true,
+    /// Skip the first Argument (the executable's name).
+    /// This should generally be set to `true`, but the option is here for unforeseen outliers.
+    skip_exe_name_arg: bool = true,
+    /// Allow there to be no space ' ' between Options and Values.
+    /// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.
+    allow_opt_val_no_space: bool = true,
+    /// Specify custom Separators between Options and their Values.
+    /// Spaces ' ' are implicitly included.
+    opt_val_seps: []const u8 = "=",
+};
+
 /// Parse provided Argument tokens into Commands, Options, and Values.
-pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cmd: *const CustomCommand, writer: anytype) !void {
+pub fn parseArgs(
+    args: *const proc.ArgIterator, 
+    comptime CustomCommand: type, 
+    cmd: *const CustomCommand, 
+    writer: anytype,
+    parse_config: ParseConfig,
+) !void {
     var val_idx: u8 = 0;
 
     const optType = @TypeOf(cmd.*).CustomOption;
 
     // Bypass argument 0 (the filename being executed);
-    const init_arg = if (@constCast(args).inner.index == 0) @constCast(args).next()
-                     else argsPeak(args); 
+    const init_arg = 
+        if (parse_config.skip_exe_name_arg and @constCast(args).inner.index == 0) @constCast(args).next()
+        else argsPeak(args); 
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
 
     parseArg: while (@constCast(args).next()) |arg| {
-        if (init_arg == null) return;
+        if (init_arg == null) break :parseArg;
         var unmatched = false;
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
             log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |sub_cmd| {
                 if (eql(u8, sub_cmd.name, arg)) {
-                    parseArgs(args, CustomCommand, sub_cmd, writer) catch { 
+                    parseArgs(args, CustomCommand, sub_cmd, writer, parse_config) catch { 
                         try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
                         try sub_cmd.usage(writer);
                         try writer.print("\n\n", .{});
@@ -61,9 +83,8 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                 shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
                     for (cmd.opts.?) |opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
-                            //TODO: Figure out why these if statements need a "try". Possibly due to subtraction underflow?
                             // Handle Argument provided to this Option with '=' instead of ' '.
-                            try if (short_opts[short_idx + 1] == '=') {
+                            if (mem.indexOfScalar(u8, parse_config.opt_val_seps, short_opts[short_idx + 1]) != null) {
                                 if (eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         short_pf, 
@@ -91,7 +112,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                             }
                             // Handle final Option in a chain of Short Options
                             else if (short_idx == short_opts.len - 1) { 
-                                try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                                if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, @TypeOf(opt.*), opt) catch {
                                         try writer.print("Could not parse Option '{c}{?c}: {s}'.\n", .{ 
@@ -103,14 +124,27 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                         try writer.print("\n\n", .{});
                                         return error.CouldNotParseOption;
                                     };
-                                };
+                                }
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
                             }
-                            // Handle an Option before the final Short Option in a chain.
-                            else @constCast(opt).val.set("true");
-                            log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                            continue :shortOpts;
+                            // Handle a boolean Option before the final Short Option in a chain.
+                            else if (eql(u8, opt.val.valType(), "bool")) {
+                                try @constCast(opt).val.set("true");
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                continue :shortOpts;
+                            }
+                            // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
+                            else if (parse_config.allow_opt_val_no_space) {
+                                var short_names_buf: [100]u8 = undefined;
+                                const short_names = short_names_buf[0..];
+                                for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
+                                if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
+                                    try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                    continue :parseArg;
+                                }
+                            }
                         }
                     }
                     try writer.print("Could not parse Option '{c}{?c}'.\n", .{ short_pf, short_opt });
@@ -125,9 +159,9 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                 for (cmd.opts.?) |opt| {
                     const long_len = opt.long_name.?.len;
                     if (opt.long_name != null) {
-                        // Handle Value provided to this Option with '=' instead of ' '.
+                        // Handle Value provided to this Option with custom Separator (ex: '=') instead of a space ' '.
                         if (long_opt.len > opt.long_name.?.len and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
-                            if (long_opt[long_len] == '=') {
+                            if (mem.indexOfScalar(u8, parse_config.opt_val_seps, long_opt[long_len]) != null) {
                                 if (eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         long_pf, 
@@ -157,7 +191,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                         // Handle normally provided Value to Option
                         else if (eql(u8, long_opt, opt.long_name.?)) {
                             // Handle Boolean/Toggle Option.
-                            try if (eql(u8, opt.val.valType(), "bool")) @constCast(opt).val.set("true")
+                            if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                             // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, @TypeOf(opt.*), opt) catch {
@@ -170,7 +204,7 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
                                     try writer.print("\n\n", .{});
                                     return error.CouldNotParseOption;
                                 };
-                            };
+                            }
                             log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
                             continue :parseArg;
                         }
@@ -210,12 +244,26 @@ pub fn parseArgs(args: *const proc.ArgIterator, comptime CustomCommand: type, cm
             try cmd.help(writer);
             return error.UnrecognizedArgument;
         }
-        // For Commands that expect no arguments but are given one, fail to usage
+        // For Commands that expect no Arguments but are given one, fail to usage.
         else {
             try writer.print("Command '{s}' does not expect any arguments, but '{s}' was passed.\n", .{ cmd.name, arg });
             try cmd.help(writer);
             return error.UnexpectedArgument;
         }
+    }
+    // Check for missing Values if they are Mandated.
+    if (parse_config.vals_mandatory and 
+        cmd.vals != null and 
+        val_idx < cmd.vals.?.len and !
+        (cmd.checkFlag("help") or cmd.checkFlag("usage"))
+    ) {
+        try writer.print("Command '{s}' expects {d} Values, but only recieved {d}.\n", .{
+            cmd.name,
+            cmd.vals.?.len,
+            val_idx,
+        });
+        try cmd.help(writer);
+        return error.ExpectedMoreValues;
     }
 }
 

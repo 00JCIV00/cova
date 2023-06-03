@@ -19,7 +19,7 @@ const mem = std.mem;
 const StringHashMap = std.StringHashMap;
 
 const Option = @import("Option.zig");
-const Val = @import("Value.zig");
+const Value = @import("Value.zig");
 
 
 /// Config for custom Command types. 
@@ -76,7 +76,7 @@ pub fn Custom(comptime config: Config) type {
         /// The list of Options this Command can take.
         opts: ?[]*const CustomOption = null,
         /// The list of Values this Command can take.
-        vals: ?[]*const Val.Generic = null,
+        vals: ?[]*const Value.Generic = null,
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
@@ -99,9 +99,9 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Gets a StringHashMap of this Command's Values.
-        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Val) {
+        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Value) {
             if (self.vals == null) return error.NoValuesInCommand;
-            var map = StringHashMap(*const Val).init(alloc);
+            var map = StringHashMap(*const Value).init(alloc);
             for (self.vals.?) |val| { try map.put(val.name, val); }
             return map;
         }
@@ -113,15 +113,15 @@ pub fn Custom(comptime config: Config) type {
             try self.usage(writer);
 
             try writer.print(\\HELP:
-                             \\    Command: {s}
+                             \\    COMMAND: {s}
                              \\
-                             \\    Description: {s}
+                             \\    DESCRIPTION: {s}
                              \\
                              \\
                              , .{ self.name, self.description });
             
             if (self.sub_cmds != null) {
-                try writer.print("    Sub Commands:\n", .{});
+                try writer.print("    SUB COMMANDS:\n", .{});
                 for (self.sub_cmds.?) |cmd| {
                     try writer.print("        ", .{});
                     try writer.print(subcmds_help_fmt, .{cmd.name, cmd.description});
@@ -131,7 +131,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.opts != null) {
-                try writer.print("    Options:\n", .{});
+                try writer.print("    OPTIONS:\n", .{});
                 for (self.opts.?) |opt| {
                     try writer.print("        ", .{});
                     try opt.help(writer);
@@ -141,7 +141,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.vals != null) {
-                try writer.print("    Values:\n", .{});
+                try writer.print("    VALUES:\n", .{});
                 for (self.vals.?) |val| {
                     try writer.print("        ", .{});
                     try writer.print(vals_help_fmt, .{ val.name(), val.valType(), val.description() });
@@ -179,7 +179,37 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n\n", .{});
         }
 
-        /// Find the Index of a Slice (Why is this not in std.mem?!?!?)
+        /// Check if a Flag has been set on this Command as a Command, an Option, or a Value.
+        /// This is particularly useful for checking if Help or Usage has been called.
+        pub fn checkFlag(self: *const @This(), toggle_name: []const u8) bool {
+            return (
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, toggle_name)) or
+                checkOpt: {
+                    if (self.opts != null) {
+                        for (self.opts.?) |opt| {
+                            if (mem.eql(u8, opt.name, toggle_name) and 
+                                mem.eql(u8, opt.val.valType(), "bool") and 
+                                opt.val.bool.get() catch false)
+                                    break :checkOpt true;
+                        }
+                    }
+                    break :checkOpt false;
+                } or
+                checkVal: {
+                    if (self.vals != null) {
+                        for (self.vals.?) |val| {
+                            if (mem.eql(u8, val.name(), toggle_name) and
+                                mem.eql(u8, val.valType(), "bool") and
+                                val.bool.get() catch false)
+                                    break :checkVal true;
+                        }
+                    }
+                    break :checkVal false;
+                }
+            );
+        }
+
+        /// Find the Index of a Slice (Why is this not in std.mem?!?!? Did I miss it?)
         fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
             switch (@typeInfo(T)) {
                 .Pointer => |ptr| {
@@ -195,10 +225,12 @@ pub fn Custom(comptime config: Config) type {
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
+                // This is an arbitrary (but hopefully higher than needed) limit to the number of Arguments than be Validated each of Commands, Options, and Values.
+                const max_args = 100;
                 // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds != null) {
                     const cmds = self.sub_cmds.?;
-                    var distinct_cmd: [100][]const u8 = .{ "" } ** 100;
+                    var distinct_cmd: [max_args][]const u8 = .{ "" } ** max_args;
                     for (cmds, 0..) |cmd, idx| {
                         if (indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
                             @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
@@ -210,9 +242,9 @@ pub fn Custom(comptime config: Config) type {
                 // Check for distinct Options.
                 if (self.opts != null) {
                     const opts = self.opts.?;
-                    var distinct_name: [100][]const u8 = .{ "" } ** 100;
-                    var distinct_short: [100]u8 = .{ ' ' } ** 100;
-                    var distinct_long: [100][]const u8 = .{ "" } ** 100;
+                    var distinct_name: [max_args][]const u8 = .{ "" } ** max_args;
+                    var distinct_short: [max_args]u8 = .{ ' ' } ** max_args;
+                    var distinct_long: [max_args][]const u8 = .{ "" } ** max_args;
                     for (opts, 0..) |opt, idx| {
                         if (indexOfEql([]const u8, distinct_name[0..], opt.name) != null) 
                             @compileError("The Option '" ++ opt.name ++ "' is set more than once.");
@@ -229,7 +261,7 @@ pub fn Custom(comptime config: Config) type {
                 // Check for distinct Values.
                 if (self.vals != null) {
                     const vals = self.vals.?;
-                    var distinct_val: [100][]const u8 = .{ "" } ** 100;
+                    var distinct_val: [max_args][]const u8 = .{ "" } ** max_args;
                     for (vals, 0..) |val, idx| {
                         if (indexOfEql([]const u8, distinct_val[0..], val.name()) != null) 
                             @compileError("The Value '" ++ val.name ++ "' is set more than once.");
@@ -283,14 +315,14 @@ pub fn Custom(comptime config: Config) type {
                             .short_name = 'u',
                             .long_name = "usage",
                             .description = usage_description,
-                            .val = &Val.init(bool, .{ .name = "usageFlag" }),
+                            .val = &Value.ofType(bool, .{ .name = "usageFlag" }),
                         },
                         &@This().CustomOption{
                             .name = "help",
                             .short_name = 'h',
                             .long_name = "help",
                             .description = help_description, 
-                            .val = &Val.init(bool, .{ .name = "helpFlag" }),
+                            .val = &Value.ofType(bool, .{ .name = "helpFlag" }),
                         },
                     };
                     self.opts = 
@@ -359,8 +391,8 @@ pub fn Custom(comptime config: Config) type {
                     .long_name = "usage",
                     .description = usage_description,
                     .val = usageVal: {
-                        var usage_val = try alloc.create(Val.Generic);
-                        usage_val.* = Val.init(bool, .{ .name = "usageFlag" });
+                        var usage_val = try alloc.create(Value.Generic);
+                        usage_val.* = Value.ofType(bool, .{ .name = "usageFlag" });
                         break :usageVal usage_val;
                     },
                 };
@@ -371,8 +403,8 @@ pub fn Custom(comptime config: Config) type {
                     .long_name = "help",
                     .description = help_description,
                     .val = helpVal: {
-                        var help_val = try alloc.create(Val.Generic);
-                        help_val.* = Val.init(bool, .{ .name = "helpFlag" });
+                        var help_val = try alloc.create(Value.Generic);
+                        help_val.* = Value.ofType(bool, .{ .name = "helpFlag" });
                         break :helpVal help_val;
                     },
                 };
