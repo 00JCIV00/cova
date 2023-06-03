@@ -72,7 +72,7 @@ const setup_cmd: CustomCommand = .{
                     .set_behavior = .Multi,
                     .max_args = 4,
                 }),
-                .description = "A string option.",
+                .description = "A string option. (Can be given up to 4 times.)",
             },
             &CustomCommand.CustomOption{
                 .name = "intOpt",
@@ -85,7 +85,7 @@ const setup_cmd: CustomCommand = .{
                     .set_behavior = .Multi,
                     .max_args = 10,
                 }),
-                .description = "An integer option.",
+                .description = "An integer option. (Can be given up to 10 times.)",
             },
             &CustomCommand.CustomOption{
                 .name = "toggle",
