@@ -19,7 +19,7 @@ Cova is based on the idea that Arguments will fall into one of three categories:
   - [x] Mandate Values be filled.
   - [x] Custom prefixes for Options.
   - [x] Custom separator between Options and Values. (Currently accepts ' ' or '=').
-  - [ ] Choose behavior for having the same option given multiple times.
+  - [x] Choose behavior for having the same option given multiple times.
   - [x] Choose whether or not to skip the first Argument (the executable's name).
 - [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.

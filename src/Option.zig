@@ -14,7 +14,7 @@ const ascii = std.ascii;
 
 const toUpper = ascii.toUpper;
 
-const Val = @import("Value.zig");
+const Value = @import("Value.zig");
     
 /// Config for custom Option types.
 pub const Config = struct {
@@ -49,7 +49,7 @@ pub fn Custom(comptime config: Config) type {
         /// This Option's Long Name (ex: `--intOpt`).
         long_name: ?[]const u8,
         /// This Option's wrapped Value.
-        val: *const Val.Generic = &Val.init(bool, .{}),
+        val: *const Value.Generic = &Value.ofType(bool, .{}),
 
         /// The Name of this Option for user identification and Usage/Help messages.
         /// Limited to 100B.

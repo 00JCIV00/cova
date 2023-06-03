@@ -19,7 +19,7 @@ const mem = std.mem;
 const StringHashMap = std.StringHashMap;
 
 const Option = @import("Option.zig");
-const Val = @import("Value.zig");
+const Value = @import("Value.zig");
 
 
 /// Config for custom Command types. 
@@ -76,7 +76,7 @@ pub fn Custom(comptime config: Config) type {
         /// The list of Options this Command can take.
         opts: ?[]*const CustomOption = null,
         /// The list of Values this Command can take.
-        vals: ?[]*const Val.Generic = null,
+        vals: ?[]*const Value.Generic = null,
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
@@ -99,9 +99,9 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Gets a StringHashMap of this Command's Values.
-        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Val) {
+        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Value) {
             if (self.vals == null) return error.NoValuesInCommand;
-            var map = StringHashMap(*const Val).init(alloc);
+            var map = StringHashMap(*const Value).init(alloc);
             for (self.vals.?) |val| { try map.put(val.name, val); }
             return map;
         }
@@ -315,14 +315,14 @@ pub fn Custom(comptime config: Config) type {
                             .short_name = 'u',
                             .long_name = "usage",
                             .description = usage_description,
-                            .val = &Val.init(bool, .{ .name = "usageFlag" }),
+                            .val = &Value.ofType(bool, .{ .name = "usageFlag" }),
                         },
                         &@This().CustomOption{
                             .name = "help",
                             .short_name = 'h',
                             .long_name = "help",
                             .description = help_description, 
-                            .val = &Val.init(bool, .{ .name = "helpFlag" }),
+                            .val = &Value.ofType(bool, .{ .name = "helpFlag" }),
                         },
                     };
                     self.opts = 
@@ -391,8 +391,8 @@ pub fn Custom(comptime config: Config) type {
                     .long_name = "usage",
                     .description = usage_description,
                     .val = usageVal: {
-                        var usage_val = try alloc.create(Val.Generic);
-                        usage_val.* = Val.init(bool, .{ .name = "usageFlag" });
+                        var usage_val = try alloc.create(Value.Generic);
+                        usage_val.* = Value.ofType(bool, .{ .name = "usageFlag" });
                         break :usageVal usage_val;
                     },
                 };
@@ -403,8 +403,8 @@ pub fn Custom(comptime config: Config) type {
                     .long_name = "help",
                     .description = help_description,
                     .val = helpVal: {
-                        var help_val = try alloc.create(Val.Generic);
-                        help_val.* = Val.init(bool, .{ .name = "helpFlag" });
+                        var help_val = try alloc.create(Value.Generic);
+                        help_val.* = Value.ofType(bool, .{ .name = "helpFlag" });
                         break :helpVal help_val;
                     },
                 };

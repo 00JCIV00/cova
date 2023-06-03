@@ -36,7 +36,7 @@ const setup_cmd: CustomCommand = .{
                             .name = "nestedIntOpt",
                             .short_name = 'n',
                             .long_name = "nestedIntOpt",
-                            .val = &Value.init(u8, .{
+                            .val = &Value.ofType(u8, .{
                                 .name = "nestedIntVal",
                                 .description = "A nested integer value.",
                                 .default_val = 203,
@@ -48,7 +48,7 @@ const setup_cmd: CustomCommand = .{
                 },
                 .vals = valsSetup: {
                     var setup_vals = [_]*const Value.Generic{
-                        &Value.init(f32, .{
+                        &Value.ofType(f32, .{
                             .name = "nestedFloatVal",
                             .description = "A nested float value.",
                             .default_val = 0,
@@ -66,9 +66,11 @@ const setup_cmd: CustomCommand = .{
                 .name = "stringOpt",
                 .short_name = 's',
                 .long_name = "stringOpt",
-                .val = &Value.init([]const u8, .{
+                .val = &Value.ofType([]const u8, .{
                     .name = "stringVal",
                     .description = "A string value.",
+                    .set_behavior = .Multi,
+                    .max_args = 4,
                 }),
                 .description = "A string option.",
             },
@@ -76,10 +78,12 @@ const setup_cmd: CustomCommand = .{
                 .name = "intOpt",
                 .short_name = 'i',
                 .long_name = "intOpt",
-                .val = &Value.init(i16, .{
+                .val = &Value.ofType(i16, .{
                     .name = "intVal",
                     .description = "An integer value.",
-                    .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn
+                    .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
+                    .set_behavior = .Multi,
+                    .max_args = 10,
                 }),
                 .description = "An integer option.",
             },
@@ -87,7 +91,7 @@ const setup_cmd: CustomCommand = .{
                 .name = "toggle",
                 .short_name = 't',
                 .long_name = "toggle",
-                .val = &Value.init(bool, .{
+                .val = &Value.ofType(bool, .{
                     .name = "toggleVal",
                     .description = "A toggle/boolean value.",
                 }),
@@ -97,7 +101,7 @@ const setup_cmd: CustomCommand = .{
                 .name = "verbosity",
                 .short_name = 'v',
                 .long_name = "verbosity",
-                .val = &Value.init(u4, .{
+                .val = &Value.ofType(u4, .{
                     .name = "verbosityLevel",
                     .description = "The verbosity level from 0 (err) to 3 (debug).",
                     .default_val = 3,
@@ -110,11 +114,11 @@ const setup_cmd: CustomCommand = .{
     },
     .vals = valsSetup: {
         var setup_vals = [_]*const Value.Generic{
-            &Value.init([]const u8, .{
+            &Value.ofType([]const u8, .{
                 .name = "cmdStr",
                 .description = "A string value for the command.",
             }),
-            &Value.init(u128, .{
+            &Value.ofType(u128, .{
                 .name = "cmd_u128",
                 .description = "A u128 value for the command.",
                 .default_val = 654321,
@@ -152,8 +156,8 @@ pub fn main() !void {
     //log.debug("Debug", .{});
 }
 
+/// A demo function to show what all is captured by Cova parsing.
 fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void {
-    _ = alloc;
     var cur_cmd: ?*const CustomCommand = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
@@ -168,14 +172,29 @@ fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void
                     .string => {
                         try stdout.print("    Opt: {?s}, Data: \"{s}\"\n", .{ 
                             opt.long_name, 
-                            opt.val.string.get() catch "",
+                            mem.join(alloc, "; ", opt.val.string.getAll(alloc) catch &.{ "" }) catch "",
                         });
                     },
                     inline else => |tag| {
-                        try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
-                            opt.long_name, 
-                            @field(opt.val, @tagName(tag)).get() catch null,
-                        });
+                        const tag_self = @field(opt.val, @tagName(tag));
+                        if (tag_self.set_behavior == .Multi) {
+                            const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
+                                if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
+                                const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
+                                if (data != null) break :rawData &.{ data.? };
+                                break :rawData null;
+                            };
+                            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
+                                opt.long_name, 
+                                raw_data,
+                            });
+                        }
+                        else {
+                            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
+                                opt.long_name, 
+                                tag_self.get() catch null,
+                            });
+                        }
                     },
                 }
             }
