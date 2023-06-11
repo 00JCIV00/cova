@@ -18,6 +18,34 @@ const Option = cova.Option;
 const Value = cova.Value;
 
 pub const log_level: log.Level = .err;
+
+pub const DemoStruct = struct {
+    pub const InnerStruct = struct {
+        in_bool: bool = false,
+        in_float: f32 = 0,
+    };
+
+    inner_config: InnerStruct = .{
+        .in_bool = true,
+        .in_float = 0,
+    },
+    int_opt: ?i32 = 26,
+    str_opt: ?[]const u8 = "Demo Opt string.",
+    str_opt2: ?[]const u8 = "Demo Opt string 2.",
+    flt_opt: ?f16 = 0,
+    int_opt2: ?u16 = 0,
+    multi_str_opt: [5]?[]const u8,
+    multi_int_opt: [3]?u8,
+    struct_bool: bool = false,
+    struct_str: []const u8 = "Demo Struct string.",
+    struct_int: i64,
+};
+    
+const struct_setup_cmd: CustomCommand = CustomCommand.from(DemoStruct, .{
+    .cmd_name = "struct_command",
+    .cmd_description = "Demo of a Command made from a struct.",
+    .cmd_help_prefix = "CovaDemo - Struct Command",
+});
     
 pub const CustomCommand = Command.Custom(.{}); 
 const setup_cmd: CustomCommand = .{
@@ -27,14 +55,14 @@ const setup_cmd: CustomCommand = .{
     .sub_cmds = subCmdsSetup: {
         var setup_cmds = [_]*const CustomCommand{
             &CustomCommand{
-                .name = "demo_cmd",
+                .name = "demo-cmd",
                 .help_prefix = "CovaDemo",
                 .description = "A demo sub command.",
                 .opts = optsSetup: {
                     var setup_opts = [_]*const CustomCommand.CustomOption{
                         &CustomCommand.CustomOption{
                             .name = "nestedIntOpt",
-                            .short_name = 'n',
+                            .short_name = 'i',
                             .long_name = "nestedIntOpt",
                             .val = &Value.ofType(u8, .{
                                 .name = "nestedIntVal",
@@ -42,6 +70,17 @@ const setup_cmd: CustomCommand = .{
                                 .default_val = 203,
                             }),
                             .description = "A nested integer option.",
+                        },
+                        &CustomCommand.CustomOption{
+                            .name = "nestedStrOpt",
+                            .short_name = 's',
+                            .long_name = "nestedStrOpt",
+                            .val = &Value.ofType([]const u8, .{
+                                .name = "nestedStrVal",
+                                .description = "A nested string value.",
+                                .default_val = "A nested string value.",
+                            }),
+                            .description = "A nested string option.",
                         },
                     };
                     break :optsSetup setup_opts[0..];
@@ -56,7 +95,12 @@ const setup_cmd: CustomCommand = .{
                     };
                     break :valsSetup setup_vals[0..];
                 }
-            }
+            },
+            &CustomCommand.from(DemoStruct, .{
+                .cmd_name = "struct-cmd",
+                .cmd_description = "A demo sub command made from a struct.",
+                .cmd_help_prefix = "CovaDemo",
+            }),
         };
         break :subCmdsSetup setup_cmds[0..];
     },
@@ -69,6 +113,7 @@ const setup_cmd: CustomCommand = .{
                 .val = &Value.ofType([]const u8, .{
                     .name = "stringVal",
                     .description = "A string value.",
+                    .default_val = "A string value.",
                     .set_behavior = .Multi,
                     .max_args = 4,
                 }),

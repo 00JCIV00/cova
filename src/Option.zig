@@ -5,6 +5,7 @@
 //! ```
 //! # Short Options
 //! -n "Bill" -a=5 -t
+//! 
 //! # Long Options
 //! --name="Dion" --age 47 --toggle
 //! ```
@@ -96,6 +97,32 @@ pub fn Custom(comptime config: Config) type {
                 self.val.name(),
                 self.val.valType(),
             });
+        }
+
+        /// Create an Option from a Valid Optional StructField.
+        pub fn from(comptime field: std.builtin.Type.StructField, short_name: ?u8, ignore_incompatible: bool) ?@This() {
+            const field_info = @typeInfo(field.type);
+            const optl =
+                if (field_info == .Optional) field_info.Optional
+                else if (field_info == .Array and @typeInfo(field_info.Array.child) == .Optional) @typeInfo(field_info.Array.child).Optional
+                else @compileError("The field '" ++ field.name ++ "' is not an Optional or Array of Optionals.");
+            return .{
+                .name = field.name,
+                .description = "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
+                .long_name = field.name,
+                .short_name = short_name, 
+                .val = optVal: {
+                    const optl_info = @typeInfo(optl.child);
+                    switch (optl_info) {
+                        .Bool, .Int, .Float, .Pointer => break :optVal &(Value.from(field, ignore_incompatible) orelse return null),
+                        inline else => {
+                            if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
+                            else return null;
+                        },
+                    }
+                }
+            };
+        
         }
     };
 } 

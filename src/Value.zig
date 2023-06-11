@@ -5,6 +5,7 @@
 //! ```
 //! # Values belonging to a Command.
 //! myapp "This string Value and the int Value after it both belong to the 'myapp' main Command." 13
+//!
 //! # Values belonging to an Option.
 //! myapp --string_opt "This Value belongs to the 'string_opt' Option."
 //! ```
@@ -49,11 +50,15 @@ pub fn Typed(comptime set_type: type) type {
         /// The Max number of Raw Arguments that can be provided.
         /// This must be between 1 - 100.
         max_args: u7 = 1,
+        /// Flag to determine if this Value is at max capacity for Raw Arguments.
+        /// This should be Read-Only for library users.
+        is_maxed: bool = false,
         /// Set Behavior for this Value.
         set_behavior: SetBehavior = .Last,
         /// An optional Default Value.
         default_val: ?val_type = null,
         /// Flag to determine if this Value has been Parsed and Validated.
+        /// This should be Read-Only for library users.
         is_set: bool = false,
         /// A Validation Function to be used in `set()` following normal Parsing.
         val_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
@@ -89,13 +94,18 @@ pub fn Typed(comptime set_type: type) type {
                 switch (self.set_behavior) {
                     .First => if (self._set_args[0] == null) { 
                         @constCast(self)._set_args[0] = parsed_arg;
+                        @constCast(self)._arg_idx += 1;
                     },
-                    .Last => @constCast(self)._set_args[0] = parsed_arg,
+                    .Last => {
+                        @constCast(self)._set_args[0] = parsed_arg;
+                        @constCast(self)._arg_idx += 1;
+                    },
                     .Multi => if (self._arg_idx < self.max_args) {
                         @constCast(self)._set_args[self._arg_idx] = parsed_arg;
                         @constCast(self)._arg_idx += 1;
                     }
                 }
+                @constCast(self).is_maxed = self._arg_idx == self.max_args;
             }
             else return error.InvalidValue;
         }
@@ -112,7 +122,6 @@ pub fn Typed(comptime set_type: type) type {
 
         /// Get All Parsed and Validated Arguments of this Value.
         /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
-        /// TODO: Make this more efficient.
         pub fn getAll(self: *const @This(), alloc: mem.Allocator) ![]val_type {
             if (!self.is_set) return error.ValueNotSet;
             var vals = try alloc.alloc(val_type, self._arg_idx);
@@ -216,4 +225,35 @@ pub const Generic = genUnion: {
 pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
     const active_tag = if (T == []const u8) "string" else @typeName(T);
     return @unionInit(Generic, active_tag, typed_val);
+}
+
+/// Create a Generic Value from a Valid Value StructField.
+/// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
+pub fn from(comptime field: std.builtin.Type.StructField, ignore_incompatible: bool) ?Generic {
+    const field_info = @typeInfo(field.type);
+    if (field_info == .Pointer and field_info.Pointer.child != u8) {
+        if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+        else return null;
+    }
+    const field_type = 
+        if (field_info == .Optional) field_info.Optional.child
+        else if (field_info == .Array) aryType: {
+            const ary_info = @typeInfo(field_info.Array.child);
+            if (ary_info == .Optional) break :aryType ary_info.Optional.child
+            else break :aryType field_info.Array.child;
+        }
+        else field.type;
+    return ofType(field_type, .{
+        .name = field.name,
+        .description = "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
+        .max_args = 
+            if (field_info == .Array) field_info.Array.len
+            else 1,
+        .set_behavior =
+            if (field_info == .Array) .Multi
+            else .Last,
+        .default_val = 
+            if (field.default_value != null and field_info != .Array) @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*
+            else null,
+    });
 }
