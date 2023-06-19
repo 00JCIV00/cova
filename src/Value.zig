@@ -200,6 +200,18 @@ pub const Generic = genUnion: {
                 inline else => |tag| @field(self, @tagName(tag)).is_set,
             };
         }
+        /// Get the inner Typed Value's Argument Index.
+        pub fn argIdx(self: *const @This()) u7 {
+            return switch (meta.activeTag(self.*)) {
+                inline else => |tag| @field(self, @tagName(tag))._arg_idx,
+            };
+        }
+        /// Get the inner Typed Value's Max Arguments.
+        pub fn maxArgs(self: *const @This()) u7 {
+            return switch (meta.activeTag(self.*)) {
+                inline else => |tag| @field(self, @tagName(tag)).max_args,
+            };
+        }
     };
 
     // TODO: See if there's another way to add these fields procedurally to avoid the declaration reification issue with @Type(builtin.Type{})
@@ -235,14 +247,19 @@ pub fn from(comptime field: std.builtin.Type.StructField, ignore_incompatible: b
         if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
         else return null;
     }
-    const field_type = 
-        if (field_info == .Optional) field_info.Optional.child
-        else if (field_info == .Array) aryType: {
+    const field_type = switch (field_info) {
+        .Optional => field_info.Optional.child,
+        .Array => aryType: {
             const ary_info = @typeInfo(field_info.Array.child);
             if (ary_info == .Optional) break :aryType ary_info.Optional.child
             else break :aryType field_info.Array.child;
-        }
-        else field.type;
+        },
+        .Bool, .Int, .Float, .Pointer => field.type,
+        else => { 
+            if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
+            else return null;
+        },
+    };
     return ofType(field_type, .{
         .name = field.name,
         .description = "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",

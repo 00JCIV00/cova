@@ -24,11 +24,12 @@ pub const DemoStruct = struct {
         in_bool: bool = false,
         in_float: f32 = 0,
     };
-
+    // Command
     inner_config: InnerStruct = .{
         .in_bool = true,
         .in_float = 0,
     },
+    // Options
     int_opt: ?i32 = 26,
     str_opt: ?[]const u8 = "Demo Opt string.",
     str_opt2: ?[]const u8 = "Demo Opt string 2.",
@@ -36,9 +37,11 @@ pub const DemoStruct = struct {
     int_opt2: ?u16 = 0,
     multi_str_opt: [5]?[]const u8,
     multi_int_opt: [3]?u8,
+    // Values
     struct_bool: bool = false,
     struct_str: []const u8 = "Demo Struct string.",
     struct_int: i64,
+    multi_int_val: [2]u16,
 };
     
 const struct_setup_cmd: CustomCommand = CustomCommand.from(DemoStruct, .{
@@ -167,6 +170,8 @@ const setup_cmd: CustomCommand = .{
                 .name = "cmd_u128",
                 .description = "A u128 value for the command.",
                 .default_val = 654321,
+                .set_behavior = .Multi,
+                .max_args = 3,
                 .val_fn = struct{ fn valFn(val: u128) bool { return val > 123456 and val < 987654; } }.valFn,
             }),
         };
@@ -213,56 +218,94 @@ fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void
         try stdout.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
             for (cmd.opts.?) |opt| { 
-                switch (meta.activeTag(opt.val.*)) {
-                    .string => {
-                        try stdout.print("    Opt: {?s}, Data: \"{s}\"\n", .{ 
-                            opt.long_name, 
-                            mem.join(alloc, "; ", opt.val.string.getAll(alloc) catch &.{ "" }) catch "",
-                        });
-                    },
-                    inline else => |tag| {
-                        const tag_self = @field(opt.val, @tagName(tag));
-                        if (tag_self.set_behavior == .Multi) {
-                            const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
-                                if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
-                                const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
-                                if (data != null) break :rawData &.{ data.? };
-                                break :rawData null;
-                            };
-                            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
-                                opt.long_name, 
-                                raw_data,
-                            });
-                        }
-                        else {
-                            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
-                                opt.long_name, 
-                                tag_self.get() catch null,
-                            });
-                        }
-                    },
-                }
+                try displayValInfo(opt.val, opt.long_name, true, alloc);
+                //switch (meta.activeTag(opt.val.*)) {
+                //    .string => {
+                //        try stdout.print("    Opt: {?s}, Data: \"{s}\"\n", .{ 
+                //            opt.long_name, 
+                //            mem.join(alloc, "; ", opt.val.string.getAll(alloc) catch &.{ "" }) catch "",
+                //        });
+                //    },
+                //    inline else => |tag| {
+                //        const tag_self = @field(opt.val, @tagName(tag));
+                //        if (tag_self.set_behavior == .Multi) {
+                //            const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
+                //                if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
+                //                const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
+                //                if (data != null) break :rawData &.{ data.? };
+                //                break :rawData null;
+                //            };
+                //            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
+                //                opt.long_name, 
+                //                raw_data,
+                //            });
+                //        }
+                //        else {
+                //            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
+                //                opt.long_name, 
+                //                tag_self.get() catch null,
+                //            });
+                //        }
+                //    },
+                //}
             }
         }
         if (cmd.vals != null) {
             for (cmd.vals.?) |val| { 
-                switch (meta.activeTag(val.*)) {
-                    .string => {
-                        try stdout.print("    Val: {?s}, Data: \"{s}\"\n", .{ 
-                            val.name(), 
-                            val.string.get() catch "",
-                        });
-                    },
-                    inline else => |tag| {
-                        try stdout.print("    Val: {?s}, Data: {any}\n", .{ 
-                            val.name(), 
-                            @field(val, @tagName(tag)).get() catch null,
-                        });
-                    },
-                }
+                try displayValInfo(val, val.name(), false, alloc);
+                //switch (meta.activeTag(val.*)) {
+                //    .string => {
+                //        try stdout.print("    Val: {?s}, Data: \"{s}\"\n", .{ 
+                //            val.name(), 
+                //            val.string.get() catch "",
+                //        });
+                //    },
+                //    inline else => |tag| {
+                //        try stdout.print("    Val: {?s}, Data: {any}\n", .{ 
+                //            val.name(), 
+                //            @field(val, @tagName(tag)).get() catch null,
+                //        });
+                //    },
+                //}
             }
         }
         try stdout.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
+    }
+}
+
+fn displayValInfo(val: *const Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator) !void {
+    const prefix = if (isOpt) "Opt" else "Val";
+    switch (meta.activeTag(val.*)) {
+        .string => {
+            try stdout.print("    {s}: {?s}, Data: \"{s}\"\n", .{
+                prefix,
+                name, 
+                mem.join(alloc, "; ", val.string.getAll(alloc) catch &.{ "" }) catch "",
+            });
+        },
+        inline else => |tag| {
+            const tag_self = @field(val, @tagName(tag));
+            if (tag_self.set_behavior == .Multi) {
+                const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
+                    if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
+                    const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
+                    if (data != null) break :rawData &.{ data.? };
+                    break :rawData null;
+                };
+                try stdout.print("    {s}: {?s}, Data: {any}\n", .{ 
+                    prefix,
+                    name, 
+                    raw_data,
+                });
+            }
+            else {
+                try stdout.print("    {s}: {?s}, Data: {any}\n", .{ 
+                    prefix,
+                    name, 
+                    tag_self.get() catch null,
+                });
+            }
+        },
     }
 }

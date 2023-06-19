@@ -255,9 +255,10 @@ pub fn Custom(comptime config: Config) type {
         /// The provided Struct must be Comptime-known.
         /// Types are converted as follows:
         /// - Structs = Commands
-        /// - Valid Values = Values (Valid Values can be found under `Value.zig/Generic`.)
+        /// - Valid Values = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
         /// - Valid Optionals = Single-Options (Valid Optionals are nullable versions of Valid Values.)
-        /// - Arrays of Valid Optionals = Multi-Options (WIP) 
+        /// - Arrays of Valid Values = Multi-Values
+        /// - Arrays of Valid Optionals = Multi-Options 
         pub fn from(comptime from_struct: type, comptime from_config: FromConfig) @This() {
             const from_info = @typeInfo(from_struct);
             if (from_info != .Struct) @compileError("Provided Type is not a Struct.");
@@ -316,23 +317,30 @@ pub fn Custom(comptime config: Config) type {
                     // Multi
                     .Array => |ary| {
                         const ary_info = @typeInfo(ary.child);
-                        if (ary_info == .Optional) {
-                            const short_name = shortName: {
-                                if (!from_config.attempt_short_opts) break :shortName null;
-                                for (field.name) |char| {
-                                    const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
-                                    for (ul_chars) |ul| {
-                                        if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
-                                        short_names[short_idx] = ul;
-                                        short_idx += 1;
-                                        break :shortName ul;
+                        switch (ary_info) {
+                            .Optional => {
+                                const short_name = shortName: {
+                                    if (!from_config.attempt_short_opts) break :shortName null;
+                                    for (field.name) |char| {
+                                        const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
+                                        for (ul_chars) |ul| {
+                                            if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
+                                            short_names[short_idx] = ul;
+                                            short_idx += 1;
+                                            break :shortName ul;
+                                        }
                                     }
-                                }
-                                break :shortName null;
-                            };
-                            from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
-                            opts_idx += 1;
-                        } 
+                                    break :shortName null;
+                                };
+                                from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                                opts_idx += 1;
+                            },
+                            .Bool, .Int, .Float, .Pointer => {
+                                from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                                vals_idx += 1;
+                            },
+                            else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                        }
                     },
                     // Incompatible
                     else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Command, Option, or Value."),
