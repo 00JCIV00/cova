@@ -53,6 +53,9 @@ pub fn Typed(comptime set_type: type) type {
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         /// This should be Read-Only for library users.
         is_maxed: bool = false,
+        /// Delimiter Characters that can be used to split up Multi-Values.
+        /// This is only applicable if `set_behavior = .Multi`.
+        arg_delims: []const u8 = ",;:",
         /// Set Behavior for this Value.
         set_behavior: SetBehavior = .Last,
         /// An optional Default Value.
@@ -86,6 +89,24 @@ pub fn Typed(comptime set_type: type) type {
         /// Set this Value if the Argument can be Parsed and Validated.
         /// Blank ("") Arguments will be treated as the current Raw Argument of the Value.
         pub fn set(self: *const @This(), set_arg: []const u8) !void {
+            // Delimited Args
+            var arg_delim: u8 = ' ';
+            const check_delim: bool = checkDelim: {
+                for (self.arg_delims) |delim| {
+                    if (mem.indexOfScalar(u8, set_arg, delim) != null) {
+                        arg_delim = delim;
+                        break :checkDelim true;
+                    }
+                }
+                break :checkDelim false;
+            };
+            if (self.set_behavior == .Multi and check_delim) {
+                var split_args = mem.splitScalar(u8, set_arg, arg_delim);
+                while (split_args.next()) |arg| try self.set(arg);
+                return;
+            }
+
+            // Single Arg
             const parsed_arg = try self.parse(set_arg);
             @constCast(self).is_set =
                 if (self.val_fn != null) self.val_fn.?(parsed_arg)
