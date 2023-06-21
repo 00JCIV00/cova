@@ -15,6 +15,7 @@ pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
+/// Config for custom Parsing options.
 pub const ParseConfig = struct {
     /// Mandate that all Values must be filled, otherwise error out.
     /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
@@ -30,6 +31,7 @@ pub const ParseConfig = struct {
     opt_val_seps: []const u8 = "=",
 };
 
+var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
 pub fn parseArgs(
     args: *const proc.ArgIterator, 
@@ -232,7 +234,8 @@ pub fn parseArgs(
                 try cmd.usage(writer);
                 try writer.print("\n", .{});
             };
-            val_idx += 1;
+
+            if (val.argIdx() == val.maxArgs()) val_idx += 1;
 
             log.debug("Parsed Value '{?s}'.", .{ val.name() });
             continue :parseArg;
@@ -244,7 +247,7 @@ pub fn parseArgs(
             try cmd.help(writer);
             return error.UnrecognizedArgument;
         }
-        // For Commands that expect no Arguments but are given one, fail to usage.
+        // For Commands that expect no Arguments but are given one, fail to the Help message.
         else {
             try writer.print("Command '{s}' does not expect any arguments, but '{s}' was passed.\n", .{ cmd.name, arg });
             try cmd.help(writer);
@@ -252,10 +255,11 @@ pub fn parseArgs(
         }
     }
     // Check for missing Values if they are Mandated.
+    if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
     if (parse_config.vals_mandatory and 
         cmd.vals != null and 
-        val_idx < cmd.vals.?.len and !
-        (cmd.checkFlag("help") or cmd.checkFlag("usage"))
+        val_idx < cmd.vals.?.len and
+        !usage_help_flag
     ) {
         try writer.print("Command '{s}' expects {d} Values, but only recieved {d}.\n", .{
             cmd.name,

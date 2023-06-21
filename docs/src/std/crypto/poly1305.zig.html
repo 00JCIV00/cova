@@ -235,7 +235,7 @@
 <span class="line" id="L113">        <span class="tok-comment">// handle leftover</span>
 </span>
 <span class="line" id="L114">        <span class="tok-kw">if</span> (st.leftover &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L115">            <span class="tok-kw">const</span> want = std.math.min(block_length - st.leftover, mb.len);</span>
+<span class="line" id="L115">            <span class="tok-kw">const</span> want = <span class="tok-builtin">@min</span>(block_length - st.leftover, mb.len);</span>
 <span class="line" id="L116">            <span class="tok-kw">const</span> mc = mb[<span class="tok-number">0</span>..want];</span>
 <span class="line" id="L117">            <span class="tok-kw">for</span> (mc, <span class="tok-number">0</span>..) |x, i| {</span>
 <span class="line" id="L118">                st.buf[st.leftover + i] = x;</span>
@@ -292,7 +292,7 @@
 <span class="line" id="L167"></span>
 <span class="line" id="L168">        <span class="tok-comment">// H - (2^130 - 5)</span>
 </span>
-<span class="line" id="L169">        <span class="tok-kw">var</span> v = sub(h0, <span class="tok-number">0xfffffffffffffffb</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L169">        <span class="tok-kw">var</span> v = <span class="tok-builtin">@subWithOverflow</span>(h0, <span class="tok-number">0xfffffffffffffffb</span>);</span>
 <span class="line" id="L170">        <span class="tok-kw">const</span> h_p0 = v[<span class="tok-number">0</span>];</span>
 <span class="line" id="L171">        v = sub(h1, <span class="tok-number">0xffffffffffffffff</span>, v[<span class="tok-number">1</span>]);</span>
 <span class="line" id="L172">        <span class="tok-kw">const</span> h_p1 = v[<span class="tok-number">0</span>];</span>
@@ -300,7 +300,7 @@
 <span class="line" id="L174"></span>
 <span class="line" id="L175">        <span class="tok-comment">// Final reduction, subtract 2^130-5 from H if H &gt;= 2^130-5</span>
 </span>
-<span class="line" id="L176">        <span class="tok-kw">const</span> mask = v[<span class="tok-number">1</span>] -% <span class="tok-number">1</span>;</span>
+<span class="line" id="L176">        <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, v[<span class="tok-number">1</span>]) -% <span class="tok-number">1</span>;</span>
 <span class="line" id="L177">        h0 ^= mask &amp; (h0 ^ h_p0);</span>
 <span class="line" id="L178">        h1 ^= mask &amp; (h1 ^ h_p1);</span>
 <span class="line" id="L179"></span>
@@ -336,5 +336,14 @@
 <span class="line" id="L208">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_mac, &amp;mac);</span>
 <span class="line" id="L209">}</span>
 <span class="line" id="L210"></span>
+<span class="line" id="L211"><span class="tok-kw">test</span> <span class="tok-str">&quot;poly1305 requiring a final reduction&quot;</span> {</span>
+<span class="line" id="L212">    <span class="tok-kw">const</span> expected_mac = [_]<span class="tok-type">u8</span>{ <span class="tok-number">25</span>, <span class="tok-number">13</span>, <span class="tok-number">249</span>, <span class="tok-number">42</span>, <span class="tok-number">164</span>, <span class="tok-number">57</span>, <span class="tok-number">99</span>, <span class="tok-number">60</span>, <span class="tok-number">149</span>, <span class="tok-number">181</span>, <span class="tok-number">74</span>, <span class="tok-number">74</span>, <span class="tok-number">13</span>, <span class="tok-number">63</span>, <span class="tok-number">121</span>, <span class="tok-number">6</span> };</span>
+<span class="line" id="L213">    <span class="tok-kw">const</span> msg = [_]<span class="tok-type">u8</span>{ <span class="tok-number">253</span>, <span class="tok-number">193</span>, <span class="tok-number">249</span>, <span class="tok-number">146</span>, <span class="tok-number">70</span>, <span class="tok-number">6</span>, <span class="tok-number">214</span>, <span class="tok-number">226</span>, <span class="tok-number">131</span>, <span class="tok-number">213</span>, <span class="tok-number">241</span>, <span class="tok-number">116</span>, <span class="tok-number">20</span>, <span class="tok-number">24</span>, <span class="tok-number">210</span>, <span class="tok-number">224</span>, <span class="tok-number">65</span>, <span class="tok-number">151</span>, <span class="tok-number">255</span>, <span class="tok-number">104</span>, <span class="tok-number">133</span> };</span>
+<span class="line" id="L214">    <span class="tok-kw">const</span> key = [_]<span class="tok-type">u8</span>{ <span class="tok-number">190</span>, <span class="tok-number">63</span>, <span class="tok-number">95</span>, <span class="tok-number">57</span>, <span class="tok-number">155</span>, <span class="tok-number">103</span>, <span class="tok-number">77</span>, <span class="tok-number">170</span>, <span class="tok-number">7</span>, <span class="tok-number">98</span>, <span class="tok-number">106</span>, <span class="tok-number">44</span>, <span class="tok-number">117</span>, <span class="tok-number">186</span>, <span class="tok-number">90</span>, <span class="tok-number">185</span>, <span class="tok-number">109</span>, <span class="tok-number">118</span>, <span class="tok-number">184</span>, <span class="tok-number">24</span>, <span class="tok-number">69</span>, <span class="tok-number">41</span>, <span class="tok-number">166</span>, <span class="tok-number">243</span>, <span class="tok-number">119</span>, <span class="tok-number">132</span>, <span class="tok-number">151</span>, <span class="tok-number">61</span>, <span class="tok-number">52</span>, <span class="tok-number">43</span>, <span class="tok-number">64</span>, <span class="tok-number">250</span> };</span>
+<span class="line" id="L215">    <span class="tok-kw">var</span> mac: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L216">    Poly1305.create(mac[<span class="tok-number">0</span>..], &amp;msg, &amp;key);</span>
+<span class="line" id="L217">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, &amp;expected_mac, &amp;mac);</span>
+<span class="line" id="L218">}</span>
+<span class="line" id="L219"></span>
 </code></pre></body>
 </html>

@@ -325,7 +325,7 @@
 <span class="line" id="L208">    <span class="tok-kw">comptime</span> assert(a &lt;= mem.page_size);</span>
 <span class="line" id="L209"></span>
 <span class="line" id="L210">    <span class="tok-kw">if</span> (n == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L211">        <span class="tok-kw">const</span> ptr = <span class="tok-kw">comptime</span> std.mem.alignBackward(math.maxInt(<span class="tok-type">usize</span>), a);</span>
+<span class="line" id="L211">        <span class="tok-kw">const</span> ptr = <span class="tok-kw">comptime</span> std.mem.alignBackward(<span class="tok-type">usize</span>, math.maxInt(<span class="tok-type">usize</span>), a);</span>
 <span class="line" id="L212">        <span class="tok-kw">return</span> <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-kw">align</span>(a) T, ptr)[<span class="tok-number">0</span>..<span class="tok-number">0</span>];</span>
 <span class="line" id="L213">    }</span>
 <span class="line" id="L214"></span>
@@ -388,7 +388,7 @@
 <span class="line" id="L267">    }</span>
 <span class="line" id="L268">    <span class="tok-kw">if</span> (new_n == <span class="tok-number">0</span>) {</span>
 <span class="line" id="L269">        self.free(old_mem);</span>
-<span class="line" id="L270">        <span class="tok-kw">const</span> ptr = <span class="tok-kw">comptime</span> std.mem.alignBackward(math.maxInt(<span class="tok-type">usize</span>), Slice.alignment);</span>
+<span class="line" id="L270">        <span class="tok-kw">const</span> ptr = <span class="tok-kw">comptime</span> std.mem.alignBackward(<span class="tok-type">usize</span>, math.maxInt(<span class="tok-type">usize</span>), Slice.alignment);</span>
 <span class="line" id="L271">        <span class="tok-kw">return</span> <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-kw">align</span>(Slice.alignment) T, ptr)[<span class="tok-number">0</span>..<span class="tok-number">0</span>];</span>
 <span class="line" id="L272">    }</span>
 <span class="line" id="L273"></span>

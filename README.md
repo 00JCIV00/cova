@@ -9,12 +9,12 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 ![cova_demo](./docs/cova_demo.gif)
 
 ## Goals
+### Pre 1.0
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
-- [ ] Advanced Parsing:
+- [x] Advanced Parsing:
   - [x] Handle '=' instead of ' ' between an Option and its Value.
   - [x] Handle the same Option given multiple times. (Currently takes last value.)
   - [x] Handle no space ' ' between a Short Option and its Value.
-  - [ ] Tab Completion (long-term goal).
 - [x] Parsing Customization:
   - [x] Mandate Values be filled.
   - [x] Custom prefixes for Options.
@@ -30,9 +30,12 @@ Cova is based on the idea that Arguments will fall into one of three categories:
     - [x] Generate Usage/Help sub Commands.
     - [x] Generate Usage/Help Options.
     - [x] User formatting options for Usage/Help messages.
-  - [ ] Generate Commands from a struct and vice versa.
-    - [ ] Compatible nullable fields become Options.
-    - [ ] Compatible non-nullable fields become Values.
+  - [x] Generate Commands from a struct and vice versa.
+    - [x] Compatible nullable fields become Options.
+    - [x] Compatible non-nullable fields become Values.
+
+### Post 1.0
+- [ ] Tab Completion (long-term goal).
   
 ## Documentation
 [Docs](https://00jciv00.github.io/cova/#A;cova)

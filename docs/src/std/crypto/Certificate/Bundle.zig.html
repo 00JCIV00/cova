@@ -295,7 +295,7 @@
 <span class="line" id="L169">    <span class="tok-kw">var</span> it = iterable_dir.iterate();</span>
 <span class="line" id="L170">    <span class="tok-kw">while</span> (<span class="tok-kw">try</span> it.next()) |entry| {</span>
 <span class="line" id="L171">        <span class="tok-kw">switch</span> (entry.kind) {</span>
-<span class="line" id="L172">            .File, .SymLink =&gt; {},</span>
+<span class="line" id="L172">            .file, .sym_link =&gt; {},</span>
 <span class="line" id="L173">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
 <span class="line" id="L174">        }</span>
 <span class="line" id="L175"></span>

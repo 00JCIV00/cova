@@ -7,16 +7,24 @@
 //! ```
 //! # Standalone Command
 //! myapp help
+//!
 //! # Command w/ Options and Values
 //! myapp -d "This Value belongs to the 'd' Option." --toggle "This is a standalone Value."
+//! 
 //! # Command w/ Sub Command
 //! myapp --opt "Option for 'myapp' Command." subcmd --subcmd_opt "Option for 'subcmd' Sub Command."
 //! ```
 
 const std = @import("std");
+const ascii = std.ascii;
 const log = std.log;
 const mem = std.mem;
+const meta = std.meta;
 const StringHashMap = std.StringHashMap;
+
+const eql = mem.eql;
+const toLower = ascii.toLower;
+const toUpper = ascii.toUpper;
 
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
@@ -87,7 +95,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Sets the active Sub-Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
-            @constCast(self).*.sub_cmd = @constCast(set_cmd);
+            //@constCast(self).*.sub_cmd = @constCast(set_cmd);
+            @constCast(self).*.sub_cmd = set_cmd;
         }
 
         /// Gets a StringHashMap of this Command's Options.
@@ -183,12 +192,12 @@ pub fn Custom(comptime config: Config) type {
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), toggle_name: []const u8) bool {
             return (
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, toggle_name)) or
+                (self.sub_cmd != null and eql(u8, self.sub_cmd.?.name, toggle_name)) or
                 checkOpt: {
                     if (self.opts != null) {
                         for (self.opts.?) |opt| {
-                            if (mem.eql(u8, opt.name, toggle_name) and 
-                                mem.eql(u8, opt.val.valType(), "bool") and 
+                            if (eql(u8, opt.name, toggle_name) and 
+                                eql(u8, opt.val.valType(), "bool") and 
                                 opt.val.bool.get() catch false)
                                     break :checkOpt true;
                         }
@@ -198,8 +207,8 @@ pub fn Custom(comptime config: Config) type {
                 checkVal: {
                     if (self.vals != null) {
                         for (self.vals.?) |val| {
-                            if (mem.eql(u8, val.name(), toggle_name) and
-                                mem.eql(u8, val.valType(), "bool") and
+                            if (eql(u8, val.name(), toggle_name) and
+                                eql(u8, val.valType(), "bool") and
                                 val.bool.get() catch false)
                                     break :checkVal true;
                         }
@@ -213,15 +222,251 @@ pub fn Custom(comptime config: Config) type {
         fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
             switch (@typeInfo(T)) {
                 .Pointer => |ptr| {
-                    for (haystack, 0..) |hay, idx| if (mem.eql(ptr.child, hay, needle)) return idx;
+                    for (haystack, 0..) |hay, idx| if (eql(ptr.child, hay, needle)) return idx;
                     return null;
                 },
                 inline else => return mem.indexOfScalar(T, haystack, needle),
             }
         }
 
+        /// Config for creating Commands from Structs using `from()`.
+        pub const FromConfig = struct {
+            /// Ignore incompatible types.
+            ignore_incompatible: bool = true,
+            /// Attempt to create Short Options.
+            /// This will attempt to make a short option name from the first letter of the field name in lowercase then uppercase, sequentially working through each next letter if the previous one has already been used. (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
+            attempt_short_opts: bool = true,
+            /// A Name for the Command.
+            /// A blank value will default to the type name of the Struct.
+            cmd_name: []const u8 = "",
+            /// A Description for the Command.
+            cmd_description: []const u8 = "",
+            /// A Help Prefix for the Command.
+            cmd_help_prefix: []const u8 = "",
+
+            /// Max number of Sub Commands.
+            max_cmds: u8 = 100,
+            /// Max number of Options.
+            max_opts: u8 = 100,
+            /// Max number of Values.
+            max_vals: u8 = 100,
+        };
+
+        /// Create a Command from the provided Struct.
+        /// The provided Struct must be Comptime-known.
+        /// Types are converted as follows:
+        /// - Structs = Commands
+        /// - Valid Values = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
+        /// - Valid Optionals = Single-Options (Valid Optionals are nullable versions of Valid Values.)
+        /// - Arrays of Valid Values = Multi-Values
+        /// - Arrays of Valid Optionals = Multi-Options 
+        pub fn from(comptime from_struct: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(from_struct);
+            if (from_info != .Struct) @compileError("Provided Type is not a Struct.");
+
+            var from_cmds_buf: [from_config.max_cmds]*const @This() = undefined;
+            const from_cmds = from_cmds_buf[0..];
+            var cmds_idx: u8 = 0;
+            var from_opts_buf: [from_config.max_opts]*const CustomOption = undefined;
+            const from_opts = from_opts_buf[0..];
+            var opts_idx: u8 = 0;
+            var short_names_buf: [from_config.max_opts]u8 = undefined;
+            var short_names = short_names_buf[0..];
+            var short_idx: u8 = 0;
+            var from_vals_buf: [from_config.max_vals]*const Value.Generic = undefined;
+            const from_vals = from_vals_buf[0..];
+            var vals_idx: u8 = 0;
+
+            const fields = meta.fields(from_struct);
+            inline for (fields) |field| {
+                const field_info = @typeInfo(field.type);
+                switch (field_info) {
+                    // Commands
+                    .Struct => {
+                        const sub_config = comptime subConfig: {
+                            var new_config = from_config;
+                            new_config.cmd_name = field.name;
+                            new_config.cmd_description = "The '" ++ field.name ++ "' Command.";
+                            break :subConfig new_config;
+                        };
+                        from_cmds[cmds_idx] = &from(field.type, sub_config);
+                        cmds_idx += 1;
+                    },
+                    // Options
+                    .Optional => {
+                        const short_name = shortName: {
+                            if (!from_config.attempt_short_opts) break :shortName null;
+                            for (field.name) |char| {
+                                const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
+                                for (ul_chars) |ul| {
+                                    if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
+                                    short_names[short_idx] = ul;
+                                    short_idx += 1;
+                                    break :shortName ul;
+                                }
+                            }
+                            break :shortName null;
+                        };
+                        from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                        opts_idx += 1;
+                    },
+                    // Values
+                    .Bool, .Int, .Float, .Pointer => {
+                        from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                        vals_idx += 1;
+                    },
+                    // Multi
+                    .Array => |ary| {
+                        const ary_info = @typeInfo(ary.child);
+                        switch (ary_info) {
+                            .Optional => {
+                                const short_name = shortName: {
+                                    if (!from_config.attempt_short_opts) break :shortName null;
+                                    for (field.name) |char| {
+                                        const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
+                                        for (ul_chars) |ul| {
+                                            if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
+                                            short_names[short_idx] = ul;
+                                            short_idx += 1;
+                                            break :shortName ul;
+                                        }
+                                    }
+                                    break :shortName null;
+                                };
+                                from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                                opts_idx += 1;
+                            },
+                            .Bool, .Int, .Float, .Pointer => {
+                                from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                                vals_idx += 1;
+                            },
+                            else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                        }
+                    },
+                    // Incompatible
+                    else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Command, Option, or Value."),
+                }
+            }
+
+            return @This(){
+                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(from_struct),
+                .description = from_config.cmd_description,
+                .help_prefix = from_config.cmd_help_prefix,
+                .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
+                .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
+                .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
+            };
+        }
+
+        /// Config for creating Structs from Commands using `to()`.
+        pub const ToConfig = struct {
+            /// Allow Unset Options and Values to be included.
+            /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Unset Option/Value.
+            allow_unset: bool = true,
+            /// Ignore Incompatible types. Incompatible types are those that fall outside of the conversion rules listed under `from()`.
+            /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Incompatible type.
+            allow_incompatible: bool = true,
+        };
+
+        /// Convert this Command to an instance of the provided Struct Type.
+        /// This is the inverse of `from()`.
+        /// Types are converted as follows:
+        /// - Commmands: Structs by recursively calling `to()`.
+        /// - Single-Options: Optional versions of Values.
+        /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8` only)
+        /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
+        // TODO: Catch more error cases for incompatible types (i.e. Pointer not `[]const u8`).
+        pub fn to(self: *const @This(), comptime T: type, to_config: ToConfig) !T {
+            var out: T = undefined;
+            const fields = meta.fields(T);
+            inline for (fields) |field| {
+                const field_info = @typeInfo(field.type);
+                switch (field_info) {
+                    .Struct => if (self.sub_cmd != null and eql(u8, self.sub_cmd.?.name, field.name)) {
+                        @field(out, field.name) = try self.sub_cmd.?.to(field.type);
+                    },
+                    .Optional => |f_opt| if (self.opts != null) {
+                        for (self.opts.?) |opt| {
+                            if (eql(u8, opt.name, field.name)) {
+                                if (!opt.val.isSet()) {
+                                    if (!to_config.allow_unset) return error.ValueNotSet;
+                                    if (field.default_value != null) 
+                                        @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                    break;
+                                }
+                                const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
+                                @field(out, field.name) = try @field(opt.val, val_tag).get();
+                            }
+                        }
+                    },
+                    .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
+                        for (self.vals.?) |val| {
+                            if (eql(u8, val.name(), field.name)) {
+                                if (!val.isSet() and val.argIdx() == val.maxArgs()) {
+                                    if (!to_config.allow_unset) return error.ValueNotSet;
+                                    if (field.default_value != null) 
+                                        @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                    break;
+                                }
+                                const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
+                                @field(out, field.name) = try @field(val, val_tag).get();
+                            }
+                        } 
+                    },
+                    .Array => |ary| {
+                        const ary_info = @typeInfo(ary.child);
+                        switch (ary_info) {
+                            .Optional => |a_opt| if (self.opts != null) {
+                                for (self.opts.?) |opt| {
+                                    if (eql(u8, opt.name, field.name)) {
+                                        if (!opt.val.isSet()) {
+                                            if (!to_config.allow_unset) return error.ValueNotSet;
+                                            if (field.default_value != null) 
+                                                @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                            break;
+                                        }
+                                        const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
+                                        var f_ary: field.type = undefined;
+                                        const f_ary_slice = f_ary[0..];
+                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(opt.val, val_tag)._set_args[idx];
+                                        @field(out, field.name) = f_ary;
+                                        break;
+                                    }
+                                }
+                            },
+                            .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
+                                for (self.vals.?) |val| {
+                                    if (eql(u8, val.name(), field.name)) {
+                                        if (!val.isSet() and val.argIdx() == val.maxArgs()) {
+                                            if (!to_config.allow_unset) return error.ValueNotSet;
+                                            if (field.default_value != null) 
+                                                @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                            break;
+                                        }
+                                        const val_tag = if (ary.child == []const u8) "string" else @typeName(ary.child);
+                                        var f_ary: field.type = undefined;
+                                        const f_ary_slice = f_ary[0..];
+                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val, val_tag)._set_args[idx];
+                                        @field(out, field.name) = f_ary;
+                                        break;
+                                    }
+                                } 
+                            },
+                            else => {
+                                if (!to_config.allow_incompatible) return error.IncompatibleType;
+                            },
+                        }
+                    },
+                    else => {
+                        if (!to_config.allow_incompatible) return error.IncompatibleType;
+                    },
+                }
+            }
+            return out;
+        }
+
         /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values. 
-        /// This will also Validate Sub Commands recursively.
+        /// This will not check for Usage/Help Message Commands/Options that are added via `
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);

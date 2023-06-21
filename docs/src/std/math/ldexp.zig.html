@@ -167,7 +167,7 @@
 <span class="line" id="L49"></span>
 <span class="line" id="L50">            <span class="tok-comment">// Result underflowed, we need to shift and round</span>
 </span>
-<span class="line" id="L51">            <span class="tok-kw">const</span> shift = <span class="tok-builtin">@intCast</span>(Log2Int(TBits), math.min(-n, -(exponent + n) + <span class="tok-number">1</span>));</span>
+<span class="line" id="L51">            <span class="tok-kw">const</span> shift = <span class="tok-builtin">@intCast</span>(Log2Int(TBits), <span class="tok-builtin">@min</span>(-n, -(exponent + n) + <span class="tok-number">1</span>));</span>
 <span class="line" id="L52">            <span class="tok-kw">const</span> exact_tie: <span class="tok-type">bool</span> = <span class="tok-builtin">@ctz</span>(repr) == shift - <span class="tok-number">1</span>;</span>
 <span class="line" id="L53">            <span class="tok-kw">var</span> result = repr &amp; mantissa_mask;</span>
 <span class="line" id="L54"></span>
