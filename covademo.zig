@@ -6,7 +6,6 @@ const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
-const stdout = std.io.getStdOut().writer();
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 
@@ -16,6 +15,7 @@ const cova = @import("src/cova.zig");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
+const ex_structs = @import("example_structs.zig");
 
 pub const log_level: log.Level = .err;
 
@@ -104,6 +104,11 @@ const setup_cmd: CustomCommand = .{
                 .cmd_description = "A demo sub command made from a struct.",
                 .cmd_help_prefix = "CovaDemo",
             }),
+            &CustomCommand.from(ex_structs.add_user, .{
+                .cmd_name = "add-user",
+                .cmd_description = "A demo sub command for adding a user.",
+                .cmd_help_prefix = "CovaDemo",
+            }),
         };
         break :subCmdsSetup setup_cmds[0..];
     },
@@ -183,14 +188,20 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
+    const stdout = std.io.getStdOut().writer();
 
     const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit(alloc);
 
-    const args = try proc.argsWithAllocator(alloc);
+    var args = try proc.argsWithAllocator(alloc);
+    defer args.deinit();
     try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ .vals_mandatory = false, .allow_opt_val_no_space = true });
     try stdout.print("\n", .{});
     try displayCmdInfo(main_cmd, alloc);
+
+    if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
+        try stdout.print("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
+    }
 
     // Verbosity Change (WIP)
     //@constCast(&log_level).* = verbosity: {
@@ -208,6 +219,7 @@ pub fn main() !void {
 
 /// A demo function to show what all is captured by Cova parsing.
 fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void {
+    const stdout = std.io.getStdOut().writer();
     var cur_cmd: ?*const CustomCommand = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
@@ -217,57 +229,10 @@ fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void
 
         try stdout.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| { 
-                try displayValInfo(opt.val, opt.long_name, true, alloc);
-                //switch (meta.activeTag(opt.val.*)) {
-                //    .string => {
-                //        try stdout.print("    Opt: {?s}, Data: \"{s}\"\n", .{ 
-                //            opt.long_name, 
-                //            mem.join(alloc, "; ", opt.val.string.getAll(alloc) catch &.{ "" }) catch "",
-                //        });
-                //    },
-                //    inline else => |tag| {
-                //        const tag_self = @field(opt.val, @tagName(tag));
-                //        if (tag_self.set_behavior == .Multi) {
-                //            const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
-                //                if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
-                //                const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
-                //                if (data != null) break :rawData &.{ data.? };
-                //                break :rawData null;
-                //            };
-                //            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
-                //                opt.long_name, 
-                //                raw_data,
-                //            });
-                //        }
-                //        else {
-                //            try stdout.print("    Opt: {?s}, Data: {any}\n", .{ 
-                //                opt.long_name, 
-                //                tag_self.get() catch null,
-                //            });
-                //        }
-                //    },
-                //}
-            }
+            for (cmd.opts.?) |opt| try displayValInfo(opt.val, opt.long_name, true, alloc);
         }
         if (cmd.vals != null) {
-            for (cmd.vals.?) |val| { 
-                try displayValInfo(val, val.name(), false, alloc);
-                //switch (meta.activeTag(val.*)) {
-                //    .string => {
-                //        try stdout.print("    Val: {?s}, Data: \"{s}\"\n", .{ 
-                //            val.name(), 
-                //            val.string.get() catch "",
-                //        });
-                //    },
-                //    inline else => |tag| {
-                //        try stdout.print("    Val: {?s}, Data: {any}\n", .{ 
-                //            val.name(), 
-                //            @field(val, @tagName(tag)).get() catch null,
-                //        });
-                //    },
-                //}
-            }
+            for (cmd.vals.?) |val| try displayValInfo(val, val.name(), false, alloc);
         }
         try stdout.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
@@ -275,7 +240,9 @@ fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void
 }
 
 fn displayValInfo(val: *const Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator) !void {
+    const stdout = std.io.getStdOut().writer();
     const prefix = if (isOpt) "Opt" else "Val";
+
     switch (meta.activeTag(val.*)) {
         .string => {
             try stdout.print("    {s}: {?s}, Data: \"{s}\"\n", .{

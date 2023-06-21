@@ -17,21 +17,21 @@ const fmt = std.fmt;
 const mem = std.mem;
 const meta = std.meta;
 
-const eql = std.mem.eql;
+const eql = mem.eql;
 const toLower = ascii.lowerString;
 const parseInt = fmt.parseInt;
 const parseFloat = fmt.parseFloat;
 const Type = builtin.Type;
 const UnionField = Type.UnionField;
 
-/// The Behavior for Setting Values.
-/// These are currently only implemented for Values that are within Options.
+/// The Behavior for Setting Values with `set()`.
+/// This applies to Values within Options and standalone Values.
 pub const SetBehavior = enum {
-    /// Keeps the First Argument this Value was Set to.
+    /// Keeps the First Argument this Value was `set()` to.
     First,
-    /// Keeps the Last Argument this Value was Set to.
+    /// Keeps the Last Argument this Value was `set()` to.
     Last,
-    /// Keeps Multiple Arguments in this Value up to the set Max.
+    /// Keeps Multiple Arguments in this Value up to the Value's `max_args`.
     Multi,
 };
 
@@ -98,7 +98,7 @@ pub fn Typed(comptime set_type: type) type {
                     },
                     .Last => {
                         @constCast(self)._set_args[0] = parsed_arg;
-                        @constCast(self)._arg_idx += 1;
+                        if (self._arg_idx < 1) @constCast(self)._arg_idx += 1;
                     },
                     .Multi => if (self._arg_idx < self.max_args) {
                         @constCast(self)._set_args[self._arg_idx] = parsed_arg;
@@ -182,7 +182,7 @@ pub const Generic = genUnion: {
                 inline else => |tag| @field(self, @tagName(tag)).name,
             };
         }
-        /// Get the inner Typed Value's Type.
+        /// Get the inner Typed Value's Type Name.
         pub fn valType(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| @typeName(@TypeOf(@field(self, @tagName(tag))).getType()),

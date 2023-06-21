@@ -75,7 +75,7 @@ pub fn Custom(comptime config: Config) type {
         /// Creates the Help message for this Option and Writes it to the provided Writer.
         pub fn help(self: *const @This(), writer: anytype) !void {
             var upper_name_buf: [100]u8 = undefined;
-            const upper_name = upper_name_buf[0..];
+            const upper_name = upper_name_buf[0..self.name.len];
             upper_name[0] = toUpper(self.name[0]);
             for(upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
             if (help_fmt == null) {
