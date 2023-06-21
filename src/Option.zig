@@ -50,7 +50,7 @@ pub fn Custom(comptime config: Config) type {
         /// This Option's Long Name (ex: `--intOpt`).
         long_name: ?[]const u8,
         /// This Option's wrapped Value.
-        val: *const Value.Generic = &Value.ofType(bool, .{}),
+        val: Value.Generic = Value.ofType(bool, .{}),
 
         /// The Name of this Option for user identification and Usage/Help messages.
         /// Limited to 100B.
@@ -114,7 +114,7 @@ pub fn Custom(comptime config: Config) type {
                 .val = optVal: {
                     const optl_info = @typeInfo(optl.child);
                     switch (optl_info) {
-                        .Bool, .Int, .Float, .Pointer => break :optVal &(Value.from(field, ignore_incompatible) orelse return null),
+                        .Bool, .Int, .Float, .Pointer => break :optVal Value.from(field, ignore_incompatible) orelse return null,
                         inline else => {
                             if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
                             else return null;

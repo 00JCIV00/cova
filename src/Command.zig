@@ -78,13 +78,13 @@ pub fn Custom(comptime config: Config) type {
         pub const vals_usage_fmt = config.vals_usage_fmt;
 
         /// The list of Sub Commands this Command can take.
-        sub_cmds: ?[]*const @This() = null,
+        sub_cmds: ?[]const @This() = null,
         /// The Sub Command assigned to this Command during Parsing (optional).
         sub_cmd: ?*const @This() = null,
         /// The list of Options this Command can take.
-        opts: ?[]*const CustomOption = null,
+        opts: ?[]const CustomOption = null,
         /// The list of Values this Command can take.
-        vals: ?[]*const Value.Generic = null,
+        vals: ?[]const Value.Generic = null,
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
@@ -95,22 +95,22 @@ pub fn Custom(comptime config: Config) type {
 
         /// Sets the active Sub-Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
-            //@constCast(self).*.sub_cmd = @constCast(set_cmd);
             @constCast(self).*.sub_cmd = set_cmd;
+            //log.debug("Sub Cmd:\n{any}\n\n", .{self.sub_cmd});
         }
 
         /// Gets a StringHashMap of this Command's Options.
-        pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const CustomOption) {
+        pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
             if (self.opts == null) return error.NoOptionsInCommand;
-            var map = StringHashMap(*const CustomOption).init(alloc);
+            var map = StringHashMap(CustomOption).init(alloc);
             for (self.opts.?) |opt| { try map.put(opt.name, opt); }
             return map;
         }
 
         /// Gets a StringHashMap of this Command's Values.
-        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Value) {
+        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
             if (self.vals == null) return error.NoValuesInCommand;
-            var map = StringHashMap(*const Value).init(alloc);
+            var map = StringHashMap(Value).init(alloc);
             for (self.vals.?) |val| { try map.put(val.name, val); }
             return map;
         }
@@ -264,16 +264,16 @@ pub fn Custom(comptime config: Config) type {
             const from_info = @typeInfo(from_struct);
             if (from_info != .Struct) @compileError("Provided Type is not a Struct.");
 
-            var from_cmds_buf: [from_config.max_cmds]*const @This() = undefined;
+            var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
             var cmds_idx: u8 = 0;
-            var from_opts_buf: [from_config.max_opts]*const CustomOption = undefined;
+            var from_opts_buf: [from_config.max_opts]CustomOption = undefined;
             const from_opts = from_opts_buf[0..];
             var opts_idx: u8 = 0;
             var short_names_buf: [from_config.max_opts]u8 = undefined;
             var short_names = short_names_buf[0..];
             var short_idx: u8 = 0;
-            var from_vals_buf: [from_config.max_vals]*const Value.Generic = undefined;
+            var from_vals_buf: [from_config.max_vals]Value.Generic = undefined;
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
@@ -289,7 +289,7 @@ pub fn Custom(comptime config: Config) type {
                             new_config.cmd_description = "The '" ++ field.name ++ "' Command.";
                             break :subConfig new_config;
                         };
-                        from_cmds[cmds_idx] = &from(field.type, sub_config);
+                        from_cmds[cmds_idx] = from(field.type, sub_config);
                         cmds_idx += 1;
                     },
                     // Options
@@ -307,12 +307,12 @@ pub fn Custom(comptime config: Config) type {
                             }
                             break :shortName null;
                         };
-                        from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                        from_opts[opts_idx] = (CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
                         opts_idx += 1;
                     },
                     // Values
                     .Bool, .Int, .Float, .Pointer => {
-                        from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                        from_vals[vals_idx] = (Value.from(field, from_config.ignore_incompatible) orelse continue);
                         vals_idx += 1;
                     },
                     // Multi
@@ -333,11 +333,11 @@ pub fn Custom(comptime config: Config) type {
                                     }
                                     break :shortName null;
                                 };
-                                from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                                from_opts[opts_idx] = CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue;
                                 opts_idx += 1;
                             },
                             .Bool, .Int, .Float, .Pointer => {
-                                from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                                from_vals[vals_idx] = Value.from(field, from_config.ignore_incompatible) orelse continue;
                                 vals_idx += 1;
                             },
                             else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
@@ -592,13 +592,13 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize this Command with the provided Config by duplicating it with an Allocator for Runtime use.
         /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
-        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !*@This() {
+        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !@This() {
             if (init_config.validate_cmd) self.validate();
 
-            const init_cmd = &(try alloc.dupe(@This(), &.{ self.* }))[0];
+            var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
             if (init_config.init_subcmds and self.sub_cmds != null) {
-                var init_subcmds = try alloc.alloc(*@This(), self.sub_cmds.?.len);
+                var init_subcmds = try alloc.alloc(@This(), self.sub_cmds.?.len);
                 inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
                 init_cmd.sub_cmds = init_subcmds;
             }
@@ -607,55 +607,43 @@ pub fn Custom(comptime config: Config) type {
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
             if (init_config.add_help_cmds) {
-                var help_sub_cmds = try alloc.alloc(*const @This(), 2);
+                var help_sub_cmds = try alloc.alloc(@This(), 2);
 
-                help_sub_cmds[0] = try alloc.create(@This());
-                @constCast(help_sub_cmds[0]).* = .{
+                help_sub_cmds[0] = .{
                     .name = "usage",
                     .help_prefix = init_cmd.name,
                     .description = usage_description,
                 };
-                help_sub_cmds[1] = try alloc.create(@This());
-                @constCast(help_sub_cmds[1]).* = .{
+                help_sub_cmds[1] = .{
                     .name = "help",
                     .help_prefix = init_cmd.name,
                     .description = help_description,
                 };
 
-                @constCast(init_cmd).sub_cmds = 
-                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, *const @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
+                init_cmd.sub_cmds = 
+                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
                     else help_sub_cmds[0..];
             }
 
             if (init_config.add_help_opts) {
-                var help_opts = try alloc.alloc(*const @This().CustomOption, 2);
-                help_opts[0] = try alloc.create(@This().CustomOption);
-                @constCast(help_opts[0]).* = .{
+                var help_opts = try alloc.alloc(@This().CustomOption, 2);
+                help_opts[0] = .{
                     .name = "usage",
                     .short_name = 'u',
                     .long_name = "usage",
                     .description = usage_description,
-                    .val = usageVal: {
-                        var usage_val = try alloc.create(Value.Generic);
-                        usage_val.* = Value.ofType(bool, .{ .name = "usageFlag" });
-                        break :usageVal usage_val;
-                    },
+                    .val = Value.ofType(bool, .{ .name = "usageFlag" }),
                 };
-                help_opts[1] = try alloc.create(@This().CustomOption);
-                @constCast(help_opts[1]).* = .{
+                help_opts[1] = .{
 		    .name = "help",
                     .short_name = 'h',
                     .long_name = "help",
                     .description = help_description,
-                    .val = helpVal: {
-                        var help_val = try alloc.create(Value.Generic);
-                        help_val.* = Value.ofType(bool, .{ .name = "helpFlag" });
-                        break :helpVal help_val;
-                    },
+                    .val = Value.ofType(bool, .{ .name = "helpFlag" }),
                 };
 
-                @constCast(init_cmd).opts = 
-                    if (init_cmd.opts != null) try mem.concat(alloc, *const @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
+                init_cmd.opts = 
+                    if (init_cmd.opts != null) try mem.concat(alloc, @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
                     else help_opts[0..];
             }
 

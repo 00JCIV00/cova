@@ -58,7 +58,7 @@ pub fn parseArgs(
         // Check for a Sub Command first...
         if (cmd.sub_cmds != null) {
             log.debug("Attempting to Parse Commands...", .{});
-            for (cmd.sub_cmds.?) |sub_cmd| {
+            for (cmd.sub_cmds.?) |*sub_cmd| {
                 if (eql(u8, sub_cmd.name, arg)) {
                     parseArgs(args, CustomCommand, sub_cmd, writer, parse_config) catch { 
                         try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
@@ -66,7 +66,7 @@ pub fn parseArgs(
                         try writer.print("\n\n", .{});
                         return error.CouldNotParseCommand;
                     };
-                    log.debug("Parsed Command '{s}'.", .{ sub_cmd.name });
+                    //log.debug("Parsed Command '{s}'.", .{ sub_cmd.name });
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
                 }
@@ -83,7 +83,7 @@ pub fn parseArgs(
             if (arg[0] == short_pf and arg[1] != short_pf) {
                 const short_opts = arg[1..];
                 shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
-                    for (cmd.opts.?) |opt| {
+                    for (cmd.opts.?) |*opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             // Handle Argument provided to this Option with '=' instead of ' '.
                             if (mem.indexOfScalar(u8, parse_config.opt_val_seps, short_opts[short_idx + 1]) != null) {
@@ -158,7 +158,7 @@ pub fn parseArgs(
             // - Long Options
             else if (eql(u8, arg[0..2], long_pf)) {
                 const long_opt = arg[2..];
-                for (cmd.opts.?) |opt| {
+                for (cmd.opts.?) |*opt| {
                     const long_len = opt.long_name.?.len;
                     if (opt.long_name != null) {
                         // Handle Value provided to this Option with custom Separator (ex: '=') instead of a space ' '.
@@ -228,7 +228,7 @@ pub fn parseArgs(
                 try cmd.usage(writer);
                 return error.TooManyValues;
             }
-            const val = cmd.vals.?[val_idx];
+            const val = &cmd.vals.?[val_idx];
             val.set(arg) catch {
                 try writer.print("Could not parse Argument '{s}' to Value '{s}'.\n", .{ arg, val.name() });
                 try cmd.usage(writer);
