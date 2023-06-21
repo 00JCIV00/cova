@@ -163,7 +163,8 @@ pub const Generic = genUnion: {
         f128: Typed(f128),
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
-        /// Comptime Only (TODO: See if this can be made Runtime)
+        /// Comptime Only 
+        // TODO: See if this can be made Runtime
         pub fn get(self: *const @This()) !switch (meta.activeTag(self.*)) { inline else => |tag| @TypeOf(@field(self, @tagName(tag))).getType(), } {
             return switch (meta.activeTag(self.*)) {
                 inline else => |tag| try @field(self, @tagName(tag)).get(),

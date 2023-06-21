@@ -674,7 +674,7 @@
 <span class="line" id="L542">        <span class="tok-comment">// Its also fine if the limit here is incorrect as stack size is only a hint.</span>
 </span>
 <span class="line" id="L543">        <span class="tok-kw">var</span> stack_size = std.math.cast(<span class="tok-type">u32</span>, config.stack_size) <span class="tok-kw">orelse</span> std.math.maxInt(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L544">        stack_size = std.math.max(<span class="tok-number">64</span> * <span class="tok-number">1024</span>, stack_size);</span>
+<span class="line" id="L544">        stack_size = <span class="tok-builtin">@max</span>(<span class="tok-number">64</span> * <span class="tok-number">1024</span>, stack_size);</span>
 <span class="line" id="L545"></span>
 <span class="line" id="L546">        instance.thread.thread_handle = windows.kernel32.CreateThread(</span>
 <span class="line" id="L547">            <span class="tok-null">null</span>,</span>
@@ -758,7 +758,7 @@
 <span class="line" id="L624">            .openbsd =&gt; {</span>
 <span class="line" id="L625">                <span class="tok-kw">var</span> count: <span class="tok-type">c_int</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L626">                <span class="tok-kw">var</span> count_size: <span class="tok-type">usize</span> = <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">c_int</span>);</span>
-<span class="line" id="L627">                <span class="tok-kw">const</span> mib = [_]<span class="tok-type">c_int</span>{ os.CTL.HW, os.system.HW_NCPUONLINE };</span>
+<span class="line" id="L627">                <span class="tok-kw">const</span> mib = [_]<span class="tok-type">c_int</span>{ os.CTL.HW, os.system.HW.NCPUONLINE };</span>
 <span class="line" id="L628">                os.sysctl(&amp;mib, &amp;count, &amp;count_size, <span class="tok-null">null</span>, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L629">                    <span class="tok-kw">error</span>.NameTooLong, <span class="tok-kw">error</span>.UnknownName =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L630">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
@@ -830,7 +830,7 @@
 <span class="line" id="L691"></span>
 <span class="line" id="L692">        <span class="tok-comment">// Use the same set of parameters used by the libc-less impl.</span>
 </span>
-<span class="line" id="L693">        <span class="tok-kw">const</span> stack_size = std.math.max(config.stack_size, <span class="tok-number">16</span> * <span class="tok-number">1024</span>);</span>
+<span class="line" id="L693">        <span class="tok-kw">const</span> stack_size = <span class="tok-builtin">@max</span>(config.stack_size, c.PTHREAD_STACK_MIN);</span>
 <span class="line" id="L694">        assert(c.pthread_attr_setstacksize(&amp;attr, stack_size) == .SUCCESS);</span>
 <span class="line" id="L695">        assert(c.pthread_attr_setguardsize(&amp;attr, std.mem.page_size) == .SUCCESS);</span>
 <span class="line" id="L696"></span>
@@ -1153,19 +1153,19 @@
 <span class="line" id="L930">            <span class="tok-kw">var</span> bytes: <span class="tok-type">usize</span> = page_size;</span>
 <span class="line" id="L931">            guard_offset = bytes;</span>
 <span class="line" id="L932"></span>
-<span class="line" id="L933">            bytes += std.math.max(page_size, config.stack_size);</span>
-<span class="line" id="L934">            bytes = std.mem.alignForward(bytes, page_size);</span>
+<span class="line" id="L933">            bytes += <span class="tok-builtin">@max</span>(page_size, config.stack_size);</span>
+<span class="line" id="L934">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, page_size);</span>
 <span class="line" id="L935">            stack_offset = bytes;</span>
 <span class="line" id="L936"></span>
-<span class="line" id="L937">            bytes = std.mem.alignForward(bytes, linux.tls.tls_image.alloc_align);</span>
+<span class="line" id="L937">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, linux.tls.tls_image.alloc_align);</span>
 <span class="line" id="L938">            tls_offset = bytes;</span>
 <span class="line" id="L939">            bytes += linux.tls.tls_image.alloc_size;</span>
 <span class="line" id="L940"></span>
-<span class="line" id="L941">            bytes = std.mem.alignForward(bytes, <span class="tok-builtin">@alignOf</span>(Instance));</span>
+<span class="line" id="L941">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, <span class="tok-builtin">@alignOf</span>(Instance));</span>
 <span class="line" id="L942">            instance_offset = bytes;</span>
 <span class="line" id="L943">            bytes += <span class="tok-builtin">@sizeOf</span>(Instance);</span>
 <span class="line" id="L944"></span>
-<span class="line" id="L945">            bytes = std.mem.alignForward(bytes, page_size);</span>
+<span class="line" id="L945">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, page_size);</span>
 <span class="line" id="L946">            <span class="tok-kw">break</span> :blk bytes;</span>
 <span class="line" id="L947">        };</span>
 <span class="line" id="L948"></span>

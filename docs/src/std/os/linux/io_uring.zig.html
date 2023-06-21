@@ -431,7 +431,7 @@
 <span class="line" id="L277">    <span class="tok-kw">fn</span> <span class="tok-fn">copy_cqes_ready</span>(self: *IO_Uring, cqes: []linux.io_uring_cqe, wait_nr: <span class="tok-type">u32</span>) <span class="tok-type">u32</span> {</span>
 <span class="line" id="L278">        _ = wait_nr;</span>
 <span class="line" id="L279">        <span class="tok-kw">const</span> ready = self.cq_ready();</span>
-<span class="line" id="L280">        <span class="tok-kw">const</span> count = std.math.min(cqes.len, ready);</span>
+<span class="line" id="L280">        <span class="tok-kw">const</span> count = <span class="tok-builtin">@min</span>(cqes.len, ready);</span>
 <span class="line" id="L281">        <span class="tok-kw">var</span> head = self.cq.head.*;</span>
 <span class="line" id="L282">        <span class="tok-kw">var</span> tail = head +% count;</span>
 <span class="line" id="L283">        <span class="tok-comment">// TODO Optimize this by using 1 or 2 memcpy's (if the tail wraps) rather than a loop.</span>
@@ -1264,7 +1264,7 @@
 <span class="line" id="L1093">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(fd: os.fd_t, p: linux.io_uring_params) !SubmissionQueue {</span>
 <span class="line" id="L1094">        assert(fd &gt;= <span class="tok-number">0</span>);</span>
 <span class="line" id="L1095">        assert((p.features &amp; linux.IORING_FEAT_SINGLE_MMAP) != <span class="tok-number">0</span>);</span>
-<span class="line" id="L1096">        <span class="tok-kw">const</span> size = std.math.max(</span>
+<span class="line" id="L1096">        <span class="tok-kw">const</span> size = <span class="tok-builtin">@max</span>(</span>
 <span class="line" id="L1097">            p.sq_off.array + p.sq_entries * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>),</span>
 <span class="line" id="L1098">            p.cq_off.cqes + p.cq_entries * <span class="tok-builtin">@sizeOf</span>(linux.io_uring_cqe),</span>
 <span class="line" id="L1099">        );</span>

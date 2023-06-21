@@ -15,6 +15,7 @@ pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 
+/// Config for custom Parsing options.
 pub const ParseConfig = struct {
     /// Mandate that all Values must be filled, otherwise error out.
     /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.

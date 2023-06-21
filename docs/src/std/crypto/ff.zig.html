@@ -703,7 +703,7 @@
 <span class="line" id="L570">            <span class="tok-kw">var</span> out = self.zero;</span>
 <span class="line" id="L571">            <span class="tok-kw">var</span> i = x.limbs_count() - <span class="tok-number">1</span>;</span>
 <span class="line" id="L572">            <span class="tok-kw">if</span> (self.limbs_count() &gt;= <span class="tok-number">2</span>) {</span>
-<span class="line" id="L573">                <span class="tok-kw">const</span> start = math.min(i, self.limbs_count() - <span class="tok-number">2</span>);</span>
+<span class="line" id="L573">                <span class="tok-kw">const</span> start = <span class="tok-builtin">@min</span>(i, self.limbs_count() - <span class="tok-number">2</span>);</span>
 <span class="line" id="L574">                <span class="tok-kw">var</span> j = start;</span>
 <span class="line" id="L575">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) : (j -= <span class="tok-number">1</span>) {</span>
 <span class="line" id="L576">                    out.v.limbs.set(j, x.limbs.get(i));</span>

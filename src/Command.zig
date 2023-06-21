@@ -375,7 +375,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Single-Options: Optional versions of Values.
         /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8` only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
-        /// TODO: Catch more error cases for incompatible types (i.e. Pointer not `[]const u8`).
+        // TODO: Catch more error cases for incompatible types (i.e. Pointer not `[]const u8`).
         pub fn to(self: *const @This(), comptime T: type, to_config: ToConfig) !T {
             var out: T = undefined;
             const fields = meta.fields(T);

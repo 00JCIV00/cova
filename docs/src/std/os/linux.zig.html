@@ -435,7 +435,7 @@
 <span class="line" id="L317">        .getdents,</span>
 <span class="line" id="L318">        <span class="tok-builtin">@bitCast</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, fd)),</span>
 <span class="line" id="L319">        <span class="tok-builtin">@ptrToInt</span>(dirp),</span>
-<span class="line" id="L320">        std.math.min(len, maxInt(<span class="tok-type">c_int</span>)),</span>
+<span class="line" id="L320">        <span class="tok-builtin">@min</span>(len, maxInt(<span class="tok-type">c_int</span>)),</span>
 <span class="line" id="L321">    );</span>
 <span class="line" id="L322">}</span>
 <span class="line" id="L323"></span>
@@ -444,7 +444,7 @@
 <span class="line" id="L326">        .getdents64,</span>
 <span class="line" id="L327">        <span class="tok-builtin">@bitCast</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, fd)),</span>
 <span class="line" id="L328">        <span class="tok-builtin">@ptrToInt</span>(dirp),</span>
-<span class="line" id="L329">        std.math.min(len, maxInt(<span class="tok-type">c_int</span>)),</span>
+<span class="line" id="L329">        <span class="tok-builtin">@min</span>(len, maxInt(<span class="tok-type">c_int</span>)),</span>
 <span class="line" id="L330">    );</span>
 <span class="line" id="L331">}</span>
 <span class="line" id="L332"></span>
@@ -6071,49 +6071,59 @@
 <span class="line" id="L5847">        <span class="tok-kw">fn</span> <span class="tok-fn">toAudit</span>(arch: std.Target.Cpu.Arch) <span class="tok-type">u32</span> {</span>
 <span class="line" id="L5848">            <span class="tok-kw">var</span> res: <span class="tok-type">u32</span> = <span class="tok-builtin">@enumToInt</span>(arch.toElfMachine());</span>
 <span class="line" id="L5849">            <span class="tok-kw">if</span> (arch.endian() == .Little) res |= LE;</span>
-<span class="line" id="L5850">            <span class="tok-kw">if</span> (arch.ptrBitWidth() == <span class="tok-number">64</span>) res |= @&quot;64BIT&quot;;</span>
-<span class="line" id="L5851"></span>
-<span class="line" id="L5852">            <span class="tok-kw">return</span> res;</span>
-<span class="line" id="L5853">        }</span>
-<span class="line" id="L5854">    };</span>
-<span class="line" id="L5855">};</span>
-<span class="line" id="L5856"></span>
-<span class="line" id="L5857"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> PTRACE = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L5858">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> TRACEME = <span class="tok-number">0</span>;</span>
-<span class="line" id="L5859">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKTEXT = <span class="tok-number">1</span>;</span>
-<span class="line" id="L5860">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKDATA = <span class="tok-number">2</span>;</span>
-<span class="line" id="L5861">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKUSER = <span class="tok-number">3</span>;</span>
-<span class="line" id="L5862">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> POKETEXT = <span class="tok-number">4</span>;</span>
-<span class="line" id="L5863">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> POKEDATA = <span class="tok-number">5</span>;</span>
-<span class="line" id="L5864">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> POKEUSER = <span class="tok-number">6</span>;</span>
-<span class="line" id="L5865">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> CONT = <span class="tok-number">7</span>;</span>
-<span class="line" id="L5866">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> KILL = <span class="tok-number">8</span>;</span>
-<span class="line" id="L5867">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SINGLESTEP = <span class="tok-number">9</span>;</span>
-<span class="line" id="L5868">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETREGS = <span class="tok-number">12</span>;</span>
-<span class="line" id="L5869">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETREGS = <span class="tok-number">13</span>;</span>
-<span class="line" id="L5870">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETFPREGS = <span class="tok-number">14</span>;</span>
-<span class="line" id="L5871">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETFPREGS = <span class="tok-number">15</span>;</span>
-<span class="line" id="L5872">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ATTACH = <span class="tok-number">16</span>;</span>
-<span class="line" id="L5873">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> DETACH = <span class="tok-number">17</span>;</span>
-<span class="line" id="L5874">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETFPXREGS = <span class="tok-number">18</span>;</span>
-<span class="line" id="L5875">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETFPXREGS = <span class="tok-number">19</span>;</span>
-<span class="line" id="L5876">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SYSCALL = <span class="tok-number">24</span>;</span>
-<span class="line" id="L5877">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETOPTIONS = <span class="tok-number">0x4200</span>;</span>
-<span class="line" id="L5878">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETEVENTMSG = <span class="tok-number">0x4201</span>;</span>
-<span class="line" id="L5879">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETSIGINFO = <span class="tok-number">0x4202</span>;</span>
-<span class="line" id="L5880">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETSIGINFO = <span class="tok-number">0x4203</span>;</span>
-<span class="line" id="L5881">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETREGSET = <span class="tok-number">0x4204</span>;</span>
-<span class="line" id="L5882">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETREGSET = <span class="tok-number">0x4205</span>;</span>
-<span class="line" id="L5883">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SEIZE = <span class="tok-number">0x4206</span>;</span>
-<span class="line" id="L5884">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> INTERRUPT = <span class="tok-number">0x4207</span>;</span>
-<span class="line" id="L5885">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> LISTEN = <span class="tok-number">0x4208</span>;</span>
-<span class="line" id="L5886">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKSIGINFO = <span class="tok-number">0x4209</span>;</span>
-<span class="line" id="L5887">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETSIGMASK = <span class="tok-number">0x420a</span>;</span>
-<span class="line" id="L5888">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETSIGMASK = <span class="tok-number">0x420b</span>;</span>
-<span class="line" id="L5889">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SECCOMP_GET_FILTER = <span class="tok-number">0x420c</span>;</span>
-<span class="line" id="L5890">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SECCOMP_GET_METADATA = <span class="tok-number">0x420d</span>;</span>
-<span class="line" id="L5891">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GET_SYSCALL_INFO = <span class="tok-number">0x420e</span>;</span>
-<span class="line" id="L5892">};</span>
-<span class="line" id="L5893"></span>
+<span class="line" id="L5850">            <span class="tok-kw">switch</span> (arch) {</span>
+<span class="line" id="L5851">                .aarch64,</span>
+<span class="line" id="L5852">                .mips64,</span>
+<span class="line" id="L5853">                .mips64el,</span>
+<span class="line" id="L5854">                .powerpc64,</span>
+<span class="line" id="L5855">                .powerpc64le,</span>
+<span class="line" id="L5856">                .riscv64,</span>
+<span class="line" id="L5857">                .sparc64,</span>
+<span class="line" id="L5858">                .x86_64,</span>
+<span class="line" id="L5859">                =&gt; res |= @&quot;64BIT&quot;,</span>
+<span class="line" id="L5860">                <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L5861">            }</span>
+<span class="line" id="L5862">            <span class="tok-kw">return</span> res;</span>
+<span class="line" id="L5863">        }</span>
+<span class="line" id="L5864">    };</span>
+<span class="line" id="L5865">};</span>
+<span class="line" id="L5866"></span>
+<span class="line" id="L5867"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> PTRACE = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L5868">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> TRACEME = <span class="tok-number">0</span>;</span>
+<span class="line" id="L5869">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKTEXT = <span class="tok-number">1</span>;</span>
+<span class="line" id="L5870">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKDATA = <span class="tok-number">2</span>;</span>
+<span class="line" id="L5871">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKUSER = <span class="tok-number">3</span>;</span>
+<span class="line" id="L5872">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> POKETEXT = <span class="tok-number">4</span>;</span>
+<span class="line" id="L5873">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> POKEDATA = <span class="tok-number">5</span>;</span>
+<span class="line" id="L5874">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> POKEUSER = <span class="tok-number">6</span>;</span>
+<span class="line" id="L5875">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> CONT = <span class="tok-number">7</span>;</span>
+<span class="line" id="L5876">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> KILL = <span class="tok-number">8</span>;</span>
+<span class="line" id="L5877">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SINGLESTEP = <span class="tok-number">9</span>;</span>
+<span class="line" id="L5878">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETREGS = <span class="tok-number">12</span>;</span>
+<span class="line" id="L5879">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETREGS = <span class="tok-number">13</span>;</span>
+<span class="line" id="L5880">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETFPREGS = <span class="tok-number">14</span>;</span>
+<span class="line" id="L5881">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETFPREGS = <span class="tok-number">15</span>;</span>
+<span class="line" id="L5882">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ATTACH = <span class="tok-number">16</span>;</span>
+<span class="line" id="L5883">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> DETACH = <span class="tok-number">17</span>;</span>
+<span class="line" id="L5884">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETFPXREGS = <span class="tok-number">18</span>;</span>
+<span class="line" id="L5885">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETFPXREGS = <span class="tok-number">19</span>;</span>
+<span class="line" id="L5886">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SYSCALL = <span class="tok-number">24</span>;</span>
+<span class="line" id="L5887">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETOPTIONS = <span class="tok-number">0x4200</span>;</span>
+<span class="line" id="L5888">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETEVENTMSG = <span class="tok-number">0x4201</span>;</span>
+<span class="line" id="L5889">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETSIGINFO = <span class="tok-number">0x4202</span>;</span>
+<span class="line" id="L5890">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETSIGINFO = <span class="tok-number">0x4203</span>;</span>
+<span class="line" id="L5891">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETREGSET = <span class="tok-number">0x4204</span>;</span>
+<span class="line" id="L5892">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETREGSET = <span class="tok-number">0x4205</span>;</span>
+<span class="line" id="L5893">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SEIZE = <span class="tok-number">0x4206</span>;</span>
+<span class="line" id="L5894">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> INTERRUPT = <span class="tok-number">0x4207</span>;</span>
+<span class="line" id="L5895">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> LISTEN = <span class="tok-number">0x4208</span>;</span>
+<span class="line" id="L5896">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PEEKSIGINFO = <span class="tok-number">0x4209</span>;</span>
+<span class="line" id="L5897">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GETSIGMASK = <span class="tok-number">0x420a</span>;</span>
+<span class="line" id="L5898">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SETSIGMASK = <span class="tok-number">0x420b</span>;</span>
+<span class="line" id="L5899">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SECCOMP_GET_FILTER = <span class="tok-number">0x420c</span>;</span>
+<span class="line" id="L5900">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SECCOMP_GET_METADATA = <span class="tok-number">0x420d</span>;</span>
+<span class="line" id="L5901">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> GET_SYSCALL_INFO = <span class="tok-number">0x420e</span>;</span>
+<span class="line" id="L5902">};</span>
+<span class="line" id="L5903"></span>
 </code></pre></body>
 </html>

@@ -239,7 +239,7 @@
 </span>
 <span class="line" id="L124">    <span class="tok-kw">while</span> (i &lt; prefixes_slice.len) : (i += <span class="tok-number">1</span>) {</span>
 <span class="line" id="L125">        <span class="tok-kw">const</span> p = prefixes_slice[i].path.?;</span>
-<span class="line" id="L126">        <span class="tok-kw">if</span> (mem.startsWith(<span class="tok-type">u8</span>, resolved_path, p)) {</span>
+<span class="line" id="L126">        <span class="tok-kw">if</span> (p.len &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> mem.startsWith(<span class="tok-type">u8</span>, resolved_path, p)) {</span>
 <span class="line" id="L127">            <span class="tok-comment">// +1 to skip over the path separator here</span>
 </span>
 <span class="line" id="L128">            <span class="tok-kw">const</span> sub_path = <span class="tok-kw">try</span> gpa.dupe(<span class="tok-type">u8</span>, resolved_path[p.len + <span class="tok-number">1</span> ..]);</span>
@@ -329,7 +329,7 @@
 <span class="line" id="L212">    <span class="tok-comment">/// Convert the input value into bytes and record it as a dependency of the process being cached.</span></span>
 <span class="line" id="L213">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">add</span>(hh: *HashHelper, x: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L214">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@TypeOf</span>(x)) {</span>
-<span class="line" id="L215">            std.builtin.Version =&gt; {</span>
+<span class="line" id="L215">            std.SemanticVersion =&gt; {</span>
 <span class="line" id="L216">                hh.add(x.major);</span>
 <span class="line" id="L217">                hh.add(x.minor);</span>
 <span class="line" id="L218">                hh.add(x.patch);</span>
@@ -530,7 +530,7 @@
 <span class="line" id="L408">            <span class="tok-kw">if</span> (self.cache.manifest_dir.createFile(&amp;manifest_file_path, .{</span>
 <span class="line" id="L409">                .read = <span class="tok-null">true</span>,</span>
 <span class="line" id="L410">                .truncate = <span class="tok-null">false</span>,</span>
-<span class="line" id="L411">                .lock = .Exclusive,</span>
+<span class="line" id="L411">                .lock = .exclusive,</span>
 <span class="line" id="L412">                .lock_nonblocking = self.want_shared_lock,</span>
 <span class="line" id="L413">            })) |manifest_file| {</span>
 <span class="line" id="L414">                self.manifest_file = manifest_file;</span>
@@ -540,7 +540,7 @@
 <span class="line" id="L418">                <span class="tok-kw">error</span>.WouldBlock =&gt; {</span>
 <span class="line" id="L419">                    self.manifest_file = <span class="tok-kw">try</span> self.cache.manifest_dir.openFile(&amp;manifest_file_path, .{</span>
 <span class="line" id="L420">                        .mode = .read_write,</span>
-<span class="line" id="L421">                        .lock = .Shared,</span>
+<span class="line" id="L421">                        .lock = .shared,</span>
 <span class="line" id="L422">                    });</span>
 <span class="line" id="L423">                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L424">                },</span>
@@ -563,7 +563,7 @@
 <span class="line" id="L438"></span>
 <span class="line" id="L439">            <span class="tok-kw">const</span> input_file_count = self.files.items.len;</span>
 <span class="line" id="L440">            <span class="tok-kw">var</span> any_file_changed = <span class="tok-null">false</span>;</span>
-<span class="line" id="L441">            <span class="tok-kw">var</span> line_iter = mem.tokenize(<span class="tok-type">u8</span>, file_contents, <span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L441">            <span class="tok-kw">var</span> line_iter = mem.tokenizeScalar(<span class="tok-type">u8</span>, file_contents, <span class="tok-str">'\n'</span>);</span>
 <span class="line" id="L442">            <span class="tok-kw">var</span> idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L443">            <span class="tok-kw">if</span> (<span class="tok-kw">if</span> (line_iter.next()) |line| !std.mem.eql(<span class="tok-type">u8</span>, line, manifest_header) <span class="tok-kw">else</span> <span class="tok-null">true</span>) {</span>
 <span class="line" id="L444">                <span class="tok-kw">if</span> (<span class="tok-kw">try</span> self.upgradeToExclusiveLock()) <span class="tok-kw">continue</span>;</span>
@@ -592,7 +592,7 @@
 <span class="line" id="L467">                    <span class="tok-kw">break</span> :blk new;</span>
 <span class="line" id="L468">                };</span>
 <span class="line" id="L469"></span>
-<span class="line" id="L470">                <span class="tok-kw">var</span> iter = mem.tokenize(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L470">                <span class="tok-kw">var</span> iter = mem.tokenizeScalar(<span class="tok-type">u8</span>, line, <span class="tok-str">' '</span>);</span>
 <span class="line" id="L471">                <span class="tok-kw">const</span> size = iter.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
 <span class="line" id="L472">                <span class="tok-kw">const</span> inode = iter.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
 <span class="line" id="L473">                <span class="tok-kw">const</span> mtime_nsec_str = iter.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
@@ -1045,7 +1045,7 @@
 <span class="line" id="L886">            <span class="tok-comment">// other processes holding a shared lock.</span>
 </span>
 <span class="line" id="L887">            manifest_file.unlock();</span>
-<span class="line" id="L888">            <span class="tok-kw">try</span> manifest_file.lock(.Exclusive);</span>
+<span class="line" id="L888">            <span class="tok-kw">try</span> manifest_file.lock(.exclusive);</span>
 <span class="line" id="L889">        }</span>
 <span class="line" id="L890">        self.have_exclusive_lock = <span class="tok-null">true</span>;</span>
 <span class="line" id="L891">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>

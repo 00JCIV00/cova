@@ -218,9 +218,9 @@
 <span class="line" id="L105">                <span class="tok-kw">const</span> active = (self.bits &amp; (<span class="tok-number">1</span> &lt;&lt; i)) != <span class="tok-number">0</span>;</span>
 <span class="line" id="L106">                <span class="tok-kw">if</span> (i == <span class="tok-builtin">@enumToInt</span>(field)) {</span>
 <span class="line" id="L107">                    assert(active);</span>
-<span class="line" id="L108">                    <span class="tok-kw">return</span> mem.alignForwardGeneric(<span class="tok-type">usize</span>, off, <span class="tok-builtin">@alignOf</span>(field_info.<span class="tok-type">type</span>));</span>
+<span class="line" id="L108">                    <span class="tok-kw">return</span> mem.alignForward(<span class="tok-type">usize</span>, off, <span class="tok-builtin">@alignOf</span>(field_info.<span class="tok-type">type</span>));</span>
 <span class="line" id="L109">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (active) {</span>
-<span class="line" id="L110">                    off = mem.alignForwardGeneric(<span class="tok-type">usize</span>, off, <span class="tok-builtin">@alignOf</span>(field_info.<span class="tok-type">type</span>));</span>
+<span class="line" id="L110">                    off = mem.alignForward(<span class="tok-type">usize</span>, off, <span class="tok-builtin">@alignOf</span>(field_info.<span class="tok-type">type</span>));</span>
 <span class="line" id="L111">                    off += <span class="tok-builtin">@sizeOf</span>(field_info.<span class="tok-type">type</span>);</span>
 <span class="line" id="L112">                }</span>
 <span class="line" id="L113">            }</span>
@@ -236,7 +236,7 @@
 <span class="line" id="L123">                <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(field.<span class="tok-type">type</span>) == <span class="tok-number">0</span>)</span>
 <span class="line" id="L124">                    <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L125">                <span class="tok-kw">if</span> ((self.bits &amp; (<span class="tok-number">1</span> &lt;&lt; i)) != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L126">                    off = mem.alignForwardGeneric(<span class="tok-type">usize</span>, off, <span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>));</span>
+<span class="line" id="L126">                    off = mem.alignForward(<span class="tok-type">usize</span>, off, <span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>));</span>
 <span class="line" id="L127">                    off += <span class="tok-builtin">@sizeOf</span>(field.<span class="tok-type">type</span>);</span>
 <span class="line" id="L128">                }</span>
 <span class="line" id="L129">            }</span>

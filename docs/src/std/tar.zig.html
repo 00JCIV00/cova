@@ -234,7 +234,7 @@
 <span class="line" id="L116">        <span class="tok-kw">const</span> header: Header = .{ .bytes = buffer[start..][<span class="tok-number">0</span>..<span class="tok-number">512</span>] };</span>
 <span class="line" id="L117">        start += <span class="tok-number">512</span>;</span>
 <span class="line" id="L118">        <span class="tok-kw">const</span> file_size = <span class="tok-kw">try</span> header.fileSize();</span>
-<span class="line" id="L119">        <span class="tok-kw">const</span> rounded_file_size = std.mem.alignForwardGeneric(<span class="tok-type">u64</span>, file_size, <span class="tok-number">512</span>);</span>
+<span class="line" id="L119">        <span class="tok-kw">const</span> rounded_file_size = std.mem.alignForward(<span class="tok-type">u64</span>, file_size, <span class="tok-number">512</span>);</span>
 <span class="line" id="L120">        <span class="tok-kw">const</span> pad_len = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, rounded_file_size - file_size);</span>
 <span class="line" id="L121">        <span class="tok-kw">const</span> unstripped_file_name = <span class="tok-kw">try</span> header.fullFileName(&amp;file_name_buffer);</span>
 <span class="line" id="L122">        <span class="tok-kw">switch</span> (header.fileType()) {</span>
