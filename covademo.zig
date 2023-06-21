@@ -16,6 +16,7 @@ const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
 const ex_structs = @import("example_structs.zig");
+pub const CustomCommand = Command.Custom(.{ .global_help_prefix = "CovaDemo", }); 
 
 pub const log_level: log.Level = .err;
 
@@ -44,21 +45,12 @@ pub const DemoStruct = struct {
     multi_int_val: [2]u16,
 };
     
-const struct_setup_cmd: CustomCommand = CustomCommand.from(DemoStruct, .{
-    .cmd_name = "struct_command",
-    .cmd_description = "Demo of a Command made from a struct.",
-    .cmd_help_prefix = "CovaDemo - Struct Command",
-});
-    
-pub const CustomCommand = Command.Custom(.{}); 
 const setup_cmd: CustomCommand = .{
     .name = "covademo",
-    .help_prefix = "CovaDemo",
     .description = "A demo of the Cova command line argument parser.",
     .sub_cmds = &.{
         .{
             .name = "demo-cmd",
-            .help_prefix = "CovaDemo",
             .description = "A demo sub command.",
             .opts = &.{
                 .{
@@ -95,12 +87,10 @@ const setup_cmd: CustomCommand = .{
         CustomCommand.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
-            .cmd_help_prefix = "CovaDemo",
         }),
         CustomCommand.from(ex_structs.add_user, .{
             .cmd_name = "add-user",
             .cmd_description = "A demo sub command for adding a user.",
-            .cmd_help_prefix = "CovaDemo",
         }),
     },
     .opts = &.{
@@ -175,14 +165,14 @@ pub fn main() !void {
     const alloc = arena.allocator();
     const stdout = std.io.getStdOut().writer();
 
-    const main_cmd = try setup_cmd.init(alloc, .{}); 
+    const main_cmd = &(try setup_cmd.init(alloc, .{})); 
     defer main_cmd.deinit(alloc);
 
     var args = try proc.argsWithAllocator(alloc);
     defer args.deinit();
-    try cova.parseArgs(&args, CustomCommand, &main_cmd, stdout, .{ .vals_mandatory = false, .allow_opt_val_no_space = true });
+    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ .vals_mandatory = false, .allow_opt_val_no_space = true });
     try stdout.print("\n", .{});
-    try displayCmdInfo(&main_cmd, alloc);
+    try displayCmdInfo(main_cmd, alloc);
 
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
         try stdout.print("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });

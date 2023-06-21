@@ -53,9 +53,9 @@ pub fn Typed(comptime set_type: type) type {
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         /// This should be Read-Only for library users.
         is_maxed: bool = false,
-        /// Delimiter Characters that can be used to split up Multi-Values.
+        /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options.
         /// This is only applicable if `set_behavior = .Multi`.
-        arg_delims: []const u8 = ",;:",
+        arg_delims: []const u8 = ",;",
         /// Set Behavior for this Value.
         set_behavior: SetBehavior = .Last,
         /// An optional Default Value.

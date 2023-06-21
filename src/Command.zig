@@ -55,7 +55,15 @@ pub const Config = struct {
     /// Must support the following format types in this order:
     /// 1. String (Value Name)
     /// 2. String (Value Type)
-    vals_usage_fmt: []const u8 = "\"{s} ({s})\"", 
+    vals_usage_fmt: []const u8 = "\"{s} ({s})\"",
+
+    /// The Global Help Prefix for all instances of this Command type.
+    /// This can be overwritten per instance using the `help_prefix` field. 
+    global_help_prefix: []const u8 = "",
+
+    /// The Default Max Number of Arguments for Commands, Options, and Values individually.
+    /// This is used in for both `init()` and `from()` but can be overwritten for the latter.
+    max_args: u8 = 100, 
 
 };
 
@@ -76,6 +84,12 @@ pub fn Custom(comptime config: Config) type {
         /// Values Usage Format.
         /// Check `Command.Config` for details.
         pub const vals_usage_fmt = config.vals_usage_fmt;
+        /// Global Help Prefix.
+        /// Check `Command.Config` for details.
+        pub const global_help_prefix = config.global_help_prefix;
+        /// Max Args.
+        /// Check `Command.Config` for details.
+        pub const max_args = config.max_args;
 
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
@@ -89,7 +103,7 @@ pub fn Custom(comptime config: Config) type {
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
         /// The Prefix message used immediately before a Usage/Help message is displayed.
-        help_prefix: []const u8 = "",
+        help_prefix: []const u8 = global_help_prefix,
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
 
@@ -245,11 +259,11 @@ pub fn Custom(comptime config: Config) type {
             cmd_help_prefix: []const u8 = "",
 
             /// Max number of Sub Commands.
-            max_cmds: u8 = 100,
+            max_cmds: u8 = max_args,
             /// Max number of Options.
-            max_opts: u8 = 100,
+            max_opts: u8 = max_args,
             /// Max number of Values.
-            max_vals: u8 = 100,
+            max_vals: u8 = max_args,
         };
 
         /// Create a Command from the provided Struct.
@@ -470,8 +484,6 @@ pub fn Custom(comptime config: Config) type {
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
-                // This is an arbitrary (but hopefully higher than needed) limit to the number of Arguments than be Validated each of Commands, Options, and Values.
-                const max_args = 100;
                 // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds != null) {
                     const cmds = self.sub_cmds.?;
