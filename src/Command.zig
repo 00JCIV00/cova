@@ -91,6 +91,16 @@ pub fn Custom(comptime config: Config) type {
         /// Check `Command.Config` for details.
         pub const max_args = config.max_args;
 
+        /// Flag denoting if this Command has been initialized to memory using `init()`.
+        ///
+        /// **Internal Use.**
+        _is_init: bool = false,
+        /// The Allocator for this Command.
+        /// This is set using `init()`.
+        ///
+        /// **Internal Use.**
+        _alloc: ?mem.Allocator = null,
+
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
         /// The Sub Command assigned to this Command during Parsing (optional).
@@ -110,11 +120,15 @@ pub fn Custom(comptime config: Config) type {
         /// Sets the active Sub-Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
             @constCast(self).*.sub_cmd = set_cmd;
-            //log.debug("Sub Cmd:\n{any}\n\n", .{self.sub_cmd});
         }
 
         /// Gets a StringHashMap of this Command's Options.
-        pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
+        pub fn getOpts(self: *const @This()) !StringHashMap(CustomOption) {
+            if (!self._is_init) return error.CommandNotInitialized;
+            return getOptsAlloc(self._alloc.?);
+        }
+        /// Gets a StringHashMap of this Command's Options using the provided Allocator.
+        pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
             if (self.opts == null) return error.NoOptionsInCommand;
             var map = StringHashMap(CustomOption).init(alloc);
             for (self.opts.?) |opt| { try map.put(opt.name, opt); }
@@ -122,7 +136,12 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Gets a StringHashMap of this Command's Values.
-        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
+        pub fn getVals(self: *const @This()) !StringHashMap(Value) {
+            if (!self._is_init) return error.CommandNotInitialized;
+            return getValsAlloc(self._alloc.?);
+        }
+        /// Gets a StringHashMap of this Command's Values.
+        pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
             if (self.vals == null) return error.NoValuesInCommand;
             var map = StringHashMap(Value).init(alloc);
             for (self.vals.?) |val| { try map.put(val.name, val); }
@@ -659,12 +678,19 @@ pub fn Custom(comptime config: Config) type {
                     else help_opts[0..];
             }
 
+            init_cmd._is_init = true;
+            init_cmd._alloc = alloc;
+
             return init_cmd; 
         }
 
         /// De-initialize this Command with its original Allocator.
-        pub fn deinit(self: *const @This(), alloc: mem.Allocator) void {
-            alloc.destroy(self);
+        /// If this Command has not yet been initialized, this does nothing.
+        pub fn deinit(self: *const @This()) void {
+            if (!self._is_init) return;
+            if (self.sub_cmds != null)
+                for (self.sub_cmds.?) |*cmd| cmd.deinit();
+            self._alloc.?.destroy(self);
         }
     };
 }

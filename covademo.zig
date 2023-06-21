@@ -166,7 +166,7 @@ pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
 
     const main_cmd = &(try setup_cmd.init(alloc, .{})); 
-    defer main_cmd.deinit(alloc);
+    defer main_cmd.deinit();
 
     var args = try proc.argsWithAllocator(alloc);
     defer args.deinit();
@@ -175,7 +175,7 @@ pub fn main() !void {
     try displayCmdInfo(main_cmd, alloc);
 
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
-        try stdout.print("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
+        log.debug("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
     }
 
     // Verbosity Change (WIP)

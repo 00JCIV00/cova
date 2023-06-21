@@ -33,6 +33,7 @@ pub const ParseConfig = struct {
 
 var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
+/// The resulted is stored to the provided CustomCommand `cmd` for user analysis.
 pub fn parseArgs(
     args: *const proc.ArgIterator, 
     comptime CustomCommand: type, 
@@ -40,8 +41,9 @@ pub fn parseArgs(
     writer: anytype,
     parse_config: ParseConfig,
 ) !void {
-    var val_idx: u8 = 0;
+    if (!cmd._is_init) return error.CommandNotInitialized;
 
+    var val_idx: u8 = 0;
     const optType = @TypeOf(cmd.*).CustomOption;
 
     // Bypass argument 0 (the filename being executed);
