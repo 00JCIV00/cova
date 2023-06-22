@@ -14,6 +14,7 @@ const std = @import("std");
 const builtin = std.builtin;
 const ascii = std.ascii;
 const fmt = std.fmt;
+const fs = std.fs;
 const mem = std.mem;
 const meta = std.meta;
 
@@ -45,10 +46,13 @@ pub fn Typed(comptime set_type: type) type {
         /// Internal Use.
         _set_args: [100]?val_type = .{ null } ** 100,
         /// The current Index of Raw Arguments for this Value.
-        /// Internal Use.
+        ///
+        /// **Internal Use.**
         _arg_idx: u7 = 0,
         /// The Max number of Raw Arguments that can be provided.
         /// This must be between 1 - 100.
+        ///
+        /// **Internal Use.**
         max_args: u7 = 1,
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         /// This should be Read-Only for library users.
@@ -253,6 +257,34 @@ pub const Generic = genUnion: {
     //}
 
     break :genUnion gen_union;
+};
+
+/// Validation Functions for various common requirements.
+pub const ValidationFns = struct {
+    /// Check if the provided `filepath` is a valid filepath.
+    pub fn validFilepath(filepath: []const u8) bool {
+        const test_file = fs.cwd().openFile(filepath, .{}) catch return false;
+        test_file.close();
+        return true;
+    } 
+    /// Check if the provided `num_str` is a valid Ordinal Number.
+    pub fn ordinalNum(num_str: []const u8) bool {
+        const ordinals = enum {
+            first,
+            second,
+            third,
+            fourth,
+            fifth,
+            sixth,
+            seventh,
+            eigth,
+            ninth,
+            tenth,
+        };
+        var lower_buf: [100]u8 = undefined;
+        const lower_slice = toLower(lower_buf[0..], num_str);
+        return meta.stringToEnum(ordinals, lower_slice) != null;
+    }
 };
 
 /// Create a Generic Value with a specific Type.

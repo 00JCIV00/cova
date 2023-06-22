@@ -31,13 +31,13 @@ pub const DemoStruct = struct {
         .in_float = 0,
     },
     // Options
-    int_opt: ?i32 = 26,
-    str_opt: ?[]const u8 = "Demo Opt string.",
-    str_opt2: ?[]const u8 = "Demo Opt string 2.",
-    flt_opt: ?f16 = 0,
-    int_opt2: ?u16 = 0,
-    multi_str_opt: [5]?[]const u8,
-    multi_int_opt: [3]?u8,
+    int: ?i32 = 26,
+    str: ?[]const u8 = "Demo Opt string.",
+    str2: ?[]const u8 = "Demo Opt string 2.",
+    flt: ?f16 = 0,
+    int2: ?u16 = 0,
+    multi_str: [5]?[]const u8,
+    multi_int: [3]?u8,
     // Values
     struct_bool: bool = false,
     struct_str: []const u8 = "Demo Struct string.",
@@ -54,22 +54,22 @@ const setup_cmd: CustomCommand = .{
             .description = "A demo sub command.",
             .opts = &.{
                 .{
-                    .name = "nestedIntOpt",
+                    .name = "nested_int_opt",
                     .short_name = 'i',
-                    .long_name = "nestedIntOpt",
+                    .long_name = "nested_int",
                     .val = Value.ofType(u8, .{
-                        .name = "nestedIntVal",
+                        .name = "nested_int_val",
                         .description = "A nested integer value.",
                         .default_val = 203,
                     }),
                     .description = "A nested integer option.",
                 },
                 .{
-                    .name = "nestedStrOpt",
+                    .name = "nested_str_opt",
                     .short_name = 's',
-                    .long_name = "nestedStrOpt",
+                    .long_name = "nested_str",
                     .val = Value.ofType([]const u8, .{
-                        .name = "nestedStrVal",
+                        .name = "nested_str_val",
                         .description = "A nested string value.",
                         .default_val = "A nested string value.",
                     }),
@@ -78,7 +78,7 @@ const setup_cmd: CustomCommand = .{
             },
             .vals = &.{
                 Value.ofType(f32, .{
-                    .name = "nestedFloatVal",
+                    .name = "nested_float_val",
                     .description = "A nested float value.",
                     .default_val = 0,
                 }),
@@ -95,11 +95,11 @@ const setup_cmd: CustomCommand = .{
     },
     .opts = &.{
         .{ 
-            .name = "stringOpt",
+            .name = "string_opt",
             .short_name = 's',
-            .long_name = "stringOpt",
+            .long_name = "string",
             .val = Value.ofType([]const u8, .{
-                .name = "stringVal",
+                .name = "string_val",
                 .description = "A string value.",
                 .default_val = "A string value.",
                 .set_behavior = .Multi,
@@ -108,11 +108,11 @@ const setup_cmd: CustomCommand = .{
             .description = "A string option. (Can be given up to 4 times.)",
         },
         .{
-            .name = "intOpt",
+            .name = "int_opt",
             .short_name = 'i',
-            .long_name = "intOpt",
+            .long_name = "int",
             .val = Value.ofType(i16, .{
-                .name = "intVal",
+                .name = "int_val",
                 .description = "An integer value.",
                 .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
                 .set_behavior = .Multi,
@@ -121,21 +121,43 @@ const setup_cmd: CustomCommand = .{
             .description = "An integer option. (Can be given up to 10 times.)",
         },
         .{
-            .name = "toggle",
+            .name = "file_opt",
+            .short_name = 'f',
+            .long_name = "file",
+            .val = .{ .string = .{
+                .name = "file_val",
+                .description = "A filepath value.",
+                .val_fn = Value.ValidationFns.validFilepath,
+            } },
+            .description = "A filepath option.",
+        },
+        .{
+            .name = "ordinal_opt",
+            .short_name = 'o',
+            .long_name = "ordinal",
+            .val = .{ .string = .{
+                .name = "ordinal_val",
+                .description = "An ordinal number value.",
+                .val_fn = Value.ValidationFns.ordinalNum,
+            } },
+            .description = "An ordinal number value.",
+        },
+        .{
+            .name = "toggle_opt",
             .short_name = 't',
             .long_name = "toggle",
             .val = Value.ofType(bool, .{
-                .name = "toggleVal",
+                .name = "toggle_val",
                 .description = "A toggle/boolean value.",
             }),
             .description = "A toggle/boolean option.",
         },
         .{
-            .name = "verbosity",
+            .name = "verbosity_opt",
             .short_name = 'v',
             .long_name = "verbosity",
             .val = Value.ofType(u4, .{
-                .name = "verbosityLevel",
+                .name = "verbosity_level",
                 .description = "The verbosity level from 0 (err) to 3 (debug).",
                 .default_val = 3,
                 .val_fn = struct{ fn valFn(val: u4) bool { return val >= 0 and val <= 3; } }.valFn,
@@ -145,7 +167,7 @@ const setup_cmd: CustomCommand = .{
     },
     .vals = &.{
         Value.ofType([]const u8, .{
-            .name = "cmdStr",
+            .name = "cmd_str",
             .description = "A string value for the command.",
         }),
         .{ .u128 = .{

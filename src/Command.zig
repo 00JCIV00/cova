@@ -644,11 +644,15 @@ pub fn Custom(comptime config: Config) type {
                     .name = "usage",
                     .help_prefix = init_cmd.name,
                     .description = usage_description,
+                    ._is_init = true,
+                    ._alloc = alloc,
                 };
                 help_sub_cmds[1] = .{
                     .name = "help",
                     .help_prefix = init_cmd.name,
                     .description = help_description,
+                    ._is_init = true,
+                    ._alloc = alloc,
                 };
 
                 init_cmd.sub_cmds = 
