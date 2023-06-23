@@ -20,6 +20,7 @@ const meta = std.meta;
 
 const eql = mem.eql;
 const toLower = ascii.lowerString;
+const toUpper = ascii.upperString;
 const parseInt = fmt.parseInt;
 const parseFloat = fmt.parseFloat;
 const Type = builtin.Type;
@@ -43,7 +44,8 @@ pub fn Typed(comptime set_type: type) type {
         pub const val_type = set_type;
 
         /// The Parsed and Validated Argument(s) this Value has been set to.
-        /// Internal Use.
+        ///
+        /// **Internal Use.**
         _set_args: [100]?val_type = .{ null } ** 100,
         /// The current Index of Raw Arguments for this Value.
         ///
@@ -51,8 +53,6 @@ pub fn Typed(comptime set_type: type) type {
         _arg_idx: u7 = 0,
         /// The Max number of Raw Arguments that can be provided.
         /// This must be between 1 - 100.
-        ///
-        /// **Internal Use.**
         max_args: u7 = 1,
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         /// This should be Read-Only for library users.
@@ -67,8 +67,12 @@ pub fn Typed(comptime set_type: type) type {
         /// Flag to determine if this Value has been Parsed and Validated.
         /// This should be Read-Only for library users.
         is_set: bool = false,
-        /// A Validation Function to be used in `set()` following normal Parsing.
-        val_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
+
+        /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
+        /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
+        parse_fn: ?*const fn([]const u8) anyerror!val_type = null,
+        /// A Validation Function to be used in `set()` following `parse()` Argument Parsing.
+        valid_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
             
         /// The Name of this Value for user identification and Usage/Help messages.
         name: []const u8 = "",
@@ -77,12 +81,14 @@ pub fn Typed(comptime set_type: type) type {
 
         /// Parse the given Argument to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !val_type {
-            _ = self;
-            var san_arg_buf: [100]u8 = undefined;
-            const san_arg = toLower(san_arg_buf[0..], arg);
+            if (self.parse_fn != null) return self.parse_fn.?(arg) catch error.CannotParseArgToValue;
+            var san_arg_buf: [512]u8 = undefined;
+            var san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(val_type)) {
-                //.Null => error.ValueNotSet,
-                .Bool => eql(u8, san_arg, "true"),
+                .Bool => isTrue: {
+                    const true_words = [_][]const u8{ "true", "t", "yes", "y" };
+                    for (true_words[0..]) |word| { if (eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
+                },
                 .Pointer => arg,
                 .Int => parseInt(val_type, arg, 0),
                 .Float => parseFloat(val_type, arg),
@@ -90,8 +96,7 @@ pub fn Typed(comptime set_type: type) type {
             };
         }
 
-        /// Set this Value if the Argument can be Parsed and Validated.
-        /// Blank ("") Arguments will be treated as the current Raw Argument of the Value.
+        /// Set this Value if the provided Argument `set_arg` can be Parsed and Validated.
         pub fn set(self: *const @This(), set_arg: []const u8) !void {
             // Delimited Args
             var arg_delim: u8 = ' ';
@@ -113,7 +118,7 @@ pub fn Typed(comptime set_type: type) type {
             // Single Arg
             const parsed_arg = try self.parse(set_arg);
             @constCast(self).is_set =
-                if (self.val_fn != null) self.val_fn.?(parsed_arg)
+                if (self.valid_fn != null) self.valid_fn.?(parsed_arg)
                 else true;
             if (self.is_set) {
                 switch (self.set_behavior) {
@@ -259,8 +264,46 @@ pub const Generic = genUnion: {
     break :genUnion gen_union;
 };
 
-/// Validation Functions for various common requirements.
+/// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.
+/// Note, `parse_fn` is in no way limited to these functions.
+pub const ParsingFns = struct {
+    /// Builder Functions for common Parsing Functions.
+    pub const Builder = struct {
+        /// Check for Alternate True Words `true_words` when parsing the provided Argument `arg` to a Boolean.
+        pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8) anyerror!bool {
+            return struct {
+                fn isTrue(arg: []const u8) !bool {
+                    for (true_words[0..]) |word| { if (eql(u8, word, arg)) return true; } else return false;
+                }
+            }.isTrue;
+        }
+    };
+
+    /// Trim all Whitespace from the beginning and end of the provided Argument `arg`.
+    pub fn trimWhitespace(arg: []const u8) anyerror![]const u8 {
+        return mem.trim(u8, arg, ascii.whitespace[0..]);
+    }
+};
+
+/// Validation Functions for various common requirements to be used with `valid_fn`.
+/// Note, `valid_fn` is in no way limited to these functions.
 pub const ValidationFns = struct {
+    /// Builder Functions for common Validation Functions.
+    pub const Builder = struct {
+        /// Check if the provided numeric type `num` is within an inclusive or exclusive range.
+        pub fn inRange(comptime num_T: type, comptime start: num_T, comptime end: num_T, comptime inclusive: bool) fn(num_T) bool {
+            const num_info = @typeInfo(num_T);
+            switch (num_info) {
+                .Int, .Pointer => {},
+                inline else => @compileError("The provided type '" ++ @typeName(num_T) ++ "' is not a numeric type. It must be an Integer or a Float."),
+            }
+
+            return 
+                if (inclusive) struct { fn inRng(num: num_T) bool { return num >= start and num <= end; } }.inRng
+                else struct { fn inRng(num: num_T) bool { return num > start and num < end; } }.inRng;
+        }
+    };
+
     /// Check if the provided `filepath` is a valid filepath.
     pub fn validFilepath(filepath: []const u8) bool {
         const test_file = fs.cwd().openFile(filepath, .{}) catch return false;

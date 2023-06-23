@@ -2,6 +2,7 @@
 //! Comptime Setup, Runtime Use.
 
 const std = @import("std");
+const fmt = std.fmt;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -114,7 +115,7 @@ const setup_cmd: CustomCommand = .{
             .val = Value.ofType(i16, .{
                 .name = "int_val",
                 .description = "An integer value.",
-                .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
+                .valid_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
                 .set_behavior = .Multi,
                 .max_args = 10,
             }),
@@ -127,7 +128,7 @@ const setup_cmd: CustomCommand = .{
             .val = .{ .string = .{
                 .name = "file_val",
                 .description = "A filepath value.",
-                .val_fn = Value.ValidationFns.validFilepath,
+                .valid_fn = Value.ValidationFns.validFilepath,
             } },
             .description = "A filepath option.",
         },
@@ -138,7 +139,7 @@ const setup_cmd: CustomCommand = .{
             .val = .{ .string = .{
                 .name = "ordinal_val",
                 .description = "An ordinal number value.",
-                .val_fn = Value.ValidationFns.ordinalNum,
+                .valid_fn = Value.ValidationFns.ordinalNum,
             } },
             .description = "An ordinal number value.",
         },
@@ -160,7 +161,7 @@ const setup_cmd: CustomCommand = .{
                 .name = "verbosity_level",
                 .description = "The verbosity level from 0 (err) to 3 (debug).",
                 .default_val = 3,
-                .val_fn = struct{ fn valFn(val: u4) bool { return val >= 0 and val <= 3; } }.valFn,
+                .valid_fn = struct{ fn valFn(val: u4) bool { return val >= 0 and val <= 3; } }.valFn,
             }),
             .description = "Set the CovaDemo verbosity level. (WIP)",
         },
@@ -169,14 +170,21 @@ const setup_cmd: CustomCommand = .{
         Value.ofType([]const u8, .{
             .name = "cmd_str",
             .description = "A string value for the command.",
+            .parse_fn = Value.ParsingFns.trimWhitespace,
         }),
+        .{ .bool = .{
+            .name = "cmd_bool",
+            .description = "A boolean value for the command.",
+            .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "potatoe" }),
+        } },
         .{ .u128 = .{
             .name = "cmd_u128",
             .description = "A u128 value for the command.",
             .default_val = 654321,
             .set_behavior = .Multi,
             .max_args = 3,
-            .val_fn = struct{ fn valFn(val: u128) bool { return val > 123456 and val < 987654; } }.valFn,
+            .parse_fn = struct{ fn parseFn(arg: []const u8) !u128 { return (try fmt.parseInt(u128, arg, 0)) * 100; } }.parseFn, 
+            .valid_fn = Value.ValidationFns.Builder.inRange(u128, 123456, 9999999999, true),
         } },
     }
 };
