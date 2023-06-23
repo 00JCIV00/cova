@@ -7,6 +7,7 @@ const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
+const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 
@@ -45,7 +46,7 @@ pub const DemoStruct = struct {
     struct_int: i64,
     multi_int_val: [2]u16,
 };
-    
+
 const setup_cmd: CustomCommand = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
@@ -88,6 +89,10 @@ const setup_cmd: CustomCommand = .{
         CustomCommand.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
+            .sub_descriptions = &.{
+                .{ "inner_config", "An inner/nested command for struct-cmd" },
+                .{ "int", "The first Integer Value for the struct-cmd." },
+            },
         }),
         CustomCommand.from(ex_structs.add_user, .{
             .cmd_name = "add-user",

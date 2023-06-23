@@ -336,12 +336,17 @@ pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
     return @unionInit(Generic, active_tag, typed_val);
 }
 
+pub const FromConfig = struct {
+    ignore_incompatible: bool = true,
+    val_description: ?[]const u8 = null,
+};
+
 /// Create a Generic Value from a Valid Value StructField.
 /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
-pub fn from(comptime field: std.builtin.Type.StructField, ignore_incompatible: bool) ?Generic {
+pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {
     const field_info = @typeInfo(field.type);
     if (field_info == .Pointer and field_info.Pointer.child != u8) {
-        if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+        if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
         else return null;
     }
     const field_type = switch (field_info) {
@@ -353,13 +358,13 @@ pub fn from(comptime field: std.builtin.Type.StructField, ignore_incompatible: b
         },
         .Bool, .Int, .Float, .Pointer => field.type,
         else => { 
-            if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
+            if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
             else return null;
         },
     };
     return ofType(field_type, .{
         .name = field.name,
-        .description = "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
+        .description = from_config.val_description orelse "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
         .max_args = 
             if (field_info == .Array) field_info.Array.len
             else 1,

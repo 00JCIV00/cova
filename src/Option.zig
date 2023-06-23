@@ -99,8 +99,15 @@ pub fn Custom(comptime config: Config) type {
             });
         }
 
+        /// Config for the `from()` method.
+        pub const FromConfig = struct {
+            short_name: ?u8 = null,
+            ignore_incompatible: bool = true,
+            opt_description: ?[]const u8 = null,
+        };
+
         /// Create an Option from a Valid Optional StructField.
-        pub fn from(comptime field: std.builtin.Type.StructField, short_name: ?u8, ignore_incompatible: bool) ?@This() {
+        pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?@This() {
             const field_info = @typeInfo(field.type);
             const optl =
                 if (field_info == .Optional) field_info.Optional
@@ -108,15 +115,18 @@ pub fn Custom(comptime config: Config) type {
                 else @compileError("The field '" ++ field.name ++ "' is not an Optional or Array of Optionals.");
             return .{
                 .name = field.name,
-                .description = "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
+                .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
                 .long_name = field.name,
-                .short_name = short_name, 
+                .short_name = from_config.short_name, 
                 .val = optVal: {
                     const optl_info = @typeInfo(optl.child);
                     switch (optl_info) {
-                        .Bool, .Int, .Float, .Pointer => break :optVal Value.from(field, ignore_incompatible) orelse return null,
+                        .Bool, .Int, .Float, .Pointer => break :optVal Value.from(field, .{
+                            .ignore_incompatible = from_config.ignore_incompatible,
+                            .val_description = from_config.opt_description,
+                        }) orelse return null,
                         inline else => {
-                            if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
+                            if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
                             else return null;
                         },
                     }

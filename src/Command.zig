@@ -20,6 +20,7 @@ const ascii = std.ascii;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
+const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 
 const eql = mem.eql;
@@ -277,6 +278,10 @@ pub fn Custom(comptime config: Config) type {
             /// A Help Prefix for the Command.
             cmd_help_prefix: []const u8 = "",
 
+            /// Descriptions of the Command's Sub Commands, Options, and Values.
+            /// These Descriptions will be used across this Command and all of its Sub Commands.
+            sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
+
             /// Max number of Sub Commands.
             max_cmds: u8 = max_args,
             /// Max number of Options.
@@ -310,8 +315,11 @@ pub fn Custom(comptime config: Config) type {
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
+            const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+
             const fields = meta.fields(from_struct);
             inline for (fields) |field| {
+                const arg_description = arg_descriptions.get(field.name);
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
                     // Commands
@@ -319,7 +327,7 @@ pub fn Custom(comptime config: Config) type {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
                             new_config.cmd_name = field.name;
-                            new_config.cmd_description = "The '" ++ field.name ++ "' Command.";
+                            new_config.cmd_description = arg_description orelse "The '" ++ field.name ++ "' Command.";
                             break :subConfig new_config;
                         };
                         from_cmds[cmds_idx] = from(field.type, sub_config);
@@ -340,12 +348,19 @@ pub fn Custom(comptime config: Config) type {
                             }
                             break :shortName null;
                         };
-                        from_opts[opts_idx] = (CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                        from_opts[opts_idx] = (CustomOption.from(field, .{ 
+                            .short_name = short_name, 
+                            .ignore_incompatible = from_config.ignore_incompatible,
+                            .opt_description = arg_description
+                        }) orelse continue);
                         opts_idx += 1;
                     },
                     // Values
                     .Bool, .Int, .Float, .Pointer => {
-                        from_vals[vals_idx] = (Value.from(field, from_config.ignore_incompatible) orelse continue);
+                        from_vals[vals_idx] = (Value.from(field, .{
+                            .ignore_incompatible = from_config.ignore_incompatible,
+                            .val_description = arg_description
+                        }) orelse continue);
                         vals_idx += 1;
                     },
                     // Multi
@@ -366,11 +381,18 @@ pub fn Custom(comptime config: Config) type {
                                     }
                                     break :shortName null;
                                 };
-                                from_opts[opts_idx] = CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue;
+                                from_opts[opts_idx] = CustomOption.from(field, .{
+                                    .short_name = short_name, 
+                                    .ignore_incompatible = from_config.ignore_incompatible,
+                                    .opt_description = arg_description
+                                }) orelse continue;
                                 opts_idx += 1;
                             },
                             .Bool, .Int, .Float, .Pointer => {
-                                from_vals[vals_idx] = Value.from(field, from_config.ignore_incompatible) orelse continue;
+                                from_vals[vals_idx] = Value.from(field, .{
+                                    .ignore_incompatible = from_config.ignore_incompatible,
+                                    .val_description = arg_description
+                                }) orelse continue;
                                 vals_idx += 1;
                             },
                             else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
