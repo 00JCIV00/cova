@@ -3,6 +3,7 @@
 //! Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These componenets are assembled into a single struct which is then used to parse argument tokens.
 
 // Standard
+const builtin = @import("builtin");
 const std = @import("std");
 const log = std.log;
 const mem = std.mem;
@@ -39,7 +40,7 @@ var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
 /// The resulted is stored to the provided CustomCommand `cmd` for user analysis.
 pub fn parseArgs(
-    args: *const proc.ArgIterator, 
+    args: *proc.ArgIterator, 
     comptime CustomCommand: type, 
     cmd: *const CustomCommand, 
     writer: anytype,
@@ -52,13 +53,14 @@ pub fn parseArgs(
 
     // Bypass argument 0 (the filename being executed);
     const init_arg = 
-        if (parse_config.skip_exe_name_arg and @constCast(args).inner.index == 0) @constCast(args).next()
+        if (parse_config.skip_exe_name_arg and args.inner.index == 0) args.next()
         else argsPeak(args); 
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
 
-    parseArg: while (@constCast(args).next()) |arg| {
+    parseArg: while (args.next()) |arg| {
+        log.debug("Current Arg: {s}", .{ arg });
         if (init_arg == null) break :parseArg;
         var unmatched = false;
         // Check for a Sub Command first...
@@ -281,21 +283,35 @@ pub fn parseArgs(
 }
 
 /// Parse an Option for the given Command.
-fn parseOpt(args: *const proc.ArgIterator, comptime opt_type: type, opt: *const opt_type) !void {
+fn parseOpt(args: *proc.ArgIterator, comptime opt_type: type, opt: *const opt_type) !void {
     const peak_arg = argsPeak(args);
     const set_arg = 
         if (peak_arg == null or peak_arg.?[0] == '-') setArg: {
             if (!eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
-            _ = @constCast(args).next();
+            _ = args.next();
             break :setArg "true";
         }
-        else @constCast(args).next().?;
+        else args.next().?;
+    log.debug("Current Arg: {s}", .{ set_arg });
     try opt.val.set(set_arg);
 }
 
 /// Peak at the next Argument in the provided ArgIterator without advancing the index.
-fn argsPeak(args: *const proc.ArgIterator) ?[]const u8 {
-    const peak_arg = @constCast(args).next();
-    @constCast(args).inner.index -= 1;
-    return peak_arg;
+// TODO: Create a PR for this in `std.process`?
+fn argsPeak(args: *proc.ArgIterator) ?[]const u8 {
+    if (builtin.os.tag != .windows) {
+        const peak_arg = args.next();
+        args.inner.index -= 1;
+        return peak_arg;
+    }
+    else {
+        const iter_idx = args.inner.index;
+        const iter_start = args.inner.start;
+        const iter_end = args.inner.end;
+        const peak_arg = args.next();
+        args.inner.index = iter_idx; 
+        args.inner.start = iter_start; 
+        args.inner.end = iter_end; 
+        return peak_arg;
+    } 
 }
