@@ -205,7 +205,10 @@ pub fn main() !void {
 
     var args = try proc.argsWithAllocator(alloc);
     defer args.deinit();
-    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ .vals_mandatory = false, .allow_opt_val_no_space = true });
+    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ 
+        .vals_mandatory = false,
+        .allow_abbreviated_long_opts = true, 
+    });
     try stdout.print("\n", .{});
     try displayCmdInfo(main_cmd, alloc);
 
@@ -258,7 +261,7 @@ fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem
             try stdout.print("    {s}: {?s}, Data: \"{s}\"\n", .{
                 prefix,
                 name, 
-                mem.join(alloc, "; ", val.string.getAll(alloc) catch &.{ "" }) catch "",
+                mem.join(alloc, "\" \"", val.string.getAll(alloc) catch &.{ "" }) catch "",
             });
         },
         inline else => |tag| {

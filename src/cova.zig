@@ -29,6 +29,9 @@ pub const ParseConfig = struct {
     /// Specify custom Separators between Options and their Values.
     /// Spaces ' ' are implicitly included.
     opt_val_seps: []const u8 = "=",
+    /// Allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')
+    /// This is allowed per the POSIX standard, but may not be ideal in every use case.
+    allow_abbreviated_long_opts: bool = true,
 };
 
 var usage_help_flag: bool = false;
@@ -158,14 +161,18 @@ pub fn parseArgs(
                 }
             }
             // - Long Options
-            else if (eql(u8, arg[0..2], long_pf)) {
-                const long_opt = arg[2..];
+            else if (eql(u8, arg[0..long_pf.len], long_pf)) {
+                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], parse_config.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
+                const long_opt = arg[long_pf.len..split_idx]; 
+                const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
+                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], parse_config.opt_val_seps) != null; 
                 for (cmd.opts.?) |*opt| {
-                    const long_len = opt.long_name.?.len;
                     if (opt.long_name != null) {
-                        // Handle Value provided to this Option with custom Separator (ex: '=') instead of a space ' '.
-                        if (long_opt.len > opt.long_name.?.len and eql(u8, long_opt[0..long_len], opt.long_name.?)) {
-                            if (mem.indexOfScalar(u8, parse_config.opt_val_seps, long_opt[long_len]) != null) {
+                        if (
+                            eql(u8, long_opt, opt.long_name.?) or
+                            (parse_config.allow_abbreviated_long_opts and mem.indexOf(u8, opt.long_name.?, long_opt) != null and opt.long_name.?[0] == long_opt[0])
+                        ) {
+                            if (sep_flag) {
                                 if (eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         long_pf, 
@@ -176,9 +183,8 @@ pub fn parseArgs(
                                     try writer.print("\n\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
-                                if (long_len + 1 >= long_opt.len) return error.EmptyArgumentProvidedToOption;
-                                const opt_arg = long_opt[(long_len + 1)..];
-                                opt.val.set(opt_arg) catch {
+                                if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
+                                opt.val.set(sep_arg) catch {
                                     try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
                                         long_pf,
                                         opt.long_name, 
@@ -191,9 +197,9 @@ pub fn parseArgs(
                                 log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
                                 continue :parseArg;
                             }
-                        }
-                        // Handle normally provided Value to Option
-                        else if (eql(u8, long_opt, opt.long_name.?)) {
+                        
+                            // Handle normally provided Value to Option
+
                             // Handle Boolean/Toggle Option.
                             if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                             // Handle Option with normal Argument.
@@ -278,6 +284,7 @@ fn parseOpt(args: *const proc.ArgIterator, comptime opt_type: type, opt: *const 
     const peak_arg = argsPeak(args);
     const set_arg = 
         if (peak_arg == null or peak_arg.?[0] == '-') setArg: {
+            if (!eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
             _ = @constCast(args).next();
             break :setArg "true";
         }
