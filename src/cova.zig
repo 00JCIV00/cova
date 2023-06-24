@@ -31,6 +31,7 @@ pub const ParseConfig = struct {
     opt_val_seps: []const u8 = "=",
     /// Allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')
     /// This is allowed per the POSIX standard, but may not be ideal in every use case.
+    /// Note, this does not check for uniqueness and will simply match on the first Option matching the abbreviation.
     allow_abbreviated_long_opts: bool = true,
 };
 
