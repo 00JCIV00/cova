@@ -71,7 +71,7 @@ pub fn Typed(comptime set_type: type) type {
         /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
         /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
         parse_fn: ?*const fn([]const u8) anyerror!val_type = null,
-        /// A Validation Function to be used in `set()` following `parse()` Argument Parsing.
+        /// A Validation Function to be used for Argument Validation in `set()` following Argument Parsing with `parse()`.
         valid_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
             
         /// The Name of this Value for user identification and Usage/Help messages.
@@ -109,7 +109,7 @@ pub fn Typed(comptime set_type: type) type {
                 }
                 break :checkDelim false;
             };
-            if (self.set_behavior == .Multi and check_delim) {
+            if (self.set_behavior == .Multi and meta.activeTag(@typeInfo(val_type)) != .Pointer and check_delim) {
                 var split_args = mem.splitScalar(u8, set_arg, arg_delim);
                 while (split_args.next()) |arg| try self.set(arg);
                 return;
@@ -277,6 +277,16 @@ pub const ParsingFns = struct {
                 }
             }.isTrue;
         }
+
+        /// Parse the given Integer `arg` as Base `base`. Base options:
+        /// - 0: Uses the 2 character prefix to determine the base. Default is Base 10. (This is also the default parsing option for Integers.)
+        /// - 2: Base 2 / Binary
+        /// - 8: Base 8 / Octal
+        /// - 10: Base 10 / Decimal
+        /// - 16: Base 16 / Hexadecimal
+        pub fn asBase(comptime num_T: type, comptime base: u8) fn([]const u8) anyerror!num_T {
+            return struct { fn toBase(arg: []const u8) !num_T { return fmt.parseInt(num_T, arg, base); } }.toBase;
+        }
     };
 
     /// Trim all Whitespace from the beginning and end of the provided Argument `arg`.
@@ -336,8 +346,11 @@ pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
     return @unionInit(Generic, active_tag, typed_val);
 }
 
+/// Config for creating Values from Struct Fields using `from()`.
 pub const FromConfig = struct {
+    /// Flag to Ignore Incompatible types or error during compile time.
     ignore_incompatible: bool = true,
+    /// The Description for the Value.
     val_description: ?[]const u8 = null,
 };
 

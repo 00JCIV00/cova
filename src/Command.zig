@@ -278,8 +278,10 @@ pub fn Custom(comptime config: Config) type {
             /// A Help Prefix for the Command.
             cmd_help_prefix: []const u8 = "",
 
-            /// Descriptions of the Command's Sub Commands, Options, and Values.
+            /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
             /// These Descriptions will be used across this Command and all of its Sub Commands.
+            ///
+            /// Format: .{ "argument_name", "Description of the Argument." }
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
 
             /// Max number of Sub Commands.
@@ -309,7 +311,7 @@ pub fn Custom(comptime config: Config) type {
             const from_opts = from_opts_buf[0..];
             var opts_idx: u8 = 0;
             var short_names_buf: [from_config.max_opts]u8 = undefined;
-            var short_names = short_names_buf[0..];
+            const short_names = short_names_buf[0..];
             var short_idx: u8 = 0;
             var from_vals_buf: [from_config.max_vals]Value.Generic = undefined;
             const from_vals = from_vals_buf[0..];

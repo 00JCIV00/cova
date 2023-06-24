@@ -99,10 +99,13 @@ pub fn Custom(comptime config: Config) type {
             });
         }
 
-        /// Config for the `from()` method.
+        /// Config for creating Options from Struct Fields using `from()`.
         pub const FromConfig = struct {
+            /// The Short Name for the Option.
             short_name: ?u8 = null,
+            /// Flag to Ignore Incompatible types or error during compile time.
             ignore_incompatible: bool = true,
+            /// The Description for the Option.
             opt_description: ?[]const u8 = null,
         };
 
