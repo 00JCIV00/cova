@@ -163,7 +163,7 @@
 <span class="line" id="L50">        <span class="tok-comment">/// This Option's Long Name (ex: `--intOpt`).</span></span>
 <span class="line" id="L51">        long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L52">        <span class="tok-comment">/// This Option's wrapped Value.</span></span>
-<span class="line" id="L53">        val: *<span class="tok-kw">const</span> Value.Generic = &amp;Value.ofType(<span class="tok-type">bool</span>, .{}),</span>
+<span class="line" id="L53">        val: Value.Generic = Value.ofType(<span class="tok-type">bool</span>, .{}),</span>
 <span class="line" id="L54"></span>
 <span class="line" id="L55">        <span class="tok-comment">/// The Name of this Option for user identification and Usage/Help messages.</span></span>
 <span class="line" id="L56">        <span class="tok-comment">/// Limited to 100B.</span></span>
@@ -212,35 +212,48 @@
 <span class="line" id="L99">            });</span>
 <span class="line" id="L100">        }</span>
 <span class="line" id="L101"></span>
-<span class="line" id="L102">        <span class="tok-comment">/// Create an Option from a Valid Optional StructField.</span></span>
-<span class="line" id="L103">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(<span class="tok-kw">comptime</span> field: std.builtin.Type.StructField, short_name: ?<span class="tok-type">u8</span>, ignore_incompatible: <span class="tok-type">bool</span>) ?<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L104">            <span class="tok-kw">const</span> field_info = <span class="tok-builtin">@typeInfo</span>(field.<span class="tok-type">type</span>);</span>
-<span class="line" id="L105">            <span class="tok-kw">const</span> optl =</span>
-<span class="line" id="L106">                <span class="tok-kw">if</span> (field_info == .Optional) field_info.Optional</span>
-<span class="line" id="L107">                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (field_info == .Array <span class="tok-kw">and</span> <span class="tok-builtin">@typeInfo</span>(field_info.Array.child) == .Optional) <span class="tok-builtin">@typeInfo</span>(field_info.Array.child).Optional</span>
-<span class="line" id="L108">                <span class="tok-kw">else</span> <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' is not an Optional or Array of Optionals.&quot;</span>);</span>
-<span class="line" id="L109">            <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L110">                .name = field.name,</span>
-<span class="line" id="L111">                .description = <span class="tok-str">&quot;The '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' Option of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;'.&quot;</span>,</span>
-<span class="line" id="L112">                .long_name = field.name,</span>
-<span class="line" id="L113">                .short_name = short_name, </span>
-<span class="line" id="L114">                .val = optVal: {</span>
-<span class="line" id="L115">                    <span class="tok-kw">const</span> optl_info = <span class="tok-builtin">@typeInfo</span>(optl.child);</span>
-<span class="line" id="L116">                    <span class="tok-kw">switch</span> (optl_info) {</span>
-<span class="line" id="L117">                        .Bool, .Int, .Float, .Pointer =&gt; <span class="tok-kw">break</span> :optVal &amp;(Value.from(field, ignore_incompatible) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>),</span>
-<span class="line" id="L118">                        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L119">                            <span class="tok-kw">if</span> (!ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible as it cannot be converted to a Valid Option or Value.&quot;</span>)</span>
-<span class="line" id="L120">                            <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L121">                        },</span>
-<span class="line" id="L122">                    }</span>
-<span class="line" id="L123">                }</span>
-<span class="line" id="L124">            };</span>
-<span class="line" id="L125">        </span>
-<span class="line" id="L126">        }</span>
-<span class="line" id="L127">    };</span>
-<span class="line" id="L128">} </span>
-<span class="line" id="L129"></span>
-<span class="line" id="L130"></span>
-<span class="line" id="L131"></span>
+<span class="line" id="L102">        <span class="tok-comment">/// Config for creating Options from Struct Fields using `from()`.</span></span>
+<span class="line" id="L103">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> FromConfig = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L104">            <span class="tok-comment">/// The Short Name for the Option.</span></span>
+<span class="line" id="L105">            short_name: ?<span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L106">            <span class="tok-comment">/// Flag to Ignore Incompatible types or error during compile time.</span></span>
+<span class="line" id="L107">            ignore_incompatible: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L108">            <span class="tok-comment">/// The Description for the Option.</span></span>
+<span class="line" id="L109">            opt_description: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L110">        };</span>
+<span class="line" id="L111"></span>
+<span class="line" id="L112">        <span class="tok-comment">/// Create an Option from a Valid Optional StructField.</span></span>
+<span class="line" id="L113">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(<span class="tok-kw">comptime</span> field: std.builtin.Type.StructField, from_config: FromConfig) ?<span class="tok-builtin">@This</span>() {</span>
+<span class="line" id="L114">            <span class="tok-kw">const</span> field_info = <span class="tok-builtin">@typeInfo</span>(field.<span class="tok-type">type</span>);</span>
+<span class="line" id="L115">            <span class="tok-kw">const</span> optl =</span>
+<span class="line" id="L116">                <span class="tok-kw">if</span> (field_info == .Optional) field_info.Optional</span>
+<span class="line" id="L117">                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (field_info == .Array <span class="tok-kw">and</span> <span class="tok-builtin">@typeInfo</span>(field_info.Array.child) == .Optional) <span class="tok-builtin">@typeInfo</span>(field_info.Array.child).Optional</span>
+<span class="line" id="L118">                <span class="tok-kw">else</span> <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' is not an Optional or Array of Optionals.&quot;</span>);</span>
+<span class="line" id="L119">            <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L120">                .name = field.name,</span>
+<span class="line" id="L121">                .description = from_config.opt_description <span class="tok-kw">orelse</span> <span class="tok-str">&quot;The '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' Option of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;'.&quot;</span>,</span>
+<span class="line" id="L122">                .long_name = field.name,</span>
+<span class="line" id="L123">                .short_name = from_config.short_name, </span>
+<span class="line" id="L124">                .val = optVal: {</span>
+<span class="line" id="L125">                    <span class="tok-kw">const</span> optl_info = <span class="tok-builtin">@typeInfo</span>(optl.child);</span>
+<span class="line" id="L126">                    <span class="tok-kw">switch</span> (optl_info) {</span>
+<span class="line" id="L127">                        .Bool, .Int, .Float, .Pointer =&gt; <span class="tok-kw">break</span> :optVal Value.from(field, .{</span>
+<span class="line" id="L128">                            .ignore_incompatible = from_config.ignore_incompatible,</span>
+<span class="line" id="L129">                            .val_description = from_config.opt_description,</span>
+<span class="line" id="L130">                        }) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L131">                        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L132">                            <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible as it cannot be converted to a Valid Option or Value.&quot;</span>)</span>
+<span class="line" id="L133">                            <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L134">                        },</span>
+<span class="line" id="L135">                    }</span>
+<span class="line" id="L136">                }</span>
+<span class="line" id="L137">            };</span>
+<span class="line" id="L138">        </span>
+<span class="line" id="L139">        }</span>
+<span class="line" id="L140">    };</span>
+<span class="line" id="L141">} </span>
+<span class="line" id="L142"></span>
+<span class="line" id="L143"></span>
+<span class="line" id="L144"></span>
 </code></pre></body>
 </html>
