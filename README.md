@@ -1,5 +1,5 @@
 # cova
-Commands, Options, Values, Arguments. A simple command line argument parsing library for Zig.
+Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 ___
 
 ## Overview
@@ -8,6 +8,56 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
 
+## Features
+- **Comptime Setup. Runtime Use.**
+  - Cova is designed to have Arguments set up at Compile Time so they can be validated during each compilation, thus providing the library user with immediate feedback.
+  - Once validated, Arguments are initialized to memory for Runtime use where app user arguments are parsed then made ready to be analyzed by library user code.
+- **Simple Design:**
+  - All Argument tokens are parsed to Commands, Options, or Values.
+  - These Argument types can be Created From or Converted to Structs and their corresponding Fields.
+  - The most Basic Setup requires only Cova imports, a library user Struct, and 2 function calls for parsing.
+  - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
+  - Multiplatform. Tested across:
+    - x86_64-linux
+	- aarch64-linux
+	- x86_64-windows
+	- *Should support all POSIX compliant systems.*
+  - Commands:
+    - Contain sub Commands, Options, and Values.
+    - Precede their Options and Values when parsed (i.e. `command --option opt_val "value"`)
+    - Auto-generated Help and Usage message functions that can be invoked as Commands and/or Options (i.e. `command help` or `command -h/--help`)
+  - Options:
+    - Wrap Values to make them optional and allow them to be given in any order.
+    - Can be given multiple times in any valid format (i.e `--int 1 --int=2 -i 3 -i4`)
+    - Short Options:
+  	  - Begin w/ `-`
+  	  - Chainable (i.e. `-abc` = `-a -b -c`)
+  	  - Variable Separators (i.e. `-c Tokyo` = `-c=Tokyo` = `-cTokyo`)
+    - Long Options:
+      - Begin w/ `--`
+      - Variable Separators (i.e. `--city Tokyo` = `--city=Tokyo`)
+      - Can be Abbreviated (i.e. `--long-option` = `--long`)
+  - Values:
+    - Also known as Positional Arguments.
+	- Do not use prefixes.
+	- Must be a specific type given in a specific order. (i.e. `command "string_val" 10 true`)
+- **Granular, Robust Customization:**
+  - Cova offers deep customization through the Fields of the Argument types as well as several Config Structs, allowing library users to only configure what they need.
+  - Parsing:
+  	- Mandate all Values be filled.
+	- Customize Separator Character(s) between Options and their Values.
+	- Allow/Prevent Abbreviated Long Options.
+  - Commands:
+	- Customize Templates for auto-generated Command Help/Usage messages.
+	- Set Rules for converting From/To a Struct.
+  - Options:
+	- Customize Templates for Option Help/Usage messages.
+    - Customize short and long prefixes (i.e. `/s` or `__long-opt`).
+	- Set up the internally wrapped Value.
+  - Values:
+    - Configure Values to be Individual or Multi (allowing multiple of the same type to be stored in a single Value).
+	- Set the Rules for how Values are Set through custom Parsing and Validation Functions!
+
 ## Goals
 ### Pre 1.0
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
@@ -15,6 +65,7 @@ Cova is based on the idea that Arguments will fall into one of three categories:
   - [x] Handle '=' instead of ' ' between an Option and its Value.
   - [x] Handle the same Option given multiple times. (Currently takes last value.)
   - [x] Handle no space ' ' between a Short Option and its Value.
+  - [x] Abbreviated Long Option parsing (i.e. '--long' working for '--long-opt').
 - [x] Parsing Customization:
   - [x] Mandate Values be filled.
   - [x] Custom prefixes for Options.
@@ -23,7 +74,7 @@ Cova is based on the idea that Arguments will fall into one of three categories:
   - [x] Choose whether or not to skip the first Argument (the executable's name).
 - [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
-    - [ ] Proper library tests. 
+  - [ ] Proper library tests. 
   - [x] Initialization `Custom()` methods for Commands and Options.
     - [x] Setup in Comptime. Use in Runtime.
     - [x] Validate unique sub Commands, Options, and Values.

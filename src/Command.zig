@@ -20,6 +20,7 @@ const ascii = std.ascii;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
+const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 
 const eql = mem.eql;
@@ -55,7 +56,15 @@ pub const Config = struct {
     /// Must support the following format types in this order:
     /// 1. String (Value Name)
     /// 2. String (Value Type)
-    vals_usage_fmt: []const u8 = "\"{s} ({s})\"", 
+    vals_usage_fmt: []const u8 = "\"{s} ({s})\"",
+
+    /// The Global Help Prefix for all instances of this Command type.
+    /// This can be overwritten per instance using the `help_prefix` field. 
+    global_help_prefix: []const u8 = "",
+
+    /// The Default Max Number of Arguments for Commands, Options, and Values individually.
+    /// This is used in for both `init()` and `from()` but can be overwritten for the latter.
+    max_args: u8 = 100, 
 
 };
 
@@ -76,41 +85,66 @@ pub fn Custom(comptime config: Config) type {
         /// Values Usage Format.
         /// Check `Command.Config` for details.
         pub const vals_usage_fmt = config.vals_usage_fmt;
+        /// Global Help Prefix.
+        /// Check `Command.Config` for details.
+        pub const global_help_prefix = config.global_help_prefix;
+        /// Max Args.
+        /// Check `Command.Config` for details.
+        pub const max_args = config.max_args;
+
+        /// Flag denoting if this Command has been initialized to memory using `init()`.
+        ///
+        /// **Internal Use.**
+        _is_init: bool = false,
+        /// The Allocator for this Command.
+        /// This is set using `init()`.
+        ///
+        /// **Internal Use.**
+        _alloc: ?mem.Allocator = null,
 
         /// The list of Sub Commands this Command can take.
-        sub_cmds: ?[]*const @This() = null,
+        sub_cmds: ?[]const @This() = null,
         /// The Sub Command assigned to this Command during Parsing (optional).
         sub_cmd: ?*const @This() = null,
         /// The list of Options this Command can take.
-        opts: ?[]*const CustomOption = null,
+        opts: ?[]const CustomOption = null,
         /// The list of Values this Command can take.
-        vals: ?[]*const Value.Generic = null,
+        vals: ?[]const Value.Generic = null,
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
         /// The Prefix message used immediately before a Usage/Help message is displayed.
-        help_prefix: []const u8 = "",
+        help_prefix: []const u8 = global_help_prefix,
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
 
         /// Sets the active Sub-Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
-            //@constCast(self).*.sub_cmd = @constCast(set_cmd);
             @constCast(self).*.sub_cmd = set_cmd;
         }
 
         /// Gets a StringHashMap of this Command's Options.
-        pub fn getOpts(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const CustomOption) {
+        pub fn getOpts(self: *const @This()) !StringHashMap(CustomOption) {
+            if (!self._is_init) return error.CommandNotInitialized;
+            return getOptsAlloc(self._alloc.?);
+        }
+        /// Gets a StringHashMap of this Command's Options using the provided Allocator.
+        pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
             if (self.opts == null) return error.NoOptionsInCommand;
-            var map = StringHashMap(*const CustomOption).init(alloc);
+            var map = StringHashMap(CustomOption).init(alloc);
             for (self.opts.?) |opt| { try map.put(opt.name, opt); }
             return map;
         }
 
         /// Gets a StringHashMap of this Command's Values.
-        pub fn getVals(self: *const @This(), alloc: mem.Allocator) !StringHashMap(*const Value) {
+        pub fn getVals(self: *const @This()) !StringHashMap(Value) {
+            if (!self._is_init) return error.CommandNotInitialized;
+            return getValsAlloc(self._alloc.?);
+        }
+        /// Gets a StringHashMap of this Command's Values.
+        pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
             if (self.vals == null) return error.NoValuesInCommand;
-            var map = StringHashMap(*const Value).init(alloc);
+            var map = StringHashMap(Value).init(alloc);
             for (self.vals.?) |val| { try map.put(val.name, val); }
             return map;
         }
@@ -244,12 +278,18 @@ pub fn Custom(comptime config: Config) type {
             /// A Help Prefix for the Command.
             cmd_help_prefix: []const u8 = "",
 
+            /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
+            /// These Descriptions will be used across this Command and all of its Sub Commands.
+            ///
+            /// Format: .{ "argument_name", "Description of the Argument." }
+            sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
+
             /// Max number of Sub Commands.
-            max_cmds: u8 = 100,
+            max_cmds: u8 = max_args,
             /// Max number of Options.
-            max_opts: u8 = 100,
+            max_opts: u8 = max_args,
             /// Max number of Values.
-            max_vals: u8 = 100,
+            max_vals: u8 = max_args,
         };
 
         /// Create a Command from the provided Struct.
@@ -264,21 +304,24 @@ pub fn Custom(comptime config: Config) type {
             const from_info = @typeInfo(from_struct);
             if (from_info != .Struct) @compileError("Provided Type is not a Struct.");
 
-            var from_cmds_buf: [from_config.max_cmds]*const @This() = undefined;
+            var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
             var cmds_idx: u8 = 0;
-            var from_opts_buf: [from_config.max_opts]*const CustomOption = undefined;
+            var from_opts_buf: [from_config.max_opts]CustomOption = undefined;
             const from_opts = from_opts_buf[0..];
             var opts_idx: u8 = 0;
             var short_names_buf: [from_config.max_opts]u8 = undefined;
-            var short_names = short_names_buf[0..];
+            const short_names = short_names_buf[0..];
             var short_idx: u8 = 0;
-            var from_vals_buf: [from_config.max_vals]*const Value.Generic = undefined;
+            var from_vals_buf: [from_config.max_vals]Value.Generic = undefined;
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
+            const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+
             const fields = meta.fields(from_struct);
             inline for (fields) |field| {
+                const arg_description = arg_descriptions.get(field.name);
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
                     // Commands
@@ -286,10 +329,10 @@ pub fn Custom(comptime config: Config) type {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
                             new_config.cmd_name = field.name;
-                            new_config.cmd_description = "The '" ++ field.name ++ "' Command.";
+                            new_config.cmd_description = arg_description orelse "The '" ++ field.name ++ "' Command.";
                             break :subConfig new_config;
                         };
-                        from_cmds[cmds_idx] = &from(field.type, sub_config);
+                        from_cmds[cmds_idx] = from(field.type, sub_config);
                         cmds_idx += 1;
                     },
                     // Options
@@ -307,12 +350,19 @@ pub fn Custom(comptime config: Config) type {
                             }
                             break :shortName null;
                         };
-                        from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                        from_opts[opts_idx] = (CustomOption.from(field, .{ 
+                            .short_name = short_name, 
+                            .ignore_incompatible = from_config.ignore_incompatible,
+                            .opt_description = arg_description
+                        }) orelse continue);
                         opts_idx += 1;
                     },
                     // Values
                     .Bool, .Int, .Float, .Pointer => {
-                        from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                        from_vals[vals_idx] = (Value.from(field, .{
+                            .ignore_incompatible = from_config.ignore_incompatible,
+                            .val_description = arg_description
+                        }) orelse continue);
                         vals_idx += 1;
                     },
                     // Multi
@@ -333,11 +383,18 @@ pub fn Custom(comptime config: Config) type {
                                     }
                                     break :shortName null;
                                 };
-                                from_opts[opts_idx] = &(CustomOption.from(field, short_name, from_config.ignore_incompatible) orelse continue);
+                                from_opts[opts_idx] = CustomOption.from(field, .{
+                                    .short_name = short_name, 
+                                    .ignore_incompatible = from_config.ignore_incompatible,
+                                    .opt_description = arg_description
+                                }) orelse continue;
                                 opts_idx += 1;
                             },
                             .Bool, .Int, .Float, .Pointer => {
-                                from_vals[vals_idx] = &(Value.from(field, from_config.ignore_incompatible) orelse continue);
+                                from_vals[vals_idx] = Value.from(field, .{
+                                    .ignore_incompatible = from_config.ignore_incompatible,
+                                    .val_description = arg_description
+                                }) orelse continue;
                                 vals_idx += 1;
                             },
                             else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
@@ -470,8 +527,6 @@ pub fn Custom(comptime config: Config) type {
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
-                // This is an arbitrary (but hopefully higher than needed) limit to the number of Arguments than be Validated each of Commands, Options, and Values.
-                const max_args = 100;
                 // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds != null) {
                     const cmds = self.sub_cmds.?;
@@ -592,13 +647,13 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize this Command with the provided Config by duplicating it with an Allocator for Runtime use.
         /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
-        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !*@This() {
+        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !@This() {
             if (init_config.validate_cmd) self.validate();
 
-            const init_cmd = &(try alloc.dupe(@This(), &.{ self.* }))[0];
+            var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
             if (init_config.init_subcmds and self.sub_cmds != null) {
-                var init_subcmds = try alloc.alloc(*@This(), self.sub_cmds.?.len);
+                var init_subcmds = try alloc.alloc(@This(), self.sub_cmds.?.len);
                 inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
                 init_cmd.sub_cmds = init_subcmds;
             }
@@ -607,64 +662,63 @@ pub fn Custom(comptime config: Config) type {
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
             if (init_config.add_help_cmds) {
-                var help_sub_cmds = try alloc.alloc(*const @This(), 2);
+                var help_sub_cmds = try alloc.alloc(@This(), 2);
 
-                help_sub_cmds[0] = try alloc.create(@This());
-                @constCast(help_sub_cmds[0]).* = .{
+                help_sub_cmds[0] = .{
                     .name = "usage",
                     .help_prefix = init_cmd.name,
                     .description = usage_description,
+                    ._is_init = true,
+                    ._alloc = alloc,
                 };
-                help_sub_cmds[1] = try alloc.create(@This());
-                @constCast(help_sub_cmds[1]).* = .{
+                help_sub_cmds[1] = .{
                     .name = "help",
                     .help_prefix = init_cmd.name,
                     .description = help_description,
+                    ._is_init = true,
+                    ._alloc = alloc,
                 };
 
-                @constCast(init_cmd).sub_cmds = 
-                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, *const @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
+                init_cmd.sub_cmds = 
+                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
                     else help_sub_cmds[0..];
             }
 
             if (init_config.add_help_opts) {
-                var help_opts = try alloc.alloc(*const @This().CustomOption, 2);
-                help_opts[0] = try alloc.create(@This().CustomOption);
-                @constCast(help_opts[0]).* = .{
+                var help_opts = try alloc.alloc(@This().CustomOption, 2);
+                help_opts[0] = .{
                     .name = "usage",
                     .short_name = 'u',
                     .long_name = "usage",
                     .description = usage_description,
-                    .val = usageVal: {
-                        var usage_val = try alloc.create(Value.Generic);
-                        usage_val.* = Value.ofType(bool, .{ .name = "usageFlag" });
-                        break :usageVal usage_val;
-                    },
+                    .val = Value.ofType(bool, .{ .name = "usageFlag" }),
                 };
-                help_opts[1] = try alloc.create(@This().CustomOption);
-                @constCast(help_opts[1]).* = .{
+                help_opts[1] = .{
 		    .name = "help",
                     .short_name = 'h',
                     .long_name = "help",
                     .description = help_description,
-                    .val = helpVal: {
-                        var help_val = try alloc.create(Value.Generic);
-                        help_val.* = Value.ofType(bool, .{ .name = "helpFlag" });
-                        break :helpVal help_val;
-                    },
+                    .val = Value.ofType(bool, .{ .name = "helpFlag" }),
                 };
 
-                @constCast(init_cmd).opts = 
-                    if (init_cmd.opts != null) try mem.concat(alloc, *const @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
+                init_cmd.opts = 
+                    if (init_cmd.opts != null) try mem.concat(alloc, @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
                     else help_opts[0..];
             }
+
+            init_cmd._is_init = true;
+            init_cmd._alloc = alloc;
 
             return init_cmd; 
         }
 
         /// De-initialize this Command with its original Allocator.
-        pub fn deinit(self: *const @This(), alloc: mem.Allocator) void {
-            alloc.destroy(self);
+        /// If this Command has not yet been initialized, this does nothing.
+        pub fn deinit(self: *const @This()) void {
+            if (!self._is_init) return;
+            if (self.sub_cmds != null)
+                for (self.sub_cmds.?) |*cmd| cmd.deinit();
+            self._alloc.?.destroy(self);
         }
     };
 }

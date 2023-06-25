@@ -14,11 +14,13 @@ const std = @import("std");
 const builtin = std.builtin;
 const ascii = std.ascii;
 const fmt = std.fmt;
+const fs = std.fs;
 const mem = std.mem;
 const meta = std.meta;
 
 const eql = mem.eql;
 const toLower = ascii.lowerString;
+const toUpper = ascii.upperString;
 const parseInt = fmt.parseInt;
 const parseFloat = fmt.parseFloat;
 const Type = builtin.Type;
@@ -42,10 +44,12 @@ pub fn Typed(comptime set_type: type) type {
         pub const val_type = set_type;
 
         /// The Parsed and Validated Argument(s) this Value has been set to.
-        /// Internal Use.
+        ///
+        /// **Internal Use.**
         _set_args: [100]?val_type = .{ null } ** 100,
         /// The current Index of Raw Arguments for this Value.
-        /// Internal Use.
+        ///
+        /// **Internal Use.**
         _arg_idx: u7 = 0,
         /// The Max number of Raw Arguments that can be provided.
         /// This must be between 1 - 100.
@@ -53,9 +57,9 @@ pub fn Typed(comptime set_type: type) type {
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         /// This should be Read-Only for library users.
         is_maxed: bool = false,
-        /// Delimiter Characters that can be used to split up Multi-Values.
+        /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options.
         /// This is only applicable if `set_behavior = .Multi`.
-        arg_delims: []const u8 = ",;:",
+        arg_delims: []const u8 = ",;",
         /// Set Behavior for this Value.
         set_behavior: SetBehavior = .Last,
         /// An optional Default Value.
@@ -63,8 +67,12 @@ pub fn Typed(comptime set_type: type) type {
         /// Flag to determine if this Value has been Parsed and Validated.
         /// This should be Read-Only for library users.
         is_set: bool = false,
-        /// A Validation Function to be used in `set()` following normal Parsing.
-        val_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
+
+        /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
+        /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
+        parse_fn: ?*const fn([]const u8) anyerror!val_type = null,
+        /// A Validation Function to be used for Argument Validation in `set()` following Argument Parsing with `parse()`.
+        valid_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
             
         /// The Name of this Value for user identification and Usage/Help messages.
         name: []const u8 = "",
@@ -73,12 +81,14 @@ pub fn Typed(comptime set_type: type) type {
 
         /// Parse the given Argument to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !val_type {
-            _ = self;
-            var san_arg_buf: [100]u8 = undefined;
-            const san_arg = toLower(san_arg_buf[0..], arg);
+            if (self.parse_fn != null) return self.parse_fn.?(arg) catch error.CannotParseArgToValue;
+            var san_arg_buf: [512]u8 = undefined;
+            var san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(val_type)) {
-                //.Null => error.ValueNotSet,
-                .Bool => eql(u8, san_arg, "true"),
+                .Bool => isTrue: {
+                    const true_words = [_][]const u8{ "true", "t", "yes", "y" };
+                    for (true_words[0..]) |word| { if (eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
+                },
                 .Pointer => arg,
                 .Int => parseInt(val_type, arg, 0),
                 .Float => parseFloat(val_type, arg),
@@ -86,8 +96,7 @@ pub fn Typed(comptime set_type: type) type {
             };
         }
 
-        /// Set this Value if the Argument can be Parsed and Validated.
-        /// Blank ("") Arguments will be treated as the current Raw Argument of the Value.
+        /// Set this Value if the provided Argument `set_arg` can be Parsed and Validated.
         pub fn set(self: *const @This(), set_arg: []const u8) !void {
             // Delimited Args
             var arg_delim: u8 = ' ';
@@ -100,7 +109,7 @@ pub fn Typed(comptime set_type: type) type {
                 }
                 break :checkDelim false;
             };
-            if (self.set_behavior == .Multi and check_delim) {
+            if (self.set_behavior == .Multi and meta.activeTag(@typeInfo(val_type)) != .Pointer and check_delim) {
                 var split_args = mem.splitScalar(u8, set_arg, arg_delim);
                 while (split_args.next()) |arg| try self.set(arg);
                 return;
@@ -109,7 +118,7 @@ pub fn Typed(comptime set_type: type) type {
             // Single Arg
             const parsed_arg = try self.parse(set_arg);
             @constCast(self).is_set =
-                if (self.val_fn != null) self.val_fn.?(parsed_arg)
+                if (self.valid_fn != null) self.valid_fn.?(parsed_arg)
                 else true;
             if (self.is_set) {
                 switch (self.set_behavior) {
@@ -255,18 +264,102 @@ pub const Generic = genUnion: {
     break :genUnion gen_union;
 };
 
+/// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.
+/// Note, `parse_fn` is in no way limited to these functions.
+pub const ParsingFns = struct {
+    /// Builder Functions for common Parsing Functions.
+    pub const Builder = struct {
+        /// Check for Alternate True Words `true_words` when parsing the provided Argument `arg` to a Boolean.
+        pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8) anyerror!bool {
+            return struct {
+                fn isTrue(arg: []const u8) !bool {
+                    for (true_words[0..]) |word| { if (eql(u8, word, arg)) return true; } else return false;
+                }
+            }.isTrue;
+        }
+
+        /// Parse the given Integer `arg` as Base `base`. Base options:
+        /// - 0: Uses the 2 character prefix to determine the base. Default is Base 10. (This is also the default parsing option for Integers.)
+        /// - 2: Base 2 / Binary
+        /// - 8: Base 8 / Octal
+        /// - 10: Base 10 / Decimal
+        /// - 16: Base 16 / Hexadecimal
+        pub fn asBase(comptime num_T: type, comptime base: u8) fn([]const u8) anyerror!num_T {
+            return struct { fn toBase(arg: []const u8) !num_T { return fmt.parseInt(num_T, arg, base); } }.toBase;
+        }
+    };
+
+    /// Trim all Whitespace from the beginning and end of the provided Argument `arg`.
+    pub fn trimWhitespace(arg: []const u8) anyerror![]const u8 {
+        return mem.trim(u8, arg, ascii.whitespace[0..]);
+    }
+};
+
+/// Validation Functions for various common requirements to be used with `valid_fn`.
+/// Note, `valid_fn` is in no way limited to these functions.
+pub const ValidationFns = struct {
+    /// Builder Functions for common Validation Functions.
+    pub const Builder = struct {
+        /// Check if the provided numeric type `num` is within an inclusive or exclusive range.
+        pub fn inRange(comptime num_T: type, comptime start: num_T, comptime end: num_T, comptime inclusive: bool) fn(num_T) bool {
+            const num_info = @typeInfo(num_T);
+            switch (num_info) {
+                .Int, .Pointer => {},
+                inline else => @compileError("The provided type '" ++ @typeName(num_T) ++ "' is not a numeric type. It must be an Integer or a Float."),
+            }
+
+            return 
+                if (inclusive) struct { fn inRng(num: num_T) bool { return num >= start and num <= end; } }.inRng
+                else struct { fn inRng(num: num_T) bool { return num > start and num < end; } }.inRng;
+        }
+    };
+
+    /// Check if the provided `filepath` is a valid filepath.
+    pub fn validFilepath(filepath: []const u8) bool {
+        const test_file = fs.cwd().openFile(filepath, .{}) catch return false;
+        test_file.close();
+        return true;
+    } 
+    /// Check if the provided `num_str` is a valid Ordinal Number.
+    pub fn ordinalNum(num_str: []const u8) bool {
+        const ordinals = enum {
+            first,
+            second,
+            third,
+            fourth,
+            fifth,
+            sixth,
+            seventh,
+            eigth,
+            ninth,
+            tenth,
+        };
+        var lower_buf: [100]u8 = undefined;
+        const lower_slice = toLower(lower_buf[0..], num_str);
+        return meta.stringToEnum(ordinals, lower_slice) != null;
+    }
+};
+
 /// Create a Generic Value with a specific Type.
 pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
     const active_tag = if (T == []const u8) "string" else @typeName(T);
     return @unionInit(Generic, active_tag, typed_val);
 }
 
+/// Config for creating Values from Struct Fields using `from()`.
+pub const FromConfig = struct {
+    /// Flag to Ignore Incompatible types or error during compile time.
+    ignore_incompatible: bool = true,
+    /// The Description for the Value.
+    val_description: ?[]const u8 = null,
+};
+
 /// Create a Generic Value from a Valid Value StructField.
 /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
-pub fn from(comptime field: std.builtin.Type.StructField, ignore_incompatible: bool) ?Generic {
+pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {
     const field_info = @typeInfo(field.type);
     if (field_info == .Pointer and field_info.Pointer.child != u8) {
-        if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+        if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
         else return null;
     }
     const field_type = switch (field_info) {
@@ -278,13 +371,13 @@ pub fn from(comptime field: std.builtin.Type.StructField, ignore_incompatible: b
         },
         .Bool, .Int, .Float, .Pointer => field.type,
         else => { 
-            if (!ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
+            if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
             else return null;
         },
     };
     return ofType(field_type, .{
         .name = field.name,
-        .description = "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
+        .description = from_config.val_description orelse "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
         .max_args = 
             if (field_info == .Array) field_info.Array.len
             else 1,
