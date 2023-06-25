@@ -1,5 +1,5 @@
 # cova
-Commands, Options, Values, Arguments. A simple command line argument parsing library for Zig.
+Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 ___
 
 ## Overview
@@ -9,14 +9,14 @@ Cova is based on the idea that Arguments will fall into one of three categories:
 ![cova_demo](./docs/cova_demo.gif)
 
 ## Features
-- Comptime Setup. Runtime Use.
+- **Comptime Setup. Runtime Use.**
   - Cova is designed to have Arguments set up at Compile Time so they can be validated during each compilation, thus providing the library user with immediate feedback.
   - Once validated, Arguments are initialized to memory for Runtime use where app user arguments are parsed then made ready to be analyzed by library user code.
-- Simple Design:
+- **Simple Design:**
   - All Argument tokens are parsed to Commands, Options, or Values.
   - These Argument types can be Created From or Converted to Structs and their corresponding Fields.
   - The most Basic Setup requires only Cova imports, a library user Struct, and 2 function calls for parsing.
-  - POSIX Compliant (as defined ![here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
+  - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
     - x86_64-linux
 	- aarch64-linux
@@ -32,7 +32,7 @@ Cova is based on the idea that Arguments will fall into one of three categories:
     - Short Options:
   	  - Begin w/ `-`
   	  - Chainable (i.e. `-abc` = `-a -b -c`)
-  	  - Variable Separators (i.e. `-c Tokyo` = `-c=Tokyo` = `-cTokyo`
+  	  - Variable Separators (i.e. `-c Tokyo` = `-c=Tokyo` = `-cTokyo`)
     - Long Options:
       - Begin w/ `--`
       - Variable Separators (i.e. `--city Tokyo` = `--city=Tokyo`)
@@ -41,8 +41,8 @@ Cova is based on the idea that Arguments will fall into one of three categories:
     - Also known as Positional Arguments.
 	- Do not use prefixes.
 	- Must be a specific type given in a specific order. (i.e. `command "string_val" 10 true`)
-- Granular, Robust Customization:
-  - Cova offers deep customization through the Fields of the Argument types as well as Config Structs, allowing library users to only configure what they need.
+- **Granular, Robust Customization:**
+  - Cova offers deep customization through the Fields of the Argument types as well as several Config Structs, allowing library users to only configure what they need.
   - Parsing:
   	- Mandate all Values be filled.
 	- Customize Separator Character(s) between Options and their Values.
