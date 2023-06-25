@@ -3,18 +3,18 @@ Commands, Options, Values, Arguments. A simple yet robust command line argument 
 ___
 
 ## Overview
-Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These components are assembled into a single struct which is then used to parse argument tokens.
+Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
 
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
 
 ## Features
 - **Comptime Setup. Runtime Use.**
-  - Cova is designed to have Arguments set up at Compile Time so they can be validated during each compilation, thus providing the library user with immediate feedback.
-  - Once validated, Arguments are initialized to memory for Runtime use where app user arguments are parsed then made ready to be analyzed by library user code.
+  - Cova is designed to have Argument types set up at Compile Time so they can be validated during each compilation, thus providing the library user with immediate feedback.
+  - Once validated, Argument types are initialized to memory for Runtime use where app user arguments are parsed then made ready to be analyzed by library user code.
 - **Simple Design:**
   - All Argument tokens are parsed to Commands, Options, or Values.
-  - These Argument types can be Created From or Converted to Structs and their corresponding Fields.
+  - These Argument types can be Created From or Converted To Structs and their corresponding Fields.
   - The most Basic Setup requires only Cova imports, a library user Struct, and 2 function calls for parsing.
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
