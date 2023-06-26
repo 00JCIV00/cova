@@ -383,4 +383,43 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_
     try opt.val.set(set_arg);
 }
 
+test "argument parsing" {
+    testing.log_level = .debug;
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const writer = std.io.getStdOut().writer();
+    const test_args: []const [:0]const u8 = &.{ "test_cmd", "--string", "string opt text", "string value text" };
+    var raw_iter = RawArgIterator{ .args = test_args };
+    var test_iter = ArgIteratorGeneric.from(raw_iter);
+    
+    const CustomCommand = Command.Custom(.{});
+    const test_setup_cmd: CustomCommand = comptime .{
+        .name = "test_cmd",
+        .description = "A Test Command.",
+        .opts = &.{
+            .{
+                .name = "string",
+                .short_name = 's',
+                .long_name = "string",
+                .description = "A test string long option.",
+                .val = Value.ofType([]const u8, .{
+                    .name = "string_opt_val",
+                    .description = "A test string opt value.",
+                }),
+            },
+        },
+        .vals = &.{
+            Value.ofType([]const u8, .{
+                .name = "string_val",
+                .description = "A test string value.",
+                .default_val = "test",
+            }),
+        },
+    };
+    const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
+    defer test_cmd.deinit();
+    
+    try parseArgs(&test_iter, CustomCommand, test_cmd, writer, .{});
+}
 
