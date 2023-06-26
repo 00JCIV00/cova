@@ -7,7 +7,9 @@ const builtin = @import("builtin");
 const std = @import("std");
 const log = std.log;
 const mem = std.mem;
+const meta = std.meta;
 const proc = std.process;
+const testing = std.testing;
 
 const eql = mem.eql;
 
@@ -15,6 +17,93 @@ const eql = mem.eql;
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
+
+/// A basic Raw Argument Iterator.
+/// This is intended for testing, but can also be used to process an externally sourced slice of utf8 argument tokens.
+pub const RawArgIterator = struct {
+    index: u16 = 0,
+    args: []const [:0]const u8,
+
+    /// Get the Next argument token and advance this Iterator.
+    pub fn next(self: *@This()) ?[:0]const u8 {
+        self.index += 1;
+        return if (self.index > self.args.len) null else self.args[self.index - 1];
+    }
+
+    /// Peak at the next argument token without advancing this Iterator.
+    pub fn peak(self: *@This()) ?[:0]const u8 {
+        const peak_arg = self.next();
+        self.index -= 1;
+        return peak_arg;
+    }
+};
+
+/// A Generic Interface for ArgumentIterators.
+pub const ArgIteratorGeneric = union(enum) {
+    raw: RawArgIterator,
+    zig: proc.ArgIterator,
+
+    /// Get the Next argument token and advance this Iterator.
+    pub fn next(self: *@This()) ?[:0]const u8 {
+        return switch (meta.activeTag(self.*)) {
+            inline else => |tag| @field(self, @tagName(tag)).next(),
+        };
+    }
+
+    /// Peak at the next argument token without advancing this Iterator.
+    pub fn peak(self: *@This()) ?[:0]const u8 {
+        switch (meta.activeTag(self.*)) {
+            .raw => return self.raw.peak(),
+            inline else => |tag| {
+                var iter = @field(self, @tagName(tag));
+                // TODO: Create a PR for this in `std.process`?
+                if (builtin.os.tag != .windows) {
+                    const peak_arg = iter.next();
+                    iter.inner.index -= 1;
+                    return peak_arg;
+                }
+                else {
+                    const iter_idx = iter.inner.index;
+                    const iter_start = iter.inner.start;
+                    const iter_end = iter.inner.end;
+                    const peak_arg = iter.next();
+                    iter.inner.index = iter_idx; 
+                    iter.inner.start = iter_start; 
+                    iter.inner.end = iter_end; 
+                    return peak_arg;
+                } 
+            },
+        }
+    }
+
+    /// Get the current Index of this Iterator.
+    pub fn index(self: *@This()) usize {
+        return switch (meta.activeTag(self.*)) {
+            .raw => self.raw.index,
+            .zig => self.zig.inner.index,
+        };
+    }
+    
+    /// Create a copy of this Generic Interface from the provided ArgIterator
+    pub fn from(arg_iter: anytype) @This() {
+        const iter_type = @TypeOf(arg_iter);
+        return genIter: inline for (meta.fields(@This())) |field| {
+            if (field.type == iter_type) break :genIter @unionInit(@This(), field.name, arg_iter);
+        }
+        else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by ArgIteratorGeneric.");
+    }
+
+    /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator.
+    pub fn init(alloc: mem.Allocator) !@This() {
+        return from(try proc.argsWithAllocator(alloc));
+    }
+
+    /// De-initialize a copy of this Generic Interface made with `init()`.
+    pub fn deinit(self: *@This()) void {
+        if (meta.activeTag(self.*) == .zig) self.zig.deinit();
+        return;
+    }
+};
 
 /// Config for custom Parsing options.
 pub const ParseConfig = struct {
@@ -40,7 +129,7 @@ var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
 /// The resulted is stored to the provided CustomCommand `cmd` for user analysis.
 pub fn parseArgs(
-    args: *proc.ArgIterator, 
+    args: *ArgIteratorGeneric,
     comptime CustomCommand: type, 
     cmd: *const CustomCommand, 
     writer: anytype,
@@ -52,9 +141,8 @@ pub fn parseArgs(
     const optType = @TypeOf(cmd.*).CustomOption;
 
     // Bypass argument 0 (the filename being executed);
-    const init_arg = 
-        if (parse_config.skip_exe_name_arg and args.inner.index == 0) args.next()
-        else argsPeak(args); 
+    const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peak();
+        //else argsPeak(args); 
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
@@ -74,7 +162,6 @@ pub fn parseArgs(
                         try writer.print("\n\n", .{});
                         return error.CouldNotParseCommand;
                     };
-                    //log.debug("Parsed Command '{s}'.", .{ sub_cmd.name });
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
                 }
@@ -283,8 +370,8 @@ pub fn parseArgs(
 }
 
 /// Parse an Option for the given Command.
-fn parseOpt(args: *proc.ArgIterator, comptime opt_type: type, opt: *const opt_type) !void {
-    const peak_arg = argsPeak(args);
+fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_type) !void {
+    const peak_arg = args.peak();
     const set_arg = 
         if (peak_arg == null or peak_arg.?[0] == '-') setArg: {
             if (!eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
@@ -296,22 +383,4 @@ fn parseOpt(args: *proc.ArgIterator, comptime opt_type: type, opt: *const opt_ty
     try opt.val.set(set_arg);
 }
 
-/// Peak at the next Argument in the provided ArgIterator without advancing the index.
-// TODO: Create a PR for this in `std.process`?
-fn argsPeak(args: *proc.ArgIterator) ?[]const u8 {
-    if (builtin.os.tag != .windows) {
-        const peak_arg = args.next();
-        args.inner.index -= 1;
-        return peak_arg;
-    }
-    else {
-        const iter_idx = args.inner.index;
-        const iter_start = args.inner.start;
-        const iter_end = args.inner.end;
-        const peak_arg = args.next();
-        args.inner.index = iter_idx; 
-        args.inner.start = iter_start; 
-        args.inner.end = iter_end; 
-        return peak_arg;
-    } 
-}
+

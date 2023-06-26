@@ -203,9 +203,9 @@ pub fn main() !void {
     const main_cmd = &(try setup_cmd.init(alloc, .{})); 
     defer main_cmd.deinit();
 
-    var args = try proc.argsWithAllocator(alloc);
-    defer args.deinit();
-    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ 
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+    try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{ 
         .vals_mandatory = false,
         .allow_abbreviated_long_opts = true, 
     });
