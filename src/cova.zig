@@ -233,7 +233,7 @@ pub fn parseArgs(
                             }
                             // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
                             else if (parse_config.allow_opt_val_no_space) {
-                                var short_names_buf: [100]u8 = undefined;
+                                var short_names_buf: [CustomCommand.max_args]u8 = undefined;
                                 const short_names = short_names_buf[0..];
                                 for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
                                 if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
@@ -383,43 +383,168 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_
     try opt.val.set(set_arg);
 }
 
+// TESTING
+const TestCommand = Command.Custom(.{});
+const test_setup_cmd: TestCommand = .{
+    .name = "test-cmd",
+    .description = "A Test Command.",
+    .sub_cmds = &.{
+        .{
+            .name = "sub-test-cmd",
+            .description = "A Test Sub Command.",
+            .opts = &.{            
+                .{
+                    .name = "sub_string_opt",
+                    .description = "A test sub string long option.",
+                    .short_name = 'S',
+                    .long_name = "sub-string",
+                    .val = Value.ofType([]const u8, .{
+                        .name = "sub_string_opt_val",
+                        .description = "A test sub string opt value.",
+                    }),
+                },
+                .{
+                    .name = "sub_int_opt",
+                    .description = "A test sub integer option.",
+                    .short_name = 'I',
+                    .long_name = "sub-int",
+                    .val = Value.ofType(i16, .{
+                        .name = "int_opt_val",
+                        .description = "A test sub integer opt value.",
+                    }),
+                },
+            },
+        },
+    },
+    .opts = &.{
+        .{
+            .name = "string_opt",
+            .description = "A test string long option.",
+            .short_name = 's',
+            .long_name = "string",
+            .val = Value.ofType([]const u8, .{
+                .name = "string_opt_val",
+                .description = "A test string opt value.",
+                .set_behavior = .Multi,
+                .max_args = 6,
+            }),
+        },
+        .{
+            .name = "int_opt",
+            .description = "A test integer option.",
+            .short_name = 'i',
+            .long_name = "int",
+            .val = Value.ofType(i16, .{
+                .name = "int_opt_val",
+                .description = "A test integer opt value.",
+                .valid_fn = struct{ fn valFn(int: i16) bool { return int <= 666; } }.valFn,
+                .set_behavior = .Multi,
+                .max_args = 6,
+            }),
+        },
+        .{
+            .name = "float_opt",
+            .description = "A test float option.",
+            .short_name = 'f',
+            .long_name = "float",
+            .val = Value.ofType(f16, .{
+                .name = "float_opt_val",
+                .description = "An float opt value.",
+                .valid_fn = struct{ fn valFn(float: f16) bool { return float < 30000; } }.valFn,
+                .set_behavior = .Multi,
+                .max_args = 6,
+            }),
+        },
+        .{
+            .name = "toggle_opt",
+            .description = "A test toggle/boolean option.",
+            .short_name = 't',
+            .long_name = "toggle",
+            .val = Value.ofType(bool, .{
+                .name = "toggle_opt_val",
+                .description = "A test toggle/boolean option value.",
+            }),
+        },
+        
+    },
+    .vals = &.{
+        Value.ofType([]const u8, .{
+            .name = "string_val",
+            .description = "A test string value.",
+            .default_val = "test",
+        }),
+    },
+};
+
+pub const TestCmdFromStruct = struct {
+    pub const SubCmdFromStruct = struct {
+        in_bool: bool = false,
+        in_float: f32 = 0,
+    };
+    // Command
+    @"sub-cmd": SubCmdFromStruct = .{
+        .in_bool = true,
+        .in_float = 0,
+    },
+    // Options
+    int: ?i32 = 26,
+    str: ?[]const u8 = "Opt string.",
+    str2: ?[]const u8 = "Opt string 2.",
+    flt: ?f16 = 0,
+    int2: ?u16 = 0,
+    multi_str: [5]?[]const u8,
+    multi_int: [3]?u8,
+    // Values
+    struct_bool: bool = false,
+    struct_str: []const u8 = "Val string.",
+    struct_int: i64,
+    multi_int_val: [2]u16,
+};
+const test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});
+
+
+test "command setup" {
+    testing.log_level = .debug;
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    log.debug("", .{});
+    log.debug("===Testing Normal Command Setup===", .{});
+    log.debug("", .{});
+    const test_cmd = try test_setup_cmd.init(alloc, .{});
+    defer test_cmd.deinit();
+
+    log.debug("", .{});
+    log.debug("===Testing Command From Struct===", .{});
+    log.debug("", .{});
+    const test_cmd_from_struct = test_setup_cmd_from_struct;
+    defer test_cmd_from_struct.deinit();
+}
+
 test "argument parsing" {
     testing.log_level = .debug;
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
     const writer = std.io.getStdOut().writer();
-    const test_args: []const [:0]const u8 = &.{ "test_cmd", "--string", "string opt text", "string value text" };
-    var raw_iter = RawArgIterator{ .args = test_args };
-    var test_iter = ArgIteratorGeneric.from(raw_iter);
-    
-    const CustomCommand = Command.Custom(.{});
-    const test_setup_cmd: CustomCommand = comptime .{
-        .name = "test_cmd",
-        .description = "A Test Command.",
-        .opts = &.{
-            .{
-                .name = "string",
-                .short_name = 's',
-                .long_name = "string",
-                .description = "A test string long option.",
-                .val = Value.ofType([]const u8, .{
-                    .name = "string_opt_val",
-                    .description = "A test string opt value.",
-                }),
-            },
-        },
-        .vals = &.{
-            Value.ofType([]const u8, .{
-                .name = "string_val",
-                .description = "A test string value.",
-                .default_val = "test",
-            }),
-        },
+
+    const test_args: []const []const [:0]const u8 = &.{
+        &.{ "test-cmd", "sub_test_cmd", "sub-test-cmd", "--sub-string", "sub cmd string opt", "--sub-int=15984" },
+        &.{ "test-cmd", "--string", "string opt 1", "--str", "string opt 2", "--string=string_opt_3", "-s", "string opt 4", "-s=string_opt_5", "-s_string_opt_6", "string value text" },
+        &.{ "test-cmd", "--int", "11", "--in", "22", "--int=33", "-i", "444", "-i=555", "-i666", "string value text" },
+        &.{ "test-cmd", "--float", "1111.12", "--flo", "2222.123", "--float=3333.1234", "-f", "4444.12345", "-f=5555.123456", "-f6666.1234567", "string value text" },
+        &.{ "test-cmd", "--toggle", "-t", "string value text" }
     };
-    const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
-    defer test_cmd.deinit();
-    
-    try parseArgs(&test_iter, CustomCommand, test_cmd, writer, .{});
+    for (test_args) |tokens_list| {
+        log.debug("", .{});
+        log.debug("===Testing '{s}'===", .{ tokens_list[1] });
+        log.debug("", .{});
+        const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
+        defer test_cmd.deinit();
+        var raw_iter = RawArgIterator{ .args = tokens_list };
+        var test_iter = ArgIteratorGeneric.from(raw_iter);
+        try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
+    }
 }
 
