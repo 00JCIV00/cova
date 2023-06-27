@@ -192,7 +192,7 @@
 <span class="line" id="L79">        <span class="tok-comment">/// The Description of this Value for Usage/Help messages.</span></span>
 <span class="line" id="L80">        description: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;&quot;</span>,</span>
 <span class="line" id="L81"></span>
-<span class="line" id="L82">        <span class="tok-comment">/// Parse the given Argument to this Value's Type.</span></span>
+<span class="line" id="L82">        <span class="tok-comment">/// Parse the given argument token `arg` to this Value's Type.</span></span>
 <span class="line" id="L83">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parse</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !val_type {</span>
 <span class="line" id="L84">            <span class="tok-kw">if</span> (self.parse_fn != <span class="tok-null">null</span>) <span class="tok-kw">return</span> self.parse_fn.?(arg) <span class="tok-kw">catch</span> <span class="tok-kw">error</span>.CannotParseArgToValue;</span>
 <span class="line" id="L85">            <span class="tok-kw">var</span> san_arg_buf: [<span class="tok-number">512</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
@@ -209,7 +209,7 @@
 <span class="line" id="L96">            };</span>
 <span class="line" id="L97">        }</span>
 <span class="line" id="L98"></span>
-<span class="line" id="L99">        <span class="tok-comment">/// Set this Value if the provided Argument `set_arg` can be Parsed and Validated.</span></span>
+<span class="line" id="L99">        <span class="tok-comment">/// Set this Value if the provided argument token `set_arg` can be Parsed and Validated.</span></span>
 <span class="line" id="L100">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">set</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), set_arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L101">            <span class="tok-comment">// Delimited Args</span>
 </span>

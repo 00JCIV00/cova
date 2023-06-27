@@ -477,7 +477,7 @@ const test_setup_cmd: TestCommand = .{
     },
 };
 
-pub const TestCmdFromStruct = struct {
+const TestCmdFromStruct = struct {
     pub const SubCmdFromStruct = struct {
         sub_bool: bool = false,
         sub_float: f32 = 0,
@@ -500,7 +500,17 @@ pub const TestCmdFromStruct = struct {
     struct_str: []const u8 = "Val string.",
     struct_int: i64,
     multi_int_val: [2]u16,
-    // Cova Argument Types
+    // Cova Command
+    cova_cmd: TestCommand = .{
+        .name = "test-struct-cova-cmd",
+        .description = "A test cova Command within a struct.",
+    },
+    // Cova Option
+    cova_opt: TestCommand.CustomOption = .{
+        .name = "test_struct_cova_opt",
+        .description = "A test cova Option within a struct.",
+    },
+    // Cova Value
     cova_val: Value.Generic = Value.ofType(i8, .{
         .name = "test_struct_cova_val",
         .description = "A test cova Value within a struct.",
