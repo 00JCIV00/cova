@@ -28,7 +28,7 @@ pub const DemoStruct = struct {
         in_float: f32 = 0,
     };
     // Command
-    inner_config: InnerStruct = .{
+    inner_cmd: InnerStruct = .{
         .in_bool = true,
         .in_float = 0,
     },
@@ -45,6 +45,12 @@ pub const DemoStruct = struct {
     struct_str: []const u8 = "Demo Struct string.",
     struct_int: i64,
     multi_int_val: [2]u16,
+    // Cova Argument Types
+    cova_val_int: Value.Generic = Value.ofType(i8, .{
+        .name = "cova_val_int",
+        .description = "A test cova Value within a struct.",
+        .default_val = 50,
+    }),
 };
 
 const setup_cmd: CustomCommand = .{

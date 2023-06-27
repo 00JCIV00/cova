@@ -321,7 +321,34 @@ pub fn Custom(comptime config: Config) type {
             const fields = meta.fields(from_struct);
             inline for (fields) |field| {
                 const arg_description = arg_descriptions.get(field.name);
+                // Handle Argument types.
+                switch (field.type) {
+                    @This() => {
+                        if (field.default_value != null) {
+                            from_cmds[cmds_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            cmds_idx += 1;
+                            continue;
+                        }
+                    },
+                    CustomOption => {
+                        if (field.default_value != null) {
+                            from_opts[opts_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            opts_idx += 1;
+                            continue;
+                        }
+                    },
+                    Value.Generic => {
+                        if (field.default_value != null) {
+                            from_vals[vals_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            vals_idx += 1;
+                            continue;
+                        }
+                    },
+                    inline else => {},
+                }
+
                 const field_info = @typeInfo(field.type);
+                // Handle non-Argument types.
                 switch (field_info) {
                     // Commands
                     .Struct => {
