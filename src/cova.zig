@@ -541,7 +541,8 @@ test "argument parsing" {
         &.{ "test-cmd", "--string", "string opt 1", "--str", "string opt 2", "--string=string_opt_3", "-s", "string opt 4", "-s=string_opt_5", "-s_string_opt_6", "string value text" },
         &.{ "test-cmd", "--int", "11", "--in", "22", "--int=33", "-i", "444", "-i=555", "-i666", "string value text" },
         &.{ "test-cmd", "--float", "1111.12", "--flo", "2222.123", "--float=3333.1234", "-f", "4444.12345", "-f=5555.123456", "-f6666.1234567", "string value text" },
-        &.{ "test-cmd", "--toggle", "-t", "string value text" }
+        &.{ "test-cmd", "--toggle", "-t", "string value text", },
+        &.{ "test-cmd", "string value text", },
     };
     for (test_args) |tokens_list| {
         log.debug("", .{});
@@ -556,3 +557,21 @@ test "argument parsing" {
     }
 }
 
+test "argument analysis" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const writer = std.io.getStdOut().writer();
+
+    const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
+    defer test_cmd.deinit();
+    var raw_iter = RawArgIterator{ .args = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523" } };
+    var test_iter = ArgIteratorGeneric.from(raw_iter);
+    try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
+
+    testing.log_level = .debug;
+    log.debug("", .{});
+    log.debug("===Testing Argument Analysis===", .{});
+    log.debug("", .{});
+    try utils.displayCmdInfo(TestCommand, test_cmd, alloc);
+}
