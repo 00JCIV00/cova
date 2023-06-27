@@ -46,9 +46,9 @@ pub const Config = struct {
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// This Option's Short Name (ex: `-s`).
-        short_name: ?u8,
+        short_name: ?u8 = null,
         /// This Option's Long Name (ex: `--intOpt`).
-        long_name: ?[]const u8,
+        long_name: ?[]const u8 = null,
         /// This Option's wrapped Value.
         val: Value.Generic = Value.ofType(bool, .{}),
 

@@ -17,6 +17,7 @@ const cova = @import("src/cova.zig");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
+const utils = cova.utils;
 const ex_structs = @import("example_structs.zig");
 pub const CustomCommand = Command.Custom(.{ .global_help_prefix = "CovaDemo", }); 
 
@@ -28,7 +29,7 @@ pub const DemoStruct = struct {
         in_float: f32 = 0,
     };
     // Command
-    inner_config: InnerStruct = .{
+    inner_cmd: InnerStruct = .{
         .in_bool = true,
         .in_float = 0,
     },
@@ -45,6 +46,12 @@ pub const DemoStruct = struct {
     struct_str: []const u8 = "Demo Struct string.",
     struct_int: i64,
     multi_int_val: [2]u16,
+    // Cova Argument Types
+    cova_val_int: Value.Generic = Value.ofType(i8, .{
+        .name = "cova_val_int",
+        .description = "A test cova Value within a struct.",
+        .default_val = 50,
+    }),
 };
 
 const setup_cmd: CustomCommand = .{
@@ -203,14 +210,14 @@ pub fn main() !void {
     const main_cmd = &(try setup_cmd.init(alloc, .{})); 
     defer main_cmd.deinit();
 
-    var args = try proc.argsWithAllocator(alloc);
-    defer args.deinit();
-    try cova.parseArgs(&args, CustomCommand, main_cmd, stdout, .{ 
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+    try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{ 
         .vals_mandatory = false,
         .allow_abbreviated_long_opts = true, 
     });
     try stdout.print("\n", .{});
-    try displayCmdInfo(main_cmd, alloc);
+    try utils.displayCmdInfo(CustomCommand, main_cmd, alloc);
 
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
         log.debug("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
@@ -228,64 +235,4 @@ pub fn main() !void {
     //log.warn("Warn", .{});
     //log.info("Info", .{});
     //log.debug("Debug", .{});
-}
-
-/// A demo function to show what all is captured by Cova parsing.
-fn displayCmdInfo(display_cmd: *const CustomCommand, alloc: mem.Allocator) !void {
-    const stdout = std.io.getStdOut().writer();
-    var cur_cmd: ?*const CustomCommand = display_cmd;
-    while (cur_cmd != null) {
-        const cmd = cur_cmd.?;
-
-        if (cmd.checkFlag("help")) try cmd.help(stdout);
-        if (cmd.checkFlag("usage")) try cmd.usage(stdout);
-
-        try stdout.print("- Command: {s}\n", .{ cmd.name });
-        if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| try displayValInfo(opt.val, opt.long_name, true, alloc);
-        }
-        if (cmd.vals != null) {
-            for (cmd.vals.?) |val| try displayValInfo(val, val.name(), false, alloc);
-        }
-        try stdout.print("\n", .{});
-        cur_cmd = cmd.sub_cmd;
-    }
-}
-
-fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator) !void {
-    const stdout = std.io.getStdOut().writer();
-    const prefix = if (isOpt) "Opt" else "Val";
-
-    switch (meta.activeTag(val)) {
-        .string => {
-            try stdout.print("    {s}: {?s}, Data: \"{s}\"\n", .{
-                prefix,
-                name, 
-                mem.join(alloc, "\" \"", val.string.getAll(alloc) catch &.{ "" }) catch "",
-            });
-        },
-        inline else => |tag| {
-            const tag_self = @field(val, @tagName(tag));
-            if (tag_self.set_behavior == .Multi) {
-                const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
-                    if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
-                    const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
-                    if (data != null) break :rawData &.{ data.? };
-                    break :rawData null;
-                };
-                try stdout.print("    {s}: {?s}, Data: {any}\n", .{ 
-                    prefix,
-                    name, 
-                    raw_data,
-                });
-            }
-            else {
-                try stdout.print("    {s}: {?s}, Data: {any}\n", .{ 
-                    prefix,
-                    name, 
-                    tag_self.get() catch null,
-                });
-            }
-        },
-    }
 }

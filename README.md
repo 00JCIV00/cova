@@ -15,7 +15,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - **Simple Design:**
   - All Argument tokens are parsed to Commands, Options, or Values.
   - These Argument types can be Created From or Converted To Structs and their corresponding Fields.
-  - The most Basic Setup requires only Cova imports, a library user Struct, and 2 function calls for parsing.
+  - The most Basic Setup requires only Cova imports, a library user Struct, and a few function calls for parsing.
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
     - x86_64-linux
@@ -26,9 +26,11 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Contain sub Commands, Options, and Values.
     - Precede their Options and Values when parsed (i.e. `command --option opt_val "value"`)
     - Auto-generated Help and Usage message functions that can be invoked as Commands and/or Options (i.e. `command help` or `command -h/--help`)
+	- Can be Nested (i.e `main-cmd --main-opt sub-cmd --sub-opt "sub val"`)
   - Options:
     - Wrap Values to make them optional and allow them to be given in any order.
     - Can be given multiple times in any valid format (i.e `--int 1 --int=2 -i 3 -i4`)
+	- Can be Delimited (i.e. `-i100,58,80 -f 100.1,84.96,74.58 --bools=true,false,false,true`)
     - Short Options:
   	  - Begin w/ `-`
   	  - Chainable (i.e. `-abc` = `-a -b -c`)
@@ -41,6 +43,8 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Also known as Positional Arguments.
 	- Do not use prefixes.
 	- Must be a specific type given in a specific order. (i.e. `command "string_val" 10 true`)
+	- Can be given multiple times (i.e. `my-cmd "string val 1" "string val 2" "string val 3"`)
+	- Can be Delimited (i.e. `my-cmd 50,100,68`)
 - **Granular, Robust Customization:**
   - Cova offers deep customization through the Fields of the Argument types as well as several Config Structs, allowing library users to only configure what they need.
   - Parsing:
@@ -59,7 +63,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 	- Set the Rules for how Values are Set through custom Parsing and Validation Functions!
 
 ## Goals
-### Pre 1.0
+### Pre Public Release
 - [x] Implement basic Argument Parsing for Commands, Options, and Values.
 - [x] Advanced Parsing:
   - [x] Handle '=' instead of ' ' between an Option and its Value.
@@ -69,12 +73,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - [x] Parsing Customization:
   - [x] Mandate Values be filled.
   - [x] Custom prefixes for Options.
-  - [x] Custom separator between Options and Values. (Currently accepts ' ' or '=').
+  - [x] Custom separator between Options and Values.
   - [x] Choose behavior for having the same option given multiple times.
   - [x] Choose whether or not to skip the first Argument (the executable's name).
 - [ ] Setup Features:
   - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
-  - [ ] Proper library tests. 
+  - [x] Proper library tests. 
   - [x] Initialization `Custom()` methods for Commands and Options.
     - [x] Setup in Comptime. Use in Runtime.
     - [x] Validate unique sub Commands, Options, and Values.
@@ -85,7 +89,8 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - [x] Compatible nullable fields become Options.
     - [x] Compatible non-nullable fields become Values.
 
-### Post 1.0
+### Post Public Release
+- [ ] Pull Argument type metadata via AST Parsing struct/field comments.
 - [ ] Tab Completion (long-term goal).
   
 ## Documentation

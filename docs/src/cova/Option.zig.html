@@ -159,9 +159,9 @@
 <span class="line" id="L46"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Custom</span>(<span class="tok-kw">comptime</span> config: Config) <span class="tok-type">type</span> {</span>
 <span class="line" id="L47">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L48">        <span class="tok-comment">/// This Option's Short Name (ex: `-s`).</span></span>
-<span class="line" id="L49">        short_name: ?<span class="tok-type">u8</span>,</span>
+<span class="line" id="L49">        short_name: ?<span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
 <span class="line" id="L50">        <span class="tok-comment">/// This Option's Long Name (ex: `--intOpt`).</span></span>
-<span class="line" id="L51">        long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L51">        long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
 <span class="line" id="L52">        <span class="tok-comment">/// This Option's wrapped Value.</span></span>
 <span class="line" id="L53">        val: Value.Generic = Value.ofType(<span class="tok-type">bool</span>, .{}),</span>
 <span class="line" id="L54"></span>

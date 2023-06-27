@@ -29,6 +29,8 @@ const toUpper = ascii.toUpper;
 
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
+const utils = @import("utils.zig");
+const indexOfEql = utils.indexOfEql;
 
 
 /// Config for custom Command types. 
@@ -215,7 +217,6 @@ pub fn Custom(comptime config: Config) type {
                 for (self.sub_cmds.?) |cmd| {
                     try writer.print(subcmds_usage_fmt, .{ cmd.name });
                     try writer.print(" ", .{});
-                    //try writer.print("| ", .{});
                 }
             } 
 
@@ -250,17 +251,6 @@ pub fn Custom(comptime config: Config) type {
                     break :checkVal false;
                 }
             );
-        }
-
-        /// Find the Index of a Slice (Why is this not in std.mem?!?!? Did I miss it?)
-        fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
-            switch (@typeInfo(T)) {
-                .Pointer => |ptr| {
-                    for (haystack, 0..) |hay, idx| if (eql(ptr.child, hay, needle)) return idx;
-                    return null;
-                },
-                inline else => return mem.indexOfScalar(T, haystack, needle),
-            }
         }
 
         /// Config for creating Commands from Structs using `from()`.
@@ -322,7 +312,34 @@ pub fn Custom(comptime config: Config) type {
             const fields = meta.fields(from_struct);
             inline for (fields) |field| {
                 const arg_description = arg_descriptions.get(field.name);
+                // Handle Argument types.
+                switch (field.type) {
+                    @This() => {
+                        if (field.default_value != null) {
+                            from_cmds[cmds_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            cmds_idx += 1;
+                            continue;
+                        }
+                    },
+                    CustomOption => {
+                        if (field.default_value != null) {
+                            from_opts[opts_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            opts_idx += 1;
+                            continue;
+                        }
+                    },
+                    Value.Generic => {
+                        if (field.default_value != null) {
+                            from_vals[vals_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            vals_idx += 1;
+                            continue;
+                        }
+                    },
+                    inline else => {},
+                }
+
                 const field_info = @typeInfo(field.type);
+                // Handle non-Argument types.
                 switch (field_info) {
                     // Commands
                     .Struct => {
@@ -662,22 +679,23 @@ pub fn Custom(comptime config: Config) type {
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
             if (init_config.add_help_cmds) {
-                var help_sub_cmds = try alloc.alloc(@This(), 2);
-
-                help_sub_cmds[0] = .{
-                    .name = "usage",
-                    .help_prefix = init_cmd.name,
-                    .description = usage_description,
-                    ._is_init = true,
-                    ._alloc = alloc,
+                const help_sub_cmds = &[2]@This(){
+                    .{
+                        .name = "usage",
+                        .help_prefix = init_cmd.name,
+                        .description = usage_description,
+                        ._is_init = true,
+                        ._alloc = alloc,
+                    },
+                    .{
+                        .name = "help",
+                        .help_prefix = init_cmd.name,
+                        .description = help_description,
+                        ._is_init = true,
+                        ._alloc = alloc,
+                    }
                 };
-                help_sub_cmds[1] = .{
-                    .name = "help",
-                    .help_prefix = init_cmd.name,
-                    .description = help_description,
-                    ._is_init = true,
-                    ._alloc = alloc,
-                };
+                    
 
                 init_cmd.sub_cmds = 
                     if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
@@ -685,20 +703,21 @@ pub fn Custom(comptime config: Config) type {
             }
 
             if (init_config.add_help_opts) {
-                var help_opts = try alloc.alloc(@This().CustomOption, 2);
-                help_opts[0] = .{
-                    .name = "usage",
-                    .short_name = 'u',
-                    .long_name = "usage",
-                    .description = usage_description,
-                    .val = Value.ofType(bool, .{ .name = "usageFlag" }),
-                };
-                help_opts[1] = .{
-		    .name = "help",
-                    .short_name = 'h',
-                    .long_name = "help",
-                    .description = help_description,
-                    .val = Value.ofType(bool, .{ .name = "helpFlag" }),
+                const help_opts = &[2]CustomOption{
+                    .{
+                        .name = "usage",
+                        .short_name = 'u',
+                        .long_name = "usage",
+                        .description = usage_description,
+                        .val = Value.ofType(bool, .{ .name = "usageFlag" }),
+                    },
+                    .{
+                        .name = "help",
+                        .short_name = 'h',
+                        .long_name = "help",
+                        .description = help_description,
+                        .val = Value.ofType(bool, .{ .name = "helpFlag" }),
+                    },
                 };
 
                 init_cmd.opts = 
