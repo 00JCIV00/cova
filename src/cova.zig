@@ -17,6 +17,7 @@ const eql = mem.eql;
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
+pub const utils = @import("utils.zig");
 
 /// A basic Raw Argument Iterator.
 /// This is intended for testing, but can also be used to process an externally sourced slice of utf8 argument tokens.
@@ -478,13 +479,13 @@ const test_setup_cmd: TestCommand = .{
 
 pub const TestCmdFromStruct = struct {
     pub const SubCmdFromStruct = struct {
-        in_bool: bool = false,
-        in_float: f32 = 0,
+        sub_bool: bool = false,
+        sub_float: f32 = 0,
     };
     // Command
     @"sub-cmd": SubCmdFromStruct = .{
-        .in_bool = true,
-        .in_float = 0,
+        .sub_bool = true,
+        .sub_float = 0,
     },
     // Options
     int: ?i32 = 26,

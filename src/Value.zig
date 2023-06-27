@@ -79,7 +79,7 @@ pub fn Typed(comptime set_type: type) type {
         /// The Description of this Value for Usage/Help messages.
         description: []const u8 = "",
 
-        /// Parse the given Argument to this Value's Type.
+        /// Parse the given argument token `arg` to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !val_type {
             if (self.parse_fn != null) return self.parse_fn.?(arg) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
@@ -96,7 +96,7 @@ pub fn Typed(comptime set_type: type) type {
             };
         }
 
-        /// Set this Value if the provided Argument `set_arg` can be Parsed and Validated.
+        /// Set this Value if the provided argument token `set_arg` can be Parsed and Validated.
         pub fn set(self: *const @This(), set_arg: []const u8) !void {
             // Delimited Args
             var arg_delim: u8 = ' ';

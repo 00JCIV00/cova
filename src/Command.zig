@@ -29,6 +29,8 @@ const toUpper = ascii.toUpper;
 
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
+const utils = @import("utils.zig");
+const indexOfEql = utils.indexOfEql;
 
 
 /// Config for custom Command types. 
@@ -249,17 +251,6 @@ pub fn Custom(comptime config: Config) type {
                     break :checkVal false;
                 }
             );
-        }
-
-        /// Find the Index of a Slice (Why is this not in std.mem?!?!? Did I miss it?)
-        fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
-            switch (@typeInfo(T)) {
-                .Pointer => |ptr| {
-                    for (haystack, 0..) |hay, idx| if (eql(ptr.child, hay, needle)) return idx;
-                    return null;
-                },
-                inline else => return mem.indexOfScalar(T, haystack, needle),
-            }
         }
 
         /// Config for creating Commands from Structs using `from()`.
