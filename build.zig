@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
+    const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseSafe });
     b.exe_dir = "./bin";
 
     // Static Lib (Unused)
@@ -36,9 +36,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    const build_cova_demo = b.addInstallArtifact(cova_demo);
     cova_demo.addModule("cova", cova_mod);
-    const build_cova_demo_step = b.step("demo", "Build the 'covademo' example");
+    const build_cova_demo = b.addInstallArtifact(cova_demo);
+    const build_cova_demo_step = b.step("demo", "Build the 'covademo' example (default: Debug)");
     build_cova_demo_step.dependOn(&build_cova_demo.step);
-
 }

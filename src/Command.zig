@@ -609,12 +609,6 @@ pub fn Custom(comptime config: Config) type {
 
             var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
-            if (init_config.init_subcmds and self.sub_cmds != null) {
-                var init_subcmds = try alloc.alloc(@This(), self.sub_cmds.?.len);
-                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
-                init_cmd.sub_cmds = init_subcmds;
-            }
-
             const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' usage display." });
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
@@ -640,6 +634,12 @@ pub fn Custom(comptime config: Config) type {
                 init_cmd.sub_cmds = 
                     if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
                     else help_sub_cmds[0..];
+            }
+
+            if (init_config.init_subcmds and self.sub_cmds != null) {
+                var init_subcmds = try alloc.alloc(@This(), self.sub_cmds.?.len);
+                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
+                init_cmd.sub_cmds = init_subcmds;
             }
 
             if (init_config.add_help_opts) {
