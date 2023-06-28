@@ -11,8 +11,6 @@ const meta = std.meta;
 const proc = std.process;
 const testing = std.testing;
 
-const eql = mem.eql;
-
 // Cova
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
@@ -156,7 +154,7 @@ pub fn parseArgs(
         if (cmd.sub_cmds != null) {
             log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |*sub_cmd| {
-                if (eql(u8, sub_cmd.name, arg)) {
+                if (mem.eql(u8, sub_cmd.name, arg)) {
                     parseArgs(args, CustomCommand, sub_cmd, writer, parse_config) catch { 
                         try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
                         try sub_cmd.usage(writer);
@@ -183,7 +181,7 @@ pub fn parseArgs(
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             // Handle Argument provided to this Option with '=' instead of ' '.
                             if (mem.indexOfScalar(u8, parse_config.opt_val_seps, short_opts[short_idx + 1]) != null) {
-                                if (eql(u8, opt.val.valType(), "bool")) {
+                                if (mem.eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         short_pf, 
                                         opt.short_name, 
@@ -210,7 +208,7 @@ pub fn parseArgs(
                             }
                             // Handle final Option in a chain of Short Options
                             else if (short_idx == short_opts.len - 1) { 
-                                if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
+                                if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, @TypeOf(opt.*), opt) catch {
                                         try writer.print("Could not parse Option '{c}{?c}: {s}'.\n", .{ 
@@ -227,7 +225,7 @@ pub fn parseArgs(
                                 continue :parseArg;
                             }
                             // Handle a boolean Option before the final Short Option in a chain.
-                            else if (eql(u8, opt.val.valType(), "bool")) {
+                            else if (mem.eql(u8, opt.val.valType(), "bool")) {
                                 try @constCast(opt).val.set("true");
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :shortOpts;
@@ -252,7 +250,7 @@ pub fn parseArgs(
                 }
             }
             // - Long Options
-            else if (eql(u8, arg[0..long_pf.len], long_pf)) {
+            else if (mem.eql(u8, arg[0..long_pf.len], long_pf)) {
                 const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], parse_config.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                 const long_opt = arg[long_pf.len..split_idx]; 
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
@@ -260,11 +258,11 @@ pub fn parseArgs(
                 for (cmd.opts.?) |*opt| {
                     if (opt.long_name != null) {
                         if (
-                            eql(u8, long_opt, opt.long_name.?) or
+                            mem.eql(u8, long_opt, opt.long_name.?) or
                             (parse_config.allow_abbreviated_long_opts and mem.indexOf(u8, opt.long_name.?, long_opt) != null and opt.long_name.?[0] == long_opt[0])
                         ) {
                             if (sep_flag) {
-                                if (eql(u8, opt.val.valType(), "bool")) {
+                                if (mem.eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         long_pf, 
                                         opt.long_name, 
@@ -292,7 +290,7 @@ pub fn parseArgs(
                             // Handle normally provided Value to Option
 
                             // Handle Boolean/Toggle Option.
-                            if (eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
+                            if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                             // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, @TypeOf(opt.*), opt) catch {
@@ -375,7 +373,7 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_
     const peak_arg = args.peak();
     const set_arg = 
         if (peak_arg == null or peak_arg.?[0] == '-') setArg: {
-            if (!eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
+            if (!mem.eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
             _ = args.next();
             break :setArg "true";
         }
@@ -385,7 +383,7 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_
 }
 
 // TESTING
-const TestCommand = Command.Custom(.{});
+const TestCommand = Command.Base();
 const test_setup_cmd: TestCommand = .{
     .name = "test-cmd",
     .description = "A Test Command.",

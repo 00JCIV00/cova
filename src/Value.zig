@@ -18,7 +18,6 @@ const fs = std.fs;
 const mem = std.mem;
 const meta = std.meta;
 
-const eql = mem.eql;
 const toLower = ascii.lowerString;
 const toUpper = ascii.upperString;
 const parseInt = fmt.parseInt;
@@ -87,7 +86,7 @@ pub fn Typed(comptime set_type: type) type {
             return switch (@typeInfo(val_type)) {
                 .Bool => isTrue: {
                     const true_words = [_][]const u8{ "true", "t", "yes", "y" };
-                    for (true_words[0..]) |word| { if (eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
+                    for (true_words[0..]) |word| { if (mem.eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
                 },
                 .Pointer => arg,
                 .Int => parseInt(val_type, arg, 0),
@@ -273,7 +272,7 @@ pub const ParsingFns = struct {
         pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8) anyerror!bool {
             return struct {
                 fn isTrue(arg: []const u8) !bool {
-                    for (true_words[0..]) |word| { if (eql(u8, word, arg)) return true; } else return false;
+                    for (true_words[0..]) |word| { if (mem.eql(u8, word, arg)) return true; } else return false;
                 }
             }.isTrue;
         }

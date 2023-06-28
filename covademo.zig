@@ -11,8 +11,6 @@ const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 
-const eql = mem.eql;
-
 const cova = @import("src/cova.zig");
 const Command = cova.Command;
 const Option = cova.Option;

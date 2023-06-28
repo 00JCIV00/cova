@@ -23,7 +23,6 @@ const meta = std.meta;
 const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 
-const eql = mem.eql;
 const toLower = ascii.toLower;
 const toUpper = ascii.toUpper;
 
@@ -69,6 +68,9 @@ pub const Config = struct {
     max_args: u8 = 100, 
 
 };
+
+/// Create a Command type with Base, default configuration.
+pub fn Base() type { return Custom(.{}); }
 
 /// Create a Custom Command type from the provided Config.
 pub fn Custom(comptime config: Config) type {
@@ -227,12 +229,12 @@ pub fn Custom(comptime config: Config) type {
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), toggle_name: []const u8) bool {
             return (
-                (self.sub_cmd != null and eql(u8, self.sub_cmd.?.name, toggle_name)) or
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, toggle_name)) or
                 checkOpt: {
                     if (self.opts != null) {
                         for (self.opts.?) |opt| {
-                            if (eql(u8, opt.name, toggle_name) and 
-                                eql(u8, opt.val.valType(), "bool") and 
+                            if (mem.eql(u8, opt.name, toggle_name) and 
+                                mem.eql(u8, opt.val.valType(), "bool") and 
                                 opt.val.bool.get() catch false)
                                     break :checkOpt true;
                         }
@@ -242,8 +244,8 @@ pub fn Custom(comptime config: Config) type {
                 checkVal: {
                     if (self.vals != null) {
                         for (self.vals.?) |val| {
-                            if (eql(u8, val.name(), toggle_name) and
-                                eql(u8, val.valType(), "bool") and
+                            if (mem.eql(u8, val.name(), toggle_name) and
+                                mem.eql(u8, val.valType(), "bool") and
                                 val.bool.get() catch false)
                                     break :checkVal true;
                         }
@@ -456,12 +458,12 @@ pub fn Custom(comptime config: Config) type {
             inline for (fields) |field| {
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
-                    .Struct => if (self.sub_cmd != null and eql(u8, self.sub_cmd.?.name, field.name)) {
+                    .Struct => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, field.name)) {
                         @field(out, field.name) = try self.sub_cmd.?.to(field.type);
                     },
                     .Optional => |f_opt| if (self.opts != null) {
                         for (self.opts.?) |opt| {
-                            if (eql(u8, opt.name, field.name)) {
+                            if (mem.eql(u8, opt.name, field.name)) {
                                 if (!opt.val.isSet()) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
@@ -475,7 +477,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
                         for (self.vals.?) |val| {
-                            if (eql(u8, val.name(), field.name)) {
+                            if (mem.eql(u8, val.name(), field.name)) {
                                 if (!val.isSet() and val.argIdx() == val.maxArgs()) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
@@ -492,7 +494,7 @@ pub fn Custom(comptime config: Config) type {
                         switch (ary_info) {
                             .Optional => |a_opt| if (self.opts != null) {
                                 for (self.opts.?) |opt| {
-                                    if (eql(u8, opt.name, field.name)) {
+                                    if (mem.eql(u8, opt.name, field.name)) {
                                         if (!opt.val.isSet()) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null) 
@@ -510,7 +512,7 @@ pub fn Custom(comptime config: Config) type {
                             },
                             .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
                                 for (self.vals.?) |val| {
-                                    if (eql(u8, val.name(), field.name)) {
+                                    if (mem.eql(u8, val.name(), field.name)) {
                                         if (!val.isSet() and val.argIdx() == val.maxArgs()) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null) 

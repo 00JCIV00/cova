@@ -42,6 +42,9 @@ pub const Config = struct {
     long_prefix: []const u8 = "--",
 };
 
+/// Create a Option type with Base, default configuration.
+pub fn Base() type { return Custom(.{}); }
+
 /// Create a Custom Option type from the provided Config.
 pub fn Custom(comptime config: Config) type {
     return struct {
