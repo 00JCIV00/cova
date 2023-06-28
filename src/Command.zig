@@ -284,7 +284,7 @@ pub fn Custom(comptime config: Config) type {
             max_vals: u8 = max_args,
         };
 
-        /// Create a Command from the provided Struct.
+        /// Create a Command from the provided Struct `from_struct`.
         /// The provided Struct must be Comptime-known.
         /// Types are converted as follows:
         /// - Structs = Commands
@@ -444,7 +444,7 @@ pub fn Custom(comptime config: Config) type {
             allow_incompatible: bool = true,
         };
 
-        /// Convert this Command to an instance of the provided Struct Type.
+        /// Convert this Command to an instance of the provided Struct Type `T`.
         /// This is the inverse of `from()`.
         /// Types are converted as follows:
         /// - Commmands: Structs by recursively calling `to()`.
@@ -542,7 +542,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values. 
-        /// This will not check for Usage/Help Message Commands/Options that are added via `
+        /// This will not check for Usage/Help Message Commands/Options that are added via `init()`.
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
@@ -587,68 +587,6 @@ pub fn Custom(comptime config: Config) type {
                         distinct_val[idx] = val.name();
                     }
                 }
-            }
-        }
-    
-        /// Config for Setup of this Command.
-        const SetupConfig = struct {
-            /// Flag to Validate this Command.
-            validate_cmd: bool = true,
-            /// Flag to add Usage/Help message Commands to this Command.
-            add_help_cmds: bool = true,
-            /// Flag to add Usage/Help message Options to this Command.
-            add_help_opts: bool = true,
-        };
-
-        /// Setup this Command during Comptime based on the provided SetupConfig.
-        /// (WIP) At this time, this functionality is rolled into `init()`. If I can figure out how to edit a struct instance at Comptime, it'll be moved to here.
-        fn setup(comptime self: *const @This(), comptime setup_config: SetupConfig) void {
-            comptime {
-                const usage_description = "Show the '" ++ self.name ++ "' usage display.";
-                const help_description = "Show the '" ++ self.name ++ "' help display.";
-                
-                if (setup_config.add_help_cmds) {
-                    const help_sub_cmds = [_]*const @This(){
-                        &@This(){
-                            .name = "usage",
-                            .help_prefix = self.name,
-                            .description = usage_description, 
-                        },
-                        &@This(){
-                            .name = "help",
-                            .help_prefix = self.name,
-                            .description = help_description, 
-                        },
-                    };
-                    _ = help_sub_cmds;
-
-                    @constCast(self).sub_cmds = self.sub_cmds;//help_sub_cmds[0..];
-                        //if (self.sub_cmds != null) self.sub_cmds.? ++ help_sub_cmds[0..]
-                        //else help_sub_cmds[0..];
-                }
-
-                if (setup_config.add_help_opts) {
-                    const help_opts = [_]*const @This().CustomOption{
-                        &@This().CustomOption{
-                            .name = "usage",
-                            .short_name = 'u',
-                            .long_name = "usage",
-                            .description = usage_description,
-                            .val = &Value.ofType(bool, .{ .name = "usageFlag" }),
-                        },
-                        &@This().CustomOption{
-                            .name = "help",
-                            .short_name = 'h',
-                            .long_name = "help",
-                            .description = help_description, 
-                            .val = &Value.ofType(bool, .{ .name = "helpFlag" }),
-                        },
-                    };
-                    self.opts = 
-                        if (self.opts != null) self.opts.? ++ help_opts[0..]
-                        else help_opts[0..];
-                }
-                if (setup_config.validate_cmd) self.validate();
             }
         }
 

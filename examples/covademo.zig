@@ -11,7 +11,8 @@ const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 
-const cova = @import("src/cova.zig");
+//const cova = @import("src/cova.zig");
+const cova = @import("cova");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
@@ -52,6 +53,7 @@ pub const DemoStruct = struct {
     }),
 };
 
+// Comptime Setup Command
 const setup_cmd: CustomCommand = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
@@ -228,7 +230,7 @@ pub fn main() !void {
         .allow_abbreviated_long_opts = true, 
     });
     try stdout.print("\n", .{});
-    try utils.displayCmdInfo(CustomCommand, main_cmd, alloc);
+    try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
 
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
         log.debug("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });

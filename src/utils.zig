@@ -12,36 +12,34 @@ const Value = @import("Value.zig");
 
 
 /// Display what is captured within a Command after Cova parsing.
-pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCommand, alloc: mem.Allocator) !void {
-    const stdout = std.io.getStdOut().writer();
+pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCommand, alloc: mem.Allocator, writer: anytype) !void {
     var cur_cmd: ?*const CustomCommand = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
 
-        if (cmd.checkFlag("help")) try cmd.help(stdout);
-        if (cmd.checkFlag("usage")) try cmd.usage(stdout);
+        if (cmd.checkFlag("help")) try cmd.help(writer);
+        if (cmd.checkFlag("usage")) try cmd.usage(writer);
 
-        try stdout.print("- Command: {s}\n", .{ cmd.name });
+        try writer.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| try displayValInfo(opt.val, opt.long_name, true, alloc);
+            for (cmd.opts.?) |opt| try displayValInfo(opt.val, opt.long_name, true, alloc, writer);
         }
         if (cmd.vals != null) {
-            for (cmd.vals.?) |val| try displayValInfo(val, val.name(), false, alloc);
+            for (cmd.vals.?) |val| try displayValInfo(val, val.name(), false, alloc, writer);
         }
-        try stdout.print("\n", .{});
+        try writer.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
     }
 }
 
 /// Display what is captured within an Option of Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
-fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator) !void {
-    const stdout = std.io.getStdOut().writer();
+fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
     switch (meta.activeTag(val)) {
         .string => {
-            try stdout.print("    {s}: {?s}, Data: \"{s}\"\n", .{
+            try writer.print("    {s}: {?s}, Data: \"{s}\"\n", .{
                 prefix,
                 name, 
                 mem.join(alloc, "\" \"", val.string.getAll(alloc) catch &.{ "" }) catch "",
@@ -56,14 +54,14 @@ fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem
                     if (data != null) break :rawData &.{ data.? };
                     break :rawData null;
                 };
-                try stdout.print("    {s}: {?s}, Data: {any}\n", .{ 
+                try writer.print("    {s}: {?s}, Data: {any}\n", .{ 
                     prefix,
                     name, 
                     raw_data,
                 });
             }
             else {
-                try stdout.print("    {s}: {?s}, Data: {any}\n", .{ 
+                try writer.print("    {s}: {?s}, Data: {any}\n", .{ 
                     prefix,
                     name, 
                     tag_self.get() catch null,
