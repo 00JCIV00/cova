@@ -284,9 +284,25 @@ pub const ParsingFns = struct {
         /// - 8: Base 8 / Octal
         /// - 10: Base 10 / Decimal
         /// - 16: Base 16 / Hexadecimal
-        pub fn asBase(comptime num_T: type, comptime base: u8) fn([]const u8) anyerror!num_T {
-            return struct { fn toBase(arg: []const u8) !num_T { return fmt.parseInt(num_T, arg, base); } }.toBase;
+        pub fn asBase(comptime NumT: type, comptime base: u8) fn([]const u8) anyerror!NumT {
+            return struct { fn toBase(arg: []const u8) !NumT { return fmt.parseInt(NumT, arg, base); } }.toBase;
         }
+
+        /// Parse to an Enum Tag's Type
+        pub fn asEnumType(comptime EnumType: type) enumFnType: {
+            const enum_info = @typeInfo(EnumType);
+            if (enum_info != .Enum) @compileError("The type of `EnumType` must be Enum!");
+            break :enumFnType fn([]const u8) anyerror!enum_info.Enum.tag_type;
+        } {
+            const EnumTagType: type = @typeInfo(EnumType).Enum.tag_type;
+            return struct { 
+                fn enumInt(arg: []const u8) !EnumTagType { 
+                    const enum_tag = meta.stringToEnum(EnumType, arg) orelse return error.EnumTagDoesNotExist;
+                    return @enumToInt(enum_tag);
+                }
+            }.enumInt;
+        }
+
     };
 
     /// Trim all Whitespace from the beginning and end of the provided Argument `arg`.

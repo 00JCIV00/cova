@@ -153,7 +153,20 @@ const setup_cmd: CustomCommand = .{
                 .description = "An ordinal number value.",
                 .valid_fn = Value.ValidationFns.ordinalNum,
             } },
-            .description = "An ordinal number value.",
+            .description = "An ordinal number option.",
+        },
+        .{
+            .name = "cardinal_opt",
+            .short_name = 'c',
+            .long_name = "cardinal",
+            .val = .{ .u8 = .{
+                .name = "cardinal_val",
+                .description = "A cardinal number value.",
+                .parse_fn = Value.ParsingFns.Builder.asEnumType(enum(u8) { zero, one, two }),
+                .set_behavior = .Multi,
+                .max_args = 3,
+            } },
+            .description = "A cardinal number option.",
         },
         .{
             .name = "toggle_opt",

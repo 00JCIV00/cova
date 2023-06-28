@@ -575,13 +575,15 @@ test "argument analysis" {
 
     const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
     defer test_cmd.deinit();
-    var raw_iter = RawArgIterator{ .args = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523" } };
+    const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523" }; 
+    var raw_iter = RawArgIterator{ .args = test_args };
     var test_iter = ArgIteratorGeneric.from(raw_iter);
     try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
 
     testing.log_level = .debug;
     log.debug("", .{});
     log.debug("===Testing Argument Analysis===", .{});
+    log.debug("Args: {s}", .{ test_args });
     log.debug("", .{});
     try utils.displayCmdInfo(TestCommand, test_cmd, alloc);
 }
