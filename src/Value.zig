@@ -36,7 +36,7 @@ pub const SetBehavior = enum {
     Multi,
 };
 
-/// Create a Value with a specific Type.
+/// Create a Value with a specific Type `set_type`.
 pub fn Typed(comptime set_type: type) type {
     return struct {
         /// The inner Type of this Value.
@@ -54,17 +54,19 @@ pub fn Typed(comptime set_type: type) type {
         /// This must be between 1 - 100.
         max_args: u7 = 1,
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
-        /// This should be Read-Only for library users.
+        ///
+        /// *This should be Read-Only for library users.*
         is_maxed: bool = false,
         /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options.
         /// This is only applicable if `set_behavior = .Multi`.
         arg_delims: []const u8 = ",;",
         /// Set Behavior for this Value.
         set_behavior: SetBehavior = .Last,
-        /// An optional Default Value.
+        /// An optional Default value for this Value.
         default_val: ?val_type = null,
         /// Flag to determine if this Value has been Parsed and Validated.
-        /// This should be Read-Only for library users.
+        ///
+        /// *This should be Read-Only for library users.*
         is_set: bool = false,
 
         /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
@@ -139,7 +141,7 @@ pub fn Typed(comptime set_type: type) type {
             else return error.InvalidValue;
         }
 
-        /// Get the first Parsed and Validated Argument of this Value.
+        /// Get the first Parsed and Validated value of this Value.
         /// This will pull the first value from `_set_args` and should be used with the `First` or `Last` Set Behaviors.
         pub fn get(self: *const @This()) !val_type {
             return 
@@ -287,7 +289,7 @@ pub const ParsingFns = struct {
             return struct { fn toBase(arg: []const u8) !NumT { return fmt.parseInt(NumT, arg, base); } }.toBase;
         }
 
-        /// Parse to an Enum Tag's Type
+        /// Parse the given argument token `arg` to an Enum Tag of the provided Enum `EnumType`.
         pub fn asEnumType(comptime EnumType: type) enumFnType: {
             const enum_info = @typeInfo(EnumType);
             if (enum_info != .Enum) @compileError("The type of `EnumType` must be Enum!");
@@ -304,7 +306,7 @@ pub const ParsingFns = struct {
 
     };
 
-    /// Trim all Whitespace from the beginning and end of the provided Argument `arg`.
+    /// Trim all Whitespace from the beginning and end of the provided argument token `arg`.
     pub fn trimWhitespace(arg: []const u8) anyerror![]const u8 {
         return mem.trim(u8, arg, ascii.whitespace[0..]);
     }
@@ -355,7 +357,7 @@ pub const ValidationFns = struct {
     }
 };
 
-/// Create a Generic Value with a specific Type.
+/// Create a Generic Value with a specific Type `T`.
 pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
     const active_tag = if (T == []const u8) "string" else @typeName(T);
     return @unionInit(Generic, active_tag, typed_val);
@@ -363,13 +365,13 @@ pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
 
 /// Config for creating Values from Struct Fields using `from()`.
 pub const FromConfig = struct {
-    /// Flag to Ignore Incompatible types or error during compile time.
+    /// Ignore Incompatible types or error during compile time.
     ignore_incompatible: bool = true,
-    /// The Description for the Value.
+    /// Description for the Value.
     val_description: ?[]const u8 = null,
 };
 
-/// Create a Generic Value from a Valid Value StructField.
+/// Create a Generic Value from a Valid Value StructField `field` using the provided FromConfig `from_config`.
 /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
 pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {
     const field_info = @typeInfo(field.type);

@@ -11,7 +11,7 @@ const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 
 
-/// Display what is captured within a Command after Cova parsing.
+/// Display what is captured within a Command `display_cmd` after Cova parsing.
 pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCommand, alloc: mem.Allocator, writer: anytype) !void {
     var cur_cmd: ?*const CustomCommand = display_cmd;
     while (cur_cmd != null) {
@@ -32,7 +32,7 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
     }
 }
 
-/// Display what is captured within an Option of Value after Cova parsing.
+/// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
 fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
     const prefix = if (isOpt) "Opt" else "Val";
@@ -71,7 +71,7 @@ fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem
     }
 }
 
-/// Find the Index of a Scalar or Slice within Slice. (Why is this not in std.mem?!?!? Did I miss it?)
+/// Find the Index of a Scalar or Slice `needle` within a Slice `haystack`. (Why is this not in std.mem?!?!? Did I miss it?)
 pub fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
     switch (@typeInfo(T)) {
         .Pointer => |ptr| {

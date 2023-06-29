@@ -69,10 +69,10 @@ pub const Config = struct {
 
 };
 
-/// Create a Command type with Base, default configuration.
+/// Create a Command type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
-/// Create a Custom Command type from the provided Config.
+/// Create a Custom Command type from the provided Config `config`.
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// The Custom Option type to be used by this Custom Command type.
@@ -122,7 +122,7 @@ pub fn Custom(comptime config: Config) type {
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
 
-        /// Sets the active Sub-Command for this Command.
+        /// Sets the active Sub Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
             @constCast(self).*.sub_cmd = set_cmd;
         }
@@ -132,7 +132,7 @@ pub fn Custom(comptime config: Config) type {
             if (!self._is_init) return error.CommandNotInitialized;
             return getOptsAlloc(self._alloc.?);
         }
-        /// Gets a StringHashMap of this Command's Options using the provided Allocator.
+        /// Gets a StringHashMap of this Command's Options using the provided Allocator `alloc`.
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
             if (self.opts == null) return error.NoOptionsInCommand;
             var map = StringHashMap(CustomOption).init(alloc);
@@ -145,7 +145,7 @@ pub fn Custom(comptime config: Config) type {
             if (!self._is_init) return error.CommandNotInitialized;
             return getValsAlloc(self._alloc.?);
         }
-        /// Gets a StringHashMap of this Command's Values.
+        /// Gets a StringHashMap of this Command's Values using the provided Allocator `alloc`.
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
             if (self.vals == null) return error.NoValuesInCommand;
             var map = StringHashMap(Value).init(alloc);
@@ -153,7 +153,7 @@ pub fn Custom(comptime config: Config) type {
             return map;
         }
 
-        /// Creates the Help message for this Command and Writes it to the provided Writer.
+        /// Creates the Help message for this Command and Writes it to the provided Writer `writer`.
         pub fn help(self: *const @This(), writer: anytype) !void {
             try writer.print("{s}\n", .{ self.help_prefix });
 
@@ -198,7 +198,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
         }
 
-        /// Creates the Usage message for this Command and Writes it to the provided Writer.
+        /// Creates the Usage message for this Command and Writes it to the provided Writer `writer`.
         pub fn usage(self: *const @This(), writer: anytype) !void {
             try writer.print("USAGE: {s} ", .{ self.name });
             if (self.opts != null) {
@@ -225,15 +225,15 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n\n", .{});
         }
 
-        /// Check if a Flag has been set on this Command as a Command, an Option, or a Value.
+        /// Check if a Flag `flag_name` has been set on this Command as a Command, Option, or Value.
         /// This is particularly useful for checking if Help or Usage has been called.
-        pub fn checkFlag(self: *const @This(), toggle_name: []const u8) bool {
+        pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
             return (
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, toggle_name)) or
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
                 checkOpt: {
                     if (self.opts != null) {
                         for (self.opts.?) |opt| {
-                            if (mem.eql(u8, opt.name, toggle_name) and 
+                            if (mem.eql(u8, opt.name, flag_name) and 
                                 mem.eql(u8, opt.val.valType(), "bool") and 
                                 opt.val.bool.get() catch false)
                                     break :checkOpt true;
@@ -244,7 +244,7 @@ pub fn Custom(comptime config: Config) type {
                 checkVal: {
                     if (self.vals != null) {
                         for (self.vals.?) |val| {
-                            if (mem.eql(u8, val.name(), toggle_name) and
+                            if (mem.eql(u8, val.name(), flag_name) and
                                 mem.eql(u8, val.valType(), "bool") and
                                 val.bool.get() catch false)
                                     break :checkVal true;
@@ -268,12 +268,12 @@ pub fn Custom(comptime config: Config) type {
             /// A Description for the Command.
             cmd_description: []const u8 = "",
             /// A Help Prefix for the Command.
-            cmd_help_prefix: []const u8 = "",
+            cmd_help_prefix: []const u8 = global_help_prefix,
 
             /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
             /// These Descriptions will be used across this Command and all of its Sub Commands.
             ///
-            /// Format: .{ "argument_name", "Description of the Argument." }
+            /// Format: `.{ "argument_name", "Description of the Argument." }`
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
 
             /// Max number of Sub Commands.
@@ -286,6 +286,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Create a Command from the provided Struct `from_struct`.
         /// The provided Struct must be Comptime-known.
+        ///
         /// Types are converted as follows:
         /// - Structs = Commands
         /// - Valid Values = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
@@ -446,6 +447,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Convert this Command to an instance of the provided Struct Type `T`.
         /// This is the inverse of `from()`.
+        ///
         /// Types are converted as follows:
         /// - Commmands: Structs by recursively calling `to()`.
         /// - Single-Options: Optional versions of Values.
@@ -592,17 +594,17 @@ pub fn Custom(comptime config: Config) type {
 
         /// Config for the Initialization of this Command.
         pub const InitConfig = struct {
-            /// Flag to Validate this Command.
+            /// Validate this Command.
             validate_cmd: bool = true,
-            /// Flag to add Usage/Help message Commands to this Command.
+            /// Add Usage/Help message Commands to this Command.
             add_help_cmds: bool = true,
-            /// Flag to add Usage/Help message Options to this Command.
+            /// Add Usage/Help message Options to this Command.
             add_help_opts: bool = true,
-            /// Flag to initialize Sub Commands.
+            /// Initialize this Command's Sub Commands.
             init_subcmds: bool = true,
         };
 
-        /// Initialize this Command with the provided Config by duplicating it with an Allocator for Runtime use.
+        /// Initialize this Command with the provided Config `init_config` by duplicating it with the provided Allocator `alloc` for Runtime use.
         /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
             if (init_config.validate_cmd) self.validate();

@@ -20,12 +20,14 @@ const Value = @import("Value.zig");
 /// Config for custom Option types.
 pub const Config = struct {
     /// Format for the Help message. 
+    ///
     /// Must support the following format types in this order:
     /// 1. String (Name)
     /// 2. String (Description)
     help_fmt: ?[]const u8 = null,
 
     /// Format for the Usage message.
+    ///
     /// Must support the following format types in this order:
     /// 1. Character (Short Prefix) 
     /// 2. Optional Character "{?c} (Short Name)
@@ -42,10 +44,10 @@ pub const Config = struct {
     long_prefix: []const u8 = "--",
 };
 
-/// Create a Option type with Base, default configuration.
+/// Create a Option type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
-/// Create a Custom Option type from the provided Config.
+/// Create a Custom Option type from the provided Config `config`.
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// This Option's Short Name (ex: `-s`).
@@ -75,7 +77,7 @@ pub fn Custom(comptime config: Config) type {
         /// Check `Options.Config` for details.
         pub const long_prefix = config.long_prefix;
 
-        /// Creates the Help message for this Option and Writes it to the provided Writer.
+        /// Creates the Help message for this Option and Writes it to the provided Writer `writer`.
         pub fn help(self: *const @This(), writer: anytype) !void {
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
@@ -90,7 +92,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print(help_fmt.?, .{ upper_name, self.description });
         }
 
-        /// Creates the Usage message for this Option and Writes it to the provided Writer.
+        /// Creates the Usage message for this Option and Writes it to the provided Writer `writer`.
         pub fn usage(self: *const @This(), writer: anytype) !void {
             try writer.print(usage_fmt, .{ 
                 short_prefix,
@@ -104,15 +106,15 @@ pub fn Custom(comptime config: Config) type {
 
         /// Config for creating Options from Struct Fields using `from()`.
         pub const FromConfig = struct {
-            /// The Short Name for the Option.
+            /// Short Name for the Option.
             short_name: ?u8 = null,
-            /// Flag to Ignore Incompatible types or error during compile time.
+            /// Ignore Incompatible types or error during Comptime.
             ignore_incompatible: bool = true,
-            /// The Description for the Option.
+            /// Description for the Option.
             opt_description: ?[]const u8 = null,
         };
 
-        /// Create an Option from a Valid Optional StructField.
+        /// Create an Option from a Valid Optional StructField `field` with the provided FromConfig `from_config`.
         pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?@This() {
             const field_info = @typeInfo(field.type);
             const optl =

@@ -126,7 +126,7 @@
 <span class="line" id="L11"><span class="tok-kw">const</span> Value = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Value.zig&quot;</span>);</span>
 <span class="line" id="L12"></span>
 <span class="line" id="L13"></span>
-<span class="line" id="L14"><span class="tok-comment">/// Display what is captured within a Command after Cova parsing.</span></span>
+<span class="line" id="L14"><span class="tok-comment">/// Display what is captured within a Command `display_cmd` after Cova parsing.</span></span>
 <span class="line" id="L15"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">displayCmdInfo</span>(<span class="tok-kw">comptime</span> CustomCommand: <span class="tok-type">type</span>, display_cmd: *<span class="tok-kw">const</span> CustomCommand, alloc: mem.Allocator, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L16">    <span class="tok-kw">var</span> cur_cmd: ?*<span class="tok-kw">const</span> CustomCommand = display_cmd;</span>
 <span class="line" id="L17">    <span class="tok-kw">while</span> (cur_cmd != <span class="tok-null">null</span>) {</span>
@@ -147,7 +147,7 @@
 <span class="line" id="L32">    }</span>
 <span class="line" id="L33">}</span>
 <span class="line" id="L34"></span>
-<span class="line" id="L35"><span class="tok-comment">/// Display what is captured within an Option of Value after Cova parsing.</span></span>
+<span class="line" id="L35"><span class="tok-comment">/// Display what is captured within an Option or Value after Cova parsing.</span></span>
 <span class="line" id="L36"><span class="tok-comment">/// Meant for use within `displayCmdInfo()`.</span></span>
 <span class="line" id="L37"><span class="tok-kw">fn</span> <span class="tok-fn">displayValInfo</span>(val: Value.Generic, name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, isOpt: <span class="tok-type">bool</span>, alloc: mem.Allocator, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L38">    <span class="tok-kw">const</span> prefix = <span class="tok-kw">if</span> (isOpt) <span class="tok-str">&quot;Opt&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;Val&quot;</span>;</span>
@@ -186,7 +186,7 @@
 <span class="line" id="L71">    }</span>
 <span class="line" id="L72">}</span>
 <span class="line" id="L73"></span>
-<span class="line" id="L74"><span class="tok-comment">/// Find the Index of a Scalar or Slice within Slice. (Why is this not in std.mem?!?!? Did I miss it?)</span></span>
+<span class="line" id="L74"><span class="tok-comment">/// Find the Index of a Scalar or Slice `needle` within a Slice `haystack`. (Why is this not in std.mem?!?!? Did I miss it?)</span></span>
 <span class="line" id="L75"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOfEql</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, haystack: []<span class="tok-kw">const</span> T, needle: T) ?<span class="tok-type">usize</span> {</span>
 <span class="line" id="L76">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
 <span class="line" id="L77">        .Pointer =&gt; |ptr| {</span>

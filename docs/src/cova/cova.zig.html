@@ -220,7 +220,7 @@
 <span class="line" id="L104">    }</span>
 <span class="line" id="L105">};</span>
 <span class="line" id="L106"></span>
-<span class="line" id="L107"><span class="tok-comment">/// Config for custom Parsing options.</span></span>
+<span class="line" id="L107"><span class="tok-comment">/// Config for custom argument token Parsing using `parseArgs()`.</span></span>
 <span class="line" id="L108"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ParseConfig = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L109">    <span class="tok-comment">/// Mandate that all Values must be filled, otherwise error out.</span></span>
 <span class="line" id="L110">    <span class="tok-comment">/// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.</span></span>
@@ -231,7 +231,7 @@
 <span class="line" id="L115">    <span class="tok-comment">/// Allow there to be no space ' ' between Options and Values.</span></span>
 <span class="line" id="L116">    <span class="tok-comment">/// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.</span></span>
 <span class="line" id="L117">    allow_opt_val_no_space: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L118">    <span class="tok-comment">/// Specify custom Separators between Options and their Values.</span></span>
+<span class="line" id="L118">    <span class="tok-comment">/// Specify custom Separators between Options and their Values. (i.e. `--opt=value`)</span></span>
 <span class="line" id="L119">    <span class="tok-comment">/// Spaces ' ' are implicitly included.</span></span>
 <span class="line" id="L120">    opt_val_seps: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;=&quot;</span>,</span>
 <span class="line" id="L121">    <span class="tok-comment">/// Allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')</span></span>
@@ -242,7 +242,7 @@
 <span class="line" id="L126"></span>
 <span class="line" id="L127"><span class="tok-kw">var</span> usage_help_flag: <span class="tok-type">bool</span> = <span class="tok-null">false</span>;</span>
 <span class="line" id="L128"><span class="tok-comment">/// Parse provided Argument tokens into Commands, Options, and Values.</span></span>
-<span class="line" id="L129"><span class="tok-comment">/// The resulted is stored to the provided CustomCommand `cmd` for user analysis.</span></span>
+<span class="line" id="L129"><span class="tok-comment">/// The resulted is stored to the provided `CustomCommand` `cmd` for user analysis.</span></span>
 <span class="line" id="L130"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseArgs</span>(</span>
 <span class="line" id="L131">    args: *ArgIteratorGeneric,</span>
 <span class="line" id="L132">    <span class="tok-kw">comptime</span> CustomCommand: <span class="tok-type">type</span>, </span>
@@ -501,8 +501,8 @@
 <span class="line" id="L368">    }</span>
 <span class="line" id="L369">}</span>
 <span class="line" id="L370"></span>
-<span class="line" id="L371"><span class="tok-comment">/// Parse an Option for the given Command.</span></span>
-<span class="line" id="L372"><span class="tok-kw">fn</span> <span class="tok-fn">parseOpt</span>(args: *ArgIteratorGeneric, <span class="tok-kw">comptime</span> opt_type: <span class="tok-type">type</span>, opt: *<span class="tok-kw">const</span> opt_type) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L371"><span class="tok-comment">/// Parse the provided `OptionType` `opt`.</span></span>
+<span class="line" id="L372"><span class="tok-kw">fn</span> <span class="tok-fn">parseOpt</span>(args: *ArgIteratorGeneric, <span class="tok-kw">comptime</span> OptionType: <span class="tok-type">type</span>, opt: *<span class="tok-kw">const</span> OptionType) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L373">    <span class="tok-kw">const</span> peek_arg = args.peek();</span>
 <span class="line" id="L374">    <span class="tok-kw">const</span> set_arg = </span>
 <span class="line" id="L375">        <span class="tok-kw">if</span> (peek_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peek_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>

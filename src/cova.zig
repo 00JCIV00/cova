@@ -104,7 +104,7 @@ pub const ArgIteratorGeneric = union(enum) {
     }
 };
 
-/// Config for custom Parsing options.
+/// Config for custom argument token Parsing using `parseArgs()`.
 pub const ParseConfig = struct {
     /// Mandate that all Values must be filled, otherwise error out.
     /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
@@ -115,7 +115,7 @@ pub const ParseConfig = struct {
     /// Allow there to be no space ' ' between Options and Values.
     /// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.
     allow_opt_val_no_space: bool = true,
-    /// Specify custom Separators between Options and their Values.
+    /// Specify custom Separators between Options and their Values. (i.e. `--opt=value`)
     /// Spaces ' ' are implicitly included.
     opt_val_seps: []const u8 = "=",
     /// Allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')
@@ -126,7 +126,7 @@ pub const ParseConfig = struct {
 
 var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
-/// The resulted is stored to the provided CustomCommand `cmd` for user analysis.
+/// The resulted is stored to the provided `CustomCommand` `cmd` for user analysis.
 pub fn parseArgs(
     args: *ArgIteratorGeneric,
     comptime CustomCommand: type, 
@@ -368,8 +368,8 @@ pub fn parseArgs(
     }
 }
 
-/// Parse an Option for the given Command.
-fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_type) !void {
+/// Parse the provided `OptionType` `opt`.
+fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const OptionType) !void {
     const peek_arg = args.peek();
     const set_arg = 
         if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
