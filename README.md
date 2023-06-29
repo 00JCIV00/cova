@@ -41,7 +41,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
       - Can be Abbreviated (i.e. `--long-option` = `--long`)
   - Values:
     - Also known as Positional Arguments.
-	- Do not use prefixes.
+	- Do not use prefixes (i.e. `command "string value"`)
 	- Must be a specific type given in a specific order. (i.e. `command "string_val" 10 true`)
 	- Can be given multiple times (i.e. `my-cmd "string val 1" "string val 2" "string val 3"`)
 	- Can be Delimited (i.e. `my-cmd 50,100,68`)
@@ -59,6 +59,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Customize short and long prefixes (i.e. `/s` or `__long-opt`).
 	- Set up the internally wrapped Value.
   - Values:
+  	- Create Values with a specific type (Bool, Uint, Int, Float, or String)
     - Configure Values to be Individual or Multi (allowing multiple of the same type to be stored in a single Value).
 	- Set the Rules for how Values are Set through custom Parsing and Validation Functions!
 
@@ -76,8 +77,8 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - [x] Custom separator between Options and Values.
   - [x] Choose behavior for having the same option given multiple times.
   - [x] Choose whether or not to skip the first Argument (the executable's name).
-- [ ] Setup Features:
-  - [ ] Set up the build.zig and build.zig.zon for install and use in other codebases.
+- [x] Setup Features:
+  - [x] Set up the build.zig and build.zig.zon for install and use in other codebases.
   - [x] Proper library tests. 
   - [x] Initialization `Custom()` methods for Commands and Options.
     - [x] Setup in Comptime. Use in Runtime.
@@ -98,7 +99,40 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 
 ## Install
 ### Package Manager
-(WIP) Will use the Zig Package Manager in Zig v0.11.
+1. Add the dependency to `build.zig.zon`:
+```zig
+.dependencies = .{
+    .cova = .{
+        .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
+    },
+},
+```
+2. Add the dependency and module to `build.zig`:
+```zig
+// Cova Dependency
+const cova_dep = b.dependency("cova", .{ .target = target });
+// Cova Module
+const cova_mod = cova_dep.module("cova");
+// Executable
+const exe = b.addExecutable(.{
+    .name = "cova_example",
+    .root_source_file = .{ .path = "src/main.zig" },
+    .target = target,
+    .optimize = optimize,
+});
+// Add the Cova Module to the Executable
+exe.addModule("cova", cova_mod);
+```
+3. Run `zig build project_exe` to get the hash.
+4. Insert the hash into `build.zig.zon`:
+```zig
+.dependencies = .{
+    .cova = .{
+        .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
+	.hash = "hash from step 3 here",
+    },
+},
+```
 
 ### Build the Demo from source
 1. Use Zig v0.11 for your system. Available [here](https://ziglang.org/download/).
@@ -106,7 +140,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 ```bash
 git clone https://github.com/00JCIV00/cova.git
 cd cova
-zig build-exe -O ReleaseSafe covademo.zig
+zig build demo
 ```
 3. Try it out!
 ```bash

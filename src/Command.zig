@@ -284,7 +284,7 @@ pub fn Custom(comptime config: Config) type {
             max_vals: u8 = max_args,
         };
 
-        /// Create a Command from the provided Struct.
+        /// Create a Command from the provided Struct `from_struct`.
         /// The provided Struct must be Comptime-known.
         /// Types are converted as follows:
         /// - Structs = Commands
@@ -444,7 +444,7 @@ pub fn Custom(comptime config: Config) type {
             allow_incompatible: bool = true,
         };
 
-        /// Convert this Command to an instance of the provided Struct Type.
+        /// Convert this Command to an instance of the provided Struct Type `T`.
         /// This is the inverse of `from()`.
         /// Types are converted as follows:
         /// - Commmands: Structs by recursively calling `to()`.
@@ -542,7 +542,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values. 
-        /// This will not check for Usage/Help Message Commands/Options that are added via `
+        /// This will not check for Usage/Help Message Commands/Options that are added via `init()`.
         pub fn validate(comptime self: *const @This()) void {
             comptime {
                 @setEvalBranchQuota(100_000);
@@ -589,68 +589,6 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
         }
-    
-        /// Config for Setup of this Command.
-        const SetupConfig = struct {
-            /// Flag to Validate this Command.
-            validate_cmd: bool = true,
-            /// Flag to add Usage/Help message Commands to this Command.
-            add_help_cmds: bool = true,
-            /// Flag to add Usage/Help message Options to this Command.
-            add_help_opts: bool = true,
-        };
-
-        /// Setup this Command during Comptime based on the provided SetupConfig.
-        /// (WIP) At this time, this functionality is rolled into `init()`. If I can figure out how to edit a struct instance at Comptime, it'll be moved to here.
-        fn setup(comptime self: *const @This(), comptime setup_config: SetupConfig) void {
-            comptime {
-                const usage_description = "Show the '" ++ self.name ++ "' usage display.";
-                const help_description = "Show the '" ++ self.name ++ "' help display.";
-                
-                if (setup_config.add_help_cmds) {
-                    const help_sub_cmds = [_]*const @This(){
-                        &@This(){
-                            .name = "usage",
-                            .help_prefix = self.name,
-                            .description = usage_description, 
-                        },
-                        &@This(){
-                            .name = "help",
-                            .help_prefix = self.name,
-                            .description = help_description, 
-                        },
-                    };
-                    _ = help_sub_cmds;
-
-                    @constCast(self).sub_cmds = self.sub_cmds;//help_sub_cmds[0..];
-                        //if (self.sub_cmds != null) self.sub_cmds.? ++ help_sub_cmds[0..]
-                        //else help_sub_cmds[0..];
-                }
-
-                if (setup_config.add_help_opts) {
-                    const help_opts = [_]*const @This().CustomOption{
-                        &@This().CustomOption{
-                            .name = "usage",
-                            .short_name = 'u',
-                            .long_name = "usage",
-                            .description = usage_description,
-                            .val = &Value.ofType(bool, .{ .name = "usageFlag" }),
-                        },
-                        &@This().CustomOption{
-                            .name = "help",
-                            .short_name = 'h',
-                            .long_name = "help",
-                            .description = help_description, 
-                            .val = &Value.ofType(bool, .{ .name = "helpFlag" }),
-                        },
-                    };
-                    self.opts = 
-                        if (self.opts != null) self.opts.? ++ help_opts[0..]
-                        else help_opts[0..];
-                }
-                if (setup_config.validate_cmd) self.validate();
-            }
-        }
 
         /// Config for the Initialization of this Command.
         pub const InitConfig = struct {
@@ -666,21 +604,15 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize this Command with the provided Config by duplicating it with an Allocator for Runtime use.
         /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
-        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !@This() {
+        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
             if (init_config.validate_cmd) self.validate();
 
             var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
-            if (init_config.init_subcmds and self.sub_cmds != null) {
-                var init_subcmds = try alloc.alloc(@This(), self.sub_cmds.?.len);
-                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
-                init_cmd.sub_cmds = init_subcmds;
-            }
-
             const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' usage display." });
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
-            if (init_config.add_help_cmds) {
+            if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                 const help_sub_cmds = &[2]@This(){
                     .{
                         .name = "usage",
@@ -697,11 +629,21 @@ pub fn Custom(comptime config: Config) type {
                         ._alloc = alloc,
                     }
                 };
-                    
 
                 init_cmd.sub_cmds = 
                     if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
-                    else help_sub_cmds[0..];
+                    else try alloc.dupe(@This(), help_sub_cmds[0..]);
+            }
+
+            if (init_config.init_subcmds and self.sub_cmds != null) {
+                const sub_len = init_cmd.sub_cmds.?.len;
+                var init_subcmds = try alloc.alloc(@This(), sub_len);
+                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config);
+                if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                    init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
+                    init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
+                }
+                init_cmd.sub_cmds = init_subcmds;
             }
 
             if (init_config.add_help_opts) {
@@ -724,7 +666,7 @@ pub fn Custom(comptime config: Config) type {
 
                 init_cmd.opts = 
                     if (init_cmd.opts != null) try mem.concat(alloc, @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
-                    else help_opts[0..];
+                    else try alloc.dupe(CustomOption, help_opts[0..]);
             }
 
             init_cmd._is_init = true;

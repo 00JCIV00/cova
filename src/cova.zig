@@ -29,11 +29,11 @@ pub const RawArgIterator = struct {
         return if (self.index > self.args.len) null else self.args[self.index - 1];
     }
 
-    /// Peak at the next argument token without advancing this Iterator.
-    pub fn peak(self: *@This()) ?[:0]const u8 {
-        const peak_arg = self.next();
+    /// Peek at the next argument token without advancing this Iterator.
+    pub fn peek(self: *@This()) ?[:0]const u8 {
+        const peek_arg = self.next();
         self.index -= 1;
-        return peak_arg;
+        return peek_arg;
     }
 };
 
@@ -49,27 +49,27 @@ pub const ArgIteratorGeneric = union(enum) {
         };
     }
 
-    /// Peak at the next argument token without advancing this Iterator.
-    pub fn peak(self: *@This()) ?[:0]const u8 {
+    /// Peek at the next argument token without advancing this Iterator.
+    pub fn peek(self: *@This()) ?[:0]const u8 {
         switch (meta.activeTag(self.*)) {
-            .raw => return self.raw.peak(),
+            .raw => return self.raw.peek(),
             inline else => |tag| {
                 var iter = @field(self, @tagName(tag));
                 // TODO: Create a PR for this in `std.process`?
                 if (builtin.os.tag != .windows) {
-                    const peak_arg = iter.next();
+                    const peek_arg = iter.next();
                     iter.inner.index -= 1;
-                    return peak_arg;
+                    return peek_arg;
                 }
                 else {
                     const iter_idx = iter.inner.index;
                     const iter_start = iter.inner.start;
                     const iter_end = iter.inner.end;
-                    const peak_arg = iter.next();
+                    const peek_arg = iter.next();
                     iter.inner.index = iter_idx; 
                     iter.inner.start = iter_start; 
                     iter.inner.end = iter_end; 
-                    return peak_arg;
+                    return peek_arg;
                 } 
             },
         }
@@ -140,8 +140,8 @@ pub fn parseArgs(
     const optType = @TypeOf(cmd.*).CustomOption;
 
     // Bypass argument 0 (the filename being executed);
-    const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peak();
-        //else argsPeak(args); 
+    const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peek();
+        //else argsPeek(args); 
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
@@ -370,9 +370,9 @@ pub fn parseArgs(
 
 /// Parse an Option for the given Command.
 fn parseOpt(args: *ArgIteratorGeneric, comptime opt_type: type, opt: *const opt_type) !void {
-    const peak_arg = args.peak();
+    const peek_arg = args.peek();
     const set_arg = 
-        if (peak_arg == null or peak_arg.?[0] == '-') setArg: {
+        if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
             if (!mem.eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
             _ = args.next();
             break :setArg "true";
@@ -519,30 +519,33 @@ const test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});
 
 
 test "command setup" {
-    testing.log_level = .debug;
+    //testing.log_level = .info;
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    log.debug("", .{});
-    log.debug("===Testing Normal Command Setup===", .{});
-    log.debug("", .{});
+    //log.info("", .{});
+    //log.info("===Testing Normal Command Setup===", .{});
+    //log.info("", .{});
     const test_cmd = try test_setup_cmd.init(alloc, .{});
     defer test_cmd.deinit();
 
-    log.debug("", .{});
-    log.debug("===Testing Command From Struct===", .{});
-    log.debug("", .{});
+    //log.info("", .{});
+    //log.info("===Testing Command From Struct===", .{});
+    //log.info("", .{});
     const test_cmd_from_struct = test_setup_cmd_from_struct;
     defer test_cmd_from_struct.deinit();
 }
 
 test "argument parsing" {
-    testing.log_level = .debug;
+    testing.log_level = .info;
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    const writer = std.io.getStdOut().writer();
+    //const writer = std.io.getStdOut().writer();
+    var writer_list = std.ArrayList(u8).init(alloc);
+    defer writer_list.deinit();
+    const writer = writer_list.writer();
 
     const test_args: []const []const [:0]const u8 = &.{
         &.{ "test-cmd", "sub_test_cmd", "sub-test-cmd", "--sub-string", "sub cmd string opt", "--sub-int=15984" },
@@ -553,10 +556,10 @@ test "argument parsing" {
         &.{ "test-cmd", "string value text", },
     };
     for (test_args) |tokens_list| {
-        log.debug("", .{});
-        log.debug("===Testing '{s}'===", .{ tokens_list[1] });
-        log.debug("Args: {s}", .{ tokens_list });
-        log.debug("", .{});
+        //log.info("", .{});
+        //log.info("===Testing '{s}'===", .{ tokens_list[1] });
+        //log.info("Args: {s}", .{ tokens_list });
+        //log.info("", .{});
         const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
         defer test_cmd.deinit();
         var raw_iter = RawArgIterator{ .args = tokens_list };
@@ -569,19 +572,22 @@ test "argument analysis" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    const writer = std.io.getStdOut().writer();
+    //const writer = std.io.getStdOut().writer();
+    var writer_list = std.ArrayList(u8).init(alloc);
+    defer writer_list.deinit();
+    const writer = writer_list.writer();
 
     const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
     defer test_cmd.deinit();
-    const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523" }; 
+    const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
     var raw_iter = RawArgIterator{ .args = test_args };
     var test_iter = ArgIteratorGeneric.from(raw_iter);
     try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
 
-    testing.log_level = .debug;
-    log.debug("", .{});
-    log.debug("===Testing Argument Analysis===", .{});
-    log.debug("Args: {s}", .{ test_args });
-    log.debug("", .{});
-    try utils.displayCmdInfo(TestCommand, test_cmd, alloc);
+    //testing.log_level = .info;
+    //log.info("", .{});
+    //log.info("===Testing Argument Analysis===", .{});
+    //log.info("Args: {s}", .{ test_args });
+    //log.info("", .{});
+    try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);
 }
