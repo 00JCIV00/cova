@@ -533,7 +533,10 @@ test "command setup" {
     //log.info("", .{});
     //log.info("===Testing Command From Struct===", .{});
     //log.info("", .{});
-    const test_cmd_from_struct = test_setup_cmd_from_struct;
+    const test_cmd_from_struct = try test_setup_cmd_from_struct.init(alloc, .{
+        .add_help_cmds = false,
+        .add_help_opts = false,
+    });
     defer test_cmd_from_struct.deinit();
 }
 

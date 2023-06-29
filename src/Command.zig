@@ -543,39 +543,57 @@ pub fn Custom(comptime config: Config) type {
             return out;
         }
 
-        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values. 
-        /// This will not check for Usage/Help Message Commands/Options that are added via `init()`.
-        pub fn validate(comptime self: *const @This()) void {
+        /// Config for the Validation of this Command.
+        pub const ValidateConfig = struct {
+            // Check for Usage/Help Commands
+            check_help_cmds: bool = false,
+            // Check for Usage/Help Options
+            check_help_opts: bool = false,
+        };
+
+        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values using the provided ValidateConfig `valid_config`. 
+        pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
             comptime {
                 @setEvalBranchQuota(100_000);
+                const usage_help_strs = .{ "usage", "help" } ++ (.{ "" } ** (max_args - 2));
                 // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds != null) {
+                    const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
                     const cmds = self.sub_cmds.?;
-                    var distinct_cmd: [max_args][]const u8 = .{ "" } ** max_args;
+                    var distinct_cmd: [max_args][]const u8 =
+                        if (!valid_config.check_help_cmds) .{ "" } ** max_args
+                        else usage_help_strs; 
                     for (cmds, 0..) |cmd, idx| {
                         if (indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
                             @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
                         //cmd.validate();
-                        distinct_cmd[idx] = cmd.name;
+                        distinct_cmd[idx + idx_offset] = cmd.name;
                     }
                 }
 
                 // Check for distinct Options.
                 if (self.opts != null) {
+                    const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
                     const opts = self.opts.?;
-                    var distinct_name: [max_args][]const u8 = .{ "" } ** max_args;
-                    var distinct_short: [max_args]u8 = .{ ' ' } ** max_args;
-                    var distinct_long: [max_args][]const u8 = .{ "" } ** max_args;
+                    var distinct_name: [max_args][]const u8 = 
+                        if (!valid_config.check_help_opts) .{ "" } ** max_args
+                        else usage_help_strs; 
+                    var distinct_short: [max_args]u8 = 
+                        if (!valid_config.check_help_opts) .{ ' ' } ** max_args
+                        else .{ 'u', 'h' } ++ (.{ ' ' } ** (max_args - 2));
+                    var distinct_long: [max_args][]const u8 = 
+                        if (!valid_config.check_help_opts) .{ "" } ** max_args
+                        else usage_help_strs; 
                     for (opts, 0..) |opt, idx| {
                         if (indexOfEql([]const u8, distinct_name[0..], opt.name) != null) 
                             @compileError("The Option '" ++ opt.name ++ "' is set more than once.");
-                        distinct_name[idx] = opt.name;
+                        distinct_name[idx + idx_offset] = opt.name;
                         if (opt.short_name != null and indexOfEql(u8, distinct_short[0..], opt.short_name.?) != null) 
                             @compileError("The Option Short Name '" ++ .{ opt.short_name.? } ++ "' is set more than once.");
-                        distinct_short[idx] = opt.short_name.?;
+                        distinct_short[idx + idx_offset] = opt.short_name orelse ' ';
                         if (opt.long_name != null and indexOfEql([]const u8, distinct_long[0..], opt.long_name.?) != null) 
                             @compileError("The Option Long Name '" ++ opt.long_name.? ++ "' is set more than once.");
-                        distinct_long[idx] = opt.long_name.?;
+                        distinct_long[idx + idx_offset] = opt.long_name orelse "a!garbage@long#name$";
                     }
                 }
 
@@ -607,7 +625,10 @@ pub fn Custom(comptime config: Config) type {
         /// Initialize this Command with the provided Config `init_config` by duplicating it with the provided Allocator `alloc` for Runtime use.
         /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
-            if (init_config.validate_cmd) self.validate();
+            if (init_config.validate_cmd) self.validate(.{ 
+                .check_help_cmds = init_config.add_help_cmds,
+                .check_help_opts = init_config.add_help_opts,    
+            });
 
             var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
@@ -655,14 +676,14 @@ pub fn Custom(comptime config: Config) type {
                         .short_name = 'u',
                         .long_name = "usage",
                         .description = usage_description,
-                        .val = Value.ofType(bool, .{ .name = "usageFlag" }),
+                        .val = Value.ofType(bool, .{ .name = "usage_flag" }),
                     },
                     .{
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
                         .description = help_description,
-                        .val = Value.ofType(bool, .{ .name = "helpFlag" }),
+                        .val = Value.ofType(bool, .{ .name = "help_flag" }),
                     },
                 };
 
