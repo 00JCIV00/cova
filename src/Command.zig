@@ -666,7 +666,7 @@ pub fn Custom(comptime config: Config) type {
 
                 init_cmd.opts = 
                     if (init_cmd.opts != null) try mem.concat(alloc, @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
-                    else help_opts[0..];
+                    else try alloc.dupe(CustomOption, help_opts[0..]);
             }
 
             init_cmd._is_init = true;
