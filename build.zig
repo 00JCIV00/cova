@@ -29,6 +29,13 @@ pub fn build(b: *std.Build) void {
         .source_file = std.Build.FileSource.relative("src/cova.zig"),
     });
 
+    // Docs
+    const cova_docs = cova_tests;
+    cova_docs.emit_docs = .emit;
+    const build_docs = b.addRunArtifact(cova_docs);
+    const build_docs_step = b.step("docs", "Build the cova library docs");
+    build_docs_step.dependOn(&build_docs.step);
+
     // Demo Exe
     const cova_demo = b.addExecutable(.{
         .name = "covademo",
