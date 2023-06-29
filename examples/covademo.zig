@@ -11,7 +11,6 @@ const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 
-//const cova = @import("src/cova.zig");
 const cova = @import("cova");
 const Command = cova.Command;
 const Option = cova.Option;
@@ -92,6 +91,10 @@ const setup_cmd: CustomCommand = .{
                     .default_val = 0,
                 }),
             }
+        },
+        .{
+            .name = "basic",
+            .description = "The most basic Command.",
         },
         CustomCommand.from(DemoStruct, .{
             .cmd_name = "struct-cmd",

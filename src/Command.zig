@@ -604,7 +604,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize this Command with the provided Config by duplicating it with an Allocator for Runtime use.
         /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
-        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, init_config: InitConfig) !@This() {
+        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
             if (init_config.validate_cmd) self.validate();
 
             var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
@@ -612,7 +612,7 @@ pub fn Custom(comptime config: Config) type {
             const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' usage display." });
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
-            if (init_config.add_help_cmds) {
+            if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                 const help_sub_cmds = &[2]@This(){
                     .{
                         .name = "usage",
@@ -629,16 +629,20 @@ pub fn Custom(comptime config: Config) type {
                         ._alloc = alloc,
                     }
                 };
-                    
 
                 init_cmd.sub_cmds = 
                     if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
-                    else help_sub_cmds[0..];
+                    else try alloc.dupe(@This(), help_sub_cmds[0..]);
             }
 
             if (init_config.init_subcmds and self.sub_cmds != null) {
-                var init_subcmds = try alloc.alloc(@This(), self.sub_cmds.?.len);
-                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config); 
+                const sub_len = init_cmd.sub_cmds.?.len;
+                var init_subcmds = try alloc.alloc(@This(), sub_len);
+                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config);
+                if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                    init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
+                    init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
+                }
                 init_cmd.sub_cmds = init_subcmds;
             }
 
