@@ -129,7 +129,7 @@ exe.addModule("cova", cova_mod);
 .dependencies = .{
     .cova = .{
         .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
-		.hash = "hash from step 3 here",
+	.hash = "hash from step 3 here",
     },
 },
 ```
