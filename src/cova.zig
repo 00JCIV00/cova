@@ -83,7 +83,7 @@ pub const ArgIteratorGeneric = union(enum) {
         };
     }
     
-    /// Create a copy of this Generic Interface from the provided ArgIterator
+    /// Create a copy of this Generic Interface from the provided ArgIterator (`arg_iter`).
     pub fn from(arg_iter: anytype) @This() {
         const iter_type = @TypeOf(arg_iter);
         return genIter: inline for (meta.fields(@This())) |field| {
@@ -92,7 +92,7 @@ pub const ArgIteratorGeneric = union(enum) {
         else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by ArgIteratorGeneric.");
     }
 
-    /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator.
+    /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
     pub fn init(alloc: mem.Allocator) !@This() {
         return from(try proc.argsWithAllocator(alloc));
     }
@@ -126,7 +126,7 @@ pub const ParseConfig = struct {
 
 var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
-/// The resulted is stored to the provided `CustomCommand` `cmd` for user analysis.
+/// The resulted is stored to the provided `CustomCommand` (`cmd`) for user analysis.
 pub fn parseArgs(
     args: *ArgIteratorGeneric,
     comptime CustomCommand: type, 
@@ -368,7 +368,7 @@ pub fn parseArgs(
     }
 }
 
-/// Parse the provided `OptionType` `opt`.
+/// Parse the provided `OptionType` (`opt`).
 fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const OptionType) !void {
     const peek_arg = args.peek();
     const set_arg = 

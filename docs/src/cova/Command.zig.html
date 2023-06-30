@@ -185,28 +185,28 @@
 <span class="line" id="L72"><span class="tok-comment">/// Create a Command type with the Base (default) configuration.</span></span>
 <span class="line" id="L73"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Base</span>() <span class="tok-type">type</span> { <span class="tok-kw">return</span> Custom(.{}); }</span>
 <span class="line" id="L74"></span>
-<span class="line" id="L75"><span class="tok-comment">/// Create a Custom Command type from the provided Config `config`.</span></span>
+<span class="line" id="L75"><span class="tok-comment">/// Create a Custom Command type from the provided Config (`config`).</span></span>
 <span class="line" id="L76"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Custom</span>(<span class="tok-kw">comptime</span> config: Config) <span class="tok-type">type</span> {</span>
 <span class="line" id="L77">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L78">        <span class="tok-comment">/// The Custom Option type to be used by this Custom Command type.</span></span>
 <span class="line" id="L79">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> CustomOption = Option.Custom(config.opt_config);</span>
 <span class="line" id="L80">        <span class="tok-comment">/// Sub Commands Help Format.</span></span>
-<span class="line" id="L81">        <span class="tok-comment">/// Check `Command.Config` for details.</span></span>
+<span class="line" id="L81">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L82">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> subcmds_help_fmt = config.subcmds_help_fmt;</span>
 <span class="line" id="L83">        <span class="tok-comment">/// Values Help Format.</span></span>
-<span class="line" id="L84">        <span class="tok-comment">/// Check `Command.Config` for details.</span></span>
+<span class="line" id="L84">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L85">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> vals_help_fmt = config.vals_help_fmt;</span>
 <span class="line" id="L86">        <span class="tok-comment">/// Sub Commands Usage Format.</span></span>
-<span class="line" id="L87">        <span class="tok-comment">/// Check `Command.Config` for details.</span></span>
+<span class="line" id="L87">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L88">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> subcmds_usage_fmt = config.subcmds_usage_fmt;</span>
 <span class="line" id="L89">        <span class="tok-comment">/// Values Usage Format.</span></span>
-<span class="line" id="L90">        <span class="tok-comment">/// Check `Command.Config` for details.</span></span>
+<span class="line" id="L90">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L91">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> vals_usage_fmt = config.vals_usage_fmt;</span>
 <span class="line" id="L92">        <span class="tok-comment">/// Global Help Prefix.</span></span>
-<span class="line" id="L93">        <span class="tok-comment">/// Check `Command.Config` for details.</span></span>
+<span class="line" id="L93">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L94">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> global_help_prefix = config.global_help_prefix;</span>
 <span class="line" id="L95">        <span class="tok-comment">/// Max Args.</span></span>
-<span class="line" id="L96">        <span class="tok-comment">/// Check `Command.Config` for details.</span></span>
+<span class="line" id="L96">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L97">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> max_args = config.max_args;</span>
 <span class="line" id="L98"></span>
 <span class="line" id="L99">        <span class="tok-comment">/// Flag denoting if this Command has been initialized to memory using `init()`.</span></span>
@@ -221,7 +221,7 @@
 <span class="line" id="L108"></span>
 <span class="line" id="L109">        <span class="tok-comment">/// The list of Sub Commands this Command can take.</span></span>
 <span class="line" id="L110">        sub_cmds: ?[]<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>() = <span class="tok-null">null</span>,</span>
-<span class="line" id="L111">        <span class="tok-comment">/// The Sub Command assigned to this Command during Parsing (optional).</span></span>
+<span class="line" id="L111">        <span class="tok-comment">/// The Sub Command assigned to this Command during Parsing, if any.</span></span>
 <span class="line" id="L112">        sub_cmd: ?*<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>() = <span class="tok-null">null</span>,</span>
 <span class="line" id="L113">        <span class="tok-comment">/// The list of Options this Command can take.</span></span>
 <span class="line" id="L114">        opts: ?[]<span class="tok-kw">const</span> CustomOption = <span class="tok-null">null</span>,</span>
@@ -245,7 +245,7 @@
 <span class="line" id="L132">            <span class="tok-kw">if</span> (!self._is_init) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CommandNotInitialized;</span>
 <span class="line" id="L133">            <span class="tok-kw">return</span> getOptsAlloc(self._alloc.?);</span>
 <span class="line" id="L134">        }</span>
-<span class="line" id="L135">        <span class="tok-comment">/// Gets a StringHashMap of this Command's Options using the provided Allocator `alloc`.</span></span>
+<span class="line" id="L135">        <span class="tok-comment">/// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).</span></span>
 <span class="line" id="L136">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptsAlloc</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator) !StringHashMap(CustomOption) {</span>
 <span class="line" id="L137">            <span class="tok-kw">if</span> (self.opts == <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NoOptionsInCommand;</span>
 <span class="line" id="L138">            <span class="tok-kw">var</span> map = StringHashMap(CustomOption).init(alloc);</span>
@@ -258,7 +258,7 @@
 <span class="line" id="L145">            <span class="tok-kw">if</span> (!self._is_init) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CommandNotInitialized;</span>
 <span class="line" id="L146">            <span class="tok-kw">return</span> getValsAlloc(self._alloc.?);</span>
 <span class="line" id="L147">        }</span>
-<span class="line" id="L148">        <span class="tok-comment">/// Gets a StringHashMap of this Command's Values using the provided Allocator `alloc`.</span></span>
+<span class="line" id="L148">        <span class="tok-comment">/// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).</span></span>
 <span class="line" id="L149">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getValsAlloc</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator) !StringHashMap(Value) {</span>
 <span class="line" id="L150">            <span class="tok-kw">if</span> (self.vals == <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NoValuesInCommand;</span>
 <span class="line" id="L151">            <span class="tok-kw">var</span> map = StringHashMap(Value).init(alloc);</span>
@@ -266,7 +266,7 @@
 <span class="line" id="L153">            <span class="tok-kw">return</span> map;</span>
 <span class="line" id="L154">        }</span>
 <span class="line" id="L155"></span>
-<span class="line" id="L156">        <span class="tok-comment">/// Creates the Help message for this Command and Writes it to the provided Writer `writer`.</span></span>
+<span class="line" id="L156">        <span class="tok-comment">/// Creates the Help message for this Command and Writes it to the provided Writer (`writer`).</span></span>
 <span class="line" id="L157">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">help</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L158">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{s}\n&quot;</span>, .{ self.help_prefix });</span>
 <span class="line" id="L159"></span>
@@ -317,7 +317,7 @@
 <span class="line" id="L198">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
 <span class="line" id="L199">        }</span>
 <span class="line" id="L200"></span>
-<span class="line" id="L201">        <span class="tok-comment">/// Creates the Usage message for this Command and Writes it to the provided Writer `writer`.</span></span>
+<span class="line" id="L201">        <span class="tok-comment">/// Creates the Usage message for this Command and Writes it to the provided Writer (`writer`).</span></span>
 <span class="line" id="L202">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">usage</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L203">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;USAGE: {s} &quot;</span>, .{ self.name });</span>
 <span class="line" id="L204">            <span class="tok-kw">if</span> (self.opts != <span class="tok-null">null</span>) {</span>
@@ -344,7 +344,7 @@
 <span class="line" id="L225">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n\n&quot;</span>, .{});</span>
 <span class="line" id="L226">        }</span>
 <span class="line" id="L227"></span>
-<span class="line" id="L228">        <span class="tok-comment">/// Check if a Flag `flag_name` has been set on this Command as a Command, Option, or Value.</span></span>
+<span class="line" id="L228">        <span class="tok-comment">/// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.</span></span>
 <span class="line" id="L229">        <span class="tok-comment">/// This is particularly useful for checking if Help or Usage has been called.</span></span>
 <span class="line" id="L230">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">checkFlag</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), flag_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L231">            <span class="tok-kw">return</span> (</span>
@@ -392,7 +392,7 @@
 <span class="line" id="L273">            <span class="tok-comment">/// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).</span></span>
 <span class="line" id="L274">            <span class="tok-comment">/// These Descriptions will be used across this Command and all of its Sub Commands.</span></span>
 <span class="line" id="L275">            <span class="tok-comment">///</span></span>
-<span class="line" id="L276">            <span class="tok-comment">/// Format: `.{ &quot;argument_name&quot;, &quot;Description of the Argument.&quot; }`</span></span>
+<span class="line" id="L276">            <span class="tok-comment">/// Format: (`).{ &quot;argument_name&quot;, &quot;Description of the Argument.&quot; }`</span></span>
 <span class="line" id="L277">            sub_descriptions: []<span class="tok-kw">const</span> <span class="tok-kw">struct</span> { []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, []<span class="tok-kw">const</span> <span class="tok-type">u8</span> } = &amp;.{ .{ <span class="tok-str">&quot;__nosubdescriptionsprovided__&quot;</span>, <span class="tok-str">&quot;&quot;</span> } },</span>
 <span class="line" id="L278"></span>
 <span class="line" id="L279">            <span class="tok-comment">/// Max number of Sub Commands.</span></span>
@@ -403,7 +403,7 @@
 <span class="line" id="L284">            max_vals: <span class="tok-type">u8</span> = max_args,</span>
 <span class="line" id="L285">        };</span>
 <span class="line" id="L286"></span>
-<span class="line" id="L287">        <span class="tok-comment">/// Create a Command from the provided Struct `from_struct`.</span></span>
+<span class="line" id="L287">        <span class="tok-comment">/// Create a Command from the provided Struct (`from_struct`).</span></span>
 <span class="line" id="L288">        <span class="tok-comment">/// The provided Struct must be Comptime-known.</span></span>
 <span class="line" id="L289">        <span class="tok-comment">///</span></span>
 <span class="line" id="L290">        <span class="tok-comment">/// Types are converted as follows:</span></span>
@@ -571,15 +571,15 @@
 <span class="line" id="L445">            allow_incompatible: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
 <span class="line" id="L446">        };</span>
 <span class="line" id="L447"></span>
-<span class="line" id="L448">        <span class="tok-comment">/// Convert this Command to an instance of the provided Struct Type `T`.</span></span>
+<span class="line" id="L448">        <span class="tok-comment">/// Convert this Command to an instance of the provided Struct Type (`T`).</span></span>
 <span class="line" id="L449">        <span class="tok-comment">/// This is the inverse of `from()`.</span></span>
 <span class="line" id="L450">        <span class="tok-comment">///</span></span>
 <span class="line" id="L451">        <span class="tok-comment">/// Types are converted as follows:</span></span>
 <span class="line" id="L452">        <span class="tok-comment">/// - Commmands: Structs by recursively calling `to()`.</span></span>
 <span class="line" id="L453">        <span class="tok-comment">/// - Single-Options: Optional versions of Values.</span></span>
-<span class="line" id="L454">        <span class="tok-comment">/// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8` only)</span></span>
+<span class="line" id="L454">        <span class="tok-comment">/// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)</span></span>
 <span class="line" id="L455">        <span class="tok-comment">/// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.</span></span>
-<span class="line" id="L456">        <span class="tok-comment">// TODO: Catch more error cases for incompatible types (i.e. Pointer not `[]const u8`).</span>
+<span class="line" id="L456">        <span class="tok-comment">// TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).</span>
 </span>
 <span class="line" id="L457">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">to</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, to_config: ToConfig) !T {</span>
 <span class="line" id="L458">            <span class="tok-kw">var</span> out: T = <span class="tok-null">undefined</span>;</span>
@@ -670,155 +670,178 @@
 <span class="line" id="L543">            <span class="tok-kw">return</span> out;</span>
 <span class="line" id="L544">        }</span>
 <span class="line" id="L545"></span>
-<span class="line" id="L546">        <span class="tok-comment">/// Validate this Command during Comptime for distinct Sub Commands, Options, and Values. </span></span>
-<span class="line" id="L547">        <span class="tok-comment">/// This will not check for Usage/Help Message Commands/Options that are added via `init()`.</span></span>
-<span class="line" id="L548">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validate</span>(<span class="tok-kw">comptime</span> self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L549">            <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L550">                <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">100_000</span>);</span>
-<span class="line" id="L551">                <span class="tok-comment">// Check for distinct Sub Commands and Validate them.</span>
+<span class="line" id="L546">        <span class="tok-comment">/// Config for the Validation of this Command.</span></span>
+<span class="line" id="L547">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ValidateConfig = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L548">            <span class="tok-comment">// Check for Usage/Help Commands</span>
 </span>
-<span class="line" id="L552">                <span class="tok-kw">if</span> (self.sub_cmds != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L553">                    <span class="tok-kw">const</span> cmds = self.sub_cmds.?;</span>
-<span class="line" id="L554">                    <span class="tok-kw">var</span> distinct_cmd: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = .{ <span class="tok-str">&quot;&quot;</span> } ** max_args;</span>
-<span class="line" id="L555">                    <span class="tok-kw">for</span> (cmds, <span class="tok-number">0</span>..) |cmd, idx| {</span>
-<span class="line" id="L556">                        <span class="tok-kw">if</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_cmd[<span class="tok-number">0</span>..idx], cmd.name) != <span class="tok-null">null</span>) </span>
-<span class="line" id="L557">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Sub Command '&quot;</span> ++ cmd.name ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
-<span class="line" id="L558">                        <span class="tok-comment">//cmd.validate();</span>
+<span class="line" id="L549">            check_help_cmds: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L550">            <span class="tok-comment">// Check for Usage/Help Options</span>
 </span>
-<span class="line" id="L559">                        distinct_cmd[idx] = cmd.name;</span>
-<span class="line" id="L560">                    }</span>
-<span class="line" id="L561">                }</span>
-<span class="line" id="L562"></span>
-<span class="line" id="L563">                <span class="tok-comment">// Check for distinct Options.</span>
+<span class="line" id="L551">            check_help_opts: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L552">        };</span>
+<span class="line" id="L553"></span>
+<span class="line" id="L554">        <span class="tok-comment">/// Validate this Command during Comptime for distinct Sub Commands, Options, and Values using the provided ValidateConfig (`valid_config`). </span></span>
+<span class="line" id="L555">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validate</span>(<span class="tok-kw">comptime</span> self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> valid_config: ValidateConfig) <span class="tok-type">void</span> {</span>
+<span class="line" id="L556">            <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L557">                <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">100_000</span>);</span>
+<span class="line" id="L558">                <span class="tok-kw">const</span> usage_help_strs = .{ <span class="tok-str">&quot;usage&quot;</span>, <span class="tok-str">&quot;help&quot;</span> } ++ (.{ <span class="tok-str">&quot;&quot;</span> } ** (max_args - <span class="tok-number">2</span>));</span>
+<span class="line" id="L559">                <span class="tok-comment">// Check for distinct Sub Commands and Validate them.</span>
 </span>
-<span class="line" id="L564">                <span class="tok-kw">if</span> (self.opts != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L565">                    <span class="tok-kw">const</span> opts = self.opts.?;</span>
-<span class="line" id="L566">                    <span class="tok-kw">var</span> distinct_name: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = .{ <span class="tok-str">&quot;&quot;</span> } ** max_args;</span>
-<span class="line" id="L567">                    <span class="tok-kw">var</span> distinct_short: [max_args]<span class="tok-type">u8</span> = .{ <span class="tok-str">' '</span> } ** max_args;</span>
-<span class="line" id="L568">                    <span class="tok-kw">var</span> distinct_long: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = .{ <span class="tok-str">&quot;&quot;</span> } ** max_args;</span>
-<span class="line" id="L569">                    <span class="tok-kw">for</span> (opts, <span class="tok-number">0</span>..) |opt, idx| {</span>
-<span class="line" id="L570">                        <span class="tok-kw">if</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_name[<span class="tok-number">0</span>..], opt.name) != <span class="tok-null">null</span>) </span>
-<span class="line" id="L571">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Option '&quot;</span> ++ opt.name ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
-<span class="line" id="L572">                        distinct_name[idx] = opt.name;</span>
-<span class="line" id="L573">                        <span class="tok-kw">if</span> (opt.short_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> indexOfEql(<span class="tok-type">u8</span>, distinct_short[<span class="tok-number">0</span>..], opt.short_name.?) != <span class="tok-null">null</span>) </span>
-<span class="line" id="L574">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Option Short Name '&quot;</span> ++ .{ opt.short_name.? } ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
-<span class="line" id="L575">                        distinct_short[idx] = opt.short_name.?;</span>
-<span class="line" id="L576">                        <span class="tok-kw">if</span> (opt.long_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_long[<span class="tok-number">0</span>..], opt.long_name.?) != <span class="tok-null">null</span>) </span>
-<span class="line" id="L577">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Option Long Name '&quot;</span> ++ opt.long_name.? ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
-<span class="line" id="L578">                        distinct_long[idx] = opt.long_name.?;</span>
-<span class="line" id="L579">                    }</span>
-<span class="line" id="L580">                }</span>
-<span class="line" id="L581"></span>
-<span class="line" id="L582">                <span class="tok-comment">// Check for distinct Values.</span>
+<span class="line" id="L560">                <span class="tok-kw">if</span> (self.sub_cmds != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L561">                    <span class="tok-kw">const</span> idx_offset: <span class="tok-type">u2</span> = <span class="tok-kw">if</span> (valid_config.check_help_cmds) <span class="tok-number">2</span> <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L562">                    <span class="tok-kw">const</span> cmds = self.sub_cmds.?;</span>
+<span class="line" id="L563">                    <span class="tok-kw">var</span> distinct_cmd: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> =</span>
+<span class="line" id="L564">                        <span class="tok-kw">if</span> (!valid_config.check_help_cmds) .{ <span class="tok-str">&quot;&quot;</span> } ** max_args</span>
+<span class="line" id="L565">                        <span class="tok-kw">else</span> usage_help_strs; </span>
+<span class="line" id="L566">                    <span class="tok-kw">for</span> (cmds, <span class="tok-number">0</span>..) |cmd, idx| {</span>
+<span class="line" id="L567">                        <span class="tok-kw">if</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_cmd[<span class="tok-number">0</span>..idx], cmd.name) != <span class="tok-null">null</span>) </span>
+<span class="line" id="L568">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Sub Command '&quot;</span> ++ cmd.name ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
+<span class="line" id="L569">                        <span class="tok-comment">//cmd.validate();</span>
 </span>
-<span class="line" id="L583">                <span class="tok-kw">if</span> (self.vals != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L584">                    <span class="tok-kw">const</span> vals = self.vals.?;</span>
-<span class="line" id="L585">                    <span class="tok-kw">var</span> distinct_val: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = .{ <span class="tok-str">&quot;&quot;</span> } ** max_args;</span>
-<span class="line" id="L586">                    <span class="tok-kw">for</span> (vals, <span class="tok-number">0</span>..) |val, idx| {</span>
-<span class="line" id="L587">                        <span class="tok-kw">if</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_val[<span class="tok-number">0</span>..], val.name()) != <span class="tok-null">null</span>) </span>
-<span class="line" id="L588">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Value '&quot;</span> ++ val.name ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
-<span class="line" id="L589">                        distinct_val[idx] = val.name();</span>
-<span class="line" id="L590">                    }</span>
-<span class="line" id="L591">                }</span>
-<span class="line" id="L592">            }</span>
-<span class="line" id="L593">        }</span>
-<span class="line" id="L594"></span>
-<span class="line" id="L595">        <span class="tok-comment">/// Config for the Initialization of this Command.</span></span>
-<span class="line" id="L596">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> InitConfig = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L597">            <span class="tok-comment">/// Validate this Command.</span></span>
-<span class="line" id="L598">            validate_cmd: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L599">            <span class="tok-comment">/// Add Usage/Help message Commands to this Command.</span></span>
-<span class="line" id="L600">            add_help_cmds: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L601">            <span class="tok-comment">/// Add Usage/Help message Options to this Command.</span></span>
-<span class="line" id="L602">            add_help_opts: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L603">            <span class="tok-comment">/// Initialize this Command's Sub Commands.</span></span>
-<span class="line" id="L604">            init_subcmds: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L605">        };</span>
-<span class="line" id="L606"></span>
-<span class="line" id="L607">        <span class="tok-comment">/// Initialize this Command with the provided Config `init_config` by duplicating it with the provided Allocator `alloc` for Runtime use.</span></span>
-<span class="line" id="L608">        <span class="tok-comment">/// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.</span></span>
-<span class="line" id="L609">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(<span class="tok-kw">comptime</span> self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator, <span class="tok-kw">comptime</span> init_config: InitConfig) !<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L610">            <span class="tok-kw">if</span> (init_config.validate_cmd) self.validate();</span>
-<span class="line" id="L611"></span>
-<span class="line" id="L612">            <span class="tok-kw">var</span> init_cmd = (<span class="tok-kw">try</span> alloc.dupe(<span class="tok-builtin">@This</span>(), &amp;.{ self.* }))[<span class="tok-number">0</span>];</span>
-<span class="line" id="L613"></span>
-<span class="line" id="L614">            <span class="tok-kw">const</span> usage_description = <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;Show the '&quot;</span>, init_cmd.name, <span class="tok-str">&quot;' usage display.&quot;</span> });</span>
-<span class="line" id="L615">            <span class="tok-kw">const</span> help_description = <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;Show the '&quot;</span>, init_cmd.name, <span class="tok-str">&quot;' help display.&quot;</span> });</span>
-<span class="line" id="L616"></span>
-<span class="line" id="L617">            <span class="tok-kw">if</span> (init_config.add_help_cmds <span class="tok-kw">and</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;help&quot;</span>, <span class="tok-str">&quot;usage&quot;</span> }, self.name) == <span class="tok-null">null</span>)) {</span>
-<span class="line" id="L618">                <span class="tok-kw">const</span> help_sub_cmds = &amp;[<span class="tok-number">2</span>]<span class="tok-builtin">@This</span>(){</span>
-<span class="line" id="L619">                    .{</span>
-<span class="line" id="L620">                        .name = <span class="tok-str">&quot;usage&quot;</span>,</span>
-<span class="line" id="L621">                        .help_prefix = init_cmd.name,</span>
-<span class="line" id="L622">                        .description = usage_description,</span>
-<span class="line" id="L623">                        ._is_init = <span class="tok-null">true</span>,</span>
-<span class="line" id="L624">                        ._alloc = alloc,</span>
-<span class="line" id="L625">                    },</span>
-<span class="line" id="L626">                    .{</span>
-<span class="line" id="L627">                        .name = <span class="tok-str">&quot;help&quot;</span>,</span>
-<span class="line" id="L628">                        .help_prefix = init_cmd.name,</span>
-<span class="line" id="L629">                        .description = help_description,</span>
-<span class="line" id="L630">                        ._is_init = <span class="tok-null">true</span>,</span>
-<span class="line" id="L631">                        ._alloc = alloc,</span>
-<span class="line" id="L632">                    }</span>
-<span class="line" id="L633">                };</span>
+<span class="line" id="L570">                        distinct_cmd[idx + idx_offset] = cmd.name;</span>
+<span class="line" id="L571">                    }</span>
+<span class="line" id="L572">                }</span>
+<span class="line" id="L573"></span>
+<span class="line" id="L574">                <span class="tok-comment">// Check for distinct Options.</span>
+</span>
+<span class="line" id="L575">                <span class="tok-kw">if</span> (self.opts != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L576">                    <span class="tok-kw">const</span> idx_offset: <span class="tok-type">u2</span> = <span class="tok-kw">if</span> (valid_config.check_help_cmds) <span class="tok-number">2</span> <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L577">                    <span class="tok-kw">const</span> opts = self.opts.?;</span>
+<span class="line" id="L578">                    <span class="tok-kw">var</span> distinct_name: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = </span>
+<span class="line" id="L579">                        <span class="tok-kw">if</span> (!valid_config.check_help_opts) .{ <span class="tok-str">&quot;&quot;</span> } ** max_args</span>
+<span class="line" id="L580">                        <span class="tok-kw">else</span> usage_help_strs; </span>
+<span class="line" id="L581">                    <span class="tok-kw">var</span> distinct_short: [max_args]<span class="tok-type">u8</span> = </span>
+<span class="line" id="L582">                        <span class="tok-kw">if</span> (!valid_config.check_help_opts) .{ <span class="tok-str">' '</span> } ** max_args</span>
+<span class="line" id="L583">                        <span class="tok-kw">else</span> .{ <span class="tok-str">'u'</span>, <span class="tok-str">'h'</span> } ++ (.{ <span class="tok-str">' '</span> } ** (max_args - <span class="tok-number">2</span>));</span>
+<span class="line" id="L584">                    <span class="tok-kw">var</span> distinct_long: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = </span>
+<span class="line" id="L585">                        <span class="tok-kw">if</span> (!valid_config.check_help_opts) .{ <span class="tok-str">&quot;&quot;</span> } ** max_args</span>
+<span class="line" id="L586">                        <span class="tok-kw">else</span> usage_help_strs; </span>
+<span class="line" id="L587">                    <span class="tok-kw">for</span> (opts, <span class="tok-number">0</span>..) |opt, idx| {</span>
+<span class="line" id="L588">                        <span class="tok-kw">if</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_name[<span class="tok-number">0</span>..], opt.name) != <span class="tok-null">null</span>) </span>
+<span class="line" id="L589">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Option '&quot;</span> ++ opt.name ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
+<span class="line" id="L590">                        distinct_name[idx + idx_offset] = opt.name;</span>
+<span class="line" id="L591">                        <span class="tok-kw">if</span> (opt.short_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> indexOfEql(<span class="tok-type">u8</span>, distinct_short[<span class="tok-number">0</span>..], opt.short_name.?) != <span class="tok-null">null</span>) </span>
+<span class="line" id="L592">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Option Short Name '&quot;</span> ++ .{ opt.short_name.? } ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
+<span class="line" id="L593">                        distinct_short[idx + idx_offset] = opt.short_name <span class="tok-kw">orelse</span> <span class="tok-str">' '</span>;</span>
+<span class="line" id="L594">                        <span class="tok-kw">if</span> (opt.long_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_long[<span class="tok-number">0</span>..], opt.long_name.?) != <span class="tok-null">null</span>) </span>
+<span class="line" id="L595">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Option Long Name '&quot;</span> ++ opt.long_name.? ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
+<span class="line" id="L596">                        distinct_long[idx + idx_offset] = opt.long_name <span class="tok-kw">orelse</span> <span class="tok-str">&quot;a!garbage@long#name$&quot;</span>;</span>
+<span class="line" id="L597">                    }</span>
+<span class="line" id="L598">                }</span>
+<span class="line" id="L599"></span>
+<span class="line" id="L600">                <span class="tok-comment">// Check for distinct Values.</span>
+</span>
+<span class="line" id="L601">                <span class="tok-kw">if</span> (self.vals != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L602">                    <span class="tok-kw">const</span> vals = self.vals.?;</span>
+<span class="line" id="L603">                    <span class="tok-kw">var</span> distinct_val: [max_args][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = .{ <span class="tok-str">&quot;&quot;</span> } ** max_args;</span>
+<span class="line" id="L604">                    <span class="tok-kw">for</span> (vals, <span class="tok-number">0</span>..) |val, idx| {</span>
+<span class="line" id="L605">                        <span class="tok-kw">if</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, distinct_val[<span class="tok-number">0</span>..], val.name()) != <span class="tok-null">null</span>) </span>
+<span class="line" id="L606">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The Value '&quot;</span> ++ val.name ++ <span class="tok-str">&quot;' is set more than once.&quot;</span>);</span>
+<span class="line" id="L607">                        distinct_val[idx] = val.name();</span>
+<span class="line" id="L608">                    }</span>
+<span class="line" id="L609">                }</span>
+<span class="line" id="L610">            }</span>
+<span class="line" id="L611">        }</span>
+<span class="line" id="L612"></span>
+<span class="line" id="L613">        <span class="tok-comment">/// Config for the Initialization of this Command.</span></span>
+<span class="line" id="L614">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> InitConfig = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L615">            <span class="tok-comment">/// Validate this Command.</span></span>
+<span class="line" id="L616">            validate_cmd: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L617">            <span class="tok-comment">/// Add Usage/Help message Commands to this Command.</span></span>
+<span class="line" id="L618">            add_help_cmds: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L619">            <span class="tok-comment">/// Add Usage/Help message Options to this Command.</span></span>
+<span class="line" id="L620">            add_help_opts: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L621">            <span class="tok-comment">/// Initialize this Command's Sub Commands.</span></span>
+<span class="line" id="L622">            init_subcmds: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L623">        };</span>
+<span class="line" id="L624"></span>
+<span class="line" id="L625">        <span class="tok-comment">/// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.</span></span>
+<span class="line" id="L626">        <span class="tok-comment">/// This should be used after this Command has been created in Comptime. </span></span>
+<span class="line" id="L627">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(<span class="tok-kw">comptime</span> self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator, <span class="tok-kw">comptime</span> init_config: InitConfig) !<span class="tok-builtin">@This</span>() {</span>
+<span class="line" id="L628">            <span class="tok-kw">if</span> (init_config.validate_cmd) self.validate(.{ </span>
+<span class="line" id="L629">                .check_help_cmds = init_config.add_help_cmds,</span>
+<span class="line" id="L630">                .check_help_opts = init_config.add_help_opts,    </span>
+<span class="line" id="L631">            });</span>
+<span class="line" id="L632"></span>
+<span class="line" id="L633">            <span class="tok-kw">var</span> init_cmd = (<span class="tok-kw">try</span> alloc.dupe(<span class="tok-builtin">@This</span>(), &amp;.{ self.* }))[<span class="tok-number">0</span>];</span>
 <span class="line" id="L634"></span>
-<span class="line" id="L635">                init_cmd.sub_cmds = </span>
-<span class="line" id="L636">                    <span class="tok-kw">if</span> (init_cmd.sub_cmds != <span class="tok-null">null</span>) <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-builtin">@This</span>(), &amp;.{ init_cmd.sub_cmds.?, help_sub_cmds[<span class="tok-number">0</span>..] })</span>
-<span class="line" id="L637">                    <span class="tok-kw">else</span> <span class="tok-kw">try</span> alloc.dupe(<span class="tok-builtin">@This</span>(), help_sub_cmds[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L638">            }</span>
-<span class="line" id="L639"></span>
-<span class="line" id="L640">            <span class="tok-kw">if</span> (init_config.init_subcmds <span class="tok-kw">and</span> self.sub_cmds != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L641">                <span class="tok-kw">const</span> sub_len = init_cmd.sub_cmds.?.len;</span>
-<span class="line" id="L642">                <span class="tok-kw">var</span> init_subcmds = <span class="tok-kw">try</span> alloc.alloc(<span class="tok-builtin">@This</span>(), sub_len);</span>
-<span class="line" id="L643">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (self.sub_cmds.?, <span class="tok-number">0</span>..) |cmd, idx| init_subcmds[idx] = <span class="tok-kw">try</span> cmd.init(alloc, init_config);</span>
-<span class="line" id="L644">                <span class="tok-kw">if</span> (init_config.add_help_cmds <span class="tok-kw">and</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;help&quot;</span>, <span class="tok-str">&quot;usage&quot;</span> }, self.name) == <span class="tok-null">null</span>)) {</span>
-<span class="line" id="L645">                    init_subcmds[sub_len - <span class="tok-number">2</span>] = init_cmd.sub_cmds.?[sub_len - <span class="tok-number">2</span>];</span>
-<span class="line" id="L646">                    init_subcmds[sub_len - <span class="tok-number">1</span>] = init_cmd.sub_cmds.?[sub_len - <span class="tok-number">1</span>];</span>
-<span class="line" id="L647">                }</span>
-<span class="line" id="L648">                init_cmd.sub_cmds = init_subcmds;</span>
-<span class="line" id="L649">            }</span>
-<span class="line" id="L650"></span>
-<span class="line" id="L651">            <span class="tok-kw">if</span> (init_config.add_help_opts) {</span>
-<span class="line" id="L652">                <span class="tok-kw">const</span> help_opts = &amp;[<span class="tok-number">2</span>]CustomOption{</span>
-<span class="line" id="L653">                    .{</span>
-<span class="line" id="L654">                        .name = <span class="tok-str">&quot;usage&quot;</span>,</span>
-<span class="line" id="L655">                        .short_name = <span class="tok-str">'u'</span>,</span>
-<span class="line" id="L656">                        .long_name = <span class="tok-str">&quot;usage&quot;</span>,</span>
-<span class="line" id="L657">                        .description = usage_description,</span>
-<span class="line" id="L658">                        .val = Value.ofType(<span class="tok-type">bool</span>, .{ .name = <span class="tok-str">&quot;usageFlag&quot;</span> }),</span>
-<span class="line" id="L659">                    },</span>
-<span class="line" id="L660">                    .{</span>
-<span class="line" id="L661">                        .name = <span class="tok-str">&quot;help&quot;</span>,</span>
-<span class="line" id="L662">                        .short_name = <span class="tok-str">'h'</span>,</span>
-<span class="line" id="L663">                        .long_name = <span class="tok-str">&quot;help&quot;</span>,</span>
-<span class="line" id="L664">                        .description = help_description,</span>
-<span class="line" id="L665">                        .val = Value.ofType(<span class="tok-type">bool</span>, .{ .name = <span class="tok-str">&quot;helpFlag&quot;</span> }),</span>
-<span class="line" id="L666">                    },</span>
-<span class="line" id="L667">                };</span>
-<span class="line" id="L668"></span>
-<span class="line" id="L669">                init_cmd.opts = </span>
-<span class="line" id="L670">                    <span class="tok-kw">if</span> (init_cmd.opts != <span class="tok-null">null</span>) <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-builtin">@This</span>().CustomOption, &amp;.{ init_cmd.opts.?, help_opts[<span class="tok-number">0</span>..] })</span>
-<span class="line" id="L671">                    <span class="tok-kw">else</span> <span class="tok-kw">try</span> alloc.dupe(CustomOption, help_opts[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L672">            }</span>
-<span class="line" id="L673"></span>
-<span class="line" id="L674">            init_cmd._is_init = <span class="tok-null">true</span>;</span>
-<span class="line" id="L675">            init_cmd._alloc = alloc;</span>
-<span class="line" id="L676"></span>
-<span class="line" id="L677">            <span class="tok-kw">return</span> init_cmd; </span>
-<span class="line" id="L678">        }</span>
-<span class="line" id="L679"></span>
-<span class="line" id="L680">        <span class="tok-comment">/// De-initialize this Command with its original Allocator.</span></span>
-<span class="line" id="L681">        <span class="tok-comment">/// If this Command has not yet been initialized, this does nothing.</span></span>
-<span class="line" id="L682">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L683">            <span class="tok-kw">if</span> (!self._is_init) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L684">            <span class="tok-kw">if</span> (self.sub_cmds != <span class="tok-null">null</span>)</span>
-<span class="line" id="L685">                <span class="tok-kw">for</span> (self.sub_cmds.?) |*cmd| cmd.deinit();</span>
-<span class="line" id="L686">            self._alloc.?.destroy(self);</span>
-<span class="line" id="L687">        }</span>
-<span class="line" id="L688">    };</span>
-<span class="line" id="L689">}</span>
-<span class="line" id="L690"></span>
-<span class="line" id="L691"></span>
+<span class="line" id="L635">            <span class="tok-kw">const</span> usage_description = <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;Show the '&quot;</span>, init_cmd.name, <span class="tok-str">&quot;' usage display.&quot;</span> });</span>
+<span class="line" id="L636">            <span class="tok-kw">const</span> help_description = <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;Show the '&quot;</span>, init_cmd.name, <span class="tok-str">&quot;' help display.&quot;</span> });</span>
+<span class="line" id="L637"></span>
+<span class="line" id="L638">            <span class="tok-kw">if</span> (init_config.add_help_cmds <span class="tok-kw">and</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;help&quot;</span>, <span class="tok-str">&quot;usage&quot;</span> }, self.name) == <span class="tok-null">null</span>)) {</span>
+<span class="line" id="L639">                <span class="tok-kw">const</span> help_sub_cmds = &amp;[<span class="tok-number">2</span>]<span class="tok-builtin">@This</span>(){</span>
+<span class="line" id="L640">                    .{</span>
+<span class="line" id="L641">                        .name = <span class="tok-str">&quot;usage&quot;</span>,</span>
+<span class="line" id="L642">                        .help_prefix = init_cmd.name,</span>
+<span class="line" id="L643">                        .description = usage_description,</span>
+<span class="line" id="L644">                        ._is_init = <span class="tok-null">true</span>,</span>
+<span class="line" id="L645">                        ._alloc = alloc,</span>
+<span class="line" id="L646">                    },</span>
+<span class="line" id="L647">                    .{</span>
+<span class="line" id="L648">                        .name = <span class="tok-str">&quot;help&quot;</span>,</span>
+<span class="line" id="L649">                        .help_prefix = init_cmd.name,</span>
+<span class="line" id="L650">                        .description = help_description,</span>
+<span class="line" id="L651">                        ._is_init = <span class="tok-null">true</span>,</span>
+<span class="line" id="L652">                        ._alloc = alloc,</span>
+<span class="line" id="L653">                    }</span>
+<span class="line" id="L654">                };</span>
+<span class="line" id="L655"></span>
+<span class="line" id="L656">                init_cmd.sub_cmds = </span>
+<span class="line" id="L657">                    <span class="tok-kw">if</span> (init_cmd.sub_cmds != <span class="tok-null">null</span>) <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-builtin">@This</span>(), &amp;.{ init_cmd.sub_cmds.?, help_sub_cmds[<span class="tok-number">0</span>..] })</span>
+<span class="line" id="L658">                    <span class="tok-kw">else</span> <span class="tok-kw">try</span> alloc.dupe(<span class="tok-builtin">@This</span>(), help_sub_cmds[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L659">            }</span>
+<span class="line" id="L660"></span>
+<span class="line" id="L661">            <span class="tok-kw">if</span> (init_config.init_subcmds <span class="tok-kw">and</span> self.sub_cmds != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L662">                <span class="tok-kw">const</span> sub_len = init_cmd.sub_cmds.?.len;</span>
+<span class="line" id="L663">                <span class="tok-kw">var</span> init_subcmds = <span class="tok-kw">try</span> alloc.alloc(<span class="tok-builtin">@This</span>(), sub_len);</span>
+<span class="line" id="L664">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (self.sub_cmds.?, <span class="tok-number">0</span>..) |cmd, idx| init_subcmds[idx] = <span class="tok-kw">try</span> cmd.init(alloc, init_config);</span>
+<span class="line" id="L665">                <span class="tok-kw">if</span> (init_config.add_help_cmds <span class="tok-kw">and</span> (indexOfEql([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, &amp;.{ <span class="tok-str">&quot;help&quot;</span>, <span class="tok-str">&quot;usage&quot;</span> }, self.name) == <span class="tok-null">null</span>)) {</span>
+<span class="line" id="L666">                    init_subcmds[sub_len - <span class="tok-number">2</span>] = init_cmd.sub_cmds.?[sub_len - <span class="tok-number">2</span>];</span>
+<span class="line" id="L667">                    init_subcmds[sub_len - <span class="tok-number">1</span>] = init_cmd.sub_cmds.?[sub_len - <span class="tok-number">1</span>];</span>
+<span class="line" id="L668">                }</span>
+<span class="line" id="L669">                init_cmd.sub_cmds = init_subcmds;</span>
+<span class="line" id="L670">            }</span>
+<span class="line" id="L671"></span>
+<span class="line" id="L672">            <span class="tok-kw">if</span> (init_config.add_help_opts) {</span>
+<span class="line" id="L673">                <span class="tok-kw">const</span> help_opts = &amp;[<span class="tok-number">2</span>]CustomOption{</span>
+<span class="line" id="L674">                    .{</span>
+<span class="line" id="L675">                        .name = <span class="tok-str">&quot;usage&quot;</span>,</span>
+<span class="line" id="L676">                        .short_name = <span class="tok-str">'u'</span>,</span>
+<span class="line" id="L677">                        .long_name = <span class="tok-str">&quot;usage&quot;</span>,</span>
+<span class="line" id="L678">                        .description = usage_description,</span>
+<span class="line" id="L679">                        .val = Value.ofType(<span class="tok-type">bool</span>, .{ .name = <span class="tok-str">&quot;usage_flag&quot;</span> }),</span>
+<span class="line" id="L680">                    },</span>
+<span class="line" id="L681">                    .{</span>
+<span class="line" id="L682">                        .name = <span class="tok-str">&quot;help&quot;</span>,</span>
+<span class="line" id="L683">                        .short_name = <span class="tok-str">'h'</span>,</span>
+<span class="line" id="L684">                        .long_name = <span class="tok-str">&quot;help&quot;</span>,</span>
+<span class="line" id="L685">                        .description = help_description,</span>
+<span class="line" id="L686">                        .val = Value.ofType(<span class="tok-type">bool</span>, .{ .name = <span class="tok-str">&quot;help_flag&quot;</span> }),</span>
+<span class="line" id="L687">                    },</span>
+<span class="line" id="L688">                };</span>
+<span class="line" id="L689"></span>
+<span class="line" id="L690">                init_cmd.opts = </span>
+<span class="line" id="L691">                    <span class="tok-kw">if</span> (init_cmd.opts != <span class="tok-null">null</span>) <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-builtin">@This</span>().CustomOption, &amp;.{ init_cmd.opts.?, help_opts[<span class="tok-number">0</span>..] })</span>
+<span class="line" id="L692">                    <span class="tok-kw">else</span> <span class="tok-kw">try</span> alloc.dupe(CustomOption, help_opts[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L693">            }</span>
+<span class="line" id="L694"></span>
+<span class="line" id="L695">            init_cmd._is_init = <span class="tok-null">true</span>;</span>
+<span class="line" id="L696">            init_cmd._alloc = alloc;</span>
+<span class="line" id="L697"></span>
+<span class="line" id="L698">            <span class="tok-kw">return</span> init_cmd; </span>
+<span class="line" id="L699">        }</span>
+<span class="line" id="L700"></span>
+<span class="line" id="L701">        <span class="tok-comment">/// De-initialize this Command with its original Allocator.</span></span>
+<span class="line" id="L702">        <span class="tok-comment">/// If this Command has not yet been initialized, this does nothing.</span></span>
+<span class="line" id="L703">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L704">            <span class="tok-kw">if</span> (!self._is_init) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L705">            <span class="tok-kw">if</span> (self.sub_cmds != <span class="tok-null">null</span>)</span>
+<span class="line" id="L706">                <span class="tok-kw">for</span> (self.sub_cmds.?) |*cmd| cmd.deinit();</span>
+<span class="line" id="L707">            self._alloc.?.destroy(self);</span>
+<span class="line" id="L708">        }</span>
+<span class="line" id="L709">    };</span>
+<span class="line" id="L710">}</span>
+<span class="line" id="L711"></span>
+<span class="line" id="L712"></span>
 </code></pre></body>
 </html>

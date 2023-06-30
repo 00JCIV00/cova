@@ -36,7 +36,7 @@ pub const SetBehavior = enum {
     Multi,
 };
 
-/// Create a Value with a specific Type `set_type`.
+/// Create a Value with a specific Type (`set_type`).
 pub fn Typed(comptime set_type: type) type {
     return struct {
         /// The inner Type of this Value.
@@ -80,7 +80,7 @@ pub fn Typed(comptime set_type: type) type {
         /// The Description of this Value for Usage/Help messages.
         description: []const u8 = "",
 
-        /// Parse the given argument token `arg` to this Value's Type.
+        /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !val_type {
             if (self.parse_fn != null) return self.parse_fn.?(arg) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
@@ -97,7 +97,7 @@ pub fn Typed(comptime set_type: type) type {
             };
         }
 
-        /// Set this Value if the provided argument token `set_arg` can be Parsed and Validated.
+        /// Set this Value if the provided argument token (`set_arg`) can be Parsed and Validated.
         pub fn set(self: *const @This(), set_arg: []const u8) !void {
             // Delimited Args
             var arg_delim: u8 = ' ';
@@ -201,7 +201,7 @@ pub const Generic = genUnion: {
                 inline else => |tag| try @field(self, @tagName(tag)).get(),
             };
         }
-        /// Set the inner Typed Value if the provided Argument can be Parsed and Validated.
+        /// Set the inner Typed Value if the provided Argument (`arg`) can be Parsed and Validated.
         pub fn set(self: *const @This(), arg: []const u8) !void { 
             switch (meta.activeTag(self.*)) {
                 inline else => |tag| try @field(self, @tagName(tag)).set(arg),
@@ -270,7 +270,7 @@ pub const Generic = genUnion: {
 pub const ParsingFns = struct {
     /// Builder Functions for common Parsing Functions.
     pub const Builder = struct {
-        /// Check for Alternate True Words `true_words` when parsing the provided Argument `arg` to a Boolean.
+        /// Check for Alternate True Words (`true_words`) when parsing the provided Argument (`arg`) to a Boolean.
         pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8) anyerror!bool {
             return struct {
                 fn isTrue(arg: []const u8) !bool {
@@ -279,7 +279,7 @@ pub const ParsingFns = struct {
             }.isTrue;
         }
 
-        /// Parse the given Integer `arg` as Base `base`. Base options:
+        /// Parse the given Integer (`arg`) as Base (`base`). Base options:
         /// - 0: Uses the 2 character prefix to determine the base. Default is Base 10. (This is also the default parsing option for Integers.)
         /// - 2: Base 2 / Binary
         /// - 8: Base 8 / Octal
@@ -289,7 +289,7 @@ pub const ParsingFns = struct {
             return struct { fn toBase(arg: []const u8) !NumT { return fmt.parseInt(NumT, arg, base); } }.toBase;
         }
 
-        /// Parse the given argument token `arg` to an Enum Tag of the provided Enum `EnumType`.
+        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumType`.
         pub fn asEnumType(comptime EnumType: type) enumFnType: {
             const enum_info = @typeInfo(EnumType);
             if (enum_info != .Enum) @compileError("The type of `EnumType` must be Enum!");
@@ -306,7 +306,7 @@ pub const ParsingFns = struct {
 
     };
 
-    /// Trim all Whitespace from the beginning and end of the provided argument token `arg`.
+    /// Trim all Whitespace from the beginning and end of the provided argument token (`arg`).
     pub fn trimWhitespace(arg: []const u8) anyerror![]const u8 {
         return mem.trim(u8, arg, ascii.whitespace[0..]);
     }
@@ -317,27 +317,27 @@ pub const ParsingFns = struct {
 pub const ValidationFns = struct {
     /// Builder Functions for common Validation Functions.
     pub const Builder = struct {
-        /// Check if the provided numeric type `num` is within an inclusive or exclusive range.
-        pub fn inRange(comptime num_T: type, comptime start: num_T, comptime end: num_T, comptime inclusive: bool) fn(num_T) bool {
-            const num_info = @typeInfo(num_T);
+        /// Check if the provided `NumType` (`num`) is within an inclusive or exclusive range.
+        pub fn inRange(comptime NumType: type, comptime start: NumType, comptime end: NumType, comptime inclusive: bool) fn(NumType) bool {
+            const num_info = @typeInfo(NumType);
             switch (num_info) {
                 .Int, .Pointer => {},
-                inline else => @compileError("The provided type '" ++ @typeName(num_T) ++ "' is not a numeric type. It must be an Integer or a Float."),
+                inline else => @compileError("The provided type '" ++ @typeName(NumType) ++ "' is not a numeric type. It must be an Integer or a Float."),
             }
 
             return 
-                if (inclusive) struct { fn inRng(num: num_T) bool { return num >= start and num <= end; } }.inRng
-                else struct { fn inRng(num: num_T) bool { return num > start and num < end; } }.inRng;
+                if (inclusive) struct { fn inRng(num: NumType) bool { return num >= start and num <= end; } }.inRng
+                else struct { fn inRng(num: NumType) bool { return num > start and num < end; } }.inRng;
         }
     };
 
-    /// Check if the provided `filepath` is a valid filepath.
+    /// Check if the provided argument token (`filepath`) is a valid filepath.
     pub fn validFilepath(filepath: []const u8) bool {
         const test_file = fs.cwd().openFile(filepath, .{}) catch return false;
         test_file.close();
         return true;
     } 
-    /// Check if the provided `num_str` is a valid Ordinal Number.
+    /// Check if the provided argument token (`num_str`) is a valid Ordinal Number.
     pub fn ordinalNum(num_str: []const u8) bool {
         const ordinals = enum {
             first,
@@ -357,7 +357,7 @@ pub const ValidationFns = struct {
     }
 };
 
-/// Create a Generic Value with a specific Type `T`.
+/// Create a Generic Value with a specific Type (`T`).
 pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
     const active_tag = if (T == []const u8) "string" else @typeName(T);
     return @unionInit(Generic, active_tag, typed_val);
@@ -371,7 +371,7 @@ pub const FromConfig = struct {
     val_description: ?[]const u8 = null,
 };
 
-/// Create a Generic Value from a Valid Value StructField `field` using the provided FromConfig `from_config`.
+/// Create a Generic Value from a Valid Value StructField (`field`) using the provided FromConfig (`from_config`).
 /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
 pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {
     const field_info = @typeInfo(field.type);

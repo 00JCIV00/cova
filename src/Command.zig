@@ -72,28 +72,28 @@ pub const Config = struct {
 /// Create a Command type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
-/// Create a Custom Command type from the provided Config `config`.
+/// Create a Custom Command type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// The Custom Option type to be used by this Custom Command type.
         pub const CustomOption = Option.Custom(config.opt_config);
         /// Sub Commands Help Format.
-        /// Check `Command.Config` for details.
+        /// Check (`Command.Config`) for details.
         pub const subcmds_help_fmt = config.subcmds_help_fmt;
         /// Values Help Format.
-        /// Check `Command.Config` for details.
+        /// Check (`Command.Config`) for details.
         pub const vals_help_fmt = config.vals_help_fmt;
         /// Sub Commands Usage Format.
-        /// Check `Command.Config` for details.
+        /// Check (`Command.Config`) for details.
         pub const subcmds_usage_fmt = config.subcmds_usage_fmt;
         /// Values Usage Format.
-        /// Check `Command.Config` for details.
+        /// Check (`Command.Config`) for details.
         pub const vals_usage_fmt = config.vals_usage_fmt;
         /// Global Help Prefix.
-        /// Check `Command.Config` for details.
+        /// Check (`Command.Config`) for details.
         pub const global_help_prefix = config.global_help_prefix;
         /// Max Args.
-        /// Check `Command.Config` for details.
+        /// Check (`Command.Config`) for details.
         pub const max_args = config.max_args;
 
         /// Flag denoting if this Command has been initialized to memory using `init()`.
@@ -108,7 +108,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
-        /// The Sub Command assigned to this Command during Parsing (optional).
+        /// The Sub Command assigned to this Command during Parsing, if any.
         sub_cmd: ?*const @This() = null,
         /// The list of Options this Command can take.
         opts: ?[]const CustomOption = null,
@@ -132,7 +132,7 @@ pub fn Custom(comptime config: Config) type {
             if (!self._is_init) return error.CommandNotInitialized;
             return getOptsAlloc(self._alloc.?);
         }
-        /// Gets a StringHashMap of this Command's Options using the provided Allocator `alloc`.
+        /// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
             if (self.opts == null) return error.NoOptionsInCommand;
             var map = StringHashMap(CustomOption).init(alloc);
@@ -145,7 +145,7 @@ pub fn Custom(comptime config: Config) type {
             if (!self._is_init) return error.CommandNotInitialized;
             return getValsAlloc(self._alloc.?);
         }
-        /// Gets a StringHashMap of this Command's Values using the provided Allocator `alloc`.
+        /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
             if (self.vals == null) return error.NoValuesInCommand;
             var map = StringHashMap(Value).init(alloc);
@@ -153,7 +153,7 @@ pub fn Custom(comptime config: Config) type {
             return map;
         }
 
-        /// Creates the Help message for this Command and Writes it to the provided Writer `writer`.
+        /// Creates the Help message for this Command and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
             try writer.print("{s}\n", .{ self.help_prefix });
 
@@ -198,7 +198,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
         }
 
-        /// Creates the Usage message for this Command and Writes it to the provided Writer `writer`.
+        /// Creates the Usage message for this Command and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             try writer.print("USAGE: {s} ", .{ self.name });
             if (self.opts != null) {
@@ -225,7 +225,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n\n", .{});
         }
 
-        /// Check if a Flag `flag_name` has been set on this Command as a Command, Option, or Value.
+        /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
             return (
@@ -273,7 +273,7 @@ pub fn Custom(comptime config: Config) type {
             /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
             /// These Descriptions will be used across this Command and all of its Sub Commands.
             ///
-            /// Format: `.{ "argument_name", "Description of the Argument." }`
+            /// Format: (`).{ "argument_name", "Description of the Argument." }`
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
 
             /// Max number of Sub Commands.
@@ -284,7 +284,7 @@ pub fn Custom(comptime config: Config) type {
             max_vals: u8 = max_args,
         };
 
-        /// Create a Command from the provided Struct `from_struct`.
+        /// Create a Command from the provided Struct (`from_struct`).
         /// The provided Struct must be Comptime-known.
         ///
         /// Types are converted as follows:
@@ -445,15 +445,15 @@ pub fn Custom(comptime config: Config) type {
             allow_incompatible: bool = true,
         };
 
-        /// Convert this Command to an instance of the provided Struct Type `T`.
+        /// Convert this Command to an instance of the provided Struct Type (`T`).
         /// This is the inverse of `from()`.
         ///
         /// Types are converted as follows:
         /// - Commmands: Structs by recursively calling `to()`.
         /// - Single-Options: Optional versions of Values.
-        /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8` only)
+        /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
-        // TODO: Catch more error cases for incompatible types (i.e. Pointer not `[]const u8`).
+        // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
         pub fn to(self: *const @This(), comptime T: type, to_config: ToConfig) !T {
             var out: T = undefined;
             const fields = meta.fields(T);
@@ -551,7 +551,7 @@ pub fn Custom(comptime config: Config) type {
             check_help_opts: bool = false,
         };
 
-        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values using the provided ValidateConfig `valid_config`. 
+        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values using the provided ValidateConfig (`valid_config`). 
         pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
             comptime {
                 @setEvalBranchQuota(100_000);
@@ -622,8 +622,8 @@ pub fn Custom(comptime config: Config) type {
             init_subcmds: bool = true,
         };
 
-        /// Initialize this Command with the provided Config `init_config` by duplicating it with the provided Allocator `alloc` for Runtime use.
-        /// This should be used after this Command has been created in Comptime. Notably, Validation is done during Comptime and must happen before usage/help Commands/Options are added.
+        /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
+        /// This should be used after this Command has been created in Comptime. 
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
             if (init_config.validate_cmd) self.validate(.{ 
                 .check_help_cmds = init_config.add_help_cmds,

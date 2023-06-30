@@ -47,7 +47,7 @@ pub const Config = struct {
 /// Create a Option type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
-/// Create a Custom Option type from the provided Config `config`.
+/// Create a Custom Option type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// This Option's Short Name (ex: `-s`).
@@ -77,7 +77,7 @@ pub fn Custom(comptime config: Config) type {
         /// Check `Options.Config` for details.
         pub const long_prefix = config.long_prefix;
 
-        /// Creates the Help message for this Option and Writes it to the provided Writer `writer`.
+        /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
@@ -92,7 +92,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print(help_fmt.?, .{ upper_name, self.description });
         }
 
-        /// Creates the Usage message for this Option and Writes it to the provided Writer `writer`.
+        /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             try writer.print(usage_fmt, .{ 
                 short_prefix,
@@ -114,7 +114,7 @@ pub fn Custom(comptime config: Config) type {
             opt_description: ?[]const u8 = null,
         };
 
-        /// Create an Option from a Valid Optional StructField `field` with the provided FromConfig `from_config`.
+        /// Create an Option from a Valid Optional StructField (`field`) with the provided FromConfig (`from_config`).
         pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?@This() {
             const field_info = @typeInfo(field.type);
             const optl =
