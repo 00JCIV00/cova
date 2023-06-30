@@ -319,21 +319,21 @@ pub fn Custom(comptime config: Config) type {
                 switch (field.type) {
                     @This() => {
                         if (field.default_value != null) {
-                            from_cmds[cmds_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            from_cmds[cmds_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                             cmds_idx += 1;
                             continue;
                         }
                     },
                     CustomOption => {
                         if (field.default_value != null) {
-                            from_opts[opts_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            from_opts[opts_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                             opts_idx += 1;
                             continue;
                         }
                     },
                     Value.Generic => {
                         if (field.default_value != null) {
-                            from_vals[vals_idx] = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                            from_vals[vals_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                             vals_idx += 1;
                             continue;
                         }
@@ -469,7 +469,7 @@ pub fn Custom(comptime config: Config) type {
                                 if (!opt.val.isSet()) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
-                                        @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                        @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
                                 const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
@@ -483,7 +483,7 @@ pub fn Custom(comptime config: Config) type {
                                 if (!val.isSet() and val.argIdx() == val.maxArgs()) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
-                                        @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                        @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
                                 const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
@@ -500,7 +500,7 @@ pub fn Custom(comptime config: Config) type {
                                         if (!opt.val.isSet()) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null) 
-                                                @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                                @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                             break;
                                         }
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
@@ -518,7 +518,7 @@ pub fn Custom(comptime config: Config) type {
                                         if (!val.isSet() and val.argIdx() == val.maxArgs()) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null) 
-                                                @field(out, field.name) = @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*;
+                                                @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                             break;
                                         }
                                         const val_tag = if (ary.child == []const u8) "string" else @typeName(ary.child);

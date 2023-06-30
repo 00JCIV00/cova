@@ -299,7 +299,7 @@ pub const ParsingFns = struct {
             return struct { 
                 fn enumInt(arg: []const u8) !EnumTagType { 
                     const enum_tag = meta.stringToEnum(EnumType, arg) orelse return error.EnumTagDoesNotExist;
-                    return @enumToInt(enum_tag);
+                    return @intFromEnum(enum_tag);
                 }
             }.enumInt;
         }
@@ -402,7 +402,7 @@ pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfi
             if (field_info == .Array) .Multi
             else .Last,
         .default_val = 
-            if (field.default_value != null and field_info != .Array) @ptrCast(*field.type, @alignCast(@alignOf(field.type), @constCast(field.default_value))).*
+            if (field.default_value != null and field_info != .Array) @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*
             else null,
     });
 }

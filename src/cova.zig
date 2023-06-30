@@ -1,6 +1,7 @@
-//! Cova. Commands, Options, Values, Arguments. A simple command line argument parser for Zig.
+//!zig-autodoc-guide:README.md 
+//! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
-//! Cova is based on the idea that Arguments will fall into one of three categories: Commands, Options, or Values. These componenets are assembled into a single struct which is then used to parse argument tokens.
+//! Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
 
 // Standard
 const builtin = @import("builtin");
