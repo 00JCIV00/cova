@@ -196,7 +196,7 @@ pub fn main() !void {
 ...
 // The main cova library module. This is added via `build.zig` & `build.zig.zon` during installation.
 const cova = @import("cova");
-// The Base Command type. This will be Command type for all Commands in this project.
+// The Base Command type. This will be the Command type for all Commands in this project.
 const BaseCommand = cova.Command.Base();
 // Utilities. This module has a helper function that will display the result of a successfully parsed Command and all of its sub Arguments.
 const utils = cova.utils;
@@ -239,7 +239,7 @@ const setup_cmd = BaseCommand.from(ProjectStruct);
 ```
 
 - Command Validation and Initialization to memory for Runtime Use.
-```
+```zig
 ...
 pub fn main() !void {
 	...
