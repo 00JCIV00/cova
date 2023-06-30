@@ -430,7 +430,7 @@
 <span class="line" id="L299">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> { </span>
 <span class="line" id="L300">                <span class="tok-kw">fn</span> <span class="tok-fn">enumInt</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !EnumTagType { </span>
 <span class="line" id="L301">                    <span class="tok-kw">const</span> enum_tag = meta.stringToEnum(EnumType, arg) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EnumTagDoesNotExist;</span>
-<span class="line" id="L302">                    <span class="tok-kw">return</span> <span class="tok-builtin">@enumToInt</span>(enum_tag);</span>
+<span class="line" id="L302">                    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromEnum</span>(enum_tag);</span>
 <span class="line" id="L303">                }</span>
 <span class="line" id="L304">            }.enumInt;</span>
 <span class="line" id="L305">        }</span>
@@ -533,7 +533,7 @@
 <span class="line" id="L402">            <span class="tok-kw">if</span> (field_info == .Array) .Multi</span>
 <span class="line" id="L403">            <span class="tok-kw">else</span> .Last,</span>
 <span class="line" id="L404">        .default_val = </span>
-<span class="line" id="L405">            <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span> <span class="tok-kw">and</span> field_info != .Array) <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*</span>
+<span class="line" id="L405">            <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span> <span class="tok-kw">and</span> field_info != .Array) <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*</span>
 <span class="line" id="L406">            <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
 <span class="line" id="L407">    });</span>
 <span class="line" id="L408">}</span>

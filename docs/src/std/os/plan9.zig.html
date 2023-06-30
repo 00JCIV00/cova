@@ -121,9 +121,9 @@
 <span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> E = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;plan9/errno.zig&quot;</span>).E;</span>
 <span class="line" id="L9"><span class="tok-comment">/// Get the errno from a syscall return value, or 0 for no error.</span></span>
 <span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getErrno</span>(r: <span class="tok-type">usize</span>) E {</span>
-<span class="line" id="L11">    <span class="tok-kw">const</span> signed_r = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">isize</span>, r);</span>
+<span class="line" id="L11">    <span class="tok-kw">const</span> signed_r = <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, <span class="tok-builtin">@bitCast</span>(r));</span>
 <span class="line" id="L12">    <span class="tok-kw">const</span> int = <span class="tok-kw">if</span> (signed_r &gt; -<span class="tok-number">4096</span> <span class="tok-kw">and</span> signed_r &lt; <span class="tok-number">0</span>) -signed_r <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-builtin">@intToEnum</span>(E, int);</span>
+<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(E, <span class="tok-builtin">@enumFromInt</span>(int));</span>
 <span class="line" id="L14">}</span>
 <span class="line" id="L15"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SIG = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L16">    <span class="tok-comment">/// hangup</span></span>
@@ -250,19 +250,19 @@
 <span class="line" id="L133">};</span>
 <span class="line" id="L134"></span>
 <span class="line" id="L135"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pwrite</span>(fd: <span class="tok-type">usize</span>, buf: [*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, count: <span class="tok-type">usize</span>, offset: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L136">    <span class="tok-kw">return</span> syscall_bits.syscall4(.PWRITE, fd, <span class="tok-builtin">@ptrToInt</span>(buf), count, offset);</span>
+<span class="line" id="L136">    <span class="tok-kw">return</span> syscall_bits.syscall4(.PWRITE, fd, <span class="tok-builtin">@intFromPtr</span>(buf), count, offset);</span>
 <span class="line" id="L137">}</span>
 <span class="line" id="L138"></span>
 <span class="line" id="L139"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pread</span>(fd: <span class="tok-type">usize</span>, buf: [*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, count: <span class="tok-type">usize</span>, offset: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L140">    <span class="tok-kw">return</span> syscall_bits.syscall4(.PREAD, fd, <span class="tok-builtin">@ptrToInt</span>(buf), count, offset);</span>
+<span class="line" id="L140">    <span class="tok-kw">return</span> syscall_bits.syscall4(.PREAD, fd, <span class="tok-builtin">@intFromPtr</span>(buf), count, offset);</span>
 <span class="line" id="L141">}</span>
 <span class="line" id="L142"></span>
 <span class="line" id="L143"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, omode: OpenMode) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L144">    <span class="tok-kw">return</span> syscall_bits.syscall2(.OPEN, <span class="tok-builtin">@ptrToInt</span>(path), <span class="tok-builtin">@enumToInt</span>(omode));</span>
+<span class="line" id="L144">    <span class="tok-kw">return</span> syscall_bits.syscall2(.OPEN, <span class="tok-builtin">@intFromPtr</span>(path), <span class="tok-builtin">@intFromEnum</span>(omode));</span>
 <span class="line" id="L145">}</span>
 <span class="line" id="L146"></span>
 <span class="line" id="L147"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, omode: OpenMode, perms: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L148">    <span class="tok-kw">return</span> syscall_bits.syscall3(.CREATE, <span class="tok-builtin">@ptrToInt</span>(path), <span class="tok-builtin">@enumToInt</span>(omode), perms);</span>
+<span class="line" id="L148">    <span class="tok-kw">return</span> syscall_bits.syscall3(.CREATE, <span class="tok-builtin">@intFromPtr</span>(path), <span class="tok-builtin">@intFromEnum</span>(omode), perms);</span>
 <span class="line" id="L149">}</span>
 <span class="line" id="L150"></span>
 <span class="line" id="L151"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">exit</span>(status: <span class="tok-type">u8</span>) <span class="tok-type">noreturn</span> {</span>
@@ -277,7 +277,7 @@
 <span class="line" id="L159">}</span>
 <span class="line" id="L160"></span>
 <span class="line" id="L161"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">exits</span>(status: ?[*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L162">    _ = syscall_bits.syscall1(.EXITS, <span class="tok-kw">if</span> (status) |s| <span class="tok-builtin">@ptrToInt</span>(s) <span class="tok-kw">else</span> <span class="tok-number">0</span>);</span>
+<span class="line" id="L162">    _ = syscall_bits.syscall1(.EXITS, <span class="tok-kw">if</span> (status) |s| <span class="tok-builtin">@intFromPtr</span>(s) <span class="tok-kw">else</span> <span class="tok-number">0</span>);</span>
 <span class="line" id="L163">    <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L164">}</span>
 <span class="line" id="L165"></span>

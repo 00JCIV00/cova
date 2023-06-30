@@ -91,11 +91,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - [x] Compatible non-nullable fields become Values.
 
 ### Post Public Release
-- [ ] Pull Argument type metadata via AST Parsing struct/field comments.
+- [ ] Pull Argument type metadata via AST Parsing of struct/field comments.
 - [ ] Tab Completion (long-term goal).
   
 ## Documentation
-[Docs](https://00jciv00.github.io/cova/#A;cova)
+- [API](https://00jciv00.github.io/cova/#A;cova)
+- [Guides](https://00jciv00.github.io/cova/#G;) (WIP. Awaiting improvements in the Markdown formatting of Zig's Autodoc feature.)
 
 ## Install
 ### Package Manager
@@ -148,142 +149,280 @@ zig build demo
 ```
 
 ## Usage
-### Command
-A Command is a container Argument for sub Commands, Options, and Values. It can contain any mix of those Arguments or none at all if it's to be used as a standalone command (for instance `covademo help`). A HashMap<Name, Value/Option> for Options or Values can be created using either the `getOpts()` or `getVals()` method. Usage and Help statements for a Command can also be generated using the `usage()` and `help()` methods respectively.
-#### Example:
-```zig
-const cmd = try alloc.create(Command);
-cmd.* = .{
-    .name = "covademo",
-    .help_prefix = "CovaDemo",
-    .description = "A demo of the Cova command line argument parser.",
-    .sub_cmds = subCmdsSetup: { 
-        var setup_cmds = [_]*const Command{
-            &Command{
-                .name = "help",
-                .help_prefix = "CovaDemo",
-                .description = "Show the CovaDemo help display.",
-            },
-            &Command{
-                .name = "usage",
-                .help_prefix = "CovaDemo",
-                .description = "Show the CovaDemo usage display.",
-            },
-        };
-        break :subCmdsSetup setup_cmds[0..];
-    },
-    .opts = { ... },
-    .vals = { ... }
-}
-defer alloc.destroy(cmd);
-```
+The following are two working examples to get cova integrated into a project quickly. The library contains many more features that can be found in the Documentation section above.
 
-### Option
-An Option is an Argument which wraps a Value and is ALWAYS optional. It may have a Short Name (ex: `-h`), a Long Name (ex: `--name "Lilly"`), or both. The prefixes for both Short and Long names can be set by the library user. If the wrapped Value has a Boolean type it will default to False and can be set to True using the Option without a following Argument (ex: `-t` or `--toggle`). They also provide `usage()` and `help()` methods similar to Commands.
-#### Example:
+### Quick Setup
+- This is a minimum working demo of Cova integrated into a project.
 ```zig
-.opts = optsSetup: {
-    var setup_opts = [_]*const Option{
-        &Option{
-            .name = "stringOpt",
-            .short_name = 's',
-            .long_name = "stringOpt",
-            .val = &Value.init([]const u8, .{
-                .name = "stringVal",
-                .description = "A string value.",
-            }),
-            .description = "A string option.",
-        },
-        &Option{
-            .name = "intOpt",
-            .short_name = 'i',
-            .long_name = "intOpt",
-            .val = &Value.init(i16, .{
-                .name = "intVal",
-                .description = "An integer value.",
-                .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn
-            }),
-            .description = "An integer option.",
-        },
-        &Option{
-            .name = "help",
-            .short_name = 'h',
-            .long_name = "help",
-            .val = &Value.init(bool, .{
-                .name = "helpFlag",
-                .description = "Flag for help!",
-            }),
-            .description = "Show the CovaDemo help display.",
-        },
-    };
-    break :optsSetup setup_opts[0..];
-},
-```
+const std = @import("std");
+const cova = @import("cova");
+const BaseCommand = cova.Command.Base();
+const utils = cova.utils;
 
-### Value
-A Value (also known as a Positional Argument) is an Argument that is expected in a specific order and should be interpreted as a specific type. The full list of available types can be seen in `src/Value.zig/Generic`, but the basics are Boolean, String (`[]const u8`), Integer (`u/i##`), or Float (`f##`). A Value will be parsed to its corresponding type and can be retrieved using `get()`. They can also be given a Default value using the `.default_val` field and a Validation Function using the `.val_fn` field.
-#### Example:
-```zig
-.vals = valsSetup: {
-    var setup_vals = [_]*const Value.Generic{
-        &Value.init([]const u8, .{
-            .name = "cmdStr",
-            .description = "A string value for the command.",
-        }),
-        &Value.init(u128, .{
-            .name = "cmd_u128",
-            .description = "A u128 value for the command.",
-            // Default Value
-            .default_val = 654321,
-            // Validation Function
-            .val_fn = struct{ fn valFn(val: u128) bool { return val > 123456 and val < 987654; } }.valFn,
-        }),
-    };
-    break :valsSetup setup_vals[0..];
-}
-```
+pub const ProjectStruct = struct {
+	pub const SubStruct = struct {
+		sub_uint: ?u8 = 5,
+		sub_string: []const u8,
+	},
 
-### Parsing
-Parsing is handled by the `parseArgs()` function in cova.zig. It takes in an ArgIterator, a Command, and a Writer, then parses each token sequentially. The results of a successful parse are stored in the provided Command which can then be analyzed by the user.
-#### Example:
-```zig
+	subcmd: SubStruct = .{},
+	int: ?i4 = 10,
+	flag: ?bool = false,
+	strings: [3]const []const u8 = .{ "Three", "default", "strings." },
+};
+
+const setup_cmd = BaseCommand.from(ProjectStruct);
+
 pub fn main() !void {
-    // Parse Arguments
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
+    const stdout = std.io.getStdOut().writer();
 
-    const cmd = try alloc.create(Command);
-    cmd.* = .{ ... };
-    defer alloc.destroy(cmd);
+    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    defer main_cmd.deinit();
 
-    const args = try proc.argsWithAllocator(alloc);
-    try cova.parseArgs(&args, cmd, stdout);
-    
-    // Analyze Data
-    // - Check for the "help" Sub Command and run its help() method
-    if (cmd.sub_cmd != null and std.mem.eql(u8, cmd.sub_cmd.?.name, "help")) try cmd.help(stdout);
-    // - Get a HashMap of the Command's Options
-    if (cmd.opts != null) {
-        var opt_map: StringHashMap(*const Option) = try cmd.getOpts(alloc);
-        defer opt_map.deinit();
-    }
-    // - Print out all of the Command's Values
-    for (cmd.vals orelse return) |val| {
-        switch (meta.activeTag(val.*)) {
-            .string => {
-                std.debug.print("    Val: {?s}, Data: {s}\n", .{
-                    val.name(),
-                    val.string.get() catch "",
-                });
-            },
-            inline else => |tag| {
-                std.debug.print("    Val: {?s}, Data: {any}\n", .{
-                    val.name(),
-                    @field(val, @tagName(tag)).get() catch null,
-                });
-            },
-        }
-    }
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+
+    try cova.parseArgs(&args_iter, BaseCommand, main_cmd, stdout, .{});
+    try utils.displayCmdInfo(BaseCommand, main_cmd, alloc, stdout);
+}
+``` 
+
+#### Breakdown
+- Imports
+```zig
+...
+// The main cova library module. This is added via `build.zig` & `build.zig.zon` during installation.
+const cova = @import("cova");
+// The Base Command type. This will be Command type for all Commands in this project.
+const BaseCommand = cova.Command.Base();
+// Utilities. This module has a helper function that will display the result of a successfully parsed Command and all of its sub Arguments.
+const utils = cova.utils;
+...
+```
+
+- A Valid Project Struct. The rules for what makes a Valid struct and how they're converted into Commands can be found in the API Documentation under `cova.Command.Custom.from()`.
+```zig
+...
+// This comptime struct is valid to be parsed into a cova Command.
+pub const ProjectStruct = struct {
+	// This nested struct is also valid.
+	pub const SubStruct = struct {
+		// Optional Primitive type fields will be converted into cova Options.
+		// By default, Options will be given a long name and a short name based on the field name. (i.e. int = `-i` or `--int`)
+		sub_uint: ?u8 = 5,
+		// Primitive type fields will be converted into Values.
+		sub_string: []const u8,
+	},
+
+	// Struct fields will be converted into cova Commands.
+	subcmd: SubStruct = .{},
+	// The default values of Primitive type fields will be applied as the default value of the converted Option or Value.
+	int: ?i4 = 10,
+	// Optional Booleans will become cova Options that don't take a Value and are set to true simply by calling the Option's short or long name.
+	flag: ?bool = false,
+	// Arrays will be turned into Multi-Values or Multi-Options based on the array's child type.
+	strings: [3]const []const u8 = .{ "Three", "default", "strings." },
+};
+...
+```
+
+- Creating the Comptime Command.
+```zig
+...
+// `from()` method will convert the above Struct into a Command.
+// This must be done at Comptime for proper Validation before Initialization to memory for Runtime use.
+const setup_cmd = BaseCommand.from(ProjectStruct);
+...
+```
+
+- Command Validation and Initialization to memory for Runtime Use.
+```
+...
+pub fn main() !void {
+	...
+
+	// The `init()` method of a Command instance will Validate the Command's Argument Types for correctness and distinct names, then it will return a memory allocated copy of the Command for argument token parsing and follow on analysis.
+    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    defer main_cmd.deinit();
+	
+	...
 }
 ```
+
+- Set up the Argument Iterator.
+```zig
+pub fn main() {
+	...
+
+	// The ArgIteratorGeneric is used to step through argument tokens. By default (using `init()`), it will provide Zig's native, cross-platform ArgIterator with app user argument tokens. There's also cova's RawArgIterator that can be used to parse any slice of strings as argument tokens.
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+	...
+}
+```
+
+- Parse argument tokens and Display the result.
+```zig
+pub fn main() !void {
+	...
+
+	/// The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`) tokens into Argument types within the provided Command (`main_cmd`).
+    try cova.parseArgs(&args_iter, BaseCommand, main_cmd, stdout, .{});
+	/// Once parsed, the provided Command will be available for analysis by the project code. Using `utils.displayCmdInfoi()` will create a neat display of the parsed Command for debugging.
+    try utils.displayCmdInfo(BaseCommand, main_cmd, alloc, stdout);
+}
+```
+
+### Adding in Metadata and Advanced Features:
+- Import the required modules from the Cova Library. This time creating a Custom Command.
+```zig
+const std = @import("std");
+const cova = @import("cova");
+
+// Using Command.Custom() allows for custom configurations that apply to all Commands of this type, which will usually mean all Commands within a project.
+const CustomCommand = cova.Command.Custom(.{
+	// The Global Help Prefix of this Command Type will be used as the default prefix for the auto-generated Help and Usage messages of a Command and all of its Sub Commands.
+	.global_help_prefix = "CovaDemo w/ Advanced Features",
+	// The Sub Commands Help Format changes how Sub Commands are listed in Help auto-generated Help messages. There are similar fields for Options and Values as well as all of their corresponding Usage messages.
+	.subcmds_help_fmt = "'{s}' -> {s}",
+});
+const Value = cova.Value;
+const utils = cova.utils;
+```
+
+- Create a Command directly in comptime. This will allow for more granular configuration of the Command and its sub Argument types.
+```zig
+const setup_cmd: CustomCommand = .{
+    // The Name of the Command is what app users will use. Similar fields exist for Options and Values as well.
+	.name = "cova_demo",
+	// The Description of the Command will be displayed in the auto-generated Help message. Similar fields exist for Options and Values as well.
+    .description = "A demo of a few of the advanced features in the Cova Library.",
+
+	// The `sub_cmds` field is a slice of all of the Sub Commands of this Command.
+    .sub_cmds = &.{
+        .{
+            .name = "hello-cova",
+            .description = "Hello from Cova!",
+        },
+    },
+
+	// The `opts` field is a slice of all of the Options of this Command.
+    .opts = &.{
+        .{
+            .name = "string_opt",
+            .description = "This is a string Option. It will be validated to ensure the argument length is less than 10.",
+            .short_name = 's',
+            .long_name = "string",
+            .val = Value.ofType([]const u8, .{
+                .name = "string_opt_val",
+                .description = "This is the Option's wrapped Value. It will handle the validation.",
+				// Validation Functions are a powerful feature to ensure app user input matches what a project expects. Parsing Functions similarly allow a library user to customize how an argument token is parsed into a specific type.
+                .valid_fn = struct { fn lessThanTen(arg: []const u8) bool { return arg.len < 10; } }.lessThanTen,
+            }),
+        },
+    },
+
+	// The `vals` field is a slice of all of the Values of this Command.
+    .vals = &.{
+        Value.ofType(i16, .{
+            .name = "int_val",
+            .description = "This is an integer Value. It can be set/used up to 5 times.",
+			// The Set Behavior determines what happens when an app user attempts to use an Option or Value multiple times.
+            .set_behavior = .Multi,
+            .max_args = 5,
+        }),
+    },
+};
+```
+
+- The `main()` function is pretty close to before, but now the `parseArgs()` function has been configured with additional options.
+```zig
+pub fn main() !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const stdout = std.io.getStdOut().writer();
+
+    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    defer main_cmd.deinit();
+
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+
+    try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{
+		// This effectively makes Values optional, but when provided they must still appear in the correct order.
+		.vals_mandatory = false,
+		// This will determine which characters are valid to separate an Option from its Value.
+		.opt_val_seps = "=.^",
+		// This will disallow the abbreviation of Long Options.
+		.allow_abbreviated_long_opts = false, 
+	});
+    try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
+}
+``` 
+
+#### Putting it all together
+```zig
+const std = import("std");
+const CustomCommand = cova.Command.Custom(.{
+	.global_help_prefix = "CovaDemo w/ Advanced Features",
+	.subcmds_help_fmt = "'{s}' -> {s}",
+});
+const Value = cova.Value;
+const utils = cova.utils;
+
+const setup_cmd: CustomCommand = .{
+    .name = "cova_demo",
+    .description = "A demo of a few of the advanced features in the Cova Library.",
+    .sub_cmds = &.{
+        .{
+            .name = "hello-cova",
+            .description = "Hello from Cova!",
+        },
+    },
+    .opts = &.{
+        .{
+            .name = "string_opt",
+            .description = "This is a string Option. It will be validated to ensure the argument length is less than 10.",
+            .short_name = 's',
+            .long_name = "string",
+            .val = Value.ofType([]const u8, .{
+                .name = "string_opt_val",
+                .description = "This is the Option's wrapped Value. It will handle the validation.",
+                .valid_fn = struct { fn lessThanTen(arg: []const u8) bool { return arg.len < 10; } }.lessThanTen,
+            }),
+        },
+    },
+    .vals = &.{
+        Value.ofType(i16, .{
+            .name = "int_val",
+            .description = "This is an integer Value. It can be set/used up to 5 times.",
+            .set_behavior = .Multi,
+            .max_args = 5,
+        }),
+    },
+};
+
+pub fn main() !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const stdout = std.io.getStdOut().writer();
+
+    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    defer main_cmd.deinit();
+
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+
+    try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{
+		.vals_mandatory = false,
+		.opt_val_seps = "=.^",
+		.allow_abbreviated_long_opts = false, 
+	});
+    try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
+}
+``` 

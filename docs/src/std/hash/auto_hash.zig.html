@@ -138,7 +138,7 @@
 <span class="line" id="L25"></span>
 <span class="line" id="L26">    <span class="tok-kw">switch</span> (info.Pointer.size) {</span>
 <span class="line" id="L27">        .One =&gt; <span class="tok-kw">switch</span> (strat) {</span>
-<span class="line" id="L28">            .Shallow =&gt; hash(hasher, <span class="tok-builtin">@ptrToInt</span>(key), .Shallow),</span>
+<span class="line" id="L28">            .Shallow =&gt; hash(hasher, <span class="tok-builtin">@intFromPtr</span>(key), .Shallow),</span>
 <span class="line" id="L29">            .Deep =&gt; hash(hasher, key.*, .Shallow),</span>
 <span class="line" id="L30">            .DeepRecursive =&gt; hash(hasher, key.*, .DeepRecursive),</span>
 <span class="line" id="L31">        },</span>
@@ -157,7 +157,7 @@
 <span class="line" id="L44">        .Many,</span>
 <span class="line" id="L45">        .C,</span>
 <span class="line" id="L46">        =&gt; <span class="tok-kw">switch</span> (strat) {</span>
-<span class="line" id="L47">            .Shallow =&gt; hash(hasher, <span class="tok-builtin">@ptrToInt</span>(key), .Shallow),</span>
+<span class="line" id="L47">            .Shallow =&gt; hash(hasher, <span class="tok-builtin">@intFromPtr</span>(key), .Shallow),</span>
 <span class="line" id="L48">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(</span>
 <span class="line" id="L49">                <span class="tok-str">\\ unknown-length pointers and C pointers cannot be hashed deeply.</span></span>
 
@@ -209,10 +209,10 @@
 <span class="line" id="L93">        <span class="tok-comment">// TODO Check if the situation is better after #561 is resolved.</span>
 </span>
 <span class="line" id="L94">        .Int =&gt; |int| <span class="tok-kw">switch</span> (int.signedness) {</span>
-<span class="line" id="L95">            .signed =&gt; hash(hasher, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@Type</span>(.{ .Int = .{</span>
+<span class="line" id="L95">            .signed =&gt; hash(hasher, <span class="tok-builtin">@as</span>(<span class="tok-builtin">@Type</span>(.{ .Int = .{</span>
 <span class="line" id="L96">                .bits = int.bits,</span>
 <span class="line" id="L97">                .signedness = .unsigned,</span>
-<span class="line" id="L98">            } }), key), strat),</span>
+<span class="line" id="L98">            } }), <span class="tok-builtin">@bitCast</span>(key)), strat),</span>
 <span class="line" id="L99">            .unsigned =&gt; {</span>
 <span class="line" id="L100">                <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> meta.trait.hasUniqueRepresentation(Key)) {</span>
 <span class="line" id="L101">                    <span class="tok-builtin">@call</span>(.always_inline, Hasher.update, .{ hasher, std.mem.asBytes(&amp;key) });</span>
@@ -227,10 +227,10 @@
 <span class="line" id="L108">            },</span>
 <span class="line" id="L109">        },</span>
 <span class="line" id="L110"></span>
-<span class="line" id="L111">        .Bool =&gt; hash(hasher, <span class="tok-builtin">@boolToInt</span>(key), strat),</span>
-<span class="line" id="L112">        .Enum =&gt; hash(hasher, <span class="tok-builtin">@enumToInt</span>(key), strat),</span>
-<span class="line" id="L113">        .ErrorSet =&gt; hash(hasher, <span class="tok-builtin">@errorToInt</span>(key), strat),</span>
-<span class="line" id="L114">        .AnyFrame, .Fn =&gt; hash(hasher, <span class="tok-builtin">@ptrToInt</span>(key), strat),</span>
+<span class="line" id="L111">        .Bool =&gt; hash(hasher, <span class="tok-builtin">@intFromBool</span>(key), strat),</span>
+<span class="line" id="L112">        .Enum =&gt; hash(hasher, <span class="tok-builtin">@intFromEnum</span>(key), strat),</span>
+<span class="line" id="L113">        .ErrorSet =&gt; hash(hasher, <span class="tok-builtin">@intFromError</span>(key), strat),</span>
+<span class="line" id="L114">        .AnyFrame, .Fn =&gt; hash(hasher, <span class="tok-builtin">@intFromPtr</span>(key), strat),</span>
 <span class="line" id="L115"></span>
 <span class="line" id="L116">        .Pointer =&gt; <span class="tok-builtin">@call</span>(.always_inline, hashPointer, .{ hasher, key, strat }),</span>
 <span class="line" id="L117"></span>

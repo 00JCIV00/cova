@@ -1,4 +1,12 @@
-//!zig-autodoc-guide:README.md 
+//!zig-autodoc-guide: ../../docs/guides/overview.md 
+//!zig-autodoc-section: Getting Started
+//!zig-autodoc-guide: ../../docs/guides/getting_started/install.md 
+//!zig-autodoc-guide: ../../docs/guides/getting_started/quick_setup.md 
+//!zig-autodoc-section: Argument Types
+//!zig-autodoc-guide: ../../docs/guides/arg_types/command.md 
+//!zig-autodoc-guide: ../../docs/guides/arg_types/option.md 
+//!zig-autodoc-guide: ../../docs/guides/arg_types/value.md 
+
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
 //! Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.

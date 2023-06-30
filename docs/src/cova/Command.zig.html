@@ -439,21 +439,21 @@
 <span class="line" id="L319">                <span class="tok-kw">switch</span> (field.<span class="tok-type">type</span>) {</span>
 <span class="line" id="L320">                    <span class="tok-builtin">@This</span>() =&gt; {</span>
 <span class="line" id="L321">                        <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L322">                            from_cmds[cmds_idx] = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L322">                            from_cmds[cmds_idx] = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L323">                            cmds_idx += <span class="tok-number">1</span>;</span>
 <span class="line" id="L324">                            <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L325">                        }</span>
 <span class="line" id="L326">                    },</span>
 <span class="line" id="L327">                    CustomOption =&gt; {</span>
 <span class="line" id="L328">                        <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L329">                            from_opts[opts_idx] = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L329">                            from_opts[opts_idx] = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L330">                            opts_idx += <span class="tok-number">1</span>;</span>
 <span class="line" id="L331">                            <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L332">                        }</span>
 <span class="line" id="L333">                    },</span>
 <span class="line" id="L334">                    Value.Generic =&gt; {</span>
 <span class="line" id="L335">                        <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L336">                            from_vals[vals_idx] = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L336">                            from_vals[vals_idx] = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L337">                            vals_idx += <span class="tok-number">1</span>;</span>
 <span class="line" id="L338">                            <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L339">                        }</span>
@@ -596,7 +596,7 @@
 <span class="line" id="L469">                                <span class="tok-kw">if</span> (!opt.val.isSet()) {</span>
 <span class="line" id="L470">                                    <span class="tok-kw">if</span> (!to_config.allow_unset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ValueNotSet;</span>
 <span class="line" id="L471">                                    <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) </span>
-<span class="line" id="L472">                                        <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L472">                                        <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L473">                                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L474">                                }</span>
 <span class="line" id="L475">                                <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (f_opt.child == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(f_opt.child);</span>
@@ -610,7 +610,7 @@
 <span class="line" id="L483">                                <span class="tok-kw">if</span> (!val.isSet() <span class="tok-kw">and</span> val.argIdx() == val.maxArgs()) {</span>
 <span class="line" id="L484">                                    <span class="tok-kw">if</span> (!to_config.allow_unset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ValueNotSet;</span>
 <span class="line" id="L485">                                    <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) </span>
-<span class="line" id="L486">                                        <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L486">                                        <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L487">                                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L488">                                }</span>
 <span class="line" id="L489">                                <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (field.<span class="tok-type">type</span> == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>);</span>
@@ -627,7 +627,7 @@
 <span class="line" id="L500">                                        <span class="tok-kw">if</span> (!opt.val.isSet()) {</span>
 <span class="line" id="L501">                                            <span class="tok-kw">if</span> (!to_config.allow_unset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ValueNotSet;</span>
 <span class="line" id="L502">                                            <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) </span>
-<span class="line" id="L503">                                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L503">                                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L504">                                            <span class="tok-kw">break</span>;</span>
 <span class="line" id="L505">                                        }</span>
 <span class="line" id="L506">                                        <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (a_opt.child == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(a_opt.child);</span>
@@ -645,7 +645,7 @@
 <span class="line" id="L518">                                        <span class="tok-kw">if</span> (!val.isSet() <span class="tok-kw">and</span> val.argIdx() == val.maxArgs()) {</span>
 <span class="line" id="L519">                                            <span class="tok-kw">if</span> (!to_config.allow_unset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ValueNotSet;</span>
 <span class="line" id="L520">                                            <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) </span>
-<span class="line" id="L521">                                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@ptrCast</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), <span class="tok-builtin">@constCast</span>(field.default_value))).*;</span>
+<span class="line" id="L521">                                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L522">                                            <span class="tok-kw">break</span>;</span>
 <span class="line" id="L523">                                        }</span>
 <span class="line" id="L524">                                        <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (ary.child == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(ary.child);</span>

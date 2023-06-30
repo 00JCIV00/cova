@@ -8,6 +8,8 @@ const NAV_MODES = {
 };
 
 (function () {
+  const domBanner = document.getElementById("banner");
+  const domMain = document.getElementById("main");
   const domStatus = document.getElementById("status");
   const domSectNav = document.getElementById("sectNav");
   const domListNav = document.getElementById("listNav");
@@ -65,9 +67,17 @@ const NAV_MODES = {
   const domTdZigVer = document.getElementById("tdZigVer");
   const domHdrName = document.getElementById("hdrName");
   const domHelpModal = document.getElementById("helpModal");
+  const domSearchKeys = document.getElementById("searchKeys");
+  const domPrefsModal = document.getElementById("prefsModal");
   const domSearchPlaceholder = document.getElementById("searchPlaceholder");
   const sourceFileUrlTemplate = "src/{{mod}}/{{file}}.html#L{{line}}"
   const domLangRefLink = document.getElementById("langRefLink");
+
+  const domPrefSlashSearch = document.getElementById("prefSlashSearch");
+  const prefs = getLocalStorage();
+  loadPrefs();
+
+  domPrefSlashSearch.addEventListener("change", () => setPrefSlashSearch(domPrefSlashSearch.checked));
 
   let searchTimer = null;
   let searchTrimResults = true;
@@ -127,21 +137,21 @@ const NAV_MODES = {
   window.guideSearch = guidesSearchIndex;
   parseGuides();
 
-  // identifiers can contain '?' so we want to allow typing
-  // the question mark when the search is focused instead of toggling the help modal
-  let canToggleHelpModal = true;
+  // identifiers can contain modal trigger characters so we want to allow typing
+  // such characters when the search is focused instead of toggling the modal
+  let canToggleModal = true;
 
   domSearch.disabled = false;
   domSearch.addEventListener("keydown", onSearchKeyDown, false);
   domSearch.addEventListener("input", onSearchInput, false);
   domSearch.addEventListener("focus", ev => {
     domSearchPlaceholder.classList.add("hidden");
-    canToggleHelpModal = false;
+    canToggleModal = false;
   });
   domSearch.addEventListener("blur", ev => {
     if (domSearch.value.length == 0)
       domSearchPlaceholder.classList.remove("hidden");
-    canToggleHelpModal = true;
+    canToggleModal = true;
   });
   domSectSearchAllResultsLink.addEventListener('click', onClickSearchShowAllResults, false);
   function onClickSearchShowAllResults(ev) {
@@ -156,10 +166,13 @@ const NAV_MODES = {
   }
 
   // make the modal disappear if you click outside it
-  domHelpModal.addEventListener("click", ev => {
-    if (ev.target.className == "help-modal")
-      domHelpModal.classList.add("hidden");
-  });
+  function handleModalClick(ev) {
+    if (ev.target.classList.contains("modal-container")) {
+      hideModal(this);
+    }
+  }
+  domHelpModal.addEventListener("click", handleModalClick);
+  domPrefsModal.addEventListener("click", handleModalClick);
 
   window.addEventListener("hashchange", onHashChange, false);
   window.addEventListener("keydown", onWindowKeyDown, false);
@@ -1054,7 +1067,7 @@ const NAV_MODES = {
     if (wr.typeRef) return wr.typeRef;
     let resolved = resolveValue(wr);
     if (wr === resolved) {
-      return { type: 0 };
+      return { "undefined": {} };
     }
     return walkResultTypeRef(resolved);
   }
@@ -1234,9 +1247,9 @@ const NAV_MODES = {
         const name = getAstNode(field).name;
         return name;
       }
-      case "enumToInt": {
-        const enumToInt = zigAnalysis.exprs[expr.enumToInt];
-        return "@enumToInt(" + exprName(enumToInt, opts) + ")";
+      case "intFromEnum": {
+        const intFromEnum = zigAnalysis.exprs[expr.intFromEnum];
+        return "@intFromEnum(" + exprName(intFromEnum, opts) + ")";
       }
       case "bitSizeOf": {
         const bitSizeOf = zigAnalysis.exprs[expr.bitSizeOf];
@@ -1260,8 +1273,8 @@ const NAV_MODES = {
             payloadHtml += "alignOf";
             break;
           }
-          case "bool_to_int": {
-            payloadHtml += "boolToInt";
+          case "int_from_bool": {
+            payloadHtml += "intFromBool";
             break;
           }
           case "embed_file": {
@@ -1368,16 +1381,16 @@ const NAV_MODES = {
             payloadHtml += "workGroupId";
             break;
           }
-          case "ptr_to_int": {
-            payloadHtml += "ptrToInt";
+          case "int_from_ptr": {
+            payloadHtml += "intFromPtr";
+            break;
+          }
+          case "int_from_error": {
+            payloadHtml += "intFromError";
             break;
           }
           case "error_to_int": {
-            payloadHtml += "errorToInt";
-            break;
-          }
-          case "int_to_error": {
-            payloadHtml += "intToError";
+            payloadHtml += "errorFromInt";
             break;
           }
           case "max": {
@@ -1423,20 +1436,20 @@ const NAV_MODES = {
 
         let payloadHtml = "@";
         switch (expr.builtinBin.name) {
-          case "float_to_int": {
-            payloadHtml += "floatToInt";
+          case "int_from_float": {
+            payloadHtml += "intFromFloat";
             break;
           }
-          case "int_to_float": {
-            payloadHtml += "intToFloat";
+          case "float_from_int": {
+            payloadHtml += "floatFromInt";
             break;
           }
-          case "int_to_ptr": {
-            payloadHtml += "intToPtr";
+          case "ptr_from_int": {
+            payloadHtml += "ptrFromInt";
             break;
           }
-          case "int_to_enum": {
-            payloadHtml += "intToEnum";
+          case "enum_from_int": {
+            payloadHtml += "enumFromInt";
             break;
           }
           case "float_cast": {
@@ -2375,6 +2388,9 @@ const NAV_MODES = {
                   if (paramName != null) {
                     // skip if it matches the type name
                     if (!shouldSkipParamName(paramValue, paramName)) {
+                      if (paramName === "") {
+                        paramName = "_";
+                      }
                       payloadHtml += paramName + ": ";
                     }
                   }
@@ -3993,8 +4009,12 @@ function addDeclToSearchResults(decl, declIndex, modNames, item, list, stack) {
 
   // hide the modal if it's visible or return to the previous result page and unfocus the search
   function onEscape(ev) {
-    if (!domHelpModal.classList.contains("hidden")) {
-      domHelpModal.classList.add("hidden");
+    if (isModalVisible(domHelpModal)) {
+      hideModal(domHelpModal);
+      ev.preventDefault();
+      ev.stopPropagation();
+    } else if (isModalVisible(domPrefsModal)) {
+      hideModal(domPrefsModal);
       ev.preventDefault();
       ev.stopPropagation();
     } else {
@@ -4106,8 +4126,11 @@ function addDeclToSearchResults(decl, declIndex, modNames, item, list, stack) {
       case "Esc":
         onEscape(ev);
         break;
+      case "/":
+        if (!getPrefSlashSearch()) break;
+        // fallthrough
       case "s":
-        if (domHelpModal.classList.contains("hidden")) {
+        if (!isModalVisible(domHelpModal) && !isModalVisible(domPrefsModal)) {
           if (ev.target == domSearch) break;
 
           domSearch.focus();
@@ -4119,28 +4142,65 @@ function addDeclToSearchResults(decl, declIndex, modNames, item, list, stack) {
         }
         break;
       case "?":
-        if (!canToggleHelpModal) break;
+        if (!canToggleModal) break;
+
+        if (isModalVisible(domPrefsModal)) {
+          hideModal(domPrefsModal);
+        }
 
         // toggle the help modal
-        if (!domHelpModal.classList.contains("hidden")) {
-            onEscape(ev);
+        if (isModalVisible(domHelpModal)) {
+            hideModal(domHelpModal);
         } else {
-            ev.preventDefault();
-            ev.stopPropagation();
-            showHelpModal();
+            showModal(domHelpModal);
         }
+        ev.preventDefault();
+        ev.stopPropagation();
         break;
+      case "p":
+        if (!canToggleModal) break;
+
+        if (isModalVisible(domHelpModal)) {
+          hideModal(domHelpModal);
+        }
+
+        // toggle the preferences modal
+        if (isModalVisible(domPrefsModal)) {
+          hideModal(domPrefsModal);
+        } else {
+          showModal(domPrefsModal);
+        }
+        ev.preventDefault();
+        ev.stopPropagation();
     }
   }
 
-  function showHelpModal() {
-    domHelpModal.classList.remove("hidden");
-    domHelpModal.style.left =
-      window.innerWidth / 2 - domHelpModal.clientWidth / 2 + "px";
-    domHelpModal.style.top =
-      window.innerHeight / 2 - domHelpModal.clientHeight / 2 + "px";
-    domHelpModal.focus();
+  function isModalVisible(modal) {
+    return !modal.classList.contains("hidden");
+  }
+
+  function showModal(modal) {
+    modal.classList.remove("hidden");
+    modal.style.left =
+      window.innerWidth / 2 - modal.clientWidth / 2 + "px";
+    modal.style.top =
+      window.innerHeight / 2 - modal.clientHeight / 2 + "px";
+    const firstInput = modal.querySelector("input");
+    if (firstInput) {
+      firstInput.focus();
+    } else {
+      modal.focus();
+    }
     domSearch.blur();
+    domBanner.inert = true;
+    domMain.inert = true;
+  }
+
+  function hideModal(modal) {
+    modal.classList.add("hidden");
+    domBanner.inert = false;
+    domMain.inert = false;
+    modal.blur();
   }
 
   function clearAsyncSearch() {
@@ -4674,6 +4734,47 @@ function addDeclToSearchResults(decl, declIndex, modNames, item, list, stack) {
     }
   }
 
+  function getLocalStorage() {
+    if ("localStorage" in window) {
+      try {
+        return window.localStorage;
+      } catch (ignored) {
+        // localStorage may be disabled (SecurityError)
+      }
+    }
+    // If localStorage isn't available, persist preferences only for the current session
+    const sessionPrefs = {};
+    return {
+      getItem(key) {
+        return key in sessionPrefs ? sessionPrefs[key] : null;
+      },
+      setItem(key, value) {
+        sessionPrefs[key] = String(value);
+      },
+    };
+  }
+
+  function loadPrefs() {
+    const storedPrefSlashSearch = prefs.getItem("slashSearch");
+    if (storedPrefSlashSearch === null) {
+      // Slash search defaults to enabled for all browsers except Firefox
+      setPrefSlashSearch(navigator.userAgent.indexOf("Firefox") === -1);
+    } else {
+      setPrefSlashSearch(storedPrefSlashSearch === "true");
+    }
+  }
+
+  function getPrefSlashSearch() {
+    return prefs.getItem("slashSearch") === "true";
+  }
+
+  function setPrefSlashSearch(enabled) {
+    prefs.setItem("slashSearch", String(enabled));
+    domPrefSlashSearch.checked = enabled;
+    const searchKeys = enabled ? "<kbd>/</kbd> or <kbd>s</kbd>" : "<kbd>s</kbd>";
+    domSearchKeys.innerHTML = searchKeys;
+    domSearchPlaceholder.innerHTML = searchKeys + " to search, <kbd>?</kbd> for more options";
+  }
 })();
 
 function toggleExpand(event) {
