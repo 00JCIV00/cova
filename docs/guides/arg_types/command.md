@@ -21,20 +21,20 @@ const setup_cmd: CustomCommand = .{
             .name = "sub_cmd",
             .description = "This is a Sub Command within the 'covademo' main Command.",
         },
-		command_from_elsewhere,
-		CustomCommand.from(some_valid_struct),
+        command_from_elsewhere,
+        CustomCommand.from(some_valid_struct),
     }
     .opts = { ... },
     .vals = { ... }
 }
 
 pub fn main() !void {
-	...
-	// Runtime Use
-	const main_cmd = try setup_cmd.init(alloc);
-	defer main_cmd.deinit();
+    ...
+    // Runtime Use
+    const main_cmd = try setup_cmd.init(alloc);
+    defer main_cmd.deinit();
 
-	cova.parseArgs(..., main_cmd, ...);
-	utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
+    cova.parseArgs(..., main_cmd, ...);
+    utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
 }
 ```

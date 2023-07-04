@@ -48,9 +48,9 @@ fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem
         inline else => |tag| {
             const tag_self = @field(val, @tagName(tag));
             if (tag_self.set_behavior == .Multi) {
-                const raw_data: ?[]const @TypeOf(tag_self).val_type = rawData: { 
+                const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
                     if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
-                    const data: ?@TypeOf(tag_self).val_type = tag_self.get() catch null;
+                    const data: ?@TypeOf(tag_self).ChildT = tag_self.get() catch null;
                     if (data != null) break :rawData &.{ data.? };
                     break :rawData null;
                 };

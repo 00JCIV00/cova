@@ -189,7 +189,7 @@
 <span class="line" id="L76"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Custom</span>(<span class="tok-kw">comptime</span> config: Config) <span class="tok-type">type</span> {</span>
 <span class="line" id="L77">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L78">        <span class="tok-comment">/// The Custom Option type to be used by this Custom Command type.</span></span>
-<span class="line" id="L79">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> CustomOption = Option.Custom(config.opt_config);</span>
+<span class="line" id="L79">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> OptionT = Option.Custom(config.opt_config);</span>
 <span class="line" id="L80">        <span class="tok-comment">/// Sub Commands Help Format.</span></span>
 <span class="line" id="L81">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
 <span class="line" id="L82">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> subcmds_help_fmt = config.subcmds_help_fmt;</span>
@@ -224,7 +224,7 @@
 <span class="line" id="L111">        <span class="tok-comment">/// The Sub Command assigned to this Command during Parsing, if any.</span></span>
 <span class="line" id="L112">        sub_cmd: ?*<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>() = <span class="tok-null">null</span>,</span>
 <span class="line" id="L113">        <span class="tok-comment">/// The list of Options this Command can take.</span></span>
-<span class="line" id="L114">        opts: ?[]<span class="tok-kw">const</span> CustomOption = <span class="tok-null">null</span>,</span>
+<span class="line" id="L114">        opts: ?[]<span class="tok-kw">const</span> OptionT = <span class="tok-null">null</span>,</span>
 <span class="line" id="L115">        <span class="tok-comment">/// The list of Values this Command can take.</span></span>
 <span class="line" id="L116">        vals: ?[]<span class="tok-kw">const</span> Value.Generic = <span class="tok-null">null</span>,</span>
 <span class="line" id="L117"></span>
@@ -241,14 +241,14 @@
 <span class="line" id="L128">        }</span>
 <span class="line" id="L129"></span>
 <span class="line" id="L130">        <span class="tok-comment">/// Gets a StringHashMap of this Command's Options.</span></span>
-<span class="line" id="L131">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOpts</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) !StringHashMap(CustomOption) {</span>
+<span class="line" id="L131">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOpts</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) !StringHashMap(OptionT) {</span>
 <span class="line" id="L132">            <span class="tok-kw">if</span> (!self._is_init) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CommandNotInitialized;</span>
 <span class="line" id="L133">            <span class="tok-kw">return</span> getOptsAlloc(self._alloc.?);</span>
 <span class="line" id="L134">        }</span>
 <span class="line" id="L135">        <span class="tok-comment">/// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).</span></span>
-<span class="line" id="L136">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptsAlloc</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator) !StringHashMap(CustomOption) {</span>
+<span class="line" id="L136">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptsAlloc</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator) !StringHashMap(OptionT) {</span>
 <span class="line" id="L137">            <span class="tok-kw">if</span> (self.opts == <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NoOptionsInCommand;</span>
-<span class="line" id="L138">            <span class="tok-kw">var</span> map = StringHashMap(CustomOption).init(alloc);</span>
+<span class="line" id="L138">            <span class="tok-kw">var</span> map = StringHashMap(OptionT).init(alloc);</span>
 <span class="line" id="L139">            <span class="tok-kw">for</span> (self.opts.?) |opt| { <span class="tok-kw">try</span> map.put(opt.name, opt); }</span>
 <span class="line" id="L140">            <span class="tok-kw">return</span> map;</span>
 <span class="line" id="L141">        }</span>
@@ -419,7 +419,7 @@
 <span class="line" id="L300">            <span class="tok-kw">var</span> from_cmds_buf: [from_config.max_cmds]<span class="tok-builtin">@This</span>() = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L301">            <span class="tok-kw">const</span> from_cmds = from_cmds_buf[<span class="tok-number">0</span>..];</span>
 <span class="line" id="L302">            <span class="tok-kw">var</span> cmds_idx: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L303">            <span class="tok-kw">var</span> from_opts_buf: [from_config.max_opts]CustomOption = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L303">            <span class="tok-kw">var</span> from_opts_buf: [from_config.max_opts]OptionT = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L304">            <span class="tok-kw">const</span> from_opts = from_opts_buf[<span class="tok-number">0</span>..];</span>
 <span class="line" id="L305">            <span class="tok-kw">var</span> opts_idx: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L306">            <span class="tok-kw">var</span> short_names_buf: [from_config.max_opts]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
@@ -444,7 +444,7 @@
 <span class="line" id="L324">                            <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L325">                        }</span>
 <span class="line" id="L326">                    },</span>
-<span class="line" id="L327">                    CustomOption =&gt; {</span>
+<span class="line" id="L327">                    OptionT =&gt; {</span>
 <span class="line" id="L328">                        <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span>) {</span>
 <span class="line" id="L329">                            from_opts[opts_idx] = <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*;</span>
 <span class="line" id="L330">                            opts_idx += <span class="tok-number">1</span>;</span>
@@ -493,7 +493,7 @@
 <span class="line" id="L370">                            }</span>
 <span class="line" id="L371">                            <span class="tok-kw">break</span> :shortName <span class="tok-null">null</span>;</span>
 <span class="line" id="L372">                        };</span>
-<span class="line" id="L373">                        from_opts[opts_idx] = (CustomOption.from(field, .{ </span>
+<span class="line" id="L373">                        from_opts[opts_idx] = (OptionT.from(field, .{ </span>
 <span class="line" id="L374">                            .short_name = short_name, </span>
 <span class="line" id="L375">                            .ignore_incompatible = from_config.ignore_incompatible,</span>
 <span class="line" id="L376">                            .opt_description = arg_description</span>
@@ -528,7 +528,7 @@
 <span class="line" id="L403">                                    }</span>
 <span class="line" id="L404">                                    <span class="tok-kw">break</span> :shortName <span class="tok-null">null</span>;</span>
 <span class="line" id="L405">                                };</span>
-<span class="line" id="L406">                                from_opts[opts_idx] = CustomOption.from(field, .{</span>
+<span class="line" id="L406">                                from_opts[opts_idx] = OptionT.from(field, .{</span>
 <span class="line" id="L407">                                    .short_name = short_name, </span>
 <span class="line" id="L408">                                    .ignore_incompatible = from_config.ignore_incompatible,</span>
 <span class="line" id="L409">                                    .opt_description = arg_description</span>
@@ -803,7 +803,7 @@
 <span class="line" id="L670">            }</span>
 <span class="line" id="L671"></span>
 <span class="line" id="L672">            <span class="tok-kw">if</span> (init_config.add_help_opts) {</span>
-<span class="line" id="L673">                <span class="tok-kw">const</span> help_opts = &amp;[<span class="tok-number">2</span>]CustomOption{</span>
+<span class="line" id="L673">                <span class="tok-kw">const</span> help_opts = &amp;[<span class="tok-number">2</span>]OptionT{</span>
 <span class="line" id="L674">                    .{</span>
 <span class="line" id="L675">                        .name = <span class="tok-str">&quot;usage&quot;</span>,</span>
 <span class="line" id="L676">                        .short_name = <span class="tok-str">'u'</span>,</span>
@@ -821,8 +821,8 @@
 <span class="line" id="L688">                };</span>
 <span class="line" id="L689"></span>
 <span class="line" id="L690">                init_cmd.opts = </span>
-<span class="line" id="L691">                    <span class="tok-kw">if</span> (init_cmd.opts != <span class="tok-null">null</span>) <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-builtin">@This</span>().CustomOption, &amp;.{ init_cmd.opts.?, help_opts[<span class="tok-number">0</span>..] })</span>
-<span class="line" id="L692">                    <span class="tok-kw">else</span> <span class="tok-kw">try</span> alloc.dupe(CustomOption, help_opts[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L691">                    <span class="tok-kw">if</span> (init_cmd.opts != <span class="tok-null">null</span>) <span class="tok-kw">try</span> mem.concat(alloc, <span class="tok-builtin">@This</span>().OptionT, &amp;.{ init_cmd.opts.?, help_opts[<span class="tok-number">0</span>..] })</span>
+<span class="line" id="L692">                    <span class="tok-kw">else</span> <span class="tok-kw">try</span> alloc.dupe(OptionT, help_opts[<span class="tok-number">0</span>..]);</span>
 <span class="line" id="L693">            }</span>
 <span class="line" id="L694"></span>
 <span class="line" id="L695">            init_cmd._is_init = <span class="tok-null">true</span>;</span>

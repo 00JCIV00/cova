@@ -76,7 +76,7 @@ pub fn Base() type { return Custom(.{}); }
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// The Custom Option type to be used by this Custom Command type.
-        pub const CustomOption = Option.Custom(config.opt_config);
+        pub const OptionT = Option.Custom(config.opt_config);
         /// Sub Commands Help Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_help_fmt = config.subcmds_help_fmt;
@@ -111,7 +111,7 @@ pub fn Custom(comptime config: Config) type {
         /// The Sub Command assigned to this Command during Parsing, if any.
         sub_cmd: ?*const @This() = null,
         /// The list of Options this Command can take.
-        opts: ?[]const CustomOption = null,
+        opts: ?[]const OptionT = null,
         /// The list of Values this Command can take.
         vals: ?[]const Value.Generic = null,
 
@@ -128,14 +128,14 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Gets a StringHashMap of this Command's Options.
-        pub fn getOpts(self: *const @This()) !StringHashMap(CustomOption) {
+        pub fn getOpts(self: *const @This()) !StringHashMap(OptionT) {
             if (!self._is_init) return error.CommandNotInitialized;
             return getOptsAlloc(self._alloc.?);
         }
         /// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).
-        pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(CustomOption) {
+        pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(OptionT) {
             if (self.opts == null) return error.NoOptionsInCommand;
-            var map = StringHashMap(CustomOption).init(alloc);
+            var map = StringHashMap(OptionT).init(alloc);
             for (self.opts.?) |opt| { try map.put(opt.name, opt); }
             return map;
         }
@@ -300,7 +300,7 @@ pub fn Custom(comptime config: Config) type {
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
             var cmds_idx: u8 = 0;
-            var from_opts_buf: [from_config.max_opts]CustomOption = undefined;
+            var from_opts_buf: [from_config.max_opts]OptionT = undefined;
             const from_opts = from_opts_buf[0..];
             var opts_idx: u8 = 0;
             var short_names_buf: [from_config.max_opts]u8 = undefined;
@@ -324,7 +324,7 @@ pub fn Custom(comptime config: Config) type {
                             continue;
                         }
                     },
-                    CustomOption => {
+                    OptionT => {
                         if (field.default_value != null) {
                             from_opts[opts_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                             opts_idx += 1;
@@ -370,7 +370,7 @@ pub fn Custom(comptime config: Config) type {
                             }
                             break :shortName null;
                         };
-                        from_opts[opts_idx] = (CustomOption.from(field, .{ 
+                        from_opts[opts_idx] = (OptionT.from(field, .{ 
                             .short_name = short_name, 
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .opt_description = arg_description
@@ -403,7 +403,7 @@ pub fn Custom(comptime config: Config) type {
                                     }
                                     break :shortName null;
                                 };
-                                from_opts[opts_idx] = CustomOption.from(field, .{
+                                from_opts[opts_idx] = OptionT.from(field, .{
                                     .short_name = short_name, 
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .opt_description = arg_description
@@ -670,7 +670,7 @@ pub fn Custom(comptime config: Config) type {
             }
 
             if (init_config.add_help_opts) {
-                const help_opts = &[2]CustomOption{
+                const help_opts = &[2]OptionT{
                     .{
                         .name = "usage",
                         .short_name = 'u',
@@ -688,8 +688,8 @@ pub fn Custom(comptime config: Config) type {
                 };
 
                 init_cmd.opts = 
-                    if (init_cmd.opts != null) try mem.concat(alloc, @This().CustomOption, &.{ init_cmd.opts.?, help_opts[0..] })
-                    else try alloc.dupe(CustomOption, help_opts[0..]);
+                    if (init_cmd.opts != null) try mem.concat(alloc, @This().OptionT, &.{ init_cmd.opts.?, help_opts[0..] })
+                    else try alloc.dupe(OptionT, help_opts[0..]);
             }
 
             init_cmd._is_init = true;

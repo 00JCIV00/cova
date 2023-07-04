@@ -36,16 +36,16 @@ pub const SetBehavior = enum {
     Multi,
 };
 
-/// Create a Value with a specific Type (`set_type`).
-pub fn Typed(comptime set_type: type) type {
+/// Create a Value with a specific Type (`SetT`).
+pub fn Typed(comptime SetT: type) type {
     return struct {
-        /// The inner Type of this Value.
-        pub const val_type = set_type;
+        /// The child Type of this Value.
+        pub const ChildT = SetT;
 
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
         /// **Internal Use.**
-        _set_args: [100]?val_type = .{ null } ** 100,
+        _set_args: [100]?ChildT = .{ null } ** 100,
         /// The current Index of Raw Arguments for this Value.
         ///
         /// **Internal Use.**
@@ -63,7 +63,7 @@ pub fn Typed(comptime set_type: type) type {
         /// Set Behavior for this Value.
         set_behavior: SetBehavior = .Last,
         /// An optional Default value for this Value.
-        default_val: ?val_type = null,
+        default_val: ?ChildT = null,
         /// Flag to determine if this Value has been Parsed and Validated.
         ///
         /// *This should be Read-Only for library users.*
@@ -71,9 +71,9 @@ pub fn Typed(comptime set_type: type) type {
 
         /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
         /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
-        parse_fn: ?*const fn([]const u8) anyerror!val_type = null,
+        parse_fn: ?*const fn([]const u8) anyerror!ChildT = null,
         /// A Validation Function to be used for Argument Validation in `set()` following Argument Parsing with `parse()`.
-        valid_fn: ?*const fn(val_type) bool = struct{ fn valFn(val: val_type) bool { return @TypeOf(val) == val_type; } }.valFn,
+        valid_fn: ?*const fn(ChildT) bool = struct{ fn valFn(val: ChildT) bool { return @TypeOf(val) == ChildT; } }.valFn,
             
         /// The Name of this Value for user identification and Usage/Help messages.
         name: []const u8 = "",
@@ -81,18 +81,18 @@ pub fn Typed(comptime set_type: type) type {
         description: []const u8 = "",
 
         /// Parse the given argument token (`arg`) to this Value's Type.
-        pub fn parse(self: *const @This(), arg: []const u8) !val_type {
+        pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
             if (self.parse_fn != null) return self.parse_fn.?(arg) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
             var san_arg = toLower(san_arg_buf[0..], arg);
-            return switch (@typeInfo(val_type)) {
+            return switch (@typeInfo(ChildT)) {
                 .Bool => isTrue: {
                     const true_words = [_][]const u8{ "true", "t", "yes", "y" };
                     for (true_words[0..]) |word| { if (mem.eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
                 },
                 .Pointer => arg,
-                .Int => parseInt(val_type, arg, 0),
-                .Float => parseFloat(val_type, arg),
+                .Int => parseInt(ChildT, arg, 0),
+                .Float => parseFloat(ChildT, arg),
                 else => error.CannotParseArgToValue,
             };
         }
@@ -110,7 +110,7 @@ pub fn Typed(comptime set_type: type) type {
                 }
                 break :checkDelim false;
             };
-            if (self.set_behavior == .Multi and meta.activeTag(@typeInfo(val_type)) != .Pointer and check_delim) {
+            if (self.set_behavior == .Multi and meta.activeTag(@typeInfo(ChildT)) != .Pointer and check_delim) {
                 var split_args = mem.splitScalar(u8, set_arg, arg_delim);
                 while (split_args.next()) |arg| try self.set(arg);
                 return;
@@ -143,25 +143,25 @@ pub fn Typed(comptime set_type: type) type {
 
         /// Get the first Parsed and Validated value of this Value.
         /// This will pull the first value from `_set_args` and should be used with the `First` or `Last` Set Behaviors.
-        pub fn get(self: *const @This()) !val_type {
+        pub fn get(self: *const @This()) !ChildT {
             return 
                 if (self.is_set) self._set_args[0].?
-                else if (val_type == bool) false
+                else if (ChildT == bool) false
                 else if (self.default_val != null) self.default_val.?
                 else error.ValueNotSet;
         }
 
         /// Get All Parsed and Validated Arguments of this Value.
         /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
-        pub fn getAll(self: *const @This(), alloc: mem.Allocator) ![]val_type {
+        pub fn getAll(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
             if (!self.is_set) return error.ValueNotSet;
-            var vals = try alloc.alloc(val_type, self._arg_idx);
+            var vals = try alloc.alloc(ChildT, self._arg_idx);
             for (self._set_args[0..self._arg_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
         }
 
         /// Get the Value Type
-        pub fn getType() type { return val_type; }
+        pub fn getType() type { return ChildT; }
     };
 }
 
@@ -289,16 +289,16 @@ pub const ParsingFns = struct {
             return struct { fn toBase(arg: []const u8) !NumT { return fmt.parseInt(NumT, arg, base); } }.toBase;
         }
 
-        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumType`.
-        pub fn asEnumType(comptime EnumType: type) enumFnType: {
-            const enum_info = @typeInfo(EnumType);
-            if (enum_info != .Enum) @compileError("The type of `EnumType` must be Enum!");
+        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
+        pub fn asEnumType(comptime EnumT: type) enumFnType: {
+            const enum_info = @typeInfo(EnumT);
+            if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8) anyerror!enum_info.Enum.tag_type;
         } {
-            const EnumTagType: type = @typeInfo(EnumType).Enum.tag_type;
+            const EnumTagT: type = @typeInfo(EnumT).Enum.tag_type;
             return struct { 
-                fn enumInt(arg: []const u8) !EnumTagType { 
-                    const enum_tag = meta.stringToEnum(EnumType, arg) orelse return error.EnumTagDoesNotExist;
+                fn enumInt(arg: []const u8) !EnumTagT { 
+                    const enum_tag = meta.stringToEnum(EnumT, arg) orelse return error.EnumTagDoesNotExist;
                     return @intFromEnum(enum_tag);
                 }
             }.enumInt;
@@ -317,17 +317,17 @@ pub const ParsingFns = struct {
 pub const ValidationFns = struct {
     /// Builder Functions for common Validation Functions.
     pub const Builder = struct {
-        /// Check if the provided `NumType` (`num`) is within an inclusive or exclusive range.
-        pub fn inRange(comptime NumType: type, comptime start: NumType, comptime end: NumType, comptime inclusive: bool) fn(NumType) bool {
-            const num_info = @typeInfo(NumType);
+        /// Check if the provided `NumT` (`num`) is within an inclusive or exclusive range.
+        pub fn inRange(comptime NumT: type, comptime start: NumT, comptime end: NumT, comptime inclusive: bool) fn(NumT) bool {
+            const num_info = @typeInfo(NumT);
             switch (num_info) {
                 .Int, .Pointer => {},
-                inline else => @compileError("The provided type '" ++ @typeName(NumType) ++ "' is not a numeric type. It must be an Integer or a Float."),
+                inline else => @compileError("The provided type '" ++ @typeName(NumT) ++ "' is not a numeric type. It must be an Integer or a Float."),
             }
 
             return 
-                if (inclusive) struct { fn inRng(num: NumType) bool { return num >= start and num <= end; } }.inRng
-                else struct { fn inRng(num: NumType) bool { return num > start and num < end; } }.inRng;
+                if (inclusive) struct { fn inRng(num: NumT) bool { return num >= start and num <= end; } }.inRng
+                else struct { fn inRng(num: NumT) bool { return num > start and num < end; } }.inRng;
         }
     };
 

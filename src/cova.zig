@@ -6,6 +6,9 @@
 //!zig-autodoc-guide: ../../docs/guides/arg_types/command.md 
 //!zig-autodoc-guide: ../../docs/guides/arg_types/option.md 
 //!zig-autodoc-guide: ../../docs/guides/arg_types/value.md 
+//!zig-autodoc-section: Parsing & Analysis
+//!zig-autodoc-guide: ../../docs/guides/parsing_analysis/parsing.md 
+//!zig-autodoc-guide: ../../docs/guides/parsing_analysis/analysis.md 
 
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
@@ -135,18 +138,18 @@ pub const ParseConfig = struct {
 
 var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
-/// The resulted is stored to the provided `CustomCommand` (`cmd`) for user analysis.
+/// The resulted is stored to the provided `CommandT` (`cmd`) for user analysis.
 pub fn parseArgs(
     args: *ArgIteratorGeneric,
-    comptime CustomCommand: type, 
-    cmd: *const CustomCommand, 
+    comptime CommandT: type, 
+    cmd: *const CommandT, 
     writer: anytype,
     parse_config: ParseConfig,
 ) !void {
     if (!cmd._is_init) return error.CommandNotInitialized;
 
     var val_idx: u8 = 0;
-    const optType = @TypeOf(cmd.*).CustomOption;
+    const optType = @TypeOf(cmd.*).OptionT;
 
     // Bypass argument 0 (the filename being executed);
     const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peek();
@@ -164,7 +167,7 @@ pub fn parseArgs(
             log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |*sub_cmd| {
                 if (mem.eql(u8, sub_cmd.name, arg)) {
-                    parseArgs(args, CustomCommand, sub_cmd, writer, parse_config) catch { 
+                    parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch { 
                         try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
                         try sub_cmd.usage(writer);
                         try writer.print("\n\n", .{});
@@ -241,7 +244,7 @@ pub fn parseArgs(
                             }
                             // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
                             else if (parse_config.allow_opt_val_no_space) {
-                                var short_names_buf: [CustomCommand.max_args]u8 = undefined;
+                                var short_names_buf: [CommandT.max_args]u8 = undefined;
                                 const short_names = short_names_buf[0..];
                                 for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
                                 if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
@@ -513,7 +516,7 @@ const TestCmdFromStruct = struct {
         .description = "A test cova Command within a struct.",
     },
     // Cova Option
-    cova_opt: TestCommand.CustomOption = .{
+    cova_opt: TestCommand.OptionT = .{
         .name = "test_struct_cova_opt",
         .description = "A test cova Option within a struct.",
     },
