@@ -455,6 +455,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
         // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
         pub fn to(self: *const @This(), comptime T: type, to_config: ToConfig) !T {
+            if (!self._is_init) return error.CommandNotInitialized;
             var out: T = undefined;
             const fields = meta.fields(T);
             inline for (fields) |field| {
