@@ -14,24 +14,24 @@ const CommandT = cova.Command.Custom(.{});
 const setup_cmd: CommandT = .{ ... };
 
 pub fn main() !void {
-	// Allocator
+    // Allocator
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-	// Command
-	// Note, the Command Type and `setup_cmd` are created during comptime before the `main()` function.
+    // Command
+    // Note, the Command Type and `setup_cmd` are created during comptime before the `main()` function.
     const main_cmd = &(try setup_cmd.init(alloc, .{})); 
     defer main_cmd.deinit();
 
-	// Argument Iterator
+    // Argument Iterator
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
 
-	// Writer to stdout
+    // Writer to stdout
     const stdout = std.io.getStdOut().writer();
 
-	// Parse Function
+    // Parse Function
     try cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{});
 }
 ```

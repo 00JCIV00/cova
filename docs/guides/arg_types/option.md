@@ -2,8 +2,8 @@
 An Option is an Argument type which wraps a Value and is ALWAYS optional. It may have a Short Name (ex: `-h`), a Long Name (ex: `--name "Lilly"`), or both. The prefixes for both Short and Long names can be set by the library user. 
 
 If the wrapped Value has a Boolean type it will default to False and can be set to True using the Option without a following Argument (ex: `-t` or `--toggle`). They also provide `usage()` and `help()` methods similar to Commands.
-## Examples:
-### Creation:
+
+## Example:
 ```
 // Within a Command
 ...
