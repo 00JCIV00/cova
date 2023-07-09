@@ -101,15 +101,17 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 
 ## Install
 ### Package Manager
-1. Add the dependency to `build.zig.zon`:
-```zig
+1. Find the latest `v#.#.#` commit [here](https://github.com/00JCIV00/cova/commits/main).
+2. Copy the full SHA for the commit.
+3. Add the dependency to `build.zig.zon`:
+```zig 
 .dependencies = .{
     .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
+        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
     },
 },
 ```
-2. Add the dependency and module to `build.zig`:
+4. Add the dependency and module to `build.zig`:
 ```zig
 // Cova Dependency
 const cova_dep = b.dependency("cova", .{ .target = target });
@@ -125,13 +127,13 @@ const exe = b.addExecutable(.{
 // Add the Cova Module to the Executable
 exe.addModule("cova", cova_mod);
 ```
-3. Run `zig build project_exe` to get the hash.
-4. Insert the hash into `build.zig.zon`:
-```zig
+5. Run `zig build <PROJECT BUILD STEP IF APPLICABLE>` to get the hash.
+6. Insert the hash into `build.zig.zon`:
+```bash 
 .dependencies = .{
     .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
-        .hash = "hash from step 3 here",
+        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
+	    .hash = "HASH FROM STEP 5 HERE",
     },
 },
 ```
