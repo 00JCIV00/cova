@@ -1,5 +1,5 @@
 # cova
-Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
+Commands, Options, Values, Arguments. A simple yet robust cross-platform command line argument parsing library for Zig.
 ___
 
 ## Overview
@@ -91,6 +91,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - [x] Compatible non-nullable fields become Values.
 
 ### Post Public Release
+- [ ] Support all Int/Float types. (This is technically possible now by adding them to the `cova.Value.Generic` union, but there should be simpler way if reified declarations become allowed in Zig.)
 - [ ] Pull Argument Type metadata via AST Parsing of struct/field comments.
 - [ ] Tab Completion (long-term goal).
   
@@ -145,6 +146,7 @@ zig build demo
 ```
 3. Try it out!
 ```bash
+cd bin
 ./covademo help
 ```
 
@@ -426,3 +428,10 @@ pub fn main() !void {
     try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
 }
 ``` 
+
+## Alternatives
+- [yazap](https://github.com/PrajwalCH/yazap)
+- [zig-args](https://github.com/MasterQ32/zig-args)
+- [zig-clap](https://github.com/Hejsil/zig-clap)
+- [zig-parse-args](https://github.com/winksaville/zig-parse-args)
+

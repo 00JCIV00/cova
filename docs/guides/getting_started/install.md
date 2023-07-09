@@ -45,6 +45,6 @@ zig build demo
 ```
 3. Try it out!
 ```
-cd examples
+cd bin 
 ./covademo help
 ```
