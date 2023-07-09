@@ -1763,7 +1763,7 @@
 <span class="line" id="L1616"><span class="tok-comment">/// accepts any integer bit width.</span></span>
 <span class="line" id="L1617"><span class="tok-comment">/// This function stores in native endian, which means it is implemented as a simple</span></span>
 <span class="line" id="L1618"><span class="tok-comment">/// memory store.</span></span>
-<span class="line" id="L1619"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeIntNative</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, buf: *[(<span class="tok-builtin">@typeInfo</span>(T).Int.bits + <span class="tok-number">7</span>) / <span class="tok-number">8</span>]<span class="tok-type">u8</span>, value: T) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1619"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeIntNative</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, buf: *[<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((<span class="tok-builtin">@as</span>(<span class="tok-type">u17</span>, <span class="tok-builtin">@typeInfo</span>(T).Int.bits) + <span class="tok-number">7</span>) / <span class="tok-number">8</span>))]<span class="tok-type">u8</span>, value: T) <span class="tok-type">void</span> {</span>
 <span class="line" id="L1620">    <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) T, <span class="tok-builtin">@ptrCast</span>(buf)).* = value;</span>
 <span class="line" id="L1621">}</span>
 <span class="line" id="L1622"></span>

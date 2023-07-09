@@ -749,7 +749,7 @@
 </span>
 <span class="line" id="L614">    }</span>
 <span class="line" id="L615">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L616">        .uefi, .wasi, .cuda =&gt; <span class="tok-builtin">@trap</span>(),</span>
+<span class="line" id="L616">        .uefi, .wasi, .cuda, .amdhsa =&gt; <span class="tok-builtin">@trap</span>(),</span>
 <span class="line" id="L617">        <span class="tok-kw">else</span> =&gt; system.abort(),</span>
 <span class="line" id="L618">    }</span>
 <span class="line" id="L619">}</span>

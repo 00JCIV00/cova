@@ -919,8 +919,8 @@
 <span class="line" id="L776">                                } <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
 <span class="line" id="L777"></span>
 <span class="line" id="L778">                                <span class="tok-kw">const</span> found_line_index = start_line_index + line_entry_idx * <span class="tok-builtin">@sizeOf</span>(LineNumberEntry);</span>
-<span class="line" id="L779">                                <span class="tok-kw">const</span> line_num_entry = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) LineNumberEntry, <span class="tok-builtin">@ptrCast</span>(&amp;subsect_info[found_line_index]));</span>
-<span class="line" id="L780">                                <span class="tok-kw">const</span> flags = <span class="tok-builtin">@as</span>(*LineNumberEntry.Flags, <span class="tok-builtin">@ptrCast</span>(&amp;line_num_entry.Flags));</span>
+<span class="line" id="L779">                                <span class="tok-kw">const</span> line_num_entry: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) LineNumberEntry = <span class="tok-builtin">@ptrCast</span>(&amp;subsect_info[found_line_index]);</span>
+<span class="line" id="L780">                                <span class="tok-kw">const</span> flags: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) LineNumberEntry.Flags = <span class="tok-builtin">@ptrCast</span>(&amp;line_num_entry.Flags);</span>
 <span class="line" id="L781"></span>
 <span class="line" id="L782">                                <span class="tok-kw">return</span> debug.LineInfo{</span>
 <span class="line" id="L783">                                    .file_name = source_file_name,</span>

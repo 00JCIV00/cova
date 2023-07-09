@@ -115,7 +115,7 @@
 <span class="line" id="L2"><span class="tok-comment">/// Zig version. When writing code that supports multiple versions of Zig, prefer</span></span>
 <span class="line" id="L3"><span class="tok-comment">/// feature detection (i.e. with `@hasDecl` or `@hasField`) over version checks.</span></span>
 <span class="line" id="L4"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version = std.SemanticVersion.parse(zig_version_string) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version_string = <span class="tok-str">&quot;0.11.0-dev.3890+43c98dc11&quot;</span>;</span>
+<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version_string = <span class="tok-str">&quot;0.11.0-dev.3947+89396ff02&quot;</span>;</span>
 <span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_backend = std.builtin.CompilerBackend.stage2_llvm;</span>
 <span class="line" id="L7"></span>
 <span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> output_mode = std.builtin.OutputMode.Exe;</span>
@@ -125,94 +125,105 @@
 <span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> abi = std.Target.Abi.gnu;</span>
 <span class="line" id="L13"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> cpu: std.Target.Cpu = .{</span>
 <span class="line" id="L14">    .arch = .x86_64,</span>
-<span class="line" id="L15">    .model = &amp;std.Target.x86.cpu.x86_64,</span>
+<span class="line" id="L15">    .model = &amp;std.Target.x86.cpu.skylake,</span>
 <span class="line" id="L16">    .features = std.Target.x86.featureSet(&amp;[_]std.Target.x86.Feature{</span>
 <span class="line" id="L17">        .@&quot;64bit&quot;,</span>
 <span class="line" id="L18">        .adx,</span>
 <span class="line" id="L19">        .aes,</span>
-<span class="line" id="L20">        .avx,</span>
-<span class="line" id="L21">        .avx2,</span>
-<span class="line" id="L22">        .bmi,</span>
-<span class="line" id="L23">        .bmi2,</span>
-<span class="line" id="L24">        .clflushopt,</span>
-<span class="line" id="L25">        .cmov,</span>
-<span class="line" id="L26">        .cx16,</span>
-<span class="line" id="L27">        .cx8,</span>
-<span class="line" id="L28">        .f16c,</span>
-<span class="line" id="L29">        .fma,</span>
-<span class="line" id="L30">        .fsgsbase,</span>
-<span class="line" id="L31">        .fxsr,</span>
-<span class="line" id="L32">        .idivq_to_divl,</span>
-<span class="line" id="L33">        .invpcid,</span>
-<span class="line" id="L34">        .lzcnt,</span>
-<span class="line" id="L35">        .macrofusion,</span>
-<span class="line" id="L36">        .mmx,</span>
-<span class="line" id="L37">        .movbe,</span>
-<span class="line" id="L38">        .nopl,</span>
-<span class="line" id="L39">        .pclmul,</span>
-<span class="line" id="L40">        .popcnt,</span>
-<span class="line" id="L41">        .prfchw,</span>
-<span class="line" id="L42">        .rdrnd,</span>
-<span class="line" id="L43">        .rdseed,</span>
-<span class="line" id="L44">        .sahf,</span>
-<span class="line" id="L45">        .slow_3ops_lea,</span>
-<span class="line" id="L46">        .slow_incdec,</span>
-<span class="line" id="L47">        .sse,</span>
-<span class="line" id="L48">        .sse2,</span>
-<span class="line" id="L49">        .sse3,</span>
-<span class="line" id="L50">        .sse4_1,</span>
-<span class="line" id="L51">        .sse4_2,</span>
-<span class="line" id="L52">        .ssse3,</span>
-<span class="line" id="L53">        .vzeroupper,</span>
-<span class="line" id="L54">        .x87,</span>
-<span class="line" id="L55">        .xsave,</span>
-<span class="line" id="L56">        .xsavec,</span>
-<span class="line" id="L57">        .xsaveopt,</span>
-<span class="line" id="L58">        .xsaves,</span>
-<span class="line" id="L59">    }),</span>
-<span class="line" id="L60">};</span>
-<span class="line" id="L61"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> os = std.Target.Os{</span>
-<span class="line" id="L62">    .tag = .linux,</span>
-<span class="line" id="L63">    .version_range = .{ .linux = .{</span>
-<span class="line" id="L64">        .range = .{</span>
-<span class="line" id="L65">            .min = .{</span>
-<span class="line" id="L66">                .major = <span class="tok-number">3</span>,</span>
-<span class="line" id="L67">                .minor = <span class="tok-number">16</span>,</span>
-<span class="line" id="L68">                .patch = <span class="tok-number">0</span>,</span>
-<span class="line" id="L69">            },</span>
-<span class="line" id="L70">            .max = .{</span>
-<span class="line" id="L71">                .major = <span class="tok-number">5</span>,</span>
-<span class="line" id="L72">                .minor = <span class="tok-number">10</span>,</span>
-<span class="line" id="L73">                .patch = <span class="tok-number">81</span>,</span>
-<span class="line" id="L74">            },</span>
-<span class="line" id="L75">        },</span>
-<span class="line" id="L76">        .glibc = .{</span>
-<span class="line" id="L77">            .major = <span class="tok-number">2</span>,</span>
-<span class="line" id="L78">            .minor = <span class="tok-number">19</span>,</span>
-<span class="line" id="L79">            .patch = <span class="tok-number">0</span>,</span>
-<span class="line" id="L80">        },</span>
-<span class="line" id="L81">    }},</span>
-<span class="line" id="L82">};</span>
-<span class="line" id="L83"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> target = std.Target{</span>
-<span class="line" id="L84">    .cpu = cpu,</span>
-<span class="line" id="L85">    .os = os,</span>
-<span class="line" id="L86">    .abi = abi,</span>
-<span class="line" id="L87">    .ofmt = object_format,</span>
-<span class="line" id="L88">};</span>
-<span class="line" id="L89"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> object_format = std.Target.ObjectFormat.elf;</span>
-<span class="line" id="L90"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> mode = std.builtin.Mode.Debug;</span>
-<span class="line" id="L91"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> link_libc = <span class="tok-null">false</span>;</span>
-<span class="line" id="L92"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> link_libcpp = <span class="tok-null">false</span>;</span>
-<span class="line" id="L93"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> have_error_return_tracing = <span class="tok-null">true</span>;</span>
-<span class="line" id="L94"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> valgrind_support = <span class="tok-null">true</span>;</span>
-<span class="line" id="L95"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> sanitize_thread = <span class="tok-null">false</span>;</span>
-<span class="line" id="L96"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> position_independent_code = <span class="tok-null">false</span>;</span>
-<span class="line" id="L97"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> position_independent_executable = <span class="tok-null">false</span>;</span>
-<span class="line" id="L98"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> strip_debug_info = <span class="tok-null">false</span>;</span>
-<span class="line" id="L99"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> code_model = std.builtin.CodeModel.default;</span>
-<span class="line" id="L100"><span class="tok-kw">pub</span> <span class="tok-kw">var</span> test_functions: []<span class="tok-kw">const</span> std.builtin.TestFn = <span class="tok-null">undefined</span>; <span class="tok-comment">// overwritten later</span>
+<span class="line" id="L20">        .allow_light_256_bit,</span>
+<span class="line" id="L21">        .avx,</span>
+<span class="line" id="L22">        .avx2,</span>
+<span class="line" id="L23">        .bmi,</span>
+<span class="line" id="L24">        .bmi2,</span>
+<span class="line" id="L25">        .clflushopt,</span>
+<span class="line" id="L26">        .cmov,</span>
+<span class="line" id="L27">        .crc32,</span>
+<span class="line" id="L28">        .cx16,</span>
+<span class="line" id="L29">        .cx8,</span>
+<span class="line" id="L30">        .ermsb,</span>
+<span class="line" id="L31">        .f16c,</span>
+<span class="line" id="L32">        .false_deps_popcnt,</span>
+<span class="line" id="L33">        .fast_15bytenop,</span>
+<span class="line" id="L34">        .fast_gather,</span>
+<span class="line" id="L35">        .fast_scalar_fsqrt,</span>
+<span class="line" id="L36">        .fast_shld_rotate,</span>
+<span class="line" id="L37">        .fast_variable_crosslane_shuffle,</span>
+<span class="line" id="L38">        .fast_variable_perlane_shuffle,</span>
+<span class="line" id="L39">        .fast_vector_fsqrt,</span>
+<span class="line" id="L40">        .fma,</span>
+<span class="line" id="L41">        .fsgsbase,</span>
+<span class="line" id="L42">        .fxsr,</span>
+<span class="line" id="L43">        .idivq_to_divl,</span>
+<span class="line" id="L44">        .invpcid,</span>
+<span class="line" id="L45">        .lzcnt,</span>
+<span class="line" id="L46">        .macrofusion,</span>
+<span class="line" id="L47">        .mmx,</span>
+<span class="line" id="L48">        .movbe,</span>
+<span class="line" id="L49">        .nopl,</span>
+<span class="line" id="L50">        .pclmul,</span>
+<span class="line" id="L51">        .popcnt,</span>
+<span class="line" id="L52">        .prfchw,</span>
+<span class="line" id="L53">        .rdrnd,</span>
+<span class="line" id="L54">        .rdseed,</span>
+<span class="line" id="L55">        .rtm,</span>
+<span class="line" id="L56">        .sahf,</span>
+<span class="line" id="L57">        .slow_3ops_lea,</span>
+<span class="line" id="L58">        .sse,</span>
+<span class="line" id="L59">        .sse2,</span>
+<span class="line" id="L60">        .sse3,</span>
+<span class="line" id="L61">        .sse4_1,</span>
+<span class="line" id="L62">        .sse4_2,</span>
+<span class="line" id="L63">        .ssse3,</span>
+<span class="line" id="L64">        .vzeroupper,</span>
+<span class="line" id="L65">        .x87,</span>
+<span class="line" id="L66">        .xsave,</span>
+<span class="line" id="L67">        .xsavec,</span>
+<span class="line" id="L68">        .xsaveopt,</span>
+<span class="line" id="L69">        .xsaves,</span>
+<span class="line" id="L70">    }),</span>
+<span class="line" id="L71">};</span>
+<span class="line" id="L72"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> os = std.Target.Os{</span>
+<span class="line" id="L73">    .tag = .linux,</span>
+<span class="line" id="L74">    .version_range = .{ .linux = .{</span>
+<span class="line" id="L75">        .range = .{</span>
+<span class="line" id="L76">            .min = .{</span>
+<span class="line" id="L77">                .major = <span class="tok-number">3</span>,</span>
+<span class="line" id="L78">                .minor = <span class="tok-number">16</span>,</span>
+<span class="line" id="L79">                .patch = <span class="tok-number">0</span>,</span>
+<span class="line" id="L80">            },</span>
+<span class="line" id="L81">            .max = .{</span>
+<span class="line" id="L82">                .major = <span class="tok-number">5</span>,</span>
+<span class="line" id="L83">                .minor = <span class="tok-number">10</span>,</span>
+<span class="line" id="L84">                .patch = <span class="tok-number">81</span>,</span>
+<span class="line" id="L85">            },</span>
+<span class="line" id="L86">        },</span>
+<span class="line" id="L87">        .glibc = .{</span>
+<span class="line" id="L88">            .major = <span class="tok-number">2</span>,</span>
+<span class="line" id="L89">            .minor = <span class="tok-number">19</span>,</span>
+<span class="line" id="L90">            .patch = <span class="tok-number">0</span>,</span>
+<span class="line" id="L91">        },</span>
+<span class="line" id="L92">    }},</span>
+<span class="line" id="L93">};</span>
+<span class="line" id="L94"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> target = std.Target{</span>
+<span class="line" id="L95">    .cpu = cpu,</span>
+<span class="line" id="L96">    .os = os,</span>
+<span class="line" id="L97">    .abi = abi,</span>
+<span class="line" id="L98">    .ofmt = object_format,</span>
+<span class="line" id="L99">};</span>
+<span class="line" id="L100"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> object_format = std.Target.ObjectFormat.elf;</span>
+<span class="line" id="L101"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> mode = std.builtin.Mode.Debug;</span>
+<span class="line" id="L102"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> link_libc = <span class="tok-null">false</span>;</span>
+<span class="line" id="L103"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> link_libcpp = <span class="tok-null">false</span>;</span>
+<span class="line" id="L104"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> have_error_return_tracing = <span class="tok-null">true</span>;</span>
+<span class="line" id="L105"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> valgrind_support = <span class="tok-null">true</span>;</span>
+<span class="line" id="L106"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> sanitize_thread = <span class="tok-null">false</span>;</span>
+<span class="line" id="L107"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> position_independent_code = <span class="tok-null">false</span>;</span>
+<span class="line" id="L108"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> position_independent_executable = <span class="tok-null">false</span>;</span>
+<span class="line" id="L109"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> strip_debug_info = <span class="tok-null">false</span>;</span>
+<span class="line" id="L110"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> code_model = std.builtin.CodeModel.default;</span>
+<span class="line" id="L111"><span class="tok-kw">pub</span> <span class="tok-kw">var</span> test_functions: []<span class="tok-kw">const</span> std.builtin.TestFn = <span class="tok-null">undefined</span>; <span class="tok-comment">// overwritten later</span>
 </span>
-<span class="line" id="L101"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> test_io_mode = .blocking;</span>
-<span class="line" id="L102"></span>
+<span class="line" id="L112"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> test_io_mode = .blocking;</span>
+<span class="line" id="L113"></span>
 </code></pre></body>
 </html>

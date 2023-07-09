@@ -3,7 +3,7 @@ Once initialized and parsed, a Command can be analyzed. The Command type has sev
 
 ## Convert to Struct
 Once a Command has been initialized and parsed to, using the `to()` method will convert it into a struct of a comptime-known Struct Type. The function takes a valid comptime-known Struct Type (`T`) and a ToConfig (`to_config`). Details for the method, including the rules for a valid Struct Type, can be found under `cova.Command.Custom.to`(). Once sucessfully created, the new struct can be used normally throughout the rest of the project. This process looks as follows:
-```
+```zig
 const DemoStruct {
     // Valid field values
     ...

@@ -10,11 +10,11 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 
 ## Features
 - **Comptime Setup. Runtime Use.**
-  - Cova is designed to have Argument types set up at Compile Time so they can be validated during each compilation, thus providing the library user with immediate feedback.
-  - Once validated, Argument types are initialized to memory for Runtime use where app user argument tokens are parsed then made ready to be analyzed by library user code.
+  - Cova is designed to have Argument Types set up at Compile Time so they can be validated during each compilation, thus providing the library user with immediate feedback.
+  - Once validated, Argument Types are initialized to memory for Runtime use where end user argument tokens are parsed then made ready to be analyzed by library user code.
 - **Simple Design:**
   - All Argument tokens are parsed to Commands, Options, or Values.
-  - These Argument types can be Created From or Converted To Structs and their corresponding Fields.
+  - These Argument Types can be Created From or Converted To Structs and their corresponding Fields.
   - The most Basic Setup requires only Cova imports, a library user Struct, and a few function calls for parsing.
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
@@ -46,7 +46,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 	- Can be given multiple times (i.e. `my-cmd "string val 1" "string val 2" "string val 3"`)
 	- Can be Delimited (i.e. `my-cmd 50,100,68`)
 - **Granular, Robust Customization:**
-  - Cova offers deep customization through the Fields of the Argument types as well as several Config Structs, allowing library users to only configure what they need.
+  - Cova offers deep customization through the Fields of the Argument Types as well as several Config Structs, allowing library users to only configure what they need.
   - Parsing:
   	- Mandate all Values be filled.
 	- Customize Separator Character(s) between Options and their Values.
@@ -91,7 +91,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - [x] Compatible non-nullable fields become Values.
 
 ### Post Public Release
-- [ ] Pull Argument type metadata via AST Parsing of struct/field comments.
+- [ ] Pull Argument Type metadata via AST Parsing of struct/field comments.
 - [ ] Tab Completion (long-term goal).
   
 ## Documentation
@@ -257,7 +257,7 @@ pub fn main() !void {
 pub fn main() {
     ...
 
-    // The ArgIteratorGeneric is used to step through argument tokens. By default (using `init()`), it will provide Zig's native, cross-platform ArgIterator with app user argument tokens. There's also cova's RawArgIterator that can be used to parse any slice of strings as argument tokens.
+    // The ArgIteratorGeneric is used to step through argument tokens. By default (using `init()`), it will provide Zig's native, cross-platform ArgIterator with end user argument tokens. There's also cova's RawArgIterator that can be used to parse any slice of strings as argument tokens.
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
     ...
@@ -269,7 +269,7 @@ pub fn main() {
 pub fn main() !void {
     ...
 
-    /// The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`) tokens into Argument types within the provided Command (`main_cmd`).
+    /// The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`) tokens into Argument Types within the provided Command (`main_cmd`).
     try cova.parseArgs(&args_iter, BaseCommand, main_cmd, stdout, .{});
     /// Once parsed, the provided Command will be available for analysis by the project code. Using `utils.displayCmdInfoi()` will create a neat display of the parsed Command for debugging.
     try utils.displayCmdInfo(BaseCommand, main_cmd, alloc, stdout);
@@ -293,10 +293,10 @@ const Value = cova.Value;
 const utils = cova.utils;
 ```
 
-- Create a Command directly in comptime. This will allow for more granular configuration of the Command and its sub Argument types.
+- Create a Command directly in comptime. This will allow for more granular configuration of the Command and its sub Argument Types.
 ```zig
 const setup_cmd: CustomCommand = .{
-    // The Name of the Command is what app users will use. Similar fields exist for Options and Values as well.
+    // The Name of the Command is what end users will use. Similar fields exist for Options and Values as well.
     .name = "cova_demo",
     // The Description of the Command will be displayed in the auto-generated Help message. Similar fields exist for Options and Values as well.
     .description = "A demo of a few of the advanced features in the Cova Library.",
@@ -319,7 +319,7 @@ const setup_cmd: CustomCommand = .{
             .val = Value.ofType([]const u8, .{
                 .name = "string_opt_val",
                 .description = "This is the Option's wrapped Value. It will handle the validation.",
-                // Validation Functions are a powerful feature to ensure app user input matches what a project expects. Parsing Functions similarly allow a library user to customize how an argument token is parsed into a specific type.
+                // Validation Functions are a powerful feature to ensure end user input matches what a project expects. Parsing Functions similarly allow a library user to customize how an argument token is parsed into a specific type.
                 .valid_fn = struct { fn lessThanTen(arg: []const u8) bool { return arg.len < 10; } }.lessThanTen,
             }),
         },
@@ -330,7 +330,7 @@ const setup_cmd: CustomCommand = .{
         Value.ofType(i16, .{
             .name = "int_val",
             .description = "This is an integer Value. It can be set/used up to 5 times.",
-            // The Set Behavior determines what happens when an app user attempts to use an Option or Value multiple times.
+            // The Set Behavior determines what happens when an end user attempts to use an Option or Value multiple times.
             .set_behavior = .Multi,
             .max_args = 5,
         }),
