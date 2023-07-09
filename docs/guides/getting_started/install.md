@@ -1,7 +1,7 @@
 # Install
 ## Package Manager
 1. Add the dependency to `build.zig.zon`:
-``` 
+```zig 
 .dependencies = .{
     .cova = .{
         .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
@@ -9,7 +9,7 @@
 },
 ```
 2. Add the dependency and module to `build.zig`:
-``` 
+```zig
 // Cova Dependency
 const cova_dep = b.dependency("cova", .{ .target = target });
 // Cova Module
@@ -26,7 +26,7 @@ exe.addModule("cova", cova_mod);
 ```
 3. Run `zig build project_exe` to get the hash.
 4. Insert the hash into `build.zig.zon`:
-``` 
+```bash 
 .dependencies = .{
     .cova = .{
         .url = "https://github.com/00JCIV00/cova/archive/5199fec02e34f11ac2b36b91a087f232076eb9fc.tar.gz",
@@ -45,5 +45,6 @@ zig build demo
 ```
 3. Try it out!
 ```
+cd bin 
 ./covademo help
 ```

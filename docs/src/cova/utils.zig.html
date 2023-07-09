@@ -163,9 +163,9 @@
 <span class="line" id="L48">        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| {</span>
 <span class="line" id="L49">            <span class="tok-kw">const</span> tag_self = <span class="tok-builtin">@field</span>(val, <span class="tok-builtin">@tagName</span>(tag));</span>
 <span class="line" id="L50">            <span class="tok-kw">if</span> (tag_self.set_behavior == .Multi) {</span>
-<span class="line" id="L51">                <span class="tok-kw">const</span> raw_data: ?[]<span class="tok-kw">const</span> <span class="tok-builtin">@TypeOf</span>(tag_self).val_type = rawData: { </span>
+<span class="line" id="L51">                <span class="tok-kw">const</span> raw_data: ?[]<span class="tok-kw">const</span> <span class="tok-builtin">@TypeOf</span>(tag_self).ChildT = rawData: { </span>
 <span class="line" id="L52">                    <span class="tok-kw">if</span> (tag_self.getAll(alloc) <span class="tok-kw">catch</span> <span class="tok-null">null</span>) |data| <span class="tok-kw">break</span> :rawData data;</span>
-<span class="line" id="L53">                    <span class="tok-kw">const</span> data: ?<span class="tok-builtin">@TypeOf</span>(tag_self).val_type = tag_self.get() <span class="tok-kw">catch</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L53">                    <span class="tok-kw">const</span> data: ?<span class="tok-builtin">@TypeOf</span>(tag_self).ChildT = tag_self.get() <span class="tok-kw">catch</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L54">                    <span class="tok-kw">if</span> (data != <span class="tok-null">null</span>) <span class="tok-kw">break</span> :rawData &amp;.{ data.? };</span>
 <span class="line" id="L55">                    <span class="tok-kw">break</span> :rawData <span class="tok-null">null</span>;</span>
 <span class="line" id="L56">                };</span>
