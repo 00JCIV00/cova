@@ -172,6 +172,9 @@ pub const Generic = genUnion: {
         
         string: Typed([]const u8),
         
+        u1: Typed(u1),
+        u2: Typed(u2),
+        u3: Typed(u3),
         u4: Typed(u4),
         u8: Typed(u8),
         u16: Typed(u16),
@@ -180,6 +183,9 @@ pub const Generic = genUnion: {
         u128: Typed(u128),
         u256: Typed(u256),
 
+        i1: Typed(i1),
+        i2: Typed(i2),
+        i3: Typed(i3),
         i4: Typed(i4),
         i8: Typed(i8),
         i16: Typed(i16),

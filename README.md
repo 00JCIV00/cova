@@ -19,49 +19,49 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
     - x86_64-linux
-	- aarch64-linux
-	- x86_64-windows
-	- *Should support all POSIX compliant systems.*
+    - aarch64-linux
+    - x86_64-windows
+    - *Should support all POSIX compliant systems.*
   - Commands:
     - Contain sub Commands, Options, and Values.
     - Precede their Options and Values when parsed (i.e. `command --option opt_val "value"`)
     - Auto-generated Help and Usage message functions that can be invoked as Commands and/or Options (i.e. `command help` or `command -h/--help`)
-	- Can be Nested (i.e `main-cmd --main-opt sub-cmd --sub-opt "sub val"`)
+    - Can be Nested (i.e `main-cmd --main-opt sub-cmd --sub-opt "sub val"`)
   - Options:
     - Wrap Values to make them optional and allow them to be given in any order.
     - Can be given multiple times in any valid format (i.e `--int 1 --int=2 -i 3 -i4`)
-	- Can be Delimited (i.e. `-i100,58,80 -f 100.1,84.96,74.58 --bools=true,false,false,true`)
+    - Can be Delimited (i.e. `-i100,58,80 -f 100.1,84.96,74.58 --bools=true,false,false,true`)
     - Short Options:
-  	  - Begin w/ `-`
-  	  - Chainable (i.e. `-abc` = `-a -b -c`)
-  	  - Variable Separators (i.e. `-c Tokyo` = `-c=Tokyo` = `-cTokyo`)
+      - Begin w/ `-`
+      - Chainable (i.e. `-abc` = `-a -b -c`)
+      - Variable Separators (i.e. `-c Tokyo` = `-c=Tokyo` = `-cTokyo`)
     - Long Options:
       - Begin w/ `--`
       - Variable Separators (i.e. `--city Tokyo` = `--city=Tokyo`)
       - Can be Abbreviated (i.e. `--long-option` = `--long`)
   - Values:
     - Also known as Positional Arguments.
-	- Do not use prefixes (i.e. `command "string value"`)
-	- Must be a specific type given in a specific order. (i.e. `command "string_val" 10 true`)
-	- Can be given multiple times (i.e. `my-cmd "string val 1" "string val 2" "string val 3"`)
-	- Can be Delimited (i.e. `my-cmd 50,100,68`)
+    - Do not use prefixes (i.e. `command "string value"`)
+    - Must be a specific type given in a specific order. (i.e. `command "string_val" 10 true`)
+    - Can be given multiple times (i.e. `my-cmd "string val 1" "string val 2" "string val 3"`)
+    - Can be Delimited (i.e. `my-cmd 50,100,68`)
 - **Granular, Robust Customization:**
   - Cova offers deep customization through the Fields of the Argument Types as well as several Config Structs, allowing library users to only configure what they need.
   - Parsing:
-  	- Mandate all Values be filled.
-	- Customize Separator Character(s) between Options and their Values.
-	- Allow/Prevent Abbreviated Long Options.
+    - Mandate all Values be filled.
+    - Customize Separator Character(s) between Options and their Values.
+    - Allow/Prevent Abbreviated Long Options.
   - Commands:
-	- Customize Templates for auto-generated Command Help/Usage messages.
-	- Set Rules for converting From/To a Struct.
+    - Customize Templates for auto-generated Command Help/Usage messages.
+    - Set Rules for converting From/To a Struct.
   - Options:
-	- Customize Templates for Option Help/Usage messages.
+    - Customize Templates for Option Help/Usage messages.
     - Customize short and long prefixes (i.e. `/s` or `__long-opt`).
-	- Set up the internally wrapped Value.
+    - Set up the internally wrapped Value.
   - Values:
-  	- Create Values with a specific type (Bool, Uint, Int, Float, or String)
+    - Create Values with a specific type (Bool, Uint, Int, Float, or String)
     - Configure Values to be Individual or Multi (allowing multiple of the same type to be stored in a single Value).
-	- Set the Rules for how Values are Set through custom Parsing and Validation Functions!
+    - Set the Rules for how Values are Set through custom Parsing and Validation Functions!
 
 ## Goals
 ### Pre Public Release
@@ -97,7 +97,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   
 ## Documentation
 - [API](https://00jciv00.github.io/cova/#A;cova)
-- [Guides](https://00jciv00.github.io/cova/#G;) (WIP. Awaiting improvements in the Markdown formatting of Zig's Autodoc feature.)
+- [Guides](https://00jciv00.github.io/cova/#G;) 
 
 ## Install
 ### Package Manager
@@ -133,7 +133,7 @@ exe.addModule("cova", cova_mod);
 .dependencies = .{
     .cova = .{
         .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-	    .hash = "HASH FROM STEP 5 HERE",
+        .hash = "HASH FROM STEP 5 HERE",
     },
 },
 ```

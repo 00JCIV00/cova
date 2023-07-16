@@ -264,7 +264,7 @@
 <span class="line" id="L140">    value: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L141">    options: StringifyOptions,</span>
 <span class="line" id="L142">    out_stream: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L143">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L143">) <span class="tok-builtin">@TypeOf</span>(out_stream).Error!<span class="tok-type">void</span> {</span>
 <span class="line" id="L144">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
 <span class="line" id="L145">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
 <span class="line" id="L146">        .Float, .ComptimeFloat =&gt; {</span>

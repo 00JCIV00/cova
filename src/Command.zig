@@ -17,6 +17,7 @@
 
 const std = @import("std");
 const ascii = std.ascii;
+const builtin = std.builtin;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -109,6 +110,8 @@ pub fn Custom(comptime config: Config) type {
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
         /// The Sub Command assigned to this Command during Parsing, if any.
+        ///
+        /// *This should be Read-Only for library users.*
         sub_cmd: ?*const @This() = null,
         /// The list of Options this Command can take.
         opts: ?[]const OptionT = null,
@@ -273,7 +276,7 @@ pub fn Custom(comptime config: Config) type {
             /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
             /// These Descriptions will be used across this Command and all of its Sub Commands.
             ///
-            /// Format: (`).{ "argument_name", "Description of the Argument." }`
+            /// Format: `.{ "argument_name", "Description of the Argument." }`
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
 
             /// Max number of Sub Commands.
@@ -542,6 +545,27 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
             return out;
+        }
+
+        /// Create Sub Commands Enum.
+        /// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
+        pub fn SubCommandsEnum(comptime self: *const @This()) type {
+            if (self.sub_cmds == null) return enum{};
+            var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
+            for (self.sub_cmds.?, cmd_fields[0..], 0..) |cmd, *field, idx| {
+                field.* = .{
+                    .name = cmd.name,
+                    .value = idx,
+                };
+            }
+            return @Type(builtin.Type{
+                .Enum = .{
+                    .tag_type = u8,
+                    .fields = cmd_fields[0..],
+                    .decls = &.{},
+                    .is_exhaustive = true,
+                }
+            });
         }
 
         /// Config for the Validation of this Command.

@@ -527,243 +527,435 @@
 <span class="line" id="L394">    <span class="tok-kw">try</span> opt.val.set(set_arg);</span>
 <span class="line" id="L395">}</span>
 <span class="line" id="L396"></span>
-<span class="line" id="L397"><span class="tok-comment">// TESTING</span>
+<span class="line" id="L397"></span>
+<span class="line" id="L398"><span class="tok-comment">// TESTING</span>
 </span>
-<span class="line" id="L398"><span class="tok-kw">const</span> TestCommand = Command.Base();</span>
-<span class="line" id="L399"><span class="tok-kw">const</span> test_setup_cmd: TestCommand = .{</span>
-<span class="line" id="L400">    .name = <span class="tok-str">&quot;test-cmd&quot;</span>,</span>
-<span class="line" id="L401">    .description = <span class="tok-str">&quot;A Test Command.&quot;</span>,</span>
-<span class="line" id="L402">    .sub_cmds = &amp;.{</span>
-<span class="line" id="L403">        .{</span>
-<span class="line" id="L404">            .name = <span class="tok-str">&quot;sub-test-cmd&quot;</span>,</span>
-<span class="line" id="L405">            .description = <span class="tok-str">&quot;A Test Sub Command.&quot;</span>,</span>
-<span class="line" id="L406">            .opts = &amp;.{            </span>
-<span class="line" id="L407">                .{</span>
-<span class="line" id="L408">                    .name = <span class="tok-str">&quot;sub_string_opt&quot;</span>,</span>
-<span class="line" id="L409">                    .description = <span class="tok-str">&quot;A test sub string long option.&quot;</span>,</span>
-<span class="line" id="L410">                    .short_name = <span class="tok-str">'S'</span>,</span>
-<span class="line" id="L411">                    .long_name = <span class="tok-str">&quot;sub-string&quot;</span>,</span>
-<span class="line" id="L412">                    .val = Value.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
-<span class="line" id="L413">                        .name = <span class="tok-str">&quot;sub_string_opt_val&quot;</span>,</span>
-<span class="line" id="L414">                        .description = <span class="tok-str">&quot;A test sub string opt value.&quot;</span>,</span>
-<span class="line" id="L415">                    }),</span>
-<span class="line" id="L416">                },</span>
-<span class="line" id="L417">                .{</span>
-<span class="line" id="L418">                    .name = <span class="tok-str">&quot;sub_int_opt&quot;</span>,</span>
-<span class="line" id="L419">                    .description = <span class="tok-str">&quot;A test sub integer option.&quot;</span>,</span>
-<span class="line" id="L420">                    .short_name = <span class="tok-str">'I'</span>,</span>
-<span class="line" id="L421">                    .long_name = <span class="tok-str">&quot;sub-int&quot;</span>,</span>
-<span class="line" id="L422">                    .val = Value.ofType(<span class="tok-type">i16</span>, .{</span>
-<span class="line" id="L423">                        .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
-<span class="line" id="L424">                        .description = <span class="tok-str">&quot;A test sub integer opt value.&quot;</span>,</span>
-<span class="line" id="L425">                    }),</span>
-<span class="line" id="L426">                },</span>
-<span class="line" id="L427">            },</span>
-<span class="line" id="L428">        },</span>
-<span class="line" id="L429">    },</span>
-<span class="line" id="L430">    .opts = &amp;.{</span>
-<span class="line" id="L431">        .{</span>
-<span class="line" id="L432">            .name = <span class="tok-str">&quot;string_opt&quot;</span>,</span>
-<span class="line" id="L433">            .description = <span class="tok-str">&quot;A test string long option.&quot;</span>,</span>
-<span class="line" id="L434">            .short_name = <span class="tok-str">'s'</span>,</span>
-<span class="line" id="L435">            .long_name = <span class="tok-str">&quot;string&quot;</span>,</span>
-<span class="line" id="L436">            .val = Value.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
-<span class="line" id="L437">                .name = <span class="tok-str">&quot;string_opt_val&quot;</span>,</span>
-<span class="line" id="L438">                .description = <span class="tok-str">&quot;A test string opt value.&quot;</span>,</span>
-<span class="line" id="L439">                .set_behavior = .Multi,</span>
-<span class="line" id="L440">                .max_args = <span class="tok-number">6</span>,</span>
-<span class="line" id="L441">            }),</span>
-<span class="line" id="L442">        },</span>
-<span class="line" id="L443">        .{</span>
-<span class="line" id="L444">            .name = <span class="tok-str">&quot;int_opt&quot;</span>,</span>
-<span class="line" id="L445">            .description = <span class="tok-str">&quot;A test integer option.&quot;</span>,</span>
-<span class="line" id="L446">            .short_name = <span class="tok-str">'i'</span>,</span>
-<span class="line" id="L447">            .long_name = <span class="tok-str">&quot;int&quot;</span>,</span>
-<span class="line" id="L448">            .val = Value.ofType(<span class="tok-type">i16</span>, .{</span>
-<span class="line" id="L449">                .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
-<span class="line" id="L450">                .description = <span class="tok-str">&quot;A test integer opt value.&quot;</span>,</span>
-<span class="line" id="L451">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(int: <span class="tok-type">i16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> int &lt;= <span class="tok-number">666</span>; } }.valFn,</span>
-<span class="line" id="L452">                .set_behavior = .Multi,</span>
-<span class="line" id="L453">                .max_args = <span class="tok-number">6</span>,</span>
-<span class="line" id="L454">            }),</span>
-<span class="line" id="L455">        },</span>
-<span class="line" id="L456">        .{</span>
-<span class="line" id="L457">            .name = <span class="tok-str">&quot;float_opt&quot;</span>,</span>
-<span class="line" id="L458">            .description = <span class="tok-str">&quot;A test float option.&quot;</span>,</span>
-<span class="line" id="L459">            .short_name = <span class="tok-str">'f'</span>,</span>
-<span class="line" id="L460">            .long_name = <span class="tok-str">&quot;float&quot;</span>,</span>
-<span class="line" id="L461">            .val = Value.ofType(<span class="tok-type">f16</span>, .{</span>
-<span class="line" id="L462">                .name = <span class="tok-str">&quot;float_opt_val&quot;</span>,</span>
-<span class="line" id="L463">                .description = <span class="tok-str">&quot;An float opt value.&quot;</span>,</span>
-<span class="line" id="L464">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(float: <span class="tok-type">f16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> float &lt; <span class="tok-number">30000</span>; } }.valFn,</span>
-<span class="line" id="L465">                .set_behavior = .Multi,</span>
-<span class="line" id="L466">                .max_args = <span class="tok-number">6</span>,</span>
-<span class="line" id="L467">            }),</span>
-<span class="line" id="L468">        },</span>
-<span class="line" id="L469">        .{</span>
-<span class="line" id="L470">            .name = <span class="tok-str">&quot;toggle_opt&quot;</span>,</span>
-<span class="line" id="L471">            .description = <span class="tok-str">&quot;A test toggle/boolean option.&quot;</span>,</span>
-<span class="line" id="L472">            .short_name = <span class="tok-str">'t'</span>,</span>
-<span class="line" id="L473">            .long_name = <span class="tok-str">&quot;toggle&quot;</span>,</span>
-<span class="line" id="L474">            .val = Value.ofType(<span class="tok-type">bool</span>, .{</span>
-<span class="line" id="L475">                .name = <span class="tok-str">&quot;toggle_opt_val&quot;</span>,</span>
-<span class="line" id="L476">                .description = <span class="tok-str">&quot;A test toggle/boolean option value.&quot;</span>,</span>
-<span class="line" id="L477">            }),</span>
-<span class="line" id="L478">        },</span>
-<span class="line" id="L479">        </span>
-<span class="line" id="L480">    },</span>
-<span class="line" id="L481">    .vals = &amp;.{</span>
-<span class="line" id="L482">        Value.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
-<span class="line" id="L483">            .name = <span class="tok-str">&quot;string_val&quot;</span>,</span>
-<span class="line" id="L484">            .description = <span class="tok-str">&quot;A test string value.&quot;</span>,</span>
-<span class="line" id="L485">            .default_val = <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L486">        }),</span>
-<span class="line" id="L487">    },</span>
-<span class="line" id="L488">};</span>
-<span class="line" id="L489"></span>
-<span class="line" id="L490"><span class="tok-kw">const</span> TestCmdFromStruct = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L491">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SubCmdFromStruct = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L492">        sub_bool: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L493">        sub_float: <span class="tok-type">f32</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L494">    };</span>
-<span class="line" id="L495">    <span class="tok-comment">// Command</span>
+<span class="line" id="L399"><span class="tok-comment">//const TestCommand = Command.Base();</span>
 </span>
-<span class="line" id="L496">    @&quot;sub-cmd&quot;: SubCmdFromStruct = .{</span>
-<span class="line" id="L497">        .sub_bool = <span class="tok-null">true</span>,</span>
-<span class="line" id="L498">        .sub_float = <span class="tok-number">0</span>,</span>
-<span class="line" id="L499">    },</span>
-<span class="line" id="L500">    <span class="tok-comment">// Options</span>
+<span class="line" id="L400"><span class="tok-comment">//const test_setup_cmd: TestCommand = .{</span>
 </span>
-<span class="line" id="L501">    int: ?<span class="tok-type">i32</span> = <span class="tok-number">26</span>,</span>
-<span class="line" id="L502">    str: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Opt string.&quot;</span>,</span>
-<span class="line" id="L503">    str2: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Opt string 2.&quot;</span>,</span>
-<span class="line" id="L504">    flt: ?<span class="tok-type">f16</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L505">    int2: ?<span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L506">    multi_str: [<span class="tok-number">5</span>]?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L507">    multi_int: [<span class="tok-number">3</span>]?<span class="tok-type">u8</span>,</span>
-<span class="line" id="L508">    <span class="tok-comment">// Values</span>
+<span class="line" id="L401"><span class="tok-comment">//    .name = &quot;test-cmd&quot;,</span>
 </span>
-<span class="line" id="L509">    struct_bool: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L510">    struct_str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Val string.&quot;</span>,</span>
-<span class="line" id="L511">    struct_int: <span class="tok-type">i64</span>,</span>
-<span class="line" id="L512">    multi_int_val: [<span class="tok-number">2</span>]<span class="tok-type">u16</span>,</span>
-<span class="line" id="L513">    <span class="tok-comment">// Cova Command</span>
+<span class="line" id="L402"><span class="tok-comment">//    .description = &quot;A Test Command.&quot;,</span>
 </span>
-<span class="line" id="L514">    cova_cmd: TestCommand = .{</span>
-<span class="line" id="L515">        .name = <span class="tok-str">&quot;test-struct-cova-cmd&quot;</span>,</span>
-<span class="line" id="L516">        .description = <span class="tok-str">&quot;A test cova Command within a struct.&quot;</span>,</span>
-<span class="line" id="L517">    },</span>
-<span class="line" id="L518">    <span class="tok-comment">// Cova Option</span>
+<span class="line" id="L403"><span class="tok-comment">//    .sub_cmds = &amp;.{</span>
 </span>
-<span class="line" id="L519">    cova_opt: TestCommand.OptionT = .{</span>
-<span class="line" id="L520">        .name = <span class="tok-str">&quot;test_struct_cova_opt&quot;</span>,</span>
-<span class="line" id="L521">        .description = <span class="tok-str">&quot;A test cova Option within a struct.&quot;</span>,</span>
-<span class="line" id="L522">    },</span>
-<span class="line" id="L523">    <span class="tok-comment">// Cova Value</span>
+<span class="line" id="L404"><span class="tok-comment">//        .{</span>
 </span>
-<span class="line" id="L524">    cova_val: Value.Generic = Value.ofType(<span class="tok-type">i8</span>, .{</span>
-<span class="line" id="L525">        .name = <span class="tok-str">&quot;test_struct_cova_val&quot;</span>,</span>
-<span class="line" id="L526">        .description = <span class="tok-str">&quot;A test cova Value within a struct.&quot;</span>,</span>
-<span class="line" id="L527">        .default_val = <span class="tok-number">50</span>,</span>
-<span class="line" id="L528">    }),</span>
-<span class="line" id="L529">};</span>
-<span class="line" id="L530"><span class="tok-kw">const</span> test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});</span>
-<span class="line" id="L531"></span>
-<span class="line" id="L532"></span>
-<span class="line" id="L533"><span class="tok-kw">test</span> <span class="tok-str">&quot;command setup&quot;</span> {</span>
-<span class="line" id="L534">    <span class="tok-comment">//testing.log_level = .info;</span>
+<span class="line" id="L405"><span class="tok-comment">//            .name = &quot;sub-test-cmd&quot;,</span>
 </span>
-<span class="line" id="L535">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L536">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L537">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L538"></span>
-<span class="line" id="L539">    <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L406"><span class="tok-comment">//            .description = &quot;A Test Sub Command.&quot;,</span>
 </span>
-<span class="line" id="L540">    <span class="tok-comment">//log.info(&quot;===Testing Normal Command Setup===&quot;, .{});</span>
+<span class="line" id="L407"><span class="tok-comment">//            .opts = &amp;.{            </span>
 </span>
-<span class="line" id="L541">    <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L408"><span class="tok-comment">//                .{</span>
 </span>
-<span class="line" id="L542">    <span class="tok-kw">const</span> test_cmd = <span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{});</span>
-<span class="line" id="L543">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L544"></span>
-<span class="line" id="L545">    <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L409"><span class="tok-comment">//                    .name = &quot;sub_string_opt&quot;,</span>
 </span>
-<span class="line" id="L546">    <span class="tok-comment">//log.info(&quot;===Testing Command From Struct===&quot;, .{});</span>
+<span class="line" id="L410"><span class="tok-comment">//                    .description = &quot;A test sub string long option.&quot;,</span>
 </span>
-<span class="line" id="L547">    <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L411"><span class="tok-comment">//                    .short_name = 'S',</span>
 </span>
-<span class="line" id="L548">    <span class="tok-kw">const</span> test_cmd_from_struct = <span class="tok-kw">try</span> test_setup_cmd_from_struct.init(alloc, .{</span>
-<span class="line" id="L549">        .add_help_cmds = <span class="tok-null">false</span>,</span>
-<span class="line" id="L550">        .add_help_opts = <span class="tok-null">false</span>,</span>
-<span class="line" id="L551">    });</span>
-<span class="line" id="L552">    <span class="tok-kw">defer</span> test_cmd_from_struct.deinit();</span>
-<span class="line" id="L553">}</span>
-<span class="line" id="L554"></span>
-<span class="line" id="L555"><span class="tok-kw">test</span> <span class="tok-str">&quot;argument parsing&quot;</span> {</span>
-<span class="line" id="L556">    testing.log_level = .info;</span>
-<span class="line" id="L557">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L558">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L559">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L560">    <span class="tok-comment">//const writer = std.io.getStdOut().writer();</span>
+<span class="line" id="L412"><span class="tok-comment">//                    .long_name = &quot;sub-string&quot;,</span>
 </span>
-<span class="line" id="L561">    <span class="tok-kw">var</span> writer_list = std.ArrayList(<span class="tok-type">u8</span>).init(alloc);</span>
-<span class="line" id="L562">    <span class="tok-kw">defer</span> writer_list.deinit();</span>
-<span class="line" id="L563">    <span class="tok-kw">const</span> writer = writer_list.writer();</span>
-<span class="line" id="L564"></span>
-<span class="line" id="L565">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{</span>
-<span class="line" id="L566">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;sub_test_cmd&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-string&quot;</span>, <span class="tok-str">&quot;sub cmd string opt&quot;</span>, <span class="tok-str">&quot;--sub-int=15984&quot;</span> },</span>
-<span class="line" id="L567">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;string opt 1&quot;</span>, <span class="tok-str">&quot;--str&quot;</span>, <span class="tok-str">&quot;string opt 2&quot;</span>, <span class="tok-str">&quot;--string=string_opt_3&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;string opt 4&quot;</span>, <span class="tok-str">&quot;-s=string_opt_5&quot;</span>, <span class="tok-str">&quot;-s_string_opt_6&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
-<span class="line" id="L568">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--int&quot;</span>, <span class="tok-str">&quot;11&quot;</span>, <span class="tok-str">&quot;--in&quot;</span>, <span class="tok-str">&quot;22&quot;</span>, <span class="tok-str">&quot;--int=33&quot;</span>, <span class="tok-str">&quot;-i&quot;</span>, <span class="tok-str">&quot;444&quot;</span>, <span class="tok-str">&quot;-i=555&quot;</span>, <span class="tok-str">&quot;-i666&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
-<span class="line" id="L569">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--float&quot;</span>, <span class="tok-str">&quot;1111.12&quot;</span>, <span class="tok-str">&quot;--flo&quot;</span>, <span class="tok-str">&quot;2222.123&quot;</span>, <span class="tok-str">&quot;--float=3333.1234&quot;</span>, <span class="tok-str">&quot;-f&quot;</span>, <span class="tok-str">&quot;4444.12345&quot;</span>, <span class="tok-str">&quot;-f=5555.123456&quot;</span>, <span class="tok-str">&quot;-f6666.1234567&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
-<span class="line" id="L570">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--toggle&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span>, },</span>
-<span class="line" id="L571">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span>, },</span>
-<span class="line" id="L572">    };</span>
-<span class="line" id="L573">    <span class="tok-kw">for</span> (test_args) |tokens_list| {</span>
-<span class="line" id="L574">        <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L413"><span class="tok-comment">//                    .val = Value.ofType([]const u8, .{</span>
 </span>
-<span class="line" id="L575">        <span class="tok-comment">//log.info(&quot;===Testing '{s}'===&quot;, .{ tokens_list[1] });</span>
+<span class="line" id="L414"><span class="tok-comment">//                        .name = &quot;sub_string_opt_val&quot;,</span>
 </span>
-<span class="line" id="L576">        <span class="tok-comment">//log.info(&quot;Args: {s}&quot;, .{ tokens_list });</span>
+<span class="line" id="L415"><span class="tok-comment">//                        .description = &quot;A test sub string opt value.&quot;,</span>
 </span>
-<span class="line" id="L577">        <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L416"><span class="tok-comment">//                    }),</span>
 </span>
-<span class="line" id="L578">        <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
-<span class="line" id="L579">        <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L580">        <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = tokens_list };</span>
-<span class="line" id="L581">        <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
-<span class="line" id="L582">        <span class="tok-kw">try</span> parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{});</span>
-<span class="line" id="L583">    }</span>
-<span class="line" id="L584">}</span>
-<span class="line" id="L585"></span>
-<span class="line" id="L586"><span class="tok-kw">test</span> <span class="tok-str">&quot;argument analysis&quot;</span> {</span>
-<span class="line" id="L587">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L588">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L589">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L590">    <span class="tok-comment">//const writer = std.io.getStdOut().writer();</span>
+<span class="line" id="L417"><span class="tok-comment">//                },</span>
 </span>
-<span class="line" id="L591">    <span class="tok-kw">var</span> writer_list = std.ArrayList(<span class="tok-type">u8</span>).init(alloc);</span>
-<span class="line" id="L592">    <span class="tok-kw">defer</span> writer_list.deinit();</span>
-<span class="line" id="L593">    <span class="tok-kw">const</span> writer = writer_list.writer();</span>
-<span class="line" id="L594"></span>
-<span class="line" id="L595">    <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
-<span class="line" id="L596">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L597">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;opt string 1&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;opt string 2&quot;</span>, <span class="tok-str">&quot;--int=1,22,333,444,555,666&quot;</span>, <span class="tok-str">&quot;--flo&quot;</span>, <span class="tok-str">&quot;f10.1,20.2,30.3&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;val string&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-s=sub_opt_str&quot;</span>, <span class="tok-str">&quot;--sub-int&quot;</span>, <span class="tok-str">&quot;21523&quot;</span>, <span class="tok-str">&quot;help&quot;</span> }; </span>
-<span class="line" id="L598">    <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = test_args };</span>
-<span class="line" id="L599">    <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
-<span class="line" id="L600">    <span class="tok-kw">try</span> parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{});</span>
-<span class="line" id="L601"></span>
-<span class="line" id="L602">    <span class="tok-comment">//testing.log_level = .info;</span>
+<span class="line" id="L418"><span class="tok-comment">//                .{</span>
 </span>
-<span class="line" id="L603">    <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L419"><span class="tok-comment">//                    .name = &quot;sub_int_opt&quot;,</span>
 </span>
-<span class="line" id="L604">    <span class="tok-comment">//log.info(&quot;===Testing Argument Analysis===&quot;, .{});</span>
+<span class="line" id="L420"><span class="tok-comment">//                    .description = &quot;A test sub integer option.&quot;,</span>
 </span>
-<span class="line" id="L605">    <span class="tok-comment">//log.info(&quot;Args: {s}&quot;, .{ test_args });</span>
+<span class="line" id="L421"><span class="tok-comment">//                    .short_name = 'I',</span>
 </span>
-<span class="line" id="L606">    <span class="tok-comment">//log.info(&quot;&quot;, .{});</span>
+<span class="line" id="L422"><span class="tok-comment">//                    .long_name = &quot;sub-int&quot;,</span>
 </span>
-<span class="line" id="L607">    <span class="tok-kw">try</span> utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);</span>
-<span class="line" id="L608">}</span>
-<span class="line" id="L609"></span>
+<span class="line" id="L423"><span class="tok-comment">//                    .val = Value.ofType(i16, .{</span>
+</span>
+<span class="line" id="L424"><span class="tok-comment">//                        .name = &quot;int_opt_val&quot;,</span>
+</span>
+<span class="line" id="L425"><span class="tok-comment">//                        .description = &quot;A test sub integer opt value.&quot;,</span>
+</span>
+<span class="line" id="L426"><span class="tok-comment">//                    }),</span>
+</span>
+<span class="line" id="L427"><span class="tok-comment">//                },</span>
+</span>
+<span class="line" id="L428"><span class="tok-comment">//            },</span>
+</span>
+<span class="line" id="L429"><span class="tok-comment">//        },</span>
+</span>
+<span class="line" id="L430"><span class="tok-comment">//    },</span>
+</span>
+<span class="line" id="L431"><span class="tok-comment">//    .opts = &amp;.{</span>
+</span>
+<span class="line" id="L432"><span class="tok-comment">//        .{</span>
+</span>
+<span class="line" id="L433"><span class="tok-comment">//            .name = &quot;string_opt&quot;,</span>
+</span>
+<span class="line" id="L434"><span class="tok-comment">//            .description = &quot;A test string long option.&quot;,</span>
+</span>
+<span class="line" id="L435"><span class="tok-comment">//            .short_name = 's',</span>
+</span>
+<span class="line" id="L436"><span class="tok-comment">//            .long_name = &quot;string&quot;,</span>
+</span>
+<span class="line" id="L437"><span class="tok-comment">//            .val = Value.ofType([]const u8, .{</span>
+</span>
+<span class="line" id="L438"><span class="tok-comment">//                .name = &quot;string_opt_val&quot;,</span>
+</span>
+<span class="line" id="L439"><span class="tok-comment">//                .description = &quot;A test string opt value.&quot;,</span>
+</span>
+<span class="line" id="L440"><span class="tok-comment">//                .set_behavior = .Multi,</span>
+</span>
+<span class="line" id="L441"><span class="tok-comment">//                .max_args = 6,</span>
+</span>
+<span class="line" id="L442"><span class="tok-comment">//            }),</span>
+</span>
+<span class="line" id="L443"><span class="tok-comment">//        },</span>
+</span>
+<span class="line" id="L444"><span class="tok-comment">//        .{</span>
+</span>
+<span class="line" id="L445"><span class="tok-comment">//            .name = &quot;int_opt&quot;,</span>
+</span>
+<span class="line" id="L446"><span class="tok-comment">//            .description = &quot;A test integer option.&quot;,</span>
+</span>
+<span class="line" id="L447"><span class="tok-comment">//            .short_name = 'i',</span>
+</span>
+<span class="line" id="L448"><span class="tok-comment">//            .long_name = &quot;int&quot;,</span>
+</span>
+<span class="line" id="L449"><span class="tok-comment">//            .val = Value.ofType(i16, .{</span>
+</span>
+<span class="line" id="L450"><span class="tok-comment">//                .name = &quot;int_opt_val&quot;,</span>
+</span>
+<span class="line" id="L451"><span class="tok-comment">//                .description = &quot;A test integer opt value.&quot;,</span>
+</span>
+<span class="line" id="L452"><span class="tok-comment">//                .valid_fn = struct{ fn valFn(int: i16) bool { return int &lt;= 666; } }.valFn,</span>
+</span>
+<span class="line" id="L453"><span class="tok-comment">//                .set_behavior = .Multi,</span>
+</span>
+<span class="line" id="L454"><span class="tok-comment">//                .max_args = 6,</span>
+</span>
+<span class="line" id="L455"><span class="tok-comment">//            }),</span>
+</span>
+<span class="line" id="L456"><span class="tok-comment">//        },</span>
+</span>
+<span class="line" id="L457"><span class="tok-comment">//        .{</span>
+</span>
+<span class="line" id="L458"><span class="tok-comment">//            .name = &quot;float_opt&quot;,</span>
+</span>
+<span class="line" id="L459"><span class="tok-comment">//            .description = &quot;A test float option.&quot;,</span>
+</span>
+<span class="line" id="L460"><span class="tok-comment">//            .short_name = 'f',</span>
+</span>
+<span class="line" id="L461"><span class="tok-comment">//            .long_name = &quot;float&quot;,</span>
+</span>
+<span class="line" id="L462"><span class="tok-comment">//            .val = Value.ofType(f16, .{</span>
+</span>
+<span class="line" id="L463"><span class="tok-comment">//                .name = &quot;float_opt_val&quot;,</span>
+</span>
+<span class="line" id="L464"><span class="tok-comment">//                .description = &quot;An float opt value.&quot;,</span>
+</span>
+<span class="line" id="L465"><span class="tok-comment">//                .valid_fn = struct{ fn valFn(float: f16) bool { return float &lt; 30000; } }.valFn,</span>
+</span>
+<span class="line" id="L466"><span class="tok-comment">//                .set_behavior = .Multi,</span>
+</span>
+<span class="line" id="L467"><span class="tok-comment">//                .max_args = 6,</span>
+</span>
+<span class="line" id="L468"><span class="tok-comment">//            }),</span>
+</span>
+<span class="line" id="L469"><span class="tok-comment">//        },</span>
+</span>
+<span class="line" id="L470"><span class="tok-comment">//        .{</span>
+</span>
+<span class="line" id="L471"><span class="tok-comment">//            .name = &quot;toggle_opt&quot;,</span>
+</span>
+<span class="line" id="L472"><span class="tok-comment">//            .description = &quot;A test toggle/boolean option.&quot;,</span>
+</span>
+<span class="line" id="L473"><span class="tok-comment">//            .short_name = 't',</span>
+</span>
+<span class="line" id="L474"><span class="tok-comment">//            .long_name = &quot;toggle&quot;,</span>
+</span>
+<span class="line" id="L475"><span class="tok-comment">//            .val = Value.ofType(bool, .{</span>
+</span>
+<span class="line" id="L476"><span class="tok-comment">//                .name = &quot;toggle_opt_val&quot;,</span>
+</span>
+<span class="line" id="L477"><span class="tok-comment">//                .description = &quot;A test toggle/boolean option value.&quot;,</span>
+</span>
+<span class="line" id="L478"><span class="tok-comment">//            }),</span>
+</span>
+<span class="line" id="L479"><span class="tok-comment">//        },</span>
+</span>
+<span class="line" id="L480"><span class="tok-comment">//        </span>
+</span>
+<span class="line" id="L481"><span class="tok-comment">//    },</span>
+</span>
+<span class="line" id="L482"><span class="tok-comment">//    .vals = &amp;.{</span>
+</span>
+<span class="line" id="L483"><span class="tok-comment">//        Value.ofType([]const u8, .{</span>
+</span>
+<span class="line" id="L484"><span class="tok-comment">//            .name = &quot;string_val&quot;,</span>
+</span>
+<span class="line" id="L485"><span class="tok-comment">//            .description = &quot;A test string value.&quot;,</span>
+</span>
+<span class="line" id="L486"><span class="tok-comment">//            .default_val = &quot;test&quot;,</span>
+</span>
+<span class="line" id="L487"><span class="tok-comment">//        }),</span>
+</span>
+<span class="line" id="L488"><span class="tok-comment">//    },</span>
+</span>
+<span class="line" id="L489"><span class="tok-comment">//};</span>
+</span>
+<span class="line" id="L490"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L491"><span class="tok-comment">//const TestCmdFromStruct = struct {</span>
+</span>
+<span class="line" id="L492"><span class="tok-comment">//    pub const SubCmdFromStruct = struct {</span>
+</span>
+<span class="line" id="L493"><span class="tok-comment">//        sub_bool: bool = false,</span>
+</span>
+<span class="line" id="L494"><span class="tok-comment">//        sub_float: f32 = 0,</span>
+</span>
+<span class="line" id="L495"><span class="tok-comment">//    };</span>
+</span>
+<span class="line" id="L496"><span class="tok-comment">//    // Command</span>
+</span>
+<span class="line" id="L497"><span class="tok-comment">//    @&quot;sub-cmd&quot;: SubCmdFromStruct = .{</span>
+</span>
+<span class="line" id="L498"><span class="tok-comment">//        .sub_bool = true,</span>
+</span>
+<span class="line" id="L499"><span class="tok-comment">//        .sub_float = 0,</span>
+</span>
+<span class="line" id="L500"><span class="tok-comment">//    },</span>
+</span>
+<span class="line" id="L501"><span class="tok-comment">//    // Options</span>
+</span>
+<span class="line" id="L502"><span class="tok-comment">//    int: ?i32 = 26,</span>
+</span>
+<span class="line" id="L503"><span class="tok-comment">//    str: ?[]const u8 = &quot;Opt string.&quot;,</span>
+</span>
+<span class="line" id="L504"><span class="tok-comment">//    str2: ?[]const u8 = &quot;Opt string 2.&quot;,</span>
+</span>
+<span class="line" id="L505"><span class="tok-comment">//    flt: ?f16 = 0,</span>
+</span>
+<span class="line" id="L506"><span class="tok-comment">//    int2: ?u16 = 0,</span>
+</span>
+<span class="line" id="L507"><span class="tok-comment">//    multi_str: [5]?[]const u8,</span>
+</span>
+<span class="line" id="L508"><span class="tok-comment">//    multi_int: [3]?u8,</span>
+</span>
+<span class="line" id="L509"><span class="tok-comment">//    // Values</span>
+</span>
+<span class="line" id="L510"><span class="tok-comment">//    struct_bool: bool = false,</span>
+</span>
+<span class="line" id="L511"><span class="tok-comment">//    struct_str: []const u8 = &quot;Val string.&quot;,</span>
+</span>
+<span class="line" id="L512"><span class="tok-comment">//    struct_int: i64,</span>
+</span>
+<span class="line" id="L513"><span class="tok-comment">//    multi_int_val: [2]u16,</span>
+</span>
+<span class="line" id="L514"><span class="tok-comment">//    // Cova Command</span>
+</span>
+<span class="line" id="L515"><span class="tok-comment">//    cova_cmd: TestCommand = .{</span>
+</span>
+<span class="line" id="L516"><span class="tok-comment">//        .name = &quot;test-struct-cova-cmd&quot;,</span>
+</span>
+<span class="line" id="L517"><span class="tok-comment">//        .description = &quot;A test cova Command within a struct.&quot;,</span>
+</span>
+<span class="line" id="L518"><span class="tok-comment">//    },</span>
+</span>
+<span class="line" id="L519"><span class="tok-comment">//    // Cova Option</span>
+</span>
+<span class="line" id="L520"><span class="tok-comment">//    cova_opt: TestCommand.OptionT = .{</span>
+</span>
+<span class="line" id="L521"><span class="tok-comment">//        .name = &quot;test_struct_cova_opt&quot;,</span>
+</span>
+<span class="line" id="L522"><span class="tok-comment">//        .description = &quot;A test cova Option within a struct.&quot;,</span>
+</span>
+<span class="line" id="L523"><span class="tok-comment">//    },</span>
+</span>
+<span class="line" id="L524"><span class="tok-comment">//    // Cova Value</span>
+</span>
+<span class="line" id="L525"><span class="tok-comment">//    cova_val: Value.Generic = Value.ofType(i8, .{</span>
+</span>
+<span class="line" id="L526"><span class="tok-comment">//        .name = &quot;test_struct_cova_val&quot;,</span>
+</span>
+<span class="line" id="L527"><span class="tok-comment">//        .description = &quot;A test cova Value within a struct.&quot;,</span>
+</span>
+<span class="line" id="L528"><span class="tok-comment">//        .default_val = 50,</span>
+</span>
+<span class="line" id="L529"><span class="tok-comment">//    }),</span>
+</span>
+<span class="line" id="L530"><span class="tok-comment">//};</span>
+</span>
+<span class="line" id="L531"><span class="tok-comment">//const test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});</span>
+</span>
+<span class="line" id="L532"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L533"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L534"><span class="tok-comment">//test &quot;command setup&quot; {</span>
+</span>
+<span class="line" id="L535"><span class="tok-comment">//    //testing.log_level = .info;</span>
+</span>
+<span class="line" id="L536"><span class="tok-comment">//    var arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+</span>
+<span class="line" id="L537"><span class="tok-comment">//    defer arena.deinit();</span>
+</span>
+<span class="line" id="L538"><span class="tok-comment">//    const alloc = arena.allocator();</span>
+</span>
+<span class="line" id="L539"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L540"><span class="tok-comment">//    //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L541"><span class="tok-comment">//    //log.info(&quot;===Testing Normal Command Setup===&quot;, .{});</span>
+</span>
+<span class="line" id="L542"><span class="tok-comment">//    //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L543"><span class="tok-comment">//    const test_cmd = try test_setup_cmd.init(alloc, .{});</span>
+</span>
+<span class="line" id="L544"><span class="tok-comment">//    defer test_cmd.deinit();</span>
+</span>
+<span class="line" id="L545"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L546"><span class="tok-comment">//    //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L547"><span class="tok-comment">//    //log.info(&quot;===Testing Command From Struct===&quot;, .{});</span>
+</span>
+<span class="line" id="L548"><span class="tok-comment">//    //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L549"><span class="tok-comment">//    const test_cmd_from_struct = try test_setup_cmd_from_struct.init(alloc, .{</span>
+</span>
+<span class="line" id="L550"><span class="tok-comment">//        .add_help_cmds = false,</span>
+</span>
+<span class="line" id="L551"><span class="tok-comment">//        .add_help_opts = false,</span>
+</span>
+<span class="line" id="L552"><span class="tok-comment">//    });</span>
+</span>
+<span class="line" id="L553"><span class="tok-comment">//    defer test_cmd_from_struct.deinit();</span>
+</span>
+<span class="line" id="L554"><span class="tok-comment">//}</span>
+</span>
+<span class="line" id="L555"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L556"><span class="tok-comment">//test &quot;argument parsing&quot; {</span>
+</span>
+<span class="line" id="L557"><span class="tok-comment">//    testing.log_level = .info;</span>
+</span>
+<span class="line" id="L558"><span class="tok-comment">//    var arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+</span>
+<span class="line" id="L559"><span class="tok-comment">//    defer arena.deinit();</span>
+</span>
+<span class="line" id="L560"><span class="tok-comment">//    const alloc = arena.allocator();</span>
+</span>
+<span class="line" id="L561"><span class="tok-comment">//    //const writer = std.io.getStdOut().writer();</span>
+</span>
+<span class="line" id="L562"><span class="tok-comment">//    var writer_list = std.ArrayList(u8).init(alloc);</span>
+</span>
+<span class="line" id="L563"><span class="tok-comment">//    defer writer_list.deinit();</span>
+</span>
+<span class="line" id="L564"><span class="tok-comment">//    const writer = writer_list.writer();</span>
+</span>
+<span class="line" id="L565"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L566"><span class="tok-comment">//    const test_args: []const []const [:0]const u8 = &amp;.{</span>
+</span>
+<span class="line" id="L567"><span class="tok-comment">//        &amp;.{ &quot;test-cmd&quot;, &quot;sub_test_cmd&quot;, &quot;sub-test-cmd&quot;, &quot;--sub-string&quot;, &quot;sub cmd string opt&quot;, &quot;--sub-int=15984&quot; },</span>
+</span>
+<span class="line" id="L568"><span class="tok-comment">//        &amp;.{ &quot;test-cmd&quot;, &quot;--string&quot;, &quot;string opt 1&quot;, &quot;--str&quot;, &quot;string opt 2&quot;, &quot;--string=string_opt_3&quot;, &quot;-s&quot;, &quot;string opt 4&quot;, &quot;-s=string_opt_5&quot;, &quot;-s_string_opt_6&quot;, &quot;string value text&quot; },</span>
+</span>
+<span class="line" id="L569"><span class="tok-comment">//        &amp;.{ &quot;test-cmd&quot;, &quot;--int&quot;, &quot;11&quot;, &quot;--in&quot;, &quot;22&quot;, &quot;--int=33&quot;, &quot;-i&quot;, &quot;444&quot;, &quot;-i=555&quot;, &quot;-i666&quot;, &quot;string value text&quot; },</span>
+</span>
+<span class="line" id="L570"><span class="tok-comment">//        &amp;.{ &quot;test-cmd&quot;, &quot;--float&quot;, &quot;1111.12&quot;, &quot;--flo&quot;, &quot;2222.123&quot;, &quot;--float=3333.1234&quot;, &quot;-f&quot;, &quot;4444.12345&quot;, &quot;-f=5555.123456&quot;, &quot;-f6666.1234567&quot;, &quot;string value text&quot; },</span>
+</span>
+<span class="line" id="L571"><span class="tok-comment">//        &amp;.{ &quot;test-cmd&quot;, &quot;--toggle&quot;, &quot;-t&quot;, &quot;string value text&quot;, },</span>
+</span>
+<span class="line" id="L572"><span class="tok-comment">//        &amp;.{ &quot;test-cmd&quot;, &quot;string value text&quot;, },</span>
+</span>
+<span class="line" id="L573"><span class="tok-comment">//    };</span>
+</span>
+<span class="line" id="L574"><span class="tok-comment">//    for (test_args) |tokens_list| {</span>
+</span>
+<span class="line" id="L575"><span class="tok-comment">//        //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L576"><span class="tok-comment">//        //log.info(&quot;===Testing '{s}'===&quot;, .{ tokens_list[1] });</span>
+</span>
+<span class="line" id="L577"><span class="tok-comment">//        //log.info(&quot;Args: {s}&quot;, .{ tokens_list });</span>
+</span>
+<span class="line" id="L578"><span class="tok-comment">//        //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L579"><span class="tok-comment">//        const test_cmd = &amp;(try test_setup_cmd.init(alloc, .{}));</span>
+</span>
+<span class="line" id="L580"><span class="tok-comment">//        defer test_cmd.deinit();</span>
+</span>
+<span class="line" id="L581"><span class="tok-comment">//        var raw_iter = RawArgIterator{ .args = tokens_list };</span>
+</span>
+<span class="line" id="L582"><span class="tok-comment">//        var test_iter = ArgIteratorGeneric.from(raw_iter);</span>
+</span>
+<span class="line" id="L583"><span class="tok-comment">//        try parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{});</span>
+</span>
+<span class="line" id="L584"><span class="tok-comment">//    }</span>
+</span>
+<span class="line" id="L585"><span class="tok-comment">//}</span>
+</span>
+<span class="line" id="L586"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L587"><span class="tok-comment">//test &quot;argument analysis&quot; {</span>
+</span>
+<span class="line" id="L588"><span class="tok-comment">//    var arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+</span>
+<span class="line" id="L589"><span class="tok-comment">//    defer arena.deinit();</span>
+</span>
+<span class="line" id="L590"><span class="tok-comment">//    const alloc = arena.allocator();</span>
+</span>
+<span class="line" id="L591"><span class="tok-comment">//    //const writer = std.io.getStdOut().writer();</span>
+</span>
+<span class="line" id="L592"><span class="tok-comment">//    var writer_list = std.ArrayList(u8).init(alloc);</span>
+</span>
+<span class="line" id="L593"><span class="tok-comment">//    defer writer_list.deinit();</span>
+</span>
+<span class="line" id="L594"><span class="tok-comment">//    const writer = writer_list.writer();</span>
+</span>
+<span class="line" id="L595"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L596"><span class="tok-comment">//    const test_cmd = &amp;(try test_setup_cmd.init(alloc, .{}));</span>
+</span>
+<span class="line" id="L597"><span class="tok-comment">//    defer test_cmd.deinit();</span>
+</span>
+<span class="line" id="L598"><span class="tok-comment">//    const test_args: []const [:0]const u8 = &amp;.{ &quot;test-cmd&quot;, &quot;--string&quot;, &quot;opt string 1&quot;, &quot;-s&quot;, &quot;opt string 2&quot;, &quot;--int=1,22,333,444,555,666&quot;, &quot;--flo&quot;, &quot;f10.1,20.2,30.3&quot;, &quot;-t&quot;, &quot;val string&quot;, &quot;sub-test-cmd&quot;, &quot;--sub-s=sub_opt_str&quot;, &quot;--sub-int&quot;, &quot;21523&quot;, &quot;help&quot; }; </span>
+</span>
+<span class="line" id="L599"><span class="tok-comment">//    var raw_iter = RawArgIterator{ .args = test_args };</span>
+</span>
+<span class="line" id="L600"><span class="tok-comment">//    var test_iter = ArgIteratorGeneric.from(raw_iter);</span>
+</span>
+<span class="line" id="L601"><span class="tok-comment">//    try parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{});</span>
+</span>
+<span class="line" id="L602"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L603"><span class="tok-comment">//    //testing.log_level = .info;</span>
+</span>
+<span class="line" id="L604"><span class="tok-comment">//    //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L605"><span class="tok-comment">//    //log.info(&quot;===Testing Argument Analysis===&quot;, .{});</span>
+</span>
+<span class="line" id="L606"><span class="tok-comment">//    //log.info(&quot;Args: {s}&quot;, .{ test_args });</span>
+</span>
+<span class="line" id="L607"><span class="tok-comment">//    //log.info(&quot;&quot;, .{});</span>
+</span>
+<span class="line" id="L608"><span class="tok-comment">//    try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);</span>
+</span>
+<span class="line" id="L609"><span class="tok-comment">//</span>
+</span>
+<span class="line" id="L610"><span class="tok-comment">//    //_ = try test_setup_cmd.SubCommandsEnum();</span>
+</span>
+<span class="line" id="L611"><span class="tok-comment">//}</span>
+</span>
+<span class="line" id="L612"></span>
 </code></pre></body>
 </html>

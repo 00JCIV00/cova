@@ -731,8 +731,8 @@
 <span class="line" id="L606">}</span>
 <span class="line" id="L607"></span>
 <span class="line" id="L608"><span class="tok-kw">test</span> <span class="tok-str">&quot;expectEqual vector&quot;</span> {</span>
-<span class="line" id="L609">    <span class="tok-kw">var</span> a = <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">4</span>));</span>
-<span class="line" id="L610">    <span class="tok-kw">var</span> b = <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">4</span>));</span>
+<span class="line" id="L609">    <span class="tok-kw">var</span> a: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>);</span>
+<span class="line" id="L610">    <span class="tok-kw">var</span> b: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>);</span>
 <span class="line" id="L611"></span>
 <span class="line" id="L612">    <span class="tok-kw">try</span> expectEqual(a, b);</span>
 <span class="line" id="L613">}</span>
@@ -1034,7 +1034,7 @@
 <span class="line" id="L904"></span>
 <span class="line" id="L905">    <span class="tok-comment">// vector</span>
 </span>
-<span class="line" id="L906">    <span class="tok-kw">try</span> expectEqualDeep(<span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">4</span>)), <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">4</span>)));</span>
+<span class="line" id="L906">    <span class="tok-kw">try</span> expectEqualDeep(<span class="tok-builtin">@as</span>(<span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>), <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>)), <span class="tok-builtin">@as</span>(<span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>), <span class="tok-builtin">@splat</span>(<span class="tok-number">4</span>)));</span>
 <span class="line" id="L907"></span>
 <span class="line" id="L908">    <span class="tok-comment">// nested array</span>
 </span>

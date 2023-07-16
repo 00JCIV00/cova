@@ -287,256 +287,262 @@
 <span class="line" id="L172">        </span>
 <span class="line" id="L173">        string: Typed([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
 <span class="line" id="L174">        </span>
-<span class="line" id="L175">        <span class="tok-type">u4</span>: Typed(<span class="tok-type">u4</span>),</span>
-<span class="line" id="L176">        <span class="tok-type">u8</span>: Typed(<span class="tok-type">u8</span>),</span>
-<span class="line" id="L177">        <span class="tok-type">u16</span>: Typed(<span class="tok-type">u16</span>),</span>
-<span class="line" id="L178">        <span class="tok-type">u32</span>: Typed(<span class="tok-type">u32</span>),</span>
-<span class="line" id="L179">        <span class="tok-type">u64</span>: Typed(<span class="tok-type">u64</span>),</span>
-<span class="line" id="L180">        <span class="tok-type">u128</span>: Typed(<span class="tok-type">u128</span>),</span>
-<span class="line" id="L181">        <span class="tok-type">u256</span>: Typed(<span class="tok-type">u256</span>),</span>
-<span class="line" id="L182"></span>
-<span class="line" id="L183">        <span class="tok-type">i4</span>: Typed(<span class="tok-type">i4</span>),</span>
-<span class="line" id="L184">        <span class="tok-type">i8</span>: Typed(<span class="tok-type">i8</span>),</span>
-<span class="line" id="L185">        <span class="tok-type">i16</span>: Typed(<span class="tok-type">i16</span>),</span>
-<span class="line" id="L186">        <span class="tok-type">i32</span>: Typed(<span class="tok-type">i32</span>),</span>
-<span class="line" id="L187">        <span class="tok-type">i64</span>: Typed(<span class="tok-type">i64</span>),</span>
-<span class="line" id="L188">        <span class="tok-type">i128</span>: Typed(<span class="tok-type">i128</span>),</span>
-<span class="line" id="L189">        <span class="tok-type">i256</span>: Typed(<span class="tok-type">i256</span>),</span>
-<span class="line" id="L190"></span>
-<span class="line" id="L191">        <span class="tok-type">f16</span>: Typed(<span class="tok-type">f16</span>),</span>
-<span class="line" id="L192">        <span class="tok-type">f32</span>: Typed(<span class="tok-type">f32</span>),</span>
-<span class="line" id="L193">        <span class="tok-type">f64</span>: Typed(<span class="tok-type">f64</span>),</span>
-<span class="line" id="L194">        <span class="tok-type">f128</span>: Typed(<span class="tok-type">f128</span>),</span>
-<span class="line" id="L195"></span>
-<span class="line" id="L196">        <span class="tok-comment">/// Get the Parsed and Validated Value of the inner Typed Value.</span></span>
-<span class="line" id="L197">        <span class="tok-comment">/// Comptime Only </span></span>
-<span class="line" id="L198">        <span class="tok-comment">// TODO: See if this can be made Runtime</span>
+<span class="line" id="L175">        <span class="tok-type">u1</span>: Typed(<span class="tok-type">u1</span>),</span>
+<span class="line" id="L176">        <span class="tok-type">u2</span>: Typed(<span class="tok-type">u2</span>),</span>
+<span class="line" id="L177">        <span class="tok-type">u3</span>: Typed(<span class="tok-type">u3</span>),</span>
+<span class="line" id="L178">        <span class="tok-type">u4</span>: Typed(<span class="tok-type">u4</span>),</span>
+<span class="line" id="L179">        <span class="tok-type">u8</span>: Typed(<span class="tok-type">u8</span>),</span>
+<span class="line" id="L180">        <span class="tok-type">u16</span>: Typed(<span class="tok-type">u16</span>),</span>
+<span class="line" id="L181">        <span class="tok-type">u32</span>: Typed(<span class="tok-type">u32</span>),</span>
+<span class="line" id="L182">        <span class="tok-type">u64</span>: Typed(<span class="tok-type">u64</span>),</span>
+<span class="line" id="L183">        <span class="tok-type">u128</span>: Typed(<span class="tok-type">u128</span>),</span>
+<span class="line" id="L184">        <span class="tok-type">u256</span>: Typed(<span class="tok-type">u256</span>),</span>
+<span class="line" id="L185"></span>
+<span class="line" id="L186">        <span class="tok-type">i1</span>: Typed(<span class="tok-type">i1</span>),</span>
+<span class="line" id="L187">        <span class="tok-type">i2</span>: Typed(<span class="tok-type">i2</span>),</span>
+<span class="line" id="L188">        <span class="tok-type">i3</span>: Typed(<span class="tok-type">i3</span>),</span>
+<span class="line" id="L189">        <span class="tok-type">i4</span>: Typed(<span class="tok-type">i4</span>),</span>
+<span class="line" id="L190">        <span class="tok-type">i8</span>: Typed(<span class="tok-type">i8</span>),</span>
+<span class="line" id="L191">        <span class="tok-type">i16</span>: Typed(<span class="tok-type">i16</span>),</span>
+<span class="line" id="L192">        <span class="tok-type">i32</span>: Typed(<span class="tok-type">i32</span>),</span>
+<span class="line" id="L193">        <span class="tok-type">i64</span>: Typed(<span class="tok-type">i64</span>),</span>
+<span class="line" id="L194">        <span class="tok-type">i128</span>: Typed(<span class="tok-type">i128</span>),</span>
+<span class="line" id="L195">        <span class="tok-type">i256</span>: Typed(<span class="tok-type">i256</span>),</span>
+<span class="line" id="L196"></span>
+<span class="line" id="L197">        <span class="tok-type">f16</span>: Typed(<span class="tok-type">f16</span>),</span>
+<span class="line" id="L198">        <span class="tok-type">f32</span>: Typed(<span class="tok-type">f32</span>),</span>
+<span class="line" id="L199">        <span class="tok-type">f64</span>: Typed(<span class="tok-type">f64</span>),</span>
+<span class="line" id="L200">        <span class="tok-type">f128</span>: Typed(<span class="tok-type">f128</span>),</span>
+<span class="line" id="L201"></span>
+<span class="line" id="L202">        <span class="tok-comment">/// Get the Parsed and Validated Value of the inner Typed Value.</span></span>
+<span class="line" id="L203">        <span class="tok-comment">/// Comptime Only </span></span>
+<span class="line" id="L204">        <span class="tok-comment">// TODO: See if this can be made Runtime</span>
 </span>
-<span class="line" id="L199">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) !<span class="tok-kw">switch</span> (meta.activeTag(self.*)) { <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@TypeOf</span>(<span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag))).getType(), } {</span>
-<span class="line" id="L200">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L201">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).get(),</span>
-<span class="line" id="L202">            };</span>
-<span class="line" id="L203">        }</span>
-<span class="line" id="L204">        <span class="tok-comment">/// Set the inner Typed Value if the provided Argument (`arg`) can be Parsed and Validated.</span></span>
-<span class="line" id="L205">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">set</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> { </span>
-<span class="line" id="L206">            <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L207">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).set(arg),</span>
-<span class="line" id="L208">            }</span>
+<span class="line" id="L205">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) !<span class="tok-kw">switch</span> (meta.activeTag(self.*)) { <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@TypeOf</span>(<span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag))).getType(), } {</span>
+<span class="line" id="L206">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
+<span class="line" id="L207">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).get(),</span>
+<span class="line" id="L208">            };</span>
 <span class="line" id="L209">        }</span>
-<span class="line" id="L210"></span>
-<span class="line" id="L211">        <span class="tok-comment">/// Get the inner Typed Value's Name.</span></span>
-<span class="line" id="L212">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">name</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L213">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L214">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).name,</span>
-<span class="line" id="L215">            };</span>
-<span class="line" id="L216">        }</span>
-<span class="line" id="L217">        <span class="tok-comment">/// Get the inner Typed Value's Type Name.</span></span>
-<span class="line" id="L218">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">valType</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L210">        <span class="tok-comment">/// Set the inner Typed Value if the provided Argument (`arg`) can be Parsed and Validated.</span></span>
+<span class="line" id="L211">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">set</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> { </span>
+<span class="line" id="L212">            <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
+<span class="line" id="L213">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).set(arg),</span>
+<span class="line" id="L214">            }</span>
+<span class="line" id="L215">        }</span>
+<span class="line" id="L216"></span>
+<span class="line" id="L217">        <span class="tok-comment">/// Get the inner Typed Value's Name.</span></span>
+<span class="line" id="L218">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">name</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
 <span class="line" id="L219">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L220">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(<span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag))).getType()),</span>
+<span class="line" id="L220">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).name,</span>
 <span class="line" id="L221">            };</span>
 <span class="line" id="L222">        }</span>
-<span class="line" id="L223">        <span class="tok-comment">/// Get the inner Typed Value's Description.</span></span>
-<span class="line" id="L224">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">description</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L223">        <span class="tok-comment">/// Get the inner Typed Value's Type Name.</span></span>
+<span class="line" id="L224">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">valType</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
 <span class="line" id="L225">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L226">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).description,</span>
+<span class="line" id="L226">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(<span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag))).getType()),</span>
 <span class="line" id="L227">            };</span>
 <span class="line" id="L228">        }</span>
-<span class="line" id="L229">        <span class="tok-comment">/// Check the inner Typed Value's is Set.</span></span>
-<span class="line" id="L230">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSet</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L229">        <span class="tok-comment">/// Get the inner Typed Value's Description.</span></span>
+<span class="line" id="L230">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">description</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
 <span class="line" id="L231">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L232">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).is_set,</span>
+<span class="line" id="L232">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).description,</span>
 <span class="line" id="L233">            };</span>
 <span class="line" id="L234">        }</span>
-<span class="line" id="L235">        <span class="tok-comment">/// Get the inner Typed Value's Argument Index.</span></span>
-<span class="line" id="L236">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argIdx</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">u7</span> {</span>
+<span class="line" id="L235">        <span class="tok-comment">/// Check the inner Typed Value's is Set.</span></span>
+<span class="line" id="L236">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSet</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L237">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L238">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag))._arg_idx,</span>
+<span class="line" id="L238">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).is_set,</span>
 <span class="line" id="L239">            };</span>
 <span class="line" id="L240">        }</span>
-<span class="line" id="L241">        <span class="tok-comment">/// Get the inner Typed Value's Max Arguments.</span></span>
-<span class="line" id="L242">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">maxArgs</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">u7</span> {</span>
+<span class="line" id="L241">        <span class="tok-comment">/// Get the inner Typed Value's Argument Index.</span></span>
+<span class="line" id="L242">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argIdx</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">u7</span> {</span>
 <span class="line" id="L243">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
-<span class="line" id="L244">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).max_args,</span>
+<span class="line" id="L244">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag))._arg_idx,</span>
 <span class="line" id="L245">            };</span>
 <span class="line" id="L246">        }</span>
-<span class="line" id="L247">    };</span>
-<span class="line" id="L248"></span>
-<span class="line" id="L249">    <span class="tok-comment">// TODO: See if there's another way to add these fields procedurally to avoid the declaration reification issue with @Type(builtin.Type{})</span>
+<span class="line" id="L247">        <span class="tok-comment">/// Get the inner Typed Value's Max Arguments.</span></span>
+<span class="line" id="L248">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">maxArgs</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>()) <span class="tok-type">u7</span> {</span>
+<span class="line" id="L249">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (meta.activeTag(self.*)) {</span>
+<span class="line" id="L250">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| <span class="tok-builtin">@field</span>(self, <span class="tok-builtin">@tagName</span>(tag)).max_args,</span>
+<span class="line" id="L251">            };</span>
+<span class="line" id="L252">        }</span>
+<span class="line" id="L253">    };</span>
+<span class="line" id="L254"></span>
+<span class="line" id="L255">    <span class="tok-comment">// TODO: See if there's another way to add these fields procedurally to avoid the declaration reification issue with @Type(builtin.Type{})</span>
 </span>
-<span class="line" id="L250">    <span class="tok-comment">//var fields: []const UnionField = meta.fields(gen_union);</span>
+<span class="line" id="L256">    <span class="tok-comment">//var fields: []const UnionField = meta.fields(gen_union);</span>
 </span>
-<span class="line" id="L251">    <span class="tok-comment">//@setEvalBranchQuota(2000);</span>
+<span class="line" id="L257">    <span class="tok-comment">//@setEvalBranchQuota(2000);</span>
 </span>
-<span class="line" id="L252">    <span class="tok-comment">//inline for (1..255) |bit_width| {</span>
+<span class="line" id="L258">    <span class="tok-comment">//inline for (1..255) |bit_width| {</span>
 </span>
-<span class="line" id="L253">    <span class="tok-comment">//    fields = fields ++ .{ UnionField {</span>
+<span class="line" id="L259">    <span class="tok-comment">//    fields = fields ++ .{ UnionField {</span>
 </span>
-<span class="line" id="L254">    <span class="tok-comment">//       .name = @typeName(meta.Int(.unsigned, bit_width)),</span>
+<span class="line" id="L260">    <span class="tok-comment">//       .name = @typeName(meta.Int(.unsigned, bit_width)),</span>
 </span>
-<span class="line" id="L255">    <span class="tok-comment">//       .type = meta.Int(.unsigned, bit_width),</span>
+<span class="line" id="L261">    <span class="tok-comment">//       .type = meta.Int(.unsigned, bit_width),</span>
 </span>
-<span class="line" id="L256">    <span class="tok-comment">//       .alignment = @alignOf(meta.Int(.unsigned, bit_width)),</span>
+<span class="line" id="L262">    <span class="tok-comment">//       .alignment = @alignOf(meta.Int(.unsigned, bit_width)),</span>
 </span>
-<span class="line" id="L257">    <span class="tok-comment">//    } };</span>
+<span class="line" id="L263">    <span class="tok-comment">//    } };</span>
 </span>
-<span class="line" id="L258">    <span class="tok-comment">//    fields = fields ++ .{ UnionField {</span>
+<span class="line" id="L264">    <span class="tok-comment">//    fields = fields ++ .{ UnionField {</span>
 </span>
-<span class="line" id="L259">    <span class="tok-comment">//       .name = @typeName(meta.Int(.signed, bit_width)),</span>
+<span class="line" id="L265">    <span class="tok-comment">//       .name = @typeName(meta.Int(.signed, bit_width)),</span>
 </span>
-<span class="line" id="L260">    <span class="tok-comment">//       .type = meta.Int(.signed, bit_width),</span>
+<span class="line" id="L266">    <span class="tok-comment">//       .type = meta.Int(.signed, bit_width),</span>
 </span>
-<span class="line" id="L261">    <span class="tok-comment">//       .alignment = @alignOf(meta.Int(.signed, bit_width)),</span>
+<span class="line" id="L267">    <span class="tok-comment">//       .alignment = @alignOf(meta.Int(.signed, bit_width)),</span>
 </span>
-<span class="line" id="L262">    <span class="tok-comment">//    } };</span>
+<span class="line" id="L268">    <span class="tok-comment">//    } };</span>
 </span>
-<span class="line" id="L263">    <span class="tok-comment">//}</span>
+<span class="line" id="L269">    <span class="tok-comment">//}</span>
 </span>
-<span class="line" id="L264"></span>
-<span class="line" id="L265">    <span class="tok-kw">break</span> :genUnion gen_union;</span>
-<span class="line" id="L266">};</span>
-<span class="line" id="L267"></span>
-<span class="line" id="L268"><span class="tok-comment">/// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.</span></span>
-<span class="line" id="L269"><span class="tok-comment">/// Note, `parse_fn` is in no way limited to these functions.</span></span>
-<span class="line" id="L270"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ParsingFns = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L271">    <span class="tok-comment">/// Builder Functions for common Parsing Functions.</span></span>
-<span class="line" id="L272">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Builder = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L273">        <span class="tok-comment">/// Check for Alternate True Words (`true_words`) when parsing the provided Argument (`arg`) to a Boolean.</span></span>
-<span class="line" id="L274">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">altTrue</span>(<span class="tok-kw">comptime</span> true_words: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">fn</span>([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>!<span class="tok-type">bool</span> {</span>
-<span class="line" id="L275">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L276">                <span class="tok-kw">fn</span> <span class="tok-fn">isTrue</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">bool</span> {</span>
-<span class="line" id="L277">                    <span class="tok-kw">for</span> (true_words[<span class="tok-number">0</span>..]) |word| { <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, word, arg)) <span class="tok-kw">return</span> <span class="tok-null">true</span>; } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L278">                }</span>
-<span class="line" id="L279">            }.isTrue;</span>
-<span class="line" id="L280">        }</span>
-<span class="line" id="L281"></span>
-<span class="line" id="L282">        <span class="tok-comment">/// Parse the given Integer (`arg`) as Base (`base`). Base options:</span></span>
-<span class="line" id="L283">        <span class="tok-comment">/// - 0: Uses the 2 character prefix to determine the base. Default is Base 10. (This is also the default parsing option for Integers.)</span></span>
-<span class="line" id="L284">        <span class="tok-comment">/// - 2: Base 2 / Binary</span></span>
-<span class="line" id="L285">        <span class="tok-comment">/// - 8: Base 8 / Octal</span></span>
-<span class="line" id="L286">        <span class="tok-comment">/// - 10: Base 10 / Decimal</span></span>
-<span class="line" id="L287">        <span class="tok-comment">/// - 16: Base 16 / Hexadecimal</span></span>
-<span class="line" id="L288">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">asBase</span>(<span class="tok-kw">comptime</span> NumT: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> base: <span class="tok-type">u8</span>) <span class="tok-kw">fn</span>([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>!NumT {</span>
-<span class="line" id="L289">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> { <span class="tok-kw">fn</span> <span class="tok-fn">toBase</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !NumT { <span class="tok-kw">return</span> fmt.parseInt(NumT, arg, base); } }.toBase;</span>
-<span class="line" id="L290">        }</span>
-<span class="line" id="L291"></span>
-<span class="line" id="L292">        <span class="tok-comment">/// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.</span></span>
-<span class="line" id="L293">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">asEnumType</span>(<span class="tok-kw">comptime</span> EnumT: <span class="tok-type">type</span>) enumFnType: {</span>
-<span class="line" id="L294">            <span class="tok-kw">const</span> enum_info = <span class="tok-builtin">@typeInfo</span>(EnumT);</span>
-<span class="line" id="L295">            <span class="tok-kw">if</span> (enum_info != .Enum) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The type of `EnumT` must be Enum!&quot;</span>);</span>
-<span class="line" id="L296">            <span class="tok-kw">break</span> :enumFnType <span class="tok-kw">fn</span>([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>!enum_info.Enum.tag_type;</span>
-<span class="line" id="L297">        } {</span>
-<span class="line" id="L298">            <span class="tok-kw">const</span> EnumTagT: <span class="tok-type">type</span> = <span class="tok-builtin">@typeInfo</span>(EnumT).Enum.tag_type;</span>
-<span class="line" id="L299">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> { </span>
-<span class="line" id="L300">                <span class="tok-kw">fn</span> <span class="tok-fn">enumInt</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !EnumTagT { </span>
-<span class="line" id="L301">                    <span class="tok-kw">const</span> enum_tag = meta.stringToEnum(EnumT, arg) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EnumTagDoesNotExist;</span>
-<span class="line" id="L302">                    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromEnum</span>(enum_tag);</span>
-<span class="line" id="L303">                }</span>
-<span class="line" id="L304">            }.enumInt;</span>
-<span class="line" id="L305">        }</span>
-<span class="line" id="L306"></span>
-<span class="line" id="L307">    };</span>
-<span class="line" id="L308"></span>
-<span class="line" id="L309">    <span class="tok-comment">/// Trim all Whitespace from the beginning and end of the provided argument token (`arg`).</span></span>
-<span class="line" id="L310">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">trimWhitespace</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L311">        <span class="tok-kw">return</span> mem.trim(<span class="tok-type">u8</span>, arg, ascii.whitespace[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L312">    }</span>
-<span class="line" id="L313">};</span>
+<span class="line" id="L270"></span>
+<span class="line" id="L271">    <span class="tok-kw">break</span> :genUnion gen_union;</span>
+<span class="line" id="L272">};</span>
+<span class="line" id="L273"></span>
+<span class="line" id="L274"><span class="tok-comment">/// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.</span></span>
+<span class="line" id="L275"><span class="tok-comment">/// Note, `parse_fn` is in no way limited to these functions.</span></span>
+<span class="line" id="L276"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ParsingFns = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L277">    <span class="tok-comment">/// Builder Functions for common Parsing Functions.</span></span>
+<span class="line" id="L278">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Builder = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L279">        <span class="tok-comment">/// Check for Alternate True Words (`true_words`) when parsing the provided Argument (`arg`) to a Boolean.</span></span>
+<span class="line" id="L280">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">altTrue</span>(<span class="tok-kw">comptime</span> true_words: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">fn</span>([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>!<span class="tok-type">bool</span> {</span>
+<span class="line" id="L281">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L282">                <span class="tok-kw">fn</span> <span class="tok-fn">isTrue</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">bool</span> {</span>
+<span class="line" id="L283">                    <span class="tok-kw">for</span> (true_words[<span class="tok-number">0</span>..]) |word| { <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, word, arg)) <span class="tok-kw">return</span> <span class="tok-null">true</span>; } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L284">                }</span>
+<span class="line" id="L285">            }.isTrue;</span>
+<span class="line" id="L286">        }</span>
+<span class="line" id="L287"></span>
+<span class="line" id="L288">        <span class="tok-comment">/// Parse the given Integer (`arg`) as Base (`base`). Base options:</span></span>
+<span class="line" id="L289">        <span class="tok-comment">/// - 0: Uses the 2 character prefix to determine the base. Default is Base 10. (This is also the default parsing option for Integers.)</span></span>
+<span class="line" id="L290">        <span class="tok-comment">/// - 2: Base 2 / Binary</span></span>
+<span class="line" id="L291">        <span class="tok-comment">/// - 8: Base 8 / Octal</span></span>
+<span class="line" id="L292">        <span class="tok-comment">/// - 10: Base 10 / Decimal</span></span>
+<span class="line" id="L293">        <span class="tok-comment">/// - 16: Base 16 / Hexadecimal</span></span>
+<span class="line" id="L294">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">asBase</span>(<span class="tok-kw">comptime</span> NumT: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> base: <span class="tok-type">u8</span>) <span class="tok-kw">fn</span>([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>!NumT {</span>
+<span class="line" id="L295">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> { <span class="tok-kw">fn</span> <span class="tok-fn">toBase</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !NumT { <span class="tok-kw">return</span> fmt.parseInt(NumT, arg, base); } }.toBase;</span>
+<span class="line" id="L296">        }</span>
+<span class="line" id="L297"></span>
+<span class="line" id="L298">        <span class="tok-comment">/// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.</span></span>
+<span class="line" id="L299">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">asEnumType</span>(<span class="tok-kw">comptime</span> EnumT: <span class="tok-type">type</span>) enumFnType: {</span>
+<span class="line" id="L300">            <span class="tok-kw">const</span> enum_info = <span class="tok-builtin">@typeInfo</span>(EnumT);</span>
+<span class="line" id="L301">            <span class="tok-kw">if</span> (enum_info != .Enum) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The type of `EnumT` must be Enum!&quot;</span>);</span>
+<span class="line" id="L302">            <span class="tok-kw">break</span> :enumFnType <span class="tok-kw">fn</span>([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>!enum_info.Enum.tag_type;</span>
+<span class="line" id="L303">        } {</span>
+<span class="line" id="L304">            <span class="tok-kw">const</span> EnumTagT: <span class="tok-type">type</span> = <span class="tok-builtin">@typeInfo</span>(EnumT).Enum.tag_type;</span>
+<span class="line" id="L305">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> { </span>
+<span class="line" id="L306">                <span class="tok-kw">fn</span> <span class="tok-fn">enumInt</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !EnumTagT { </span>
+<span class="line" id="L307">                    <span class="tok-kw">const</span> enum_tag = meta.stringToEnum(EnumT, arg) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EnumTagDoesNotExist;</span>
+<span class="line" id="L308">                    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromEnum</span>(enum_tag);</span>
+<span class="line" id="L309">                }</span>
+<span class="line" id="L310">            }.enumInt;</span>
+<span class="line" id="L311">        }</span>
+<span class="line" id="L312"></span>
+<span class="line" id="L313">    };</span>
 <span class="line" id="L314"></span>
-<span class="line" id="L315"><span class="tok-comment">/// Validation Functions for various common requirements to be used with `valid_fn`.</span></span>
-<span class="line" id="L316"><span class="tok-comment">/// Note, `valid_fn` is in no way limited to these functions.</span></span>
-<span class="line" id="L317"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ValidationFns = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L318">    <span class="tok-comment">/// Builder Functions for common Validation Functions.</span></span>
-<span class="line" id="L319">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Builder = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L320">        <span class="tok-comment">/// Check if the provided `NumT` (`num`) is within an inclusive or exclusive range.</span></span>
-<span class="line" id="L321">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">inRange</span>(<span class="tok-kw">comptime</span> NumT: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> start: NumT, <span class="tok-kw">comptime</span> end: NumT, <span class="tok-kw">comptime</span> inclusive: <span class="tok-type">bool</span>) <span class="tok-kw">fn</span>(NumT) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L322">            <span class="tok-kw">const</span> num_info = <span class="tok-builtin">@typeInfo</span>(NumT);</span>
-<span class="line" id="L323">            <span class="tok-kw">switch</span> (num_info) {</span>
-<span class="line" id="L324">                .Int, .Pointer =&gt; {},</span>
-<span class="line" id="L325">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The provided type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(NumT) ++ <span class="tok-str">&quot;' is not a numeric type. It must be an Integer or a Float.&quot;</span>),</span>
-<span class="line" id="L326">            }</span>
-<span class="line" id="L327"></span>
-<span class="line" id="L328">            <span class="tok-kw">return</span> </span>
-<span class="line" id="L329">                <span class="tok-kw">if</span> (inclusive) <span class="tok-kw">struct</span> { <span class="tok-kw">fn</span> <span class="tok-fn">inRng</span>(num: NumT) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> num &gt;= start <span class="tok-kw">and</span> num &lt;= end; } }.inRng</span>
-<span class="line" id="L330">                <span class="tok-kw">else</span> <span class="tok-kw">struct</span> { <span class="tok-kw">fn</span> <span class="tok-fn">inRng</span>(num: NumT) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> num &gt; start <span class="tok-kw">and</span> num &lt; end; } }.inRng;</span>
-<span class="line" id="L331">        }</span>
-<span class="line" id="L332">    };</span>
+<span class="line" id="L315">    <span class="tok-comment">/// Trim all Whitespace from the beginning and end of the provided argument token (`arg`).</span></span>
+<span class="line" id="L316">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">trimWhitespace</span>(arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">anyerror</span>![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L317">        <span class="tok-kw">return</span> mem.trim(<span class="tok-type">u8</span>, arg, ascii.whitespace[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L318">    }</span>
+<span class="line" id="L319">};</span>
+<span class="line" id="L320"></span>
+<span class="line" id="L321"><span class="tok-comment">/// Validation Functions for various common requirements to be used with `valid_fn`.</span></span>
+<span class="line" id="L322"><span class="tok-comment">/// Note, `valid_fn` is in no way limited to these functions.</span></span>
+<span class="line" id="L323"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ValidationFns = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L324">    <span class="tok-comment">/// Builder Functions for common Validation Functions.</span></span>
+<span class="line" id="L325">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Builder = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L326">        <span class="tok-comment">/// Check if the provided `NumT` (`num`) is within an inclusive or exclusive range.</span></span>
+<span class="line" id="L327">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">inRange</span>(<span class="tok-kw">comptime</span> NumT: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> start: NumT, <span class="tok-kw">comptime</span> end: NumT, <span class="tok-kw">comptime</span> inclusive: <span class="tok-type">bool</span>) <span class="tok-kw">fn</span>(NumT) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L328">            <span class="tok-kw">const</span> num_info = <span class="tok-builtin">@typeInfo</span>(NumT);</span>
+<span class="line" id="L329">            <span class="tok-kw">switch</span> (num_info) {</span>
+<span class="line" id="L330">                .Int, .Pointer =&gt; {},</span>
+<span class="line" id="L331">                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The provided type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(NumT) ++ <span class="tok-str">&quot;' is not a numeric type. It must be an Integer or a Float.&quot;</span>),</span>
+<span class="line" id="L332">            }</span>
 <span class="line" id="L333"></span>
-<span class="line" id="L334">    <span class="tok-comment">/// Check if the provided argument token (`filepath`) is a valid filepath.</span></span>
-<span class="line" id="L335">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validFilepath</span>(filepath: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L336">        <span class="tok-kw">const</span> test_file = fs.cwd().openFile(filepath, .{}) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L337">        test_file.close();</span>
-<span class="line" id="L338">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L339">    } </span>
-<span class="line" id="L340">    <span class="tok-comment">/// Check if the provided argument token (`num_str`) is a valid Ordinal Number.</span></span>
-<span class="line" id="L341">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ordinalNum</span>(num_str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L342">        <span class="tok-kw">const</span> ordinals = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L343">            first,</span>
-<span class="line" id="L344">            second,</span>
-<span class="line" id="L345">            third,</span>
-<span class="line" id="L346">            fourth,</span>
-<span class="line" id="L347">            fifth,</span>
-<span class="line" id="L348">            sixth,</span>
-<span class="line" id="L349">            seventh,</span>
-<span class="line" id="L350">            eigth,</span>
-<span class="line" id="L351">            ninth,</span>
-<span class="line" id="L352">            tenth,</span>
-<span class="line" id="L353">        };</span>
-<span class="line" id="L354">        <span class="tok-kw">var</span> lower_buf: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L355">        <span class="tok-kw">const</span> lower_slice = toLower(lower_buf[<span class="tok-number">0</span>..], num_str);</span>
-<span class="line" id="L356">        <span class="tok-kw">return</span> meta.stringToEnum(ordinals, lower_slice) != <span class="tok-null">null</span>;</span>
-<span class="line" id="L357">    }</span>
-<span class="line" id="L358">};</span>
-<span class="line" id="L359"></span>
-<span class="line" id="L360"><span class="tok-comment">/// Create a Generic Value with a specific Type (`T`).</span></span>
-<span class="line" id="L361"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ofType</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> typed_val: Typed(T)) Generic {</span>
-<span class="line" id="L362">    <span class="tok-kw">const</span> active_tag = <span class="tok-kw">if</span> (T == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(T);</span>
-<span class="line" id="L363">    <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(Generic, active_tag, typed_val);</span>
-<span class="line" id="L364">}</span>
+<span class="line" id="L334">            <span class="tok-kw">return</span> </span>
+<span class="line" id="L335">                <span class="tok-kw">if</span> (inclusive) <span class="tok-kw">struct</span> { <span class="tok-kw">fn</span> <span class="tok-fn">inRng</span>(num: NumT) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> num &gt;= start <span class="tok-kw">and</span> num &lt;= end; } }.inRng</span>
+<span class="line" id="L336">                <span class="tok-kw">else</span> <span class="tok-kw">struct</span> { <span class="tok-kw">fn</span> <span class="tok-fn">inRng</span>(num: NumT) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> num &gt; start <span class="tok-kw">and</span> num &lt; end; } }.inRng;</span>
+<span class="line" id="L337">        }</span>
+<span class="line" id="L338">    };</span>
+<span class="line" id="L339"></span>
+<span class="line" id="L340">    <span class="tok-comment">/// Check if the provided argument token (`filepath`) is a valid filepath.</span></span>
+<span class="line" id="L341">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validFilepath</span>(filepath: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L342">        <span class="tok-kw">const</span> test_file = fs.cwd().openFile(filepath, .{}) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L343">        test_file.close();</span>
+<span class="line" id="L344">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L345">    } </span>
+<span class="line" id="L346">    <span class="tok-comment">/// Check if the provided argument token (`num_str`) is a valid Ordinal Number.</span></span>
+<span class="line" id="L347">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ordinalNum</span>(num_str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L348">        <span class="tok-kw">const</span> ordinals = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L349">            first,</span>
+<span class="line" id="L350">            second,</span>
+<span class="line" id="L351">            third,</span>
+<span class="line" id="L352">            fourth,</span>
+<span class="line" id="L353">            fifth,</span>
+<span class="line" id="L354">            sixth,</span>
+<span class="line" id="L355">            seventh,</span>
+<span class="line" id="L356">            eigth,</span>
+<span class="line" id="L357">            ninth,</span>
+<span class="line" id="L358">            tenth,</span>
+<span class="line" id="L359">        };</span>
+<span class="line" id="L360">        <span class="tok-kw">var</span> lower_buf: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L361">        <span class="tok-kw">const</span> lower_slice = toLower(lower_buf[<span class="tok-number">0</span>..], num_str);</span>
+<span class="line" id="L362">        <span class="tok-kw">return</span> meta.stringToEnum(ordinals, lower_slice) != <span class="tok-null">null</span>;</span>
+<span class="line" id="L363">    }</span>
+<span class="line" id="L364">};</span>
 <span class="line" id="L365"></span>
-<span class="line" id="L366"><span class="tok-comment">/// Config for creating Values from Struct Fields using `from()`.</span></span>
-<span class="line" id="L367"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> FromConfig = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L368">    <span class="tok-comment">/// Ignore Incompatible types or error during compile time.</span></span>
-<span class="line" id="L369">    ignore_incompatible: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L370">    <span class="tok-comment">/// Description for the Value.</span></span>
-<span class="line" id="L371">    val_description: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L372">};</span>
-<span class="line" id="L373"></span>
-<span class="line" id="L374"><span class="tok-comment">/// Create a Generic Value from a Valid Value StructField (`field`) using the provided FromConfig (`from_config`).</span></span>
-<span class="line" id="L375"><span class="tok-comment">/// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.</span></span>
-<span class="line" id="L376"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(<span class="tok-kw">comptime</span> field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {</span>
-<span class="line" id="L377">    <span class="tok-kw">const</span> field_info = <span class="tok-builtin">@typeInfo</span>(field.<span class="tok-type">type</span>);</span>
-<span class="line" id="L378">    <span class="tok-kw">if</span> (field_info == .Pointer <span class="tok-kw">and</span> field_info.Pointer.child != <span class="tok-type">u8</span>) {</span>
-<span class="line" id="L379">        <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible. Pointers must be of type '[]const u8'.&quot;</span>)</span>
-<span class="line" id="L380">        <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L381">    }</span>
-<span class="line" id="L382">    <span class="tok-kw">const</span> field_type = <span class="tok-kw">switch</span> (field_info) {</span>
-<span class="line" id="L383">        .Optional =&gt; field_info.Optional.child,</span>
-<span class="line" id="L384">        .Array =&gt; aryType: {</span>
-<span class="line" id="L385">            <span class="tok-kw">const</span> ary_info = <span class="tok-builtin">@typeInfo</span>(field_info.Array.child);</span>
-<span class="line" id="L386">            <span class="tok-kw">if</span> (ary_info == .Optional) <span class="tok-kw">break</span> :aryType ary_info.Optional.child</span>
-<span class="line" id="L387">            <span class="tok-kw">else</span> <span class="tok-kw">break</span> :aryType field_info.Array.child;</span>
-<span class="line" id="L388">        },</span>
-<span class="line" id="L389">        .Bool, .Int, .Float, .Pointer =&gt; field.<span class="tok-type">type</span>,</span>
-<span class="line" id="L390">        <span class="tok-kw">else</span> =&gt; { </span>
-<span class="line" id="L391">            <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible.&quot;</span>)</span>
-<span class="line" id="L392">            <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L393">        },</span>
-<span class="line" id="L394">    };</span>
-<span class="line" id="L395">    <span class="tok-kw">return</span> ofType(field_type, .{</span>
-<span class="line" id="L396">        .name = field.name,</span>
-<span class="line" id="L397">        .description = from_config.val_description <span class="tok-kw">orelse</span> <span class="tok-str">&quot;The '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' Value of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;'.&quot;</span>,</span>
-<span class="line" id="L398">        .max_args = </span>
-<span class="line" id="L399">            <span class="tok-kw">if</span> (field_info == .Array) field_info.Array.len</span>
-<span class="line" id="L400">            <span class="tok-kw">else</span> <span class="tok-number">1</span>,</span>
-<span class="line" id="L401">        .set_behavior =</span>
-<span class="line" id="L402">            <span class="tok-kw">if</span> (field_info == .Array) .Multi</span>
-<span class="line" id="L403">            <span class="tok-kw">else</span> .Last,</span>
-<span class="line" id="L404">        .default_val = </span>
-<span class="line" id="L405">            <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span> <span class="tok-kw">and</span> field_info != .Array) <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*</span>
-<span class="line" id="L406">            <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L407">    });</span>
-<span class="line" id="L408">}</span>
-<span class="line" id="L409"></span>
+<span class="line" id="L366"><span class="tok-comment">/// Create a Generic Value with a specific Type (`T`).</span></span>
+<span class="line" id="L367"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ofType</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> typed_val: Typed(T)) Generic {</span>
+<span class="line" id="L368">    <span class="tok-kw">const</span> active_tag = <span class="tok-kw">if</span> (T == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(T);</span>
+<span class="line" id="L369">    <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(Generic, active_tag, typed_val);</span>
+<span class="line" id="L370">}</span>
+<span class="line" id="L371"></span>
+<span class="line" id="L372"><span class="tok-comment">/// Config for creating Values from Struct Fields using `from()`.</span></span>
+<span class="line" id="L373"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> FromConfig = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L374">    <span class="tok-comment">/// Ignore Incompatible types or error during compile time.</span></span>
+<span class="line" id="L375">    ignore_incompatible: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L376">    <span class="tok-comment">/// Description for the Value.</span></span>
+<span class="line" id="L377">    val_description: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L378">};</span>
+<span class="line" id="L379"></span>
+<span class="line" id="L380"><span class="tok-comment">/// Create a Generic Value from a Valid Value StructField (`field`) using the provided FromConfig (`from_config`).</span></span>
+<span class="line" id="L381"><span class="tok-comment">/// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.</span></span>
+<span class="line" id="L382"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(<span class="tok-kw">comptime</span> field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {</span>
+<span class="line" id="L383">    <span class="tok-kw">const</span> field_info = <span class="tok-builtin">@typeInfo</span>(field.<span class="tok-type">type</span>);</span>
+<span class="line" id="L384">    <span class="tok-kw">if</span> (field_info == .Pointer <span class="tok-kw">and</span> field_info.Pointer.child != <span class="tok-type">u8</span>) {</span>
+<span class="line" id="L385">        <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible. Pointers must be of type '[]const u8'.&quot;</span>)</span>
+<span class="line" id="L386">        <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L387">    }</span>
+<span class="line" id="L388">    <span class="tok-kw">const</span> field_type = <span class="tok-kw">switch</span> (field_info) {</span>
+<span class="line" id="L389">        .Optional =&gt; field_info.Optional.child,</span>
+<span class="line" id="L390">        .Array =&gt; aryType: {</span>
+<span class="line" id="L391">            <span class="tok-kw">const</span> ary_info = <span class="tok-builtin">@typeInfo</span>(field_info.Array.child);</span>
+<span class="line" id="L392">            <span class="tok-kw">if</span> (ary_info == .Optional) <span class="tok-kw">break</span> :aryType ary_info.Optional.child</span>
+<span class="line" id="L393">            <span class="tok-kw">else</span> <span class="tok-kw">break</span> :aryType field_info.Array.child;</span>
+<span class="line" id="L394">        },</span>
+<span class="line" id="L395">        .Bool, .Int, .Float, .Pointer =&gt; field.<span class="tok-type">type</span>,</span>
+<span class="line" id="L396">        <span class="tok-kw">else</span> =&gt; { </span>
+<span class="line" id="L397">            <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible.&quot;</span>)</span>
+<span class="line" id="L398">            <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L399">        },</span>
+<span class="line" id="L400">    };</span>
+<span class="line" id="L401">    <span class="tok-kw">return</span> ofType(field_type, .{</span>
+<span class="line" id="L402">        .name = field.name,</span>
+<span class="line" id="L403">        .description = from_config.val_description <span class="tok-kw">orelse</span> <span class="tok-str">&quot;The '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' Value of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;'.&quot;</span>,</span>
+<span class="line" id="L404">        .max_args = </span>
+<span class="line" id="L405">            <span class="tok-kw">if</span> (field_info == .Array) field_info.Array.len</span>
+<span class="line" id="L406">            <span class="tok-kw">else</span> <span class="tok-number">1</span>,</span>
+<span class="line" id="L407">        .set_behavior =</span>
+<span class="line" id="L408">            <span class="tok-kw">if</span> (field_info == .Array) .Multi</span>
+<span class="line" id="L409">            <span class="tok-kw">else</span> .Last,</span>
+<span class="line" id="L410">        .default_val = </span>
+<span class="line" id="L411">            <span class="tok-kw">if</span> (field.default_value != <span class="tok-null">null</span> <span class="tok-kw">and</span> field_info != .Array) <span class="tok-builtin">@as</span>(*field.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@constCast</span>(field.default_value)))).*</span>
+<span class="line" id="L412">            <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L413">    });</span>
+<span class="line" id="L414">}</span>
+<span class="line" id="L415"></span>
 </code></pre></body>
 </html>
