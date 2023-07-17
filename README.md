@@ -5,6 +5,21 @@ ___
 ## Overview
 Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
 
+## Table of Contents
+- [Demo](#demo)
+- [Features](#features)
+- [Goals](#goals)
+  - [Pre-Public Release](#pre-public-release)
+  - [Post-Public Release](#post-public-release)
+- [Documentation](#documentation)
+- [Install](#install)
+  - [Package Manager] (#package-manager)
+  - [Demo from source] (#build-the-demo-from-source)
+- [Usage](#usage)
+  - [Quick-Setup](#quick-setup)
+  - [Advanced](#adding-in-metadata-and-advanced-features)
+- [Alternatives](#alternatives)
+
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
 
@@ -91,6 +106,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - [x] Compatible non-nullable fields become Values.
 
 ### Post Public Release
+- [ ] Optionally mandate that a Sub-Command be provided if one is available.
 - [x] Optionally auto-handle Usage/Help messages during parsing.
 - [ ] Support all Int/Float types. (This is technically possible now by adding them to the `cova.Value.Generic` union, but there should be simpler way if reified declarations become allowed in Zig.)
 - [ ] Pull Argument Type metadata via AST Parsing of struct/field comments.
@@ -130,7 +146,7 @@ exe.addModule("cova", cova_mod);
 ```
 5. Run `zig build <PROJECT BUILD STEP IF APPLICABLE>` to get the hash.
 6. Insert the hash into `build.zig.zon`:
-```bash 
+```zig 
 .dependencies = .{
     .cova = .{
         .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
