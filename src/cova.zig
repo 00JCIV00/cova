@@ -136,6 +136,7 @@ pub const ParseConfig = struct {
     allow_abbreviated_long_opts: bool = true,
     /// Auto-handle Usage/Help messages during parsing.
     /// This is especially useful if used in conjuction with the default auto-generated Usage/Help messages from Command and Option.
+    /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
     auto_handle_usage_help: bool = true,
 };
 
@@ -162,7 +163,7 @@ pub fn parseArgs(
 
     parseArg: while (args.next()) |arg| {
         // Check for Usage/Help flags and run their respective methods.
-        if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return; 
+        if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return error.UsageHelpCalled; 
 
         log.debug("Current Arg: {s}", .{ arg });
         if (init_arg == null) break :parseArg;
@@ -172,11 +173,18 @@ pub fn parseArgs(
             log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |*sub_cmd| {
                 if (mem.eql(u8, sub_cmd.name, arg)) {
-                    parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch { 
-                        try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
-                        try sub_cmd.usage(writer);
-                        try writer.print("\n\n", .{});
-                        return error.CouldNotParseCommand;
+                    parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch |err| { 
+                        const parse_err: anyerror = err;
+                        switch (parse_err) {
+                            error.UsageHelpCalled => return err,
+                            else => |cmd_err| {
+                                try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
+                                try sub_cmd.usage(writer);
+                                try writer.print("\n\n", .{});
+                                //return error.CouldNotParseCommand;
+                                return cmd_err;
+                            }
+                        }
                     };
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
@@ -384,7 +392,7 @@ pub fn parseArgs(
         return error.ExpectedMoreValues;
     }
     // Check for Usage/Help flags and run their respective methods.
-    if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return; 
+    if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return error.UsageHelpCalled; 
 }
 
 /// Parse the provided `OptionType` (`opt`).
@@ -605,7 +613,15 @@ test "argument analysis" {
     const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
     var raw_iter = RawArgIterator{ .args = test_args };
     var test_iter = ArgIteratorGeneric.from(raw_iter);
-    try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
+    parseArgs(&test_iter, TestCommand, test_cmd, writer, .{}) catch |err| {
+        switch (err) {
+            error.UsageHelpCalled => {},
+            else => {
+                log.err("Parsing Error during Testing: {!}", .{ err });
+                return err;
+            },
+        }    
+    };
 
     //testing.log_level = .info;
     //log.info("", .{});

@@ -132,72 +132,69 @@
 <span class="line" id="L17">    <span class="tok-kw">while</span> (cur_cmd != <span class="tok-null">null</span>) {</span>
 <span class="line" id="L18">        <span class="tok-kw">const</span> cmd = cur_cmd.?;</span>
 <span class="line" id="L19"></span>
-<span class="line" id="L20">        <span class="tok-comment">//if (cmd.checkFlag(&quot;help&quot;)) try cmd.help(writer);</span>
-</span>
-<span class="line" id="L21">        <span class="tok-comment">//if (cmd.checkFlag(&quot;usage&quot;)) try cmd.usage(writer);</span>
-</span>
-<span class="line" id="L22"></span>
-<span class="line" id="L23">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;- Command: {s}\n&quot;</span>, .{ cmd.name });</span>
-<span class="line" id="L24">        <span class="tok-kw">if</span> (cmd.opts != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L25">            <span class="tok-kw">for</span> (cmd.opts.?) |opt| <span class="tok-kw">try</span> displayValInfo(opt.val, opt.long_name, <span class="tok-null">true</span>, alloc, writer);</span>
-<span class="line" id="L26">        }</span>
-<span class="line" id="L27">        <span class="tok-kw">if</span> (cmd.vals != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L28">            <span class="tok-kw">for</span> (cmd.vals.?) |val| <span class="tok-kw">try</span> displayValInfo(val, val.name(), <span class="tok-null">false</span>, alloc, writer);</span>
-<span class="line" id="L29">        }</span>
-<span class="line" id="L30">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L31">        cur_cmd = cmd.sub_cmd;</span>
-<span class="line" id="L32">    }</span>
-<span class="line" id="L33">}</span>
-<span class="line" id="L34"></span>
-<span class="line" id="L35"><span class="tok-comment">/// Display what is captured within an Option or Value after Cova parsing.</span></span>
-<span class="line" id="L36"><span class="tok-comment">/// Meant for use within `displayCmdInfo()`.</span></span>
-<span class="line" id="L37"><span class="tok-kw">fn</span> <span class="tok-fn">displayValInfo</span>(val: Value.Generic, name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, isOpt: <span class="tok-type">bool</span>, alloc: mem.Allocator, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L38">    <span class="tok-kw">const</span> prefix = <span class="tok-kw">if</span> (isOpt) <span class="tok-str">&quot;Opt&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;Val&quot;</span>;</span>
-<span class="line" id="L39"></span>
-<span class="line" id="L40">    <span class="tok-kw">switch</span> (meta.activeTag(val)) {</span>
-<span class="line" id="L41">        .string =&gt; {</span>
-<span class="line" id="L42">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    {s}: {?s}, Data: \&quot;{s}\&quot;\n&quot;</span>, .{</span>
-<span class="line" id="L43">                prefix,</span>
-<span class="line" id="L44">                name, </span>
-<span class="line" id="L45">                mem.join(alloc, <span class="tok-str">&quot;\&quot; \&quot;&quot;</span>, val.string.getAll(alloc) <span class="tok-kw">catch</span> &amp;.{ <span class="tok-str">&quot;&quot;</span> }) <span class="tok-kw">catch</span> <span class="tok-str">&quot;&quot;</span>,</span>
-<span class="line" id="L46">            });</span>
-<span class="line" id="L47">        },</span>
-<span class="line" id="L48">        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| {</span>
-<span class="line" id="L49">            <span class="tok-kw">const</span> tag_self = <span class="tok-builtin">@field</span>(val, <span class="tok-builtin">@tagName</span>(tag));</span>
-<span class="line" id="L50">            <span class="tok-kw">if</span> (tag_self.set_behavior == .Multi) {</span>
-<span class="line" id="L51">                <span class="tok-kw">const</span> raw_data: ?[]<span class="tok-kw">const</span> <span class="tok-builtin">@TypeOf</span>(tag_self).ChildT = rawData: { </span>
-<span class="line" id="L52">                    <span class="tok-kw">if</span> (tag_self.getAll(alloc) <span class="tok-kw">catch</span> <span class="tok-null">null</span>) |data| <span class="tok-kw">break</span> :rawData data;</span>
-<span class="line" id="L53">                    <span class="tok-kw">const</span> data: ?<span class="tok-builtin">@TypeOf</span>(tag_self).ChildT = tag_self.get() <span class="tok-kw">catch</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L54">                    <span class="tok-kw">if</span> (data != <span class="tok-null">null</span>) <span class="tok-kw">break</span> :rawData &amp;.{ data.? };</span>
-<span class="line" id="L55">                    <span class="tok-kw">break</span> :rawData <span class="tok-null">null</span>;</span>
-<span class="line" id="L56">                };</span>
-<span class="line" id="L57">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    {s}: {?s}, Data: {any}\n&quot;</span>, .{ </span>
-<span class="line" id="L58">                    prefix,</span>
-<span class="line" id="L59">                    name, </span>
-<span class="line" id="L60">                    raw_data,</span>
-<span class="line" id="L61">                });</span>
-<span class="line" id="L62">            }</span>
-<span class="line" id="L63">            <span class="tok-kw">else</span> {</span>
-<span class="line" id="L64">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    {s}: {?s}, Data: {any}\n&quot;</span>, .{ </span>
-<span class="line" id="L65">                    prefix,</span>
-<span class="line" id="L66">                    name, </span>
-<span class="line" id="L67">                    tag_self.get() <span class="tok-kw">catch</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L68">                });</span>
-<span class="line" id="L69">            }</span>
-<span class="line" id="L70">        },</span>
-<span class="line" id="L71">    }</span>
-<span class="line" id="L72">}</span>
-<span class="line" id="L73"></span>
-<span class="line" id="L74"><span class="tok-comment">/// Find the Index of a Scalar or Slice `needle` within a Slice `haystack`. (Why is this not in std.mem?!?!? Did I miss it?)</span></span>
-<span class="line" id="L75"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOfEql</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, haystack: []<span class="tok-kw">const</span> T, needle: T) ?<span class="tok-type">usize</span> {</span>
-<span class="line" id="L76">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L77">        .Pointer =&gt; |ptr| {</span>
-<span class="line" id="L78">            <span class="tok-kw">for</span> (haystack, <span class="tok-number">0</span>..) |hay, idx| <span class="tok-kw">if</span> (mem.eql(ptr.child, hay, needle)) <span class="tok-kw">return</span> idx;</span>
-<span class="line" id="L79">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L80">        },</span>
-<span class="line" id="L81">        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> mem.indexOfScalar(T, haystack, needle),</span>
-<span class="line" id="L82">    }</span>
-<span class="line" id="L83">}</span>
-<span class="line" id="L84"></span>
+<span class="line" id="L20">        _ = <span class="tok-kw">try</span> cmd.checkUsageHelp(writer);</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;- Command: {s}\n&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L23">        <span class="tok-kw">if</span> (cmd.opts != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L24">            <span class="tok-kw">for</span> (cmd.opts.?) |opt| <span class="tok-kw">try</span> displayValInfo(opt.val, opt.long_name, <span class="tok-null">true</span>, alloc, writer);</span>
+<span class="line" id="L25">        }</span>
+<span class="line" id="L26">        <span class="tok-kw">if</span> (cmd.vals != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L27">            <span class="tok-kw">for</span> (cmd.vals.?) |val| <span class="tok-kw">try</span> displayValInfo(val, val.name(), <span class="tok-null">false</span>, alloc, writer);</span>
+<span class="line" id="L28">        }</span>
+<span class="line" id="L29">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L30">        cur_cmd = cmd.sub_cmd;</span>
+<span class="line" id="L31">    }</span>
+<span class="line" id="L32">}</span>
+<span class="line" id="L33"></span>
+<span class="line" id="L34"><span class="tok-comment">/// Display what is captured within an Option or Value after Cova parsing.</span></span>
+<span class="line" id="L35"><span class="tok-comment">/// Meant for use within `displayCmdInfo()`.</span></span>
+<span class="line" id="L36"><span class="tok-kw">fn</span> <span class="tok-fn">displayValInfo</span>(val: Value.Generic, name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, isOpt: <span class="tok-type">bool</span>, alloc: mem.Allocator, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L37">    <span class="tok-kw">const</span> prefix = <span class="tok-kw">if</span> (isOpt) <span class="tok-str">&quot;Opt&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;Val&quot;</span>;</span>
+<span class="line" id="L38"></span>
+<span class="line" id="L39">    <span class="tok-kw">switch</span> (meta.activeTag(val)) {</span>
+<span class="line" id="L40">        .string =&gt; {</span>
+<span class="line" id="L41">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    {s}: {?s}, Data: \&quot;{s}\&quot;\n&quot;</span>, .{</span>
+<span class="line" id="L42">                prefix,</span>
+<span class="line" id="L43">                name, </span>
+<span class="line" id="L44">                mem.join(alloc, <span class="tok-str">&quot;\&quot; \&quot;&quot;</span>, val.string.getAll(alloc) <span class="tok-kw">catch</span> &amp;.{ <span class="tok-str">&quot;&quot;</span> }) <span class="tok-kw">catch</span> <span class="tok-str">&quot;&quot;</span>,</span>
+<span class="line" id="L45">            });</span>
+<span class="line" id="L46">        },</span>
+<span class="line" id="L47">        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |tag| {</span>
+<span class="line" id="L48">            <span class="tok-kw">const</span> tag_self = <span class="tok-builtin">@field</span>(val, <span class="tok-builtin">@tagName</span>(tag));</span>
+<span class="line" id="L49">            <span class="tok-kw">if</span> (tag_self.set_behavior == .Multi) {</span>
+<span class="line" id="L50">                <span class="tok-kw">const</span> raw_data: ?[]<span class="tok-kw">const</span> <span class="tok-builtin">@TypeOf</span>(tag_self).ChildT = rawData: { </span>
+<span class="line" id="L51">                    <span class="tok-kw">if</span> (tag_self.getAll(alloc) <span class="tok-kw">catch</span> <span class="tok-null">null</span>) |data| <span class="tok-kw">break</span> :rawData data;</span>
+<span class="line" id="L52">                    <span class="tok-kw">const</span> data: ?<span class="tok-builtin">@TypeOf</span>(tag_self).ChildT = tag_self.get() <span class="tok-kw">catch</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L53">                    <span class="tok-kw">if</span> (data != <span class="tok-null">null</span>) <span class="tok-kw">break</span> :rawData &amp;.{ data.? };</span>
+<span class="line" id="L54">                    <span class="tok-kw">break</span> :rawData <span class="tok-null">null</span>;</span>
+<span class="line" id="L55">                };</span>
+<span class="line" id="L56">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    {s}: {?s}, Data: {any}\n&quot;</span>, .{ </span>
+<span class="line" id="L57">                    prefix,</span>
+<span class="line" id="L58">                    name, </span>
+<span class="line" id="L59">                    raw_data,</span>
+<span class="line" id="L60">                });</span>
+<span class="line" id="L61">            }</span>
+<span class="line" id="L62">            <span class="tok-kw">else</span> {</span>
+<span class="line" id="L63">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    {s}: {?s}, Data: {any}\n&quot;</span>, .{ </span>
+<span class="line" id="L64">                    prefix,</span>
+<span class="line" id="L65">                    name, </span>
+<span class="line" id="L66">                    tag_self.get() <span class="tok-kw">catch</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L67">                });</span>
+<span class="line" id="L68">            }</span>
+<span class="line" id="L69">        },</span>
+<span class="line" id="L70">    }</span>
+<span class="line" id="L71">}</span>
+<span class="line" id="L72"></span>
+<span class="line" id="L73"><span class="tok-comment">/// Find the Index of a Scalar or Slice `needle` within a Slice `haystack`. (Why is this not in std.mem?!?!? Did I miss it?)</span></span>
+<span class="line" id="L74"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOfEql</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, haystack: []<span class="tok-kw">const</span> T, needle: T) ?<span class="tok-type">usize</span> {</span>
+<span class="line" id="L75">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L76">        .Pointer =&gt; |ptr| {</span>
+<span class="line" id="L77">            <span class="tok-kw">for</span> (haystack, <span class="tok-number">0</span>..) |hay, idx| <span class="tok-kw">if</span> (mem.eql(ptr.child, hay, needle)) <span class="tok-kw">return</span> idx;</span>
+<span class="line" id="L78">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L79">        },</span>
+<span class="line" id="L80">        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> mem.indexOfScalar(T, haystack, needle),</span>
+<span class="line" id="L81">    }</span>
+<span class="line" id="L82">}</span>
+<span class="line" id="L83"></span>
 </code></pre></body>
 </html>
