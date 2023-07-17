@@ -132,8 +132,10 @@
 <span class="line" id="L17">    <span class="tok-kw">while</span> (cur_cmd != <span class="tok-null">null</span>) {</span>
 <span class="line" id="L18">        <span class="tok-kw">const</span> cmd = cur_cmd.?;</span>
 <span class="line" id="L19"></span>
-<span class="line" id="L20">        <span class="tok-kw">if</span> (cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>)) <span class="tok-kw">try</span> cmd.help(writer);</span>
-<span class="line" id="L21">        <span class="tok-kw">if</span> (cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>)) <span class="tok-kw">try</span> cmd.usage(writer);</span>
+<span class="line" id="L20">        <span class="tok-comment">//if (cmd.checkFlag(&quot;help&quot;)) try cmd.help(writer);</span>
+</span>
+<span class="line" id="L21">        <span class="tok-comment">//if (cmd.checkFlag(&quot;usage&quot;)) try cmd.usage(writer);</span>
+</span>
 <span class="line" id="L22"></span>
 <span class="line" id="L23">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;- Command: {s}\n&quot;</span>, .{ cmd.name });</span>
 <span class="line" id="L24">        <span class="tok-kw">if</span> (cmd.opts != <span class="tok-null">null</span>) {</span>

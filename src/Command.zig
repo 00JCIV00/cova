@@ -228,6 +228,19 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n\n", .{});
         }
 
+        /// Check if Usage or Help have been set and call their respective methods.
+        pub fn checkUsageHelp(self: *const @This(), writer: anytype) !bool {
+            if (self.checkFlag("usage")) {
+                try self.usage(writer);
+                return true;
+            }
+            if (self.checkFlag("help")) {
+                try self.help(writer);
+                return true;
+            }
+            return false;
+        }
+
         /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
@@ -549,8 +562,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Create Sub Commands Enum.
         /// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
-        pub fn SubCommandsEnum(comptime self: *const @This()) type {
-            if (self.sub_cmds == null) return enum{};
+        pub fn SubCommandsEnum(comptime self: *const @This()) ?type {
+            if (self.sub_cmds == null) @compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
             var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
             for (self.sub_cmds.?, cmd_fields[0..], 0..) |cmd, *field, idx| {
                 field.* = .{

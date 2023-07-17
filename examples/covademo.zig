@@ -231,6 +231,7 @@ pub fn main() !void {
     try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{ 
         .vals_mandatory = false,
         .allow_abbreviated_long_opts = true, 
+        .auto_handle_usage_help = false,
     });
     try stdout.print("\n", .{});
     try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);

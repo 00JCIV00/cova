@@ -91,6 +91,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - [x] Compatible non-nullable fields become Values.
 
 ### Post Public Release
+- [x] Optionally auto-handle Usage/Help messages during parsing.
 - [ ] Support all Int/Float types. (This is technically possible now by adding them to the `cova.Value.Generic` union, but there should be simpler way if reified declarations become allowed in Zig.)
 - [ ] Pull Argument Type metadata via AST Parsing of struct/field comments.
 - [ ] Tab Completion (long-term goal).
