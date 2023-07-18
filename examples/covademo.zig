@@ -17,7 +17,10 @@ const Option = cova.Option;
 const Value = cova.Value;
 const utils = cova.utils;
 const ex_structs = @import("example_structs.zig");
-pub const CustomCommand = Command.Custom(.{ .global_help_prefix = "CovaDemo", }); 
+pub const CustomCommand = Command.Custom(.{ 
+    .global_help_prefix = "CovaDemo",
+    .vals_mandatory = false,
+}); 
 
 pub const log_level: log.Level = .err;
 
@@ -229,8 +232,6 @@ pub fn main() !void {
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
     try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{ 
-        .vals_mandatory = false,
-        .allow_abbreviated_long_opts = true, 
         .auto_handle_usage_help = false,
     });
     try stdout.print("\n", .{});

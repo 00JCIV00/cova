@@ -118,22 +118,9 @@ pub const ArgIteratorGeneric = union(enum) {
 
 /// Config for custom argument token Parsing using `parseArgs()`.
 pub const ParseConfig = struct {
-    /// Mandate that all Values must be filled, otherwise error out.
-    /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
-    vals_mandatory: bool = true,
     /// Skip the first Argument (the executable's name).
     /// This should generally be set to `true`, but the option is here for unforeseen outliers.
     skip_exe_name_arg: bool = true,
-    /// Allow there to be no space ' ' between Options and Values.
-    /// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.
-    allow_opt_val_no_space: bool = true,
-    /// Specify custom Separators between Options and their Values. (i.e. `--opt=value`)
-    /// Spaces ' ' are implicitly included.
-    opt_val_seps: []const u8 = "=",
-    /// Allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')
-    /// This is allowed per the POSIX standard, but may not be ideal in every use case.
-    /// Note, this does not check for uniqueness and will simply match on the first Option matching the abbreviation.
-    allow_abbreviated_long_opts: bool = true,
     /// Auto-handle Usage/Help messages during parsing.
     /// This is especially useful if used in conjuction with the default auto-generated Usage/Help messages from Command and Option.
     /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
@@ -205,7 +192,7 @@ pub fn parseArgs(
                     for (cmd.opts.?) |*opt| {
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             // Handle Argument provided to this Option with '=' instead of ' '.
-                            if (mem.indexOfScalar(u8, parse_config.opt_val_seps, short_opts[short_idx + 1]) != null) {
+                            if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
                                 if (mem.eql(u8, opt.val.valType(), "bool")) {
                                     try writer.print("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
                                         short_pf, 
@@ -256,7 +243,7 @@ pub fn parseArgs(
                                 continue :shortOpts;
                             }
                             // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
-                            else if (parse_config.allow_opt_val_no_space) {
+                            else if (CommandT.OptionT.allow_opt_val_no_space) {
                                 var short_names_buf: [CommandT.max_args]u8 = undefined;
                                 const short_names = short_names_buf[0..];
                                 for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
@@ -276,15 +263,15 @@ pub fn parseArgs(
             }
             // - Long Options
             else if (mem.eql(u8, arg[0..long_pf.len], long_pf)) {
-                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], parse_config.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
+                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], CommandT.OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                 const long_opt = arg[long_pf.len..split_idx]; 
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
-                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], parse_config.opt_val_seps) != null; 
+                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], CommandT.OptionT.opt_val_seps) != null; 
                 for (cmd.opts.?) |*opt| {
                     if (opt.long_name != null) {
                         if (
                             mem.eql(u8, long_opt, opt.long_name.?) or
-                            (parse_config.allow_abbreviated_long_opts and mem.indexOf(u8, opt.long_name.?, long_opt) != null and opt.long_name.?[0] == long_opt[0])
+                            (CommandT.OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, opt.long_name.?, long_opt) != null and opt.long_name.?[0] == long_opt[0])
                         ) {
                             if (sep_flag) {
                                 if (mem.eql(u8, opt.val.valType(), "bool")) {
@@ -378,7 +365,7 @@ pub fn parseArgs(
     }
     // Check for missing Values if they are Mandated.
     if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
-    if (parse_config.vals_mandatory and 
+    if (cmd.vals_mandatory and 
         cmd.vals != null and 
         val_idx < cmd.vals.?.len and
         !usage_help_flag

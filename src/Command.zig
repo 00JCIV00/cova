@@ -49,7 +49,6 @@ pub const Config = struct {
     /// 2. String (Value Type)
     /// 3. String (Value Description)
     vals_help_fmt: []const u8 = "{s} ({s}): {s}",
-    
     /// Sub Commands Usage Format.
     /// Must support the following format types in this order:
     /// 1. String (Command Name)
@@ -67,6 +66,17 @@ pub const Config = struct {
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used in for both `init()` and `from()` but can be overwritten for the latter.
     max_args: u8 = 100, 
+
+    /// During parsing, mandate that a Sub Command be used with a Command if one is available.
+    /// This will not include Usage/Help Commands.
+    sub_cmds_mandatory: bool = true,
+    /// During parsing, mandate that all Values for a Command must be filled, otherwise error out.
+    /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
+    vals_mandatory: bool = true,
+    /// During parsing, allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')
+    /// This is allowed per the POSIX standard, but may not be ideal in every use case.
+    /// Note, this does not check for uniqueness and will simply match on the first Option matching the abbreviation.
+    allow_abbreviated_long_opts: bool = true,
 
 };
 
@@ -113,6 +123,7 @@ pub fn Custom(comptime config: Config) type {
         ///
         /// *This should be Read-Only for library users.*
         sub_cmd: ?*const @This() = null,
+
         /// The list of Options this Command can take.
         opts: ?[]const OptionT = null,
         /// The list of Values this Command can take.
@@ -124,6 +135,15 @@ pub fn Custom(comptime config: Config) type {
         help_prefix: []const u8 = global_help_prefix,
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
+
+        /// During parsing, mandate that a Sub Command be used with this Command if one is available.
+        /// Note, this will not include Usage/Help Commands.
+        /// This can be overwritten on individual Commands using the `Command.Custom.sub_cmds_mandatory` field.
+        sub_cmds_mandatory: bool = config.sub_cmds_mandatory,
+        /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
+        /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
+        /// This can be overwritten on individual Commands using the `Command.Custom.vals_mandatory` field.
+        vals_mandatory: bool = config.vals_mandatory,
 
         /// Sets the active Sub Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
