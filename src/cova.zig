@@ -165,9 +165,9 @@ pub fn parseArgs(
                         switch (parse_err) {
                             error.UsageHelpCalled => return err,
                             else => |cmd_err| {
-                                try writer.print("Could not parse Command '{s}'.\n", .{ sub_cmd.name });
+                                log.err("Could not parse Command '{s}'.", .{ sub_cmd.name });
                                 try sub_cmd.usage(writer);
-                                try writer.print("\n\n", .{});
+                                log.err("\n", .{});
                                 //return error.CouldNotParseCommand;
                                 return cmd_err;
                             }
@@ -194,25 +194,25 @@ pub fn parseArgs(
                             // Handle Argument provided to this Option with '=' instead of ' '.
                             if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
                                 if (mem.eql(u8, opt.val.valType(), "bool")) {
-                                    try writer.print("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
+                                    log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
                                         short_pf, 
                                         opt.short_name, 
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    try writer.print("\n\n", .{});
+                                    log.err("\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
                                 if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
                                 const opt_arg = short_opts[(short_idx + 2)..];
                                 opt.val.set(opt_arg) catch {
-                                    try writer.print("Could not parse Option '{c}{?c}: {s}'.\n", .{ 
+                                    log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
                                         short_pf,
                                         opt.short_name, 
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    try writer.print("\n\n", .{});
+                                    log.err("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
@@ -223,13 +223,13 @@ pub fn parseArgs(
                                 if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, @TypeOf(opt.*), opt) catch {
-                                        try writer.print("Could not parse Option '{c}{?c}: {s}'.\n", .{ 
+                                        log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
                                             short_pf,
                                             opt.short_name, 
                                             opt.name 
                                         });
                                         try opt.usage(writer);
-                                        try writer.print("\n\n", .{});
+                                        log.err("\n", .{});
                                         return error.CouldNotParseOption;
                                     };
                                 }
@@ -255,9 +255,9 @@ pub fn parseArgs(
                             }
                         }
                     }
-                    try writer.print("Could not parse Option '{c}{?c}'.\n", .{ short_pf, short_opt });
+                    log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
                     try cmd.usage(writer);
-                    try writer.print("\n\n", .{});
+                    log.err("\n", .{});
                     return error.CouldNotParseOption;
                 }
             }
@@ -275,24 +275,24 @@ pub fn parseArgs(
                         ) {
                             if (sep_flag) {
                                 if (mem.eql(u8, opt.val.valType(), "bool")) {
-                                    try writer.print("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.\n", .{ 
+                                    log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
                                         long_pf, 
                                         opt.long_name, 
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    try writer.print("\n\n", .{});
+                                    log.err("\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
                                 if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
                                 opt.val.set(sep_arg) catch {
-                                    try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
+                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
                                         long_pf,
                                         opt.long_name, 
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    try writer.print("\n\n", .{});
+                                    log.err("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
                                 log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
@@ -306,13 +306,13 @@ pub fn parseArgs(
                             // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, @TypeOf(opt.*), opt) catch {
-                                    try writer.print("Could not parse Option '{s}{?s}: {s}'.\n", .{ 
+                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
                                         long_pf,
                                         opt.long_name, 
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    try writer.print("\n\n", .{});
+                                    log.err("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
                             }
@@ -321,9 +321,9 @@ pub fn parseArgs(
                         }
                     }
                 }
-                try writer.print("Could not parse Argument '{s}{?s}' to an Option.\n", .{ long_pf, long_opt });
+                log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
                 try cmd.usage(writer);
-                try writer.print("\n\n", .{});
+                log.err("\n", .{});
                 return error.CouldNotParseOption;
             }
             unmatched = true;
@@ -333,15 +333,15 @@ pub fn parseArgs(
         if (cmd.vals != null) {
             log.debug("Attempting to Parse Values...", .{});
             if (val_idx >= cmd.vals.?.len) {
-                try writer.print("Too many Values provided for Command '{s}'.\n", .{ cmd.name });
+                log.err("Too many Values provided for Command '{s}'.", .{ cmd.name });
                 try cmd.usage(writer);
                 return error.TooManyValues;
             }
             const val = &cmd.vals.?[val_idx];
             val.set(arg) catch {
-                try writer.print("Could not parse Argument '{s}' to Value '{s}'.\n", .{ arg, val.name() });
+                log.err("Could not parse Argument '{s}' to Value '{s}'.", .{ arg, val.name() });
                 try cmd.usage(writer);
-                try writer.print("\n", .{});
+                log.err("", .{});
             };
 
             if (val.argIdx() == val.maxArgs()) val_idx += 1;
@@ -352,25 +352,35 @@ pub fn parseArgs(
 
         // Check if the Command expected an Argument but didn't get a match.
         if (unmatched) {
-            try writer.print("Unrecognized Argument '{s}' for Command '{s}'.\n", .{ arg, cmd.name });
+            log.err("Unrecognized Argument '{s}' for Command '{s}'.", .{ arg, cmd.name });
             try cmd.help(writer);
             return error.UnrecognizedArgument;
         }
         // For Commands that expect no Arguments but are given one, fail to the Help message.
         else {
-            try writer.print("Command '{s}' does not expect any arguments, but '{s}' was passed.\n", .{ cmd.name, arg });
+            log.err("Command '{s}' does not expect any arguments, but '{s}' was passed.", .{ cmd.name, arg });
             try cmd.help(writer);
             return error.UnexpectedArgument;
         }
     }
-    // Check for missing Values if they are Mandated.
+    // Check if a Sub Command has been set if it in Mandated for the current Command.
+    if (cmd.sub_cmds_mandatory and cmd.sub_cmd == null and
+        !(cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and 
+            (mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or mem.eql(u8, cmd.sub_cmds.?[0].name, "help"))) and
+        !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
+    ) {
+        log.err("Command '{s}' requires a Sub Command.", .{ cmd.name });
+        try cmd.help(writer);
+        return error.ExpectedSubCommand;
+    }
+    // Check for missing Values if they are Mandated for the current Command.
     if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
     if (cmd.vals_mandatory and 
         cmd.vals != null and 
         val_idx < cmd.vals.?.len and
         !usage_help_flag
     ) {
-        try writer.print("Command '{s}' expects {d} Values, but only recieved {d}.\n", .{
+        log.err("Command '{s}' expects {d} Values, but only recieved {d}.", .{
             cmd.name,
             cmd.vals.?.len,
             val_idx,
@@ -398,7 +408,10 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
 
 
 // TESTING
-const TestCommand = Command.Base();
+const TestCommand = Command.Custom(.{ 
+    .vals_mandatory = false,
+    .sub_cmds_mandatory = false,
+});
 const test_setup_cmd: TestCommand = .{
     .name = "test-cmd",
     .description = "A Test Command.",
@@ -604,7 +617,7 @@ test "argument analysis" {
         switch (err) {
             error.UsageHelpCalled => {},
             else => {
-                log.err("Parsing Error during Testing: {!}", .{ err });
+                try writer.print("Parsing Error during Testing: {!}\n", .{ err });
                 return err;
             },
         }    
