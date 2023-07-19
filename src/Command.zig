@@ -37,6 +37,8 @@ const indexOfEql = utils.indexOfEql;
 pub const Config = struct {
     /// Option Config for this Command type.
     opt_config: Option.Config = .{},
+    /// Value Config for this Command type.
+    val_config: Value.Config = .{},
 
     /// Sub Commands Help Format.
     /// Must support the following format types in this order:
@@ -69,15 +71,12 @@ pub const Config = struct {
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
     /// This will not include Usage/Help Commands.
+    /// This can be overwritten on individual Commands using the `Command.Custom.sub_cmds_mandatory` field.
     sub_cmds_mandatory: bool = true,
     /// During parsing, mandate that all Values for a Command must be filled, otherwise error out.
     /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
+    /// This can be overwritten on individual Commands using the `Command.Custom.vals_mandatory` field.
     vals_mandatory: bool = true,
-    /// During parsing, allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')
-    /// This is allowed per the POSIX standard, but may not be ideal in every use case.
-    /// Note, this does not check for uniqueness and will simply match on the first Option matching the abbreviation.
-    allow_abbreviated_long_opts: bool = true,
-
 };
 
 /// Create a Command type with the Base (default) configuration.
@@ -87,7 +86,15 @@ pub fn Base() type { return Custom(.{}); }
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// The Custom Option type to be used by this Custom Command type.
-        pub const OptionT = Option.Custom(config.opt_config);
+        const opt_config = optConfig: {
+            var val_opt_config = config.opt_config;
+            val_opt_config.val_config = config.val_config;
+            break :optConfig val_opt_config;
+        };
+        pub const OptionT = Option.Custom(opt_config);
+        /// The Custom Value type to be used by this Custom Command type.
+        pub const ValueT = Value.Generic(config.val_config);
+
         /// Sub Commands Help Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_help_fmt = config.subcmds_help_fmt;
@@ -127,7 +134,7 @@ pub fn Custom(comptime config: Config) type {
         /// The list of Options this Command can take.
         opts: ?[]const OptionT = null,
         /// The list of Values this Command can take.
-        vals: ?[]const Value.Generic = null,
+        vals: ?[]const ValueT = null,
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
@@ -138,11 +145,9 @@ pub fn Custom(comptime config: Config) type {
 
         /// During parsing, mandate that a Sub Command be used with this Command if one is available.
         /// Note, this will not include Usage/Help Commands.
-        /// This can be overwritten on individual Commands using the `Command.Custom.sub_cmds_mandatory` field.
         sub_cmds_mandatory: bool = config.sub_cmds_mandatory,
         /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
         /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
-        /// This can be overwritten on individual Commands using the `Command.Custom.vals_mandatory` field.
         vals_mandatory: bool = config.vals_mandatory,
 
         /// Sets the active Sub Command for this Command.
@@ -342,7 +347,7 @@ pub fn Custom(comptime config: Config) type {
             var short_names_buf: [from_config.max_opts]u8 = undefined;
             const short_names = short_names_buf[0..];
             var short_idx: u8 = 0;
-            var from_vals_buf: [from_config.max_vals]Value.Generic = undefined;
+            var from_vals_buf: [from_config.max_vals]ValueT = undefined;
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
@@ -367,7 +372,7 @@ pub fn Custom(comptime config: Config) type {
                             continue;
                         }
                     },
-                    Value.Generic => {
+                    ValueT => {
                         if (field.default_value != null) {
                             from_vals[vals_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                             vals_idx += 1;
@@ -415,7 +420,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     // Values
                     .Bool, .Int, .Float, .Pointer => {
-                        from_vals[vals_idx] = (Value.from(field, .{
+                        from_vals[vals_idx] = (ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_description = arg_description
                         }) orelse continue);
@@ -447,7 +452,7 @@ pub fn Custom(comptime config: Config) type {
                                 opts_idx += 1;
                             },
                             .Bool, .Int, .Float, .Pointer => {
-                                from_vals[vals_idx] = Value.from(field, .{
+                                from_vals[vals_idx] = ValueT.from(field, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_description = arg_description
                                 }) orelse continue;
@@ -734,14 +739,14 @@ pub fn Custom(comptime config: Config) type {
                         .short_name = 'u',
                         .long_name = "usage",
                         .description = usage_description,
-                        .val = Value.ofType(bool, .{ .name = "usage_flag" }),
+                        .val = ValueT.ofType(bool, .{ .name = "usage_flag" }),
                     },
                     .{
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
                         .description = help_description,
-                        .val = Value.ofType(bool, .{ .name = "help_flag" }),
+                        .val = ValueT.ofType(bool, .{ .name = "help_flag" }),
                     },
                 };
 

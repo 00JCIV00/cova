@@ -25,6 +25,16 @@ const parseFloat = fmt.parseFloat;
 const Type = builtin.Type;
 const UnionField = Type.UnionField;
 
+/// Config for custom Value types.
+pub const Config = struct {
+    /// Default Set Behavior for all Values.
+    /// This can be overwritten on individual Values using the `Value.Typed.set_behavior` field.
+    set_behavior: SetBehavior = .Last,
+    /// Default Argument Delimiters for all Values.
+    /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
+    arg_delims: []const u8 = ",;",
+};
+
 /// The Behavior for Setting Values with `set()`.
 /// This applies to Values within Options and standalone Values.
 pub const SetBehavior = enum {
@@ -37,7 +47,7 @@ pub const SetBehavior = enum {
 };
 
 /// Create a Value with a specific Type (`SetT`).
-pub fn Typed(comptime SetT: type) type {
+pub fn Typed(comptime SetT: type, comptime config: Config) type {
     return struct {
         /// The child Type of this Value.
         pub const ChildT = SetT;
@@ -59,9 +69,9 @@ pub fn Typed(comptime SetT: type) type {
         is_maxed: bool = false,
         /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options.
         /// This is only applicable if `set_behavior = .Multi`.
-        arg_delims: []const u8 = ",;",
+        arg_delims: []const u8 = config.arg_delims,
         /// Set Behavior for this Value.
-        set_behavior: SetBehavior = .Last,
+        set_behavior: SetBehavior = config.set_behavior,
         /// An optional Default value for this Value.
         default_val: ?ChildT = null,
         /// Flag to determine if this Value has been Parsed and Validated.
@@ -166,38 +176,39 @@ pub fn Typed(comptime SetT: type) type {
 }
 
 /// Generic Value to handle a Value regardless of its inner type.
-pub const Generic = genUnion: {
-    var gen_union = union(enum){
-        bool: Typed(bool),
+pub fn Generic(comptime config: Config) type {
+    //var gen_union = union(enum){
+    return union(enum){
+        bool: Typed(bool, config),
         
-        string: Typed([]const u8),
+        string: Typed([]const u8, config),
         
-        u1: Typed(u1),
-        u2: Typed(u2),
-        u3: Typed(u3),
-        u4: Typed(u4),
-        u8: Typed(u8),
-        u16: Typed(u16),
-        u32: Typed(u32),
-        u64: Typed(u64),
-        u128: Typed(u128),
-        u256: Typed(u256),
+        u1: Typed(u1, config),
+        u2: Typed(u2, config),
+        u3: Typed(u3, config),
+        u4: Typed(u4, config),
+        u8: Typed(u8, config),
+        u16: Typed(u16, config),
+        u32: Typed(u32, config),
+        u64: Typed(u64, config),
+        u128: Typed(u128, config),
+        u256: Typed(u256, config),
 
-        i1: Typed(i1),
-        i2: Typed(i2),
-        i3: Typed(i3),
-        i4: Typed(i4),
-        i8: Typed(i8),
-        i16: Typed(i16),
-        i32: Typed(i32),
-        i64: Typed(i64),
-        i128: Typed(i128),
-        i256: Typed(i256),
+        i1: Typed(i1, config),
+        i2: Typed(i2, config),
+        i3: Typed(i3, config),
+        i4: Typed(i4, config),
+        i8: Typed(i8, config),
+        i16: Typed(i16, config),
+        i32: Typed(i32, config),
+        i64: Typed(i64, config),
+        i128: Typed(i128, config),
+        i256: Typed(i256, config),
 
-        f16: Typed(f16),
-        f32: Typed(f32),
-        f64: Typed(f64),
-        f128: Typed(f128),
+        f16: Typed(f16, config),
+        f32: Typed(f32, config),
+        f64: Typed(f64, config),
+        f128: Typed(f128, config),
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
@@ -250,6 +261,56 @@ pub const Generic = genUnion: {
                 inline else => |tag| @field(self, @tagName(tag)).max_args,
             };
         }
+
+        /// Create a Generic Value with a specific Type (`T`).
+        pub fn ofType(comptime T: type, comptime typed_val: Typed(T, config)) @This() {
+            const active_tag = if (T == []const u8) "string" else @typeName(T);
+            return @unionInit(@This(), active_tag, typed_val);
+        }
+
+        /// Config for creating Values from Struct Fields using `from()`.
+        pub const FromConfig = struct {
+            /// Ignore Incompatible types or error during compile time.
+            ignore_incompatible: bool = true,
+            /// Description for the Value.
+            val_description: ?[]const u8 = null,
+        };
+
+        /// Create a Generic Value from a Valid Value StructField (`field`) using the provided FromConfig (`from_config`).
+        /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
+        pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?@This() {
+            const field_info = @typeInfo(field.type);
+            if (field_info == .Pointer and field_info.Pointer.child != u8) {
+                if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+                else return null;
+            }
+            const field_type = switch (field_info) {
+                .Optional => field_info.Optional.child,
+                .Array => aryType: {
+                    const ary_info = @typeInfo(field_info.Array.child);
+                    if (ary_info == .Optional) break :aryType ary_info.Optional.child
+                    else break :aryType field_info.Array.child;
+                },
+                .Bool, .Int, .Float, .Pointer => field.type,
+                else => { 
+                    if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
+                    else return null;
+                },
+            };
+            return ofType(field_type, .{
+                .name = field.name,
+                .description = from_config.val_description orelse "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
+                .max_args = 
+                    if (field_info == .Array) field_info.Array.len
+                    else 1,
+                .set_behavior =
+                    if (field_info == .Array) .Multi
+                    else .Last,
+                .default_val = 
+                    if (field.default_value != null and field_info != .Array) @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*
+                    else null,
+            });
+        }
     };
 
     // TODO: See if there's another way to add these fields procedurally to avoid the declaration reification issue with @Type(builtin.Type{})
@@ -268,8 +329,8 @@ pub const Generic = genUnion: {
     //    } };
     //}
 
-    break :genUnion gen_union;
-};
+    //return gen_union;
+}
 
 /// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.
 /// Note, `parse_fn` is in no way limited to these functions.
@@ -363,52 +424,3 @@ pub const ValidationFns = struct {
     }
 };
 
-/// Create a Generic Value with a specific Type (`T`).
-pub fn ofType(comptime T: type, comptime typed_val: Typed(T)) Generic {
-    const active_tag = if (T == []const u8) "string" else @typeName(T);
-    return @unionInit(Generic, active_tag, typed_val);
-}
-
-/// Config for creating Values from Struct Fields using `from()`.
-pub const FromConfig = struct {
-    /// Ignore Incompatible types or error during compile time.
-    ignore_incompatible: bool = true,
-    /// Description for the Value.
-    val_description: ?[]const u8 = null,
-};
-
-/// Create a Generic Value from a Valid Value StructField (`field`) using the provided FromConfig (`from_config`).
-/// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
-pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?Generic {
-    const field_info = @typeInfo(field.type);
-    if (field_info == .Pointer and field_info.Pointer.child != u8) {
-        if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
-        else return null;
-    }
-    const field_type = switch (field_info) {
-        .Optional => field_info.Optional.child,
-        .Array => aryType: {
-            const ary_info = @typeInfo(field_info.Array.child);
-            if (ary_info == .Optional) break :aryType ary_info.Optional.child
-            else break :aryType field_info.Array.child;
-        },
-        .Bool, .Int, .Float, .Pointer => field.type,
-        else => { 
-            if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
-            else return null;
-        },
-    };
-    return ofType(field_type, .{
-        .name = field.name,
-        .description = from_config.val_description orelse "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
-        .max_args = 
-            if (field_info == .Array) field_info.Array.len
-            else 1,
-        .set_behavior =
-            if (field_info == .Array) .Multi
-            else .Last,
-        .default_val = 
-            if (field.default_value != null and field_info != .Array) @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*
-            else null,
-    });
-}

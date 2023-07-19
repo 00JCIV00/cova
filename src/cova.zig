@@ -412,6 +412,7 @@ const TestCommand = Command.Custom(.{
     .vals_mandatory = false,
     .sub_cmds_mandatory = false,
 });
+const TestValue = TestCommand.ValueT;
 const test_setup_cmd: TestCommand = .{
     .name = "test-cmd",
     .description = "A Test Command.",
@@ -425,7 +426,7 @@ const test_setup_cmd: TestCommand = .{
                     .description = "A test sub string long option.",
                     .short_name = 'S',
                     .long_name = "sub-string",
-                    .val = Value.ofType([]const u8, .{
+                    .val = TestValue.ofType([]const u8, .{
                         .name = "sub_string_opt_val",
                         .description = "A test sub string opt value.",
                     }),
@@ -435,7 +436,7 @@ const test_setup_cmd: TestCommand = .{
                     .description = "A test sub integer option.",
                     .short_name = 'I',
                     .long_name = "sub-int",
-                    .val = Value.ofType(i16, .{
+                    .val = TestValue.ofType(i16, .{
                         .name = "int_opt_val",
                         .description = "A test sub integer opt value.",
                     }),
@@ -449,7 +450,7 @@ const test_setup_cmd: TestCommand = .{
             .description = "A test string long option.",
             .short_name = 's',
             .long_name = "string",
-            .val = Value.ofType([]const u8, .{
+            .val = TestValue.ofType([]const u8, .{
                 .name = "string_opt_val",
                 .description = "A test string opt value.",
                 .set_behavior = .Multi,
@@ -461,7 +462,7 @@ const test_setup_cmd: TestCommand = .{
             .description = "A test integer option.",
             .short_name = 'i',
             .long_name = "int",
-            .val = Value.ofType(i16, .{
+            .val = TestValue.ofType(i16, .{
                 .name = "int_opt_val",
                 .description = "A test integer opt value.",
                 .valid_fn = struct{ fn valFn(int: i16) bool { return int <= 666; } }.valFn,
@@ -474,7 +475,7 @@ const test_setup_cmd: TestCommand = .{
             .description = "A test float option.",
             .short_name = 'f',
             .long_name = "float",
-            .val = Value.ofType(f16, .{
+            .val = TestValue.ofType(f16, .{
                 .name = "float_opt_val",
                 .description = "An float opt value.",
                 .valid_fn = struct{ fn valFn(float: f16) bool { return float < 30000; } }.valFn,
@@ -487,7 +488,7 @@ const test_setup_cmd: TestCommand = .{
             .description = "A test toggle/boolean option.",
             .short_name = 't',
             .long_name = "toggle",
-            .val = Value.ofType(bool, .{
+            .val = TestValue.ofType(bool, .{
                 .name = "toggle_opt_val",
                 .description = "A test toggle/boolean option value.",
             }),
@@ -495,7 +496,7 @@ const test_setup_cmd: TestCommand = .{
         
     },
     .vals = &.{
-        Value.ofType([]const u8, .{
+        TestValue.ofType([]const u8, .{
             .name = "string_val",
             .description = "A test string value.",
             .default_val = "test",
@@ -537,7 +538,7 @@ const TestCmdFromStruct = struct {
         .description = "A test cova Option within a struct.",
     },
     // Cova Value
-    cova_val: Value.Generic = Value.ofType(i8, .{
+    cova_val: TestValue = TestValue.ofType(i8, .{
         .name = "test_struct_cova_val",
         .description = "A test cova Value within a struct.",
         .default_val = 50,

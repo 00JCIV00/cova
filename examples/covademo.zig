@@ -21,6 +21,7 @@ pub const CustomCommand = Command.Custom(.{
     .global_help_prefix = "CovaDemo",
     .vals_mandatory = false,
 }); 
+pub const CustomValue = CustomCommand.ValueT;
 
 pub const log_level: log.Level = .err;
 
@@ -48,7 +49,7 @@ pub const DemoStruct = struct {
     struct_int: i64,
     multi_int_val: [2]u16,
     // Cova Argument Types
-    cova_val_int: Value.Generic = Value.ofType(i8, .{
+    cova_val_int: CustomValue = CustomValue.ofType(i8, .{
         .name = "cova_val_int",
         .description = "A test cova Value within a struct.",
         .default_val = 50,
@@ -68,7 +69,7 @@ const setup_cmd: CustomCommand = .{
                     .name = "nested_int_opt",
                     .short_name = 'i',
                     .long_name = "nested_int",
-                    .val = Value.ofType(u8, .{
+                    .val = CustomValue.ofType(u8, .{
                         .name = "nested_int_val",
                         .description = "A nested integer value.",
                         .default_val = 203,
@@ -79,7 +80,7 @@ const setup_cmd: CustomCommand = .{
                     .name = "nested_str_opt",
                     .short_name = 's',
                     .long_name = "nested_str",
-                    .val = Value.ofType([]const u8, .{
+                    .val = CustomValue.ofType([]const u8, .{
                         .name = "nested_str_val",
                         .description = "A nested string value.",
                         .default_val = "A nested string value.",
@@ -88,7 +89,7 @@ const setup_cmd: CustomCommand = .{
                 },
             },
             .vals = &.{
-                Value.ofType(f32, .{
+                CustomValue.ofType(f32, .{
                     .name = "nested_float_val",
                     .description = "A nested float value.",
                     .default_val = 0,
@@ -117,7 +118,7 @@ const setup_cmd: CustomCommand = .{
             .name = "string_opt",
             .short_name = 's',
             .long_name = "string",
-            .val = Value.ofType([]const u8, .{
+            .val = CustomValue.ofType([]const u8, .{
                 .name = "string_val",
                 .description = "A string value.",
                 .default_val = "A string value.",
@@ -130,7 +131,7 @@ const setup_cmd: CustomCommand = .{
             .name = "int_opt",
             .short_name = 'i',
             .long_name = "int",
-            .val = Value.ofType(i16, .{
+            .val = CustomValue.ofType(i16, .{
                 .name = "int_val",
                 .description = "An integer value.",
                 .valid_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
@@ -178,7 +179,7 @@ const setup_cmd: CustomCommand = .{
             .name = "toggle_opt",
             .short_name = 't',
             .long_name = "toggle",
-            .val = Value.ofType(bool, .{
+            .val = CustomValue.ofType(bool, .{
                 .name = "toggle_val",
                 .description = "A toggle/boolean value.",
             }),
@@ -188,7 +189,7 @@ const setup_cmd: CustomCommand = .{
             .name = "verbosity_opt",
             .short_name = 'v',
             .long_name = "verbosity",
-            .val = Value.ofType(u4, .{
+            .val = CustomValue.ofType(u4, .{
                 .name = "verbosity_level",
                 .description = "The verbosity level from 0 (err) to 3 (debug).",
                 .default_val = 3,
@@ -198,7 +199,7 @@ const setup_cmd: CustomCommand = .{
         },
     },
     .vals = &.{
-        Value.ofType([]const u8, .{
+        CustomValue.ofType([]const u8, .{
             .name = "cmd_str",
             .description = "A string value for the command.",
             .parse_fn = Value.ParsingFns.trimWhitespace,

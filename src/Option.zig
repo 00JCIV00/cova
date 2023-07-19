@@ -16,9 +16,13 @@ const ascii = std.ascii;
 const toUpper = ascii.toUpper;
 
 const Value = @import("Value.zig");
-    
+
 /// Config for custom Option types.
 pub const Config = struct {
+    /// Value Config for this Option type.
+    /// This will default to the same Value.Config used by the overarching custom Command type of this custom Option type.
+    val_config: Value.Config = .{},
+
     /// Format for the Help message. 
     ///
     /// Must support the following format types in this order:
@@ -59,6 +63,9 @@ pub fn Base() type { return Custom(.{}); }
 /// Create a Custom Option type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct {
+        /// The Custom Value type used by this Custom Option type.
+        const ValueT = Value.Generic(config.val_config);
+
         /// Help Format.
         /// Check `Options.Config` for details.
         const help_fmt = config.help_fmt;
@@ -88,7 +95,7 @@ pub fn Custom(comptime config: Config) type {
         /// This Option's Long Name (ex: `--intOpt`).
         long_name: ?[]const u8 = null,
         /// This Option's wrapped Value.
-        val: Value.Generic = Value.ofType(bool, .{}),
+        val: ValueT = ValueT.ofType(bool, .{}),
 
         /// The Name of this Option for user identification and Usage/Help messages.
         /// Limited to 100B.
@@ -148,7 +155,7 @@ pub fn Custom(comptime config: Config) type {
                 .val = optVal: {
                     const optl_info = @typeInfo(optl.child);
                     switch (optl_info) {
-                        .Bool, .Int, .Float, .Pointer => break :optVal Value.from(field, .{
+                        .Bool, .Int, .Float, .Pointer => break :optVal ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_description = from_config.opt_description,
                         }) orelse return null,

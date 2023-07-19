@@ -21,10 +21,10 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
 
         try writer.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| try displayValInfo(opt.val, opt.long_name, true, alloc, writer);
+            for (cmd.opts.?) |opt| try displayValInfo(CustomCommand.ValueT, opt.val, opt.long_name, true, alloc, writer);
         }
         if (cmd.vals != null) {
-            for (cmd.vals.?) |val| try displayValInfo(val, val.name(), false, alloc, writer);
+            for (cmd.vals.?) |val| try displayValInfo(CustomCommand.ValueT, val, val.name(), false, alloc, writer);
         }
         try writer.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
@@ -33,7 +33,7 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
 
 /// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
-fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
+fn displayValInfo(comptime CustomValue: type, val: CustomValue, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
     switch (meta.activeTag(val)) {
