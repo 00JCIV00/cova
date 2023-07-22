@@ -367,7 +367,8 @@ pub fn parseArgs(
     if (cmd.sub_cmds_mandatory and cmd.sub_cmd == null and
         !(cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and 
             (mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or mem.eql(u8, cmd.sub_cmds.?[0].name, "help"))) and
-        !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
+        !(cmd.checkFlag("help") or cmd.checkFlag("usage"))
+        // !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
     ) {
         log.err("Command '{s}' requires a Sub Command.", .{ cmd.name });
         try cmd.help(writer);
