@@ -177,7 +177,7 @@
 <span class="line" id="L64"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Custom</span>(<span class="tok-kw">comptime</span> config: Config) <span class="tok-type">type</span> {</span>
 <span class="line" id="L65">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L66">        <span class="tok-comment">/// The Custom Value type used by this Custom Option type.</span></span>
-<span class="line" id="L67">        <span class="tok-kw">const</span> ValueT = Value.Generic(config.val_config);</span>
+<span class="line" id="L67">        <span class="tok-kw">const</span> ValueT = Value.Custom(config.val_config);</span>
 <span class="line" id="L68"></span>
 <span class="line" id="L69">        <span class="tok-comment">/// Help Format.</span></span>
 <span class="line" id="L70">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>

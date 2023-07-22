@@ -93,7 +93,7 @@ pub fn Custom(comptime config: Config) type {
         };
         pub const OptionT = Option.Custom(opt_config);
         /// The Custom Value type to be used by this Custom Command type.
-        pub const ValueT = Value.Generic(config.val_config);
+        pub const ValueT = Value.Custom(config.val_config);
 
         /// Sub Commands Help Format.
         /// Check (`Command.Config`) for details.
@@ -276,7 +276,7 @@ pub fn Custom(comptime config: Config) type {
                         for (self.opts.?) |opt| {
                             if (mem.eql(u8, opt.name, flag_name) and 
                                 mem.eql(u8, opt.val.valType(), "bool") and 
-                                opt.val.bool.get() catch false)
+                                opt.val.getAs(bool) catch false)
                                     break :checkOpt true;
                         }
                     }
@@ -287,7 +287,7 @@ pub fn Custom(comptime config: Config) type {
                         for (self.vals.?) |val| {
                             if (mem.eql(u8, val.name(), flag_name) and
                                 mem.eql(u8, val.valType(), "bool") and
-                                val.bool.get() catch false)
+                                val.getAs(bool) catch false)
                                     break :checkVal true;
                         }
                     }
@@ -515,7 +515,7 @@ pub fn Custom(comptime config: Config) type {
                                     break;
                                 }
                                 const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
-                                @field(out, field.name) = try @field(opt.val, val_tag).get();
+                                @field(out, field.name) = try @field(opt.val.generic, val_tag).get();
                             }
                         }
                     },
@@ -529,7 +529,7 @@ pub fn Custom(comptime config: Config) type {
                                     break;
                                 }
                                 const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
-                                @field(out, field.name) = try @field(val, val_tag).get();
+                                @field(out, field.name) = try @field(val.generic, val_tag).get();
                             }
                         } 
                     },
@@ -548,7 +548,7 @@ pub fn Custom(comptime config: Config) type {
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
                                         var f_ary: field.type = undefined;
                                         const f_ary_slice = f_ary[0..];
-                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(opt.val, val_tag)._set_args[idx];
+                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -566,7 +566,7 @@ pub fn Custom(comptime config: Config) type {
                                         const val_tag = if (ary.child == []const u8) "string" else @typeName(ary.child);
                                         var f_ary: field.type = undefined;
                                         const f_ary_slice = f_ary[0..];
-                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val, val_tag)._set_args[idx];
+                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx];
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }

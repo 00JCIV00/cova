@@ -33,6 +33,22 @@ pub const Config = struct {
     /// Default Argument Delimiters for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
     arg_delims: []const u8 = ",;",
+
+    /// Custom types for this project's Values.
+    /// This is useful for adding additional types that aren't covered by the base `Value.Generic` union.
+    /// Note, any non-numeric (Int, UInt, Float) types will require their own Parse Function to be implemented on the `Value.Typed.parse_fn` field.
+    custom_types: []const type = &.{},
+
+    /// Use Custom Bit Width Range for Ints and UInts.
+    /// This is useful for specifying a wide range of Int and UInt types for a project.
+    /// Note, this will slow down compilation speed!!! (It does not affect runtime speed).
+    use_custom_bit_width_range: bool = false,
+    /// Minimum Bit Width for Ints and UInts in this Custom Value type.
+    /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
+    min_int_bit_width: u16 = 1,
+    /// Minimum Bit Width for Ints and UInts in this Custom Value type.
+    /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
+    max_int_bit_width: u16 = 256,
 };
 
 /// The Behavior for Setting Values with `set()`.
@@ -175,10 +191,10 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
     };
 }
 
-/// Generic Value to handle a Value regardless of its inner type.
+/// Generic Value to handle a Value regardless of its inner type. This encompasses Typed Values with Boolean, String `[]const u8`, Floats, and the Config (`config`) specified range of Signed/Unsigned Integers.
 pub fn Generic(comptime config: Config) type {
-    //var gen_union = union(enum){
-    return union(enum){
+    // Base Implementation
+    return if (config.custom_types.len == 0 and !config.use_custom_bit_width_range) union(enum){
         bool: Typed(bool, config),
         
         string: Typed([]const u8, config),
@@ -209,63 +225,186 @@ pub fn Generic(comptime config: Config) type {
         f32: Typed(f32, config),
         f64: Typed(f64, config),
         f128: Typed(f128, config),
+    }
+    // Custom Implementation
+    else customUnion: { 
+        var base_union = union(enum){
+            bool: Typed(bool, config),
+            
+            string: Typed([]const u8, config),
+            
+            f16: Typed(f16, config),
+            f32: Typed(f32, config),
+            f64: Typed(f64, config),
+            f128: Typed(f128, config),
+        };
+        
+        var union_info = @typeInfo(base_union).Union;
+        var tag_info = @typeInfo(union_info.tag_type.?).Enum;
+        tag_info.tag_type = usize;
+        if (config.use_custom_bit_width_range) {
+            @setEvalBranchQuota(config.max_int_bit_width * 10);
+            inline for (config.min_int_bit_width..config.max_int_bit_width) |bit_width| {
+                const uint_name = @typeName(meta.Int(.unsigned, bit_width));
+                const uint_type = Typed(meta.Int(.unsigned, bit_width), config);
+                union_info.fields = union_info.fields ++ .{ UnionField {
+                   .name = uint_name, 
+                   .type = uint_type,
+                   .alignment = @alignOf(uint_type),
+                } };
+                tag_info.fields = tag_info.fields ++ .{ .{
+                    .name = uint_name,
+                    .value = tag_info.fields.len
+                } };
+
+                const int_name = @typeName(meta.Int(.signed, bit_width));
+                const int_type = Typed(meta.Int(.signed, bit_width), config);
+                union_info.fields = union_info.fields ++ .{ UnionField {
+                   .name = int_name,
+                   .type = int_type, 
+                   .alignment = @alignOf(int_type),
+                } };
+                tag_info.fields = tag_info.fields ++ .{ .{
+                    .name = int_name,
+                    .value = tag_info.fields.len
+                } };
+            }
+        }
+        else {
+            const int_union = union(enum) {
+                u1: Typed(u1, config),
+                u2: Typed(u2, config),
+                u3: Typed(u3, config),
+                u4: Typed(u4, config),
+                u8: Typed(u8, config),
+                u16: Typed(u16, config),
+                u32: Typed(u32, config),
+                u64: Typed(u64, config),
+                u128: Typed(u128, config),
+                u256: Typed(u256, config),
+
+                i1: Typed(i1, config),
+                i2: Typed(i2, config),
+                i3: Typed(i3, config),
+                i4: Typed(i4, config),
+                i8: Typed(i8, config),
+                i16: Typed(i16, config),
+                i32: Typed(i32, config),
+                i64: Typed(i64, config),
+                i128: Typed(i128, config),
+                i256: Typed(i256, config),
+            };
+            const int_info = @typeInfo(int_union).Union;
+            const int_tag_info = @typeInfo(int_info.tag_type.?).Enum;
+
+            union_info.fields = union_info.fields ++ int_info.fields;
+            for (int_tag_info.fields) |tag| {
+                tag_info.fields = tag_info.fields ++ .{ .{
+                    .name = tag.name,
+                    .value = tag.value + 6,
+                } };
+            }
+        }
+
+        for (config.custom_types) |T| {
+            union_info.fields = union_info.fields ++ .{ UnionField {
+               .name = @typeName(T), 
+               .type = Typed(T, config),
+               .alignment = @alignOf(Typed(T, config)),
+            } };
+            tag_info.fields = tag_info.fields ++ .{ .{
+                .name = @typeName(T),
+                .value = tag_info.fields.len,
+            } };
+            
+        }
+
+        union_info.tag_type = @Type(.{ .Enum = tag_info }); 
+
+        break :customUnion @Type(.{ .Union = union_info });
+    };
+}
+
+/// Create a Custom Value type from the provided Config (`config`).
+pub fn Custom(comptime config: Config) type {
+    return struct{
+        /// Custom Generic Value type.
+        pub const GenericT = Generic(config);
+
+        /// Wrapped Generic Value union
+        generic: GenericT = .{ .bool = .{} },
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
         // TODO: See if this can be made Runtime
-        pub fn get(self: *const @This()) !switch (meta.activeTag(self.*)) { inline else => |tag| @TypeOf(@field(self, @tagName(tag))).getType(), } {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| try @field(self, @tagName(tag)).get(),
+        pub inline fn get(self: *const @This()) !switch (meta.activeTag(self.*.generic)) { 
+            inline else => |tag| @TypeOf(@field(self.*.generic, @tagName(tag))).getType(), 
+        } {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| try @field(self.*.generic, @tagName(tag)).get(),
             };
         }
+
+        /// Get the Parsed and Validated value of the inner Typed Value as the specified type (`T`).
+        pub fn getAs(self: *const @This(), comptime T: type) !T {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| {
+                    const field_self = @field(self.*.generic, @tagName(tag));
+                    if (@TypeOf(field_self).ChildT == T) return try field_self.get()
+                    else return error.RequestedTypeMismatch;
+                },
+            };
+        }
+
         /// Set the inner Typed Value if the provided Argument (`arg`) can be Parsed and Validated.
         pub fn set(self: *const @This(), arg: []const u8) !void { 
-            switch (meta.activeTag(self.*)) {
-                inline else => |tag| try @field(self, @tagName(tag)).set(arg),
+            switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| try @field(self.*.generic, @tagName(tag)).set(arg),
             }
         }
 
         /// Get the inner Typed Value's Name.
         pub fn name(self: *const @This()) []const u8 {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| @field(self, @tagName(tag)).name,
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).name,
             };
         }
         /// Get the inner Typed Value's Type Name.
         pub fn valType(self: *const @This()) []const u8 {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| @typeName(@TypeOf(@field(self, @tagName(tag))).getType()),
+            @setEvalBranchQuota(config.max_int_bit_width * 10);
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @typeName(@TypeOf(@field(self.*.generic, @tagName(tag))).getType()),
             };
         }
         /// Get the inner Typed Value's Description.
         pub fn description(self: *const @This()) []const u8 {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| @field(self, @tagName(tag)).description,
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).description,
             };
         }
         /// Check the inner Typed Value's is Set.
         pub fn isSet(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| @field(self, @tagName(tag)).is_set,
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).is_set,
             };
         }
         /// Get the inner Typed Value's Argument Index.
         pub fn argIdx(self: *const @This()) u7 {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| @field(self, @tagName(tag))._arg_idx,
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag))._arg_idx,
             };
         }
         /// Get the inner Typed Value's Max Arguments.
         pub fn maxArgs(self: *const @This()) u7 {
-            return switch (meta.activeTag(self.*)) {
-                inline else => |tag| @field(self, @tagName(tag)).max_args,
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).max_args,
             };
         }
 
         /// Create a Generic Value with a specific Type (`T`).
         pub fn ofType(comptime T: type, comptime typed_val: Typed(T, config)) @This() {
             const active_tag = if (T == []const u8) "string" else @typeName(T);
-            return @unionInit(@This(), active_tag, typed_val);
+            return @This(){ .generic = @unionInit(GenericT, active_tag, typed_val) };
         }
 
         /// Config for creating Values from Struct Fields using `from()`.
@@ -313,23 +452,6 @@ pub fn Generic(comptime config: Config) type {
         }
     };
 
-    // TODO: See if there's another way to add these fields procedurally to avoid the declaration reification issue with @Type(builtin.Type{})
-    //var fields: []const UnionField = meta.fields(gen_union);
-    //@setEvalBranchQuota(2000);
-    //inline for (1..255) |bit_width| {
-    //    fields = fields ++ .{ UnionField {
-    //       .name = @typeName(meta.Int(.unsigned, bit_width)),
-    //       .type = meta.Int(.unsigned, bit_width),
-    //       .alignment = @alignOf(meta.Int(.unsigned, bit_width)),
-    //    } };
-    //    fields = fields ++ .{ UnionField {
-    //       .name = @typeName(meta.Int(.signed, bit_width)),
-    //       .type = meta.Int(.signed, bit_width),
-    //       .alignment = @alignOf(meta.Int(.signed, bit_width)),
-    //    } };
-    //}
-
-    //return gen_union;
 }
 
 /// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.

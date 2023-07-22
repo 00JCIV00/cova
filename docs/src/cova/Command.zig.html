@@ -206,7 +206,7 @@
 <span class="line" id="L93">        };</span>
 <span class="line" id="L94">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> OptionT = Option.Custom(opt_config);</span>
 <span class="line" id="L95">        <span class="tok-comment">/// The Custom Value type to be used by this Custom Command type.</span></span>
-<span class="line" id="L96">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ValueT = Value.Generic(config.val_config);</span>
+<span class="line" id="L96">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ValueT = Value.Custom(config.val_config);</span>
 <span class="line" id="L97"></span>
 <span class="line" id="L98">        <span class="tok-comment">/// Sub Commands Help Format.</span></span>
 <span class="line" id="L99">        <span class="tok-comment">/// Check (`Command.Config`) for details.</span></span>
@@ -395,7 +395,7 @@
 <span class="line" id="L276">                        <span class="tok-kw">for</span> (self.opts.?) |opt| {</span>
 <span class="line" id="L277">                            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.name, flag_name) <span class="tok-kw">and</span> </span>
 <span class="line" id="L278">                                mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> </span>
-<span class="line" id="L279">                                opt.val.<span class="tok-type">bool</span>.get() <span class="tok-kw">catch</span> <span class="tok-null">false</span>)</span>
+<span class="line" id="L279">                                opt.val.getAs(<span class="tok-type">bool</span>) <span class="tok-kw">catch</span> <span class="tok-null">false</span>)</span>
 <span class="line" id="L280">                                    <span class="tok-kw">break</span> :checkOpt <span class="tok-null">true</span>;</span>
 <span class="line" id="L281">                        }</span>
 <span class="line" id="L282">                    }</span>
@@ -406,7 +406,7 @@
 <span class="line" id="L287">                        <span class="tok-kw">for</span> (self.vals.?) |val| {</span>
 <span class="line" id="L288">                            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, val.name(), flag_name) <span class="tok-kw">and</span></span>
 <span class="line" id="L289">                                mem.eql(<span class="tok-type">u8</span>, val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span></span>
-<span class="line" id="L290">                                val.<span class="tok-type">bool</span>.get() <span class="tok-kw">catch</span> <span class="tok-null">false</span>)</span>
+<span class="line" id="L290">                                val.getAs(<span class="tok-type">bool</span>) <span class="tok-kw">catch</span> <span class="tok-null">false</span>)</span>
 <span class="line" id="L291">                                    <span class="tok-kw">break</span> :checkVal <span class="tok-null">true</span>;</span>
 <span class="line" id="L292">                        }</span>
 <span class="line" id="L293">                    }</span>
@@ -642,7 +642,7 @@
 <span class="line" id="L515">                                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L516">                                }</span>
 <span class="line" id="L517">                                <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (f_opt.child == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(f_opt.child);</span>
-<span class="line" id="L518">                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(opt.val, val_tag).get();</span>
+<span class="line" id="L518">                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(opt.val.generic, val_tag).get();</span>
 <span class="line" id="L519">                            }</span>
 <span class="line" id="L520">                        }</span>
 <span class="line" id="L521">                    },</span>
@@ -656,7 +656,7 @@
 <span class="line" id="L529">                                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L530">                                }</span>
 <span class="line" id="L531">                                <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (field.<span class="tok-type">type</span> == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>);</span>
-<span class="line" id="L532">                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(val, val_tag).get();</span>
+<span class="line" id="L532">                                <span class="tok-builtin">@field</span>(out, field.name) = <span class="tok-kw">try</span> <span class="tok-builtin">@field</span>(val.generic, val_tag).get();</span>
 <span class="line" id="L533">                            }</span>
 <span class="line" id="L534">                        } </span>
 <span class="line" id="L535">                    },</span>
@@ -675,7 +675,7 @@
 <span class="line" id="L548">                                        <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (a_opt.child == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(a_opt.child);</span>
 <span class="line" id="L549">                                        <span class="tok-kw">var</span> f_ary: field.<span class="tok-type">type</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L550">                                        <span class="tok-kw">const</span> f_ary_slice = f_ary[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L551">                                        <span class="tok-kw">for</span> (f_ary_slice, <span class="tok-number">0</span>..) |*elm, idx| elm.* = <span class="tok-builtin">@field</span>(opt.val, val_tag)._set_args[idx];</span>
+<span class="line" id="L551">                                        <span class="tok-kw">for</span> (f_ary_slice, <span class="tok-number">0</span>..) |*elm, idx| elm.* = <span class="tok-builtin">@field</span>(opt.val.generic, val_tag)._set_args[idx];</span>
 <span class="line" id="L552">                                        <span class="tok-builtin">@field</span>(out, field.name) = f_ary;</span>
 <span class="line" id="L553">                                        <span class="tok-kw">break</span>;</span>
 <span class="line" id="L554">                                    }</span>
@@ -693,7 +693,7 @@
 <span class="line" id="L566">                                        <span class="tok-kw">const</span> val_tag = <span class="tok-kw">if</span> (ary.child == []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-str">&quot;string&quot;</span> <span class="tok-kw">else</span> <span class="tok-builtin">@typeName</span>(ary.child);</span>
 <span class="line" id="L567">                                        <span class="tok-kw">var</span> f_ary: field.<span class="tok-type">type</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L568">                                        <span class="tok-kw">const</span> f_ary_slice = f_ary[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L569">                                        <span class="tok-kw">for</span> (f_ary_slice, <span class="tok-number">0</span>..) |*elm, idx| elm.* = <span class="tok-builtin">@field</span>(val, val_tag)._set_args[idx];</span>
+<span class="line" id="L569">                                        <span class="tok-kw">for</span> (f_ary_slice, <span class="tok-number">0</span>..) |*elm, idx| elm.* = <span class="tok-builtin">@field</span>(val.generic, val_tag)._set_args[idx];</span>
 <span class="line" id="L570">                                        <span class="tok-builtin">@field</span>(out, field.name) = f_ary;</span>
 <span class="line" id="L571">                                        <span class="tok-kw">break</span>;</span>
 <span class="line" id="L572">                                    }</span>

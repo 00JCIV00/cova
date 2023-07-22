@@ -64,7 +64,7 @@ pub fn Base() type { return Custom(.{}); }
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// The Custom Value type used by this Custom Option type.
-        const ValueT = Value.Generic(config.val_config);
+        const ValueT = Value.Custom(config.val_config);
 
         /// Help Format.
         /// Check `Options.Config` for details.

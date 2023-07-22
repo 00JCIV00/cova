@@ -144,35 +144,35 @@ const setup_cmd: CustomCommand = .{
             .name = "file_opt",
             .short_name = 'f',
             .long_name = "file",
-            .val = .{ .string = .{
+            .val = CustomValue.ofType([]const u8, .{
                 .name = "file_val",
                 .description = "A filepath value.",
                 .valid_fn = Value.ValidationFns.validFilepath,
-            } },
+            }),
             .description = "A filepath option.",
         },
         .{
             .name = "ordinal_opt",
             .short_name = 'o',
             .long_name = "ordinal",
-            .val = .{ .string = .{
+            .val = CustomValue.ofType([]const u8, .{
                 .name = "ordinal_val",
                 .description = "An ordinal number value.",
                 .valid_fn = Value.ValidationFns.ordinalNum,
-            } },
+            }),
             .description = "An ordinal number option.",
         },
         .{
             .name = "cardinal_opt",
             .short_name = 'c',
             .long_name = "cardinal",
-            .val = .{ .u8 = .{
+            .val = CustomValue.ofType(u8, .{
                 .name = "cardinal_val",
                 .description = "A cardinal number value.",
                 .parse_fn = Value.ParsingFns.Builder.asEnumType(enum(u8) { zero, one, two }),
                 .set_behavior = .Multi,
                 .max_args = 3,
-            } },
+            }),
             .description = "A cardinal number option.",
         },
         .{
@@ -204,12 +204,12 @@ const setup_cmd: CustomCommand = .{
             .description = "A string value for the command.",
             .parse_fn = Value.ParsingFns.trimWhitespace,
         }),
-        .{ .bool = .{
+        CustomValue.ofType(bool, .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
             .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "potatoe" }),
-        } },
-        .{ .u128 = .{
+        }),
+        CustomValue.ofType(u128, .{
             .name = "cmd_u128",
             .description = "A u128 value for the command.",
             .default_val = 654321,
@@ -217,7 +217,7 @@ const setup_cmd: CustomCommand = .{
             .max_args = 3,
             .parse_fn = struct{ fn parseFn(arg: []const u8) !u128 { return (try fmt.parseInt(u128, arg, 0)) * 100; } }.parseFn, 
             .valid_fn = Value.ValidationFns.Builder.inRange(u128, 123456, 9999999999, true),
-        } },
+        }),
     }
 };
 

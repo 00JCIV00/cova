@@ -36,16 +36,16 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
 fn displayValInfo(comptime CustomValue: type, val: CustomValue, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
-    switch (meta.activeTag(val)) {
+    switch (meta.activeTag(val.generic)) {
         .string => {
             try writer.print("    {s}: {?s}, Data: \"{s}\"\n", .{
                 prefix,
                 name, 
-                mem.join(alloc, "\" \"", val.string.getAll(alloc) catch &.{ "" }) catch "",
+                mem.join(alloc, "\" \"", val.generic.string.getAll(alloc) catch &.{ "" }) catch "",
             });
         },
         inline else => |tag| {
-            const tag_self = @field(val, @tagName(tag));
+            const tag_self = @field(val.generic, @tagName(tag));
             if (tag_self.set_behavior == .Multi) {
                 const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
                     if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
