@@ -9,8 +9,8 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - [Demo](#demo)
 - [Features](#features)
 - [Goals](#goals)
-  - [Pre-Public Release](#pre-public-release)
-  - [Post-Public Release](#post-public-release)
+  - [Pre-Public Beta Release](#pre-public-beta-release)
+  - [Public Beta Release](#public-beta-release)
 - [Documentation](#documentation)
 - [Install](#install)
   - [Package Manager](#package-manager)
@@ -79,38 +79,11 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Set the Rules for how Values are Set through custom Parsing and Validation Functions!
 
 ## Goals
-### Pre Public Release
-- [x] Implement basic Argument Parsing for Commands, Options, and Values.
-- [x] Advanced Parsing:
-  - [x] Handle '=' instead of ' ' between an Option and its Value.
-  - [x] Handle the same Option given multiple times. (Currently takes last value.)
-  - [x] Handle no space ' ' between a Short Option and its Value.
-  - [x] Abbreviated Long Option parsing (i.e. '--long' working for '--long-opt').
-- [x] Parsing Customization:
-  - [x] Mandate Values be filled.
-  - [x] Custom prefixes for Options.
-  - [x] Custom separator between Options and Values.
-  - [x] Choose behavior for having the same option given multiple times.
-  - [x] Choose whether or not to skip the first Argument (the executable's name).
-- [x] Setup Features:
-  - [x] Set up the build.zig and build.zig.zon for install and use in other codebases.
-  - [x] Proper library tests. 
-  - [x] Initialization `Custom()` methods for Commands and Options.
-    - [x] Setup in Comptime. Use in Runtime.
-    - [x] Validate unique sub Commands, Options, and Values.
-    - [x] Generate Usage/Help sub Commands.
-    - [x] Generate Usage/Help Options.
-    - [x] User formatting options for Usage/Help messages.
-  - [x] Generate Commands from a struct and vice versa.
-    - [x] Compatible nullable fields become Options.
-    - [x] Compatible non-nullable fields become Values.
-
-### Post Public Release
-- [ ] Optionally mandate that a Sub-Command be provided if one is available.
-- [x] Optionally auto-handle Usage/Help messages during parsing.
-- [ ] Support all Int/Float types. (This is technically possible now by adding them to the `cova.Value.Generic` union, but there should be simpler way if reified declarations become allowed in Zig.)
-- [ ] Pull Argument Type metadata via AST Parsing of struct/field comments.
-- [ ] Tab Completion (long-term goal).
+### Pre Public Beta Release
+- [v0.7.0-beta](https://github.com/00JCIV00/cova/issues/9)
+### Public Beta Release
+- [v0.8.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.8.0-beta)
+- [v0.9.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.9.0-beta+)
   
 ## Documentation
 - [API](https://00jciv00.github.io/cova/#A;cova)
@@ -453,4 +426,3 @@ pub fn main() !void {
 - [zig-args](https://github.com/MasterQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
 - [zig-parse-args](https://github.com/winksaville/zig-parse-args)
-
