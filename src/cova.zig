@@ -367,8 +367,8 @@ pub fn parseArgs(
     if (cmd.sub_cmds_mandatory and cmd.sub_cmd == null and
         !(cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and 
             (mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or mem.eql(u8, cmd.sub_cmds.?[0].name, "help"))) and
-        !(cmd.checkFlag("help") or cmd.checkFlag("usage"))
-        // !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
+        !(cmd.checkFlag("help") or cmd.checkFlag("usage")) and
+        !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
     ) {
         log.err("Command '{s}' requires a Sub Command.", .{ cmd.name });
         try cmd.help(writer);
@@ -381,7 +381,7 @@ pub fn parseArgs(
         val_idx < cmd.vals.?.len and
         !usage_help_flag
     ) {
-        log.err("Command '{s}' expects {d} Values, but only recieved {d}.", .{
+        log.err("Command '{s}' expects {d} Values, but only received {d}.", .{
             cmd.name,
             cmd.vals.?.len,
             val_idx,
@@ -549,20 +549,13 @@ const test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});
 
 
 test "command setup" {
-    //testing.log_level = .info;
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    //log.info("", .{});
-    //log.info("===Testing Normal Command Setup===", .{});
-    //log.info("", .{});
     const test_cmd = try test_setup_cmd.init(alloc, .{});
     defer test_cmd.deinit();
 
-    //log.info("", .{});
-    //log.info("===Testing Command From Struct===", .{});
-    //log.info("", .{});
     const test_cmd_from_struct = try test_setup_cmd_from_struct.init(alloc, .{
         .add_help_cmds = false,
         .add_help_opts = false,
@@ -575,7 +568,6 @@ test "argument parsing" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    //const writer = std.io.getStdOut().writer();
     var writer_list = std.ArrayList(u8).init(alloc);
     defer writer_list.deinit();
     const writer = writer_list.writer();
@@ -589,10 +581,6 @@ test "argument parsing" {
         &.{ "test-cmd", "string value text", },
     };
     for (test_args) |tokens_list| {
-        //log.info("", .{});
-        //log.info("===Testing '{s}'===", .{ tokens_list[1] });
-        //log.info("Args: {s}", .{ tokens_list });
-        //log.info("", .{});
         const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
         defer test_cmd.deinit();
         var raw_iter = RawArgIterator{ .args = tokens_list };
@@ -605,14 +593,13 @@ test "argument analysis" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    //const writer = std.io.getStdOut().writer();
     var writer_list = std.ArrayList(u8).init(alloc);
     defer writer_list.deinit();
     const writer = writer_list.writer();
 
     const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
     defer test_cmd.deinit();
-    const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo", "f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
+    const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo=5.1", "-f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
     var raw_iter = RawArgIterator{ .args = test_args };
     var test_iter = ArgIteratorGeneric.from(raw_iter);
     parseArgs(&test_iter, TestCommand, test_cmd, writer, .{}) catch |err| {
@@ -625,11 +612,6 @@ test "argument analysis" {
         }    
     };
 
-    //testing.log_level = .info;
-    //log.info("", .{});
-    //log.info("===Testing Argument Analysis===", .{});
-    //log.info("Args: {s}", .{ test_args });
-    //log.info("", .{});
     try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);
 
     _ = test_setup_cmd.SubCommandsEnum();
