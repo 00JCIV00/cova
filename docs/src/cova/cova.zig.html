@@ -501,9 +501,8 @@
 <span class="line" id="L367">    <span class="tok-kw">if</span> (cmd.sub_cmds_mandatory <span class="tok-kw">and</span> cmd.sub_cmd == <span class="tok-null">null</span> <span class="tok-kw">and</span></span>
 <span class="line" id="L368">        !(cmd.sub_cmds != <span class="tok-null">null</span> <span class="tok-kw">and</span> cmd.sub_cmds.?.len == <span class="tok-number">2</span> <span class="tok-kw">and</span> </span>
 <span class="line" id="L369">            (mem.eql(<span class="tok-type">u8</span>, cmd.sub_cmds.?[<span class="tok-number">0</span>].name, <span class="tok-str">&quot;usage&quot;</span>) <span class="tok-kw">or</span> mem.eql(<span class="tok-type">u8</span>, cmd.sub_cmds.?[<span class="tok-number">0</span>].name, <span class="tok-str">&quot;help&quot;</span>))) <span class="tok-kw">and</span></span>
-<span class="line" id="L370">        !(cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>))</span>
-<span class="line" id="L371">        <span class="tok-comment">// !(mem.eql(u8, cmd.name, &quot;help&quot;) or mem.eql(u8, cmd.name, &quot;usage&quot;))</span>
-</span>
+<span class="line" id="L370">        !(cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>)) <span class="tok-kw">and</span></span>
+<span class="line" id="L371">        !(mem.eql(<span class="tok-type">u8</span>, cmd.name, <span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> mem.eql(<span class="tok-type">u8</span>, cmd.name, <span class="tok-str">&quot;usage&quot;</span>))</span>
 <span class="line" id="L372">    ) {</span>
 <span class="line" id="L373">        log.err(<span class="tok-str">&quot;Command '{s}' requires a Sub Command.&quot;</span>, .{ cmd.name });</span>
 <span class="line" id="L374">        <span class="tok-kw">try</span> cmd.help(writer);</span>
@@ -517,7 +516,7 @@
 <span class="line" id="L381">        val_idx &lt; cmd.vals.?.len <span class="tok-kw">and</span></span>
 <span class="line" id="L382">        !usage_help_flag</span>
 <span class="line" id="L383">    ) {</span>
-<span class="line" id="L384">        log.err(<span class="tok-str">&quot;Command '{s}' expects {d} Values, but only recieved {d}.&quot;</span>, .{</span>
+<span class="line" id="L384">        log.err(<span class="tok-str">&quot;Command '{s}' expects {d} Values, but only received {d}.&quot;</span>, .{</span>
 <span class="line" id="L385">            cmd.name,</span>
 <span class="line" id="L386">            cmd.vals.?.len,</span>
 <span class="line" id="L387">            val_idx,</span>
@@ -769,7 +768,7 @@
 <span class="line" id="L612"></span>
 <span class="line" id="L613">    <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
 <span class="line" id="L614">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L615">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;opt string 1&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;opt string 2&quot;</span>, <span class="tok-str">&quot;--int=1,22,333,444,555,666&quot;</span>, <span class="tok-str">&quot;--flo&quot;</span>, <span class="tok-str">&quot;f10.1,20.2,30.3&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;val string&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-s=sub_opt_str&quot;</span>, <span class="tok-str">&quot;--sub-int&quot;</span>, <span class="tok-str">&quot;21523&quot;</span>, <span class="tok-str">&quot;help&quot;</span> }; </span>
+<span class="line" id="L615">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;opt string 1&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;opt string 2&quot;</span>, <span class="tok-str">&quot;--int=1,22,333,444,555,666&quot;</span>, <span class="tok-str">&quot;--flo=5.1&quot;</span>, <span class="tok-str">&quot;-f10.1,20.2,30.3&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;val string&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-s=sub_opt_str&quot;</span>, <span class="tok-str">&quot;--sub-int&quot;</span>, <span class="tok-str">&quot;21523&quot;</span>, <span class="tok-str">&quot;help&quot;</span> }; </span>
 <span class="line" id="L616">    <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = test_args };</span>
 <span class="line" id="L617">    <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
 <span class="line" id="L618">    parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{}) <span class="tok-kw">catch</span> |err| {</span>

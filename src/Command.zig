@@ -430,6 +430,7 @@ pub fn Custom(comptime config: Config) type {
                     .Array => |ary| {
                         const ary_info = @typeInfo(ary.child);
                         switch (ary_info) {
+                            // Options
                             .Optional => {
                                 const short_name = shortName: {
                                     if (!from_config.attempt_short_opts) break :shortName null;
@@ -451,6 +452,7 @@ pub fn Custom(comptime config: Config) type {
                                 }) orelse continue;
                                 opts_idx += 1;
                             },
+                            // Values
                             .Bool, .Int, .Float, .Pointer => {
                                 from_vals[vals_idx] = ValueT.from(field, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,

@@ -32,9 +32,11 @@ pub fn build(b: *std.Build) void {
 
     // Docs
     const cova_docs = cova_tests;
-    cova_docs.emit_docs = .emit;
-    const build_docs = b.addRunArtifact(cova_docs);
-    build_docs.has_side_effects = true;
+    const build_docs = b.addInstallDirectory(.{
+        .source_dir = cova_docs.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "../docs",
+    });
     const build_docs_step = b.step("docs", "Build the cova library docs");
     build_docs_step.dependOn(&build_docs.step);
 

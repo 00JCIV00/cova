@@ -26,14 +26,14 @@ Values will be parsed to their corresponding types which can then be retrieved u
         .description = "A string value for the command.",
     }),
 	// Using Zig's union creation syntax
-    .{ .u128, .{
+    .{ .generic = .{ .u128, .{
         .name = "cmd_u128",
         .description = "A u128 value for the command.",
         // Default Value
         .default_val = 654321,
         // Validation Function
         .valid_fn = struct{ fn valFn(val: u128) bool { return val > 123 and val < 987654321; } }.valFn,
-    } },
+    } } },
 }
 ```
 

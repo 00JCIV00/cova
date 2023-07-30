@@ -115,7 +115,7 @@
 <span class="line" id="L2"><span class="tok-comment">/// Zig version. When writing code that supports multiple versions of Zig, prefer</span></span>
 <span class="line" id="L3"><span class="tok-comment">/// feature detection (i.e. with `@hasDecl` or `@hasField`) over version checks.</span></span>
 <span class="line" id="L4"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version = std.SemanticVersion.parse(zig_version_string) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version_string = <span class="tok-str">&quot;0.11.0-dev.4059+17255bed4&quot;</span>;</span>
+<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version_string = <span class="tok-str">&quot;0.11.0-dev.4299+20f4216af&quot;</span>;</span>
 <span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_backend = std.builtin.CompilerBackend.stage2_llvm;</span>
 <span class="line" id="L7"></span>
 <span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> output_mode = std.builtin.OutputMode.Exe;</span>
@@ -221,9 +221,10 @@
 <span class="line" id="L108"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> position_independent_executable = <span class="tok-null">false</span>;</span>
 <span class="line" id="L109"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> strip_debug_info = <span class="tok-null">false</span>;</span>
 <span class="line" id="L110"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> code_model = std.builtin.CodeModel.default;</span>
-<span class="line" id="L111"><span class="tok-kw">pub</span> <span class="tok-kw">var</span> test_functions: []<span class="tok-kw">const</span> std.builtin.TestFn = <span class="tok-null">undefined</span>; <span class="tok-comment">// overwritten later</span>
+<span class="line" id="L111"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> omit_frame_pointer = <span class="tok-null">false</span>;</span>
+<span class="line" id="L112"><span class="tok-kw">pub</span> <span class="tok-kw">var</span> test_functions: []<span class="tok-kw">const</span> std.builtin.TestFn = <span class="tok-null">undefined</span>; <span class="tok-comment">// overwritten later</span>
 </span>
-<span class="line" id="L112"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> test_io_mode = .blocking;</span>
-<span class="line" id="L113"></span>
+<span class="line" id="L113"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> test_io_mode = .blocking;</span>
+<span class="line" id="L114"></span>
 </code></pre></body>
 </html>
