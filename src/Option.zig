@@ -146,7 +146,7 @@ pub fn Custom(comptime config: Config) type {
             const optl =
                 if (field_info == .Optional) field_info.Optional
                 else if (field_info == .Array and @typeInfo(field_info.Array.child) == .Optional) @typeInfo(field_info.Array.child).Optional
-                else @compileError("The field '" ++ field.name ++ "' is not an Optional or Array of Optionals.");
+                else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
             return .{
                 .name = field.name,
                 .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",

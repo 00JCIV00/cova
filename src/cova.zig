@@ -168,7 +168,6 @@ pub fn parseArgs(
                                 log.err("Could not parse Command '{s}'.", .{ sub_cmd.name });
                                 try sub_cmd.usage(writer);
                                 log.err("\n", .{});
-                                //return error.CouldNotParseCommand;
                                 return cmd_err;
                             }
                         }

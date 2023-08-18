@@ -23,7 +23,7 @@ pub const CustomCommand = Command.Custom(.{
 }); 
 pub const CustomValue = CustomCommand.ValueT;
 
-pub const log_level: log.Level = .err;
+//pub const log_level: log.Level = .err;
 
 pub const DemoStruct = struct {
     pub const InnerStruct = struct {
@@ -55,6 +55,10 @@ pub const DemoStruct = struct {
         .default_val = 50,
     }),
 };
+
+pub fn demoFn(int: i32, string: []const u8) void {
+    log.info("Demo function result:\n - Int: {d}\n - String: {s}", .{ int, string });
+}
 
 // Comptime Setup Command
 const setup_cmd: CustomCommand = .{
@@ -107,6 +111,16 @@ const setup_cmd: CustomCommand = .{
                 .{ "inner_config", "An inner/nested command for struct-cmd" },
                 .{ "int", "The first Integer Value for the struct-cmd." },
             },
+        }),
+        CustomCommand.from(@TypeOf(demoFn), .{
+            .cmd_name = "fn-cmd",
+            .cmd_description = "A demo sub command made from a function.",
+            .sub_descriptions = &.{
+                .{ "inner_config", "An inner/nested command for fn-cmd" },
+                .{ "int", "The first Integer Value for the fn-cmd." },
+                .{ "string", "The first String Value for the fn-cmd." },
+            },
+            .ignore_incompatible = false,
         }),
         CustomCommand.from(ex_structs.add_user, .{
             .cmd_name = "add-user",
@@ -240,6 +254,9 @@ pub fn main() !void {
 
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
         log.debug("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
+    }
+    if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "fn-cmd")) {
+        try main_cmd.sub_cmd.?.callAs(demoFn, void);
     }
 
     // Verbosity Change (WIP)

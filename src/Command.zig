@@ -18,6 +18,7 @@
 const std = @import("std");
 const ascii = std.ascii;
 const builtin = std.builtin;
+const fmt = std.fmt;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -187,13 +188,15 @@ pub fn Custom(comptime config: Config) type {
 
             try self.usage(writer);
 
-            try writer.print(\\HELP:
-                             \\    COMMAND: {s}
-                             \\
-                             \\    DESCRIPTION: {s}
-                             \\
-                             \\
-                             , .{ self.name, self.description });
+            try writer.print(
+                \\HELP:
+                \\    COMMAND: {s}
+                \\
+                \\    DESCRIPTION: {s}
+                \\
+                \\
+                , .{ self.name, self.description }
+            );
             
             if (self.sub_cmds != null) {
                 try writer.print("    SUB COMMANDS:\n", .{});
@@ -254,6 +257,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Check if Usage or Help have been set and call their respective methods.
+        /// Output will be written to the provided Writer (`writer`).
         pub fn checkUsageHelp(self: *const @This(), writer: anytype) !bool {
             if (self.checkFlag("usage")) {
                 try self.usage(writer);
@@ -324,18 +328,29 @@ pub fn Custom(comptime config: Config) type {
             /// Max number of Values.
             max_vals: u8 = max_args,
         };
+        
+        /// Create a Command from the provided Type (`From_T`).
+        /// The provided Type must be a Comptime-known Function, Struct, or Union.
+        pub fn from(comptime From_T: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(From_T);
+            return switch (from_info) {
+                .Fn => fromFn(From_T, from_config),
+                .Struct => fromStruct(From_T, from_config),
+                else => @compileError("The provided type '" ++ @typeName(From_T) ++ "' must be a Function, Struct, or Union."),
+            };
+        }
 
-        /// Create a Command from the provided Struct (`from_struct`).
+        /// Create a Command from the provided Struct (`FromStruct`).
         /// The provided Struct must be Comptime-known.
         ///
-        /// Types are converted as follows:
-        /// - Structs = Commands
+        /// Field Types are converted as follows:
+        /// - Functions, Structs = Commands
         /// - Valid Values = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
         /// - Valid Optionals = Single-Options (Valid Optionals are nullable versions of Valid Values.)
         /// - Arrays of Valid Values = Multi-Values
         /// - Arrays of Valid Optionals = Multi-Options 
-        pub fn from(comptime from_struct: type, comptime from_config: FromConfig) @This() {
-            const from_info = @typeInfo(from_struct);
+        pub fn fromStruct(comptime FromStruct: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(FromStruct);
             if (from_info != .Struct) @compileError("Provided Type is not a Struct.");
 
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
@@ -353,7 +368,7 @@ pub fn Custom(comptime config: Config) type {
 
             const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
 
-            const fields = meta.fields(from_struct);
+            const fields = meta.fields(FromStruct);
             inline for (fields) |field| {
                 const arg_description = arg_descriptions.get(field.name);
                 // Handle Argument types.
@@ -386,7 +401,7 @@ pub fn Custom(comptime config: Config) type {
                 // Handle non-Argument types.
                 switch (field_info) {
                     // Commands
-                    .Struct => {
+                    .Fn, .Struct => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
                             new_config.cmd_name = field.name;
@@ -397,6 +412,7 @@ pub fn Custom(comptime config: Config) type {
                         cmds_idx += 1;
                     },
                     // Options
+                    // TODO - Handle Command types passed as Optionals?
                     .Optional => {
                         const short_name = shortName: {
                             if (!from_config.attempt_short_opts) break :shortName null;
@@ -469,11 +485,86 @@ pub fn Custom(comptime config: Config) type {
             }
 
             return @This(){
-                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(from_struct),
+                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(FromStruct),
                 .description = from_config.cmd_description,
                 .help_prefix = from_config.cmd_help_prefix,
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
+                .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
+            };
+        }
+
+        /// Create a Command from the provided Function (`from_fn`).
+        /// The provided Function must be Comptime-known.
+        ///
+        /// Types are converted as follows:
+        /// - Functions, Structs = Commands
+        /// - Valid Single-Parameters = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
+        /// - Valid Array/Slice-Parameters = Multi-Values
+        /// - Note: Options can not be generated from Functions due to the lack of parameter names in `std.builtin.Type.Fn.Param`.
+        pub fn fromFn(comptime FromFn: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(FromFn);
+            if (from_info != .Fn) @compileError("Provided Type is not a Function.");
+
+            var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
+            const from_cmds = from_cmds_buf[0..];
+            var cmds_idx: u8 = 0;
+            var from_vals_buf: [from_config.max_vals]ValueT = undefined;
+            const from_vals = from_vals_buf[0..];
+            var vals_idx: u8 = 0;
+
+            //const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+
+            const params = from_info.Fn.params;
+            inline for (params) |param| {
+                const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
+                // Handle Argument types.
+                switch (@typeInfo(param.type.?)) {
+                    // Commands
+                    .Fn, .Struct => {
+                        const sub_config = comptime subConfig: {
+                            var new_config = from_config;
+                            new_config.cmd_name = "cmd-" ++ &.{ cmds_idx + 48 };
+                            new_config.cmd_description = arg_description orelse "The '" ++ new_config.cmd_name ++ "' Command.";
+                            break :subConfig new_config;
+                        };
+                        from_cmds[cmds_idx] = from(param.type, sub_config);
+                        cmds_idx += 1;
+                    },
+                    // Values
+                    .Bool, .Int, .Float, .Optional, .Pointer => {
+                        from_vals[vals_idx] = (ValueT.from(param, .{
+                            .ignore_incompatible = from_config.ignore_incompatible,
+                            .val_name = "val-" ++ .{ '0', (vals_idx + 48), },
+                            .val_description = arg_description
+                        }) orelse continue);
+                        vals_idx += 1;
+                    },
+                    // Multi
+                    .Array => |ary| {
+                        const ary_info = @typeInfo(ary.child);
+                        switch (ary_info) {
+                            // Values
+                            .Bool, .Int, .Float, .Optional, .Pointer => {
+                                from_vals[vals_idx] = ValueT.from(param, .{
+                                    .ignore_incompatible = from_config.ignore_incompatible,
+                                    .val_description = arg_description
+                                }) orelse continue;
+                                vals_idx += 1;
+                            },
+                            else => if (!from_config.ignore_incompatible) @compileError("The parameter of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                        }
+                    },
+                    // Incompatible
+                    else => if (!from_config.ignore_incompatible) @compileError("The parameter of type '" ++ @typeName(param.type) ++ "' is incompatible as it cannot be converted to a Command or Value."),
+                }
+            }
+
+            return @This(){
+                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(FromFn),
+                .description = from_config.cmd_description,
+                .help_prefix = from_config.cmd_help_prefix,
+                .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
             };
         }
@@ -488,7 +579,7 @@ pub fn Custom(comptime config: Config) type {
             allow_incompatible: bool = true,
         };
 
-        /// Convert this Command to an instance of the provided Struct Type (`T`).
+        /// Convert this Command to an instance of the provided Struct Type (`to_T`).
         /// This is the inverse of `from()`.
         ///
         /// Types are converted as follows:
@@ -497,10 +588,10 @@ pub fn Custom(comptime config: Config) type {
         /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
         // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
-        pub fn to(self: *const @This(), comptime T: type, to_config: ToConfig) !T {
+        pub fn to(self: *const @This(), comptime To_T: type, to_config: ToConfig) !To_T {
             if (!self._is_init) return error.CommandNotInitialized;
-            var out: T = undefined;
-            const fields = meta.fields(T);
+            var out: To_T = undefined;
+            const fields = meta.fields(To_T);
             inline for (fields) |field| {
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
@@ -585,6 +676,41 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
             return out;
+        }
+
+        /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`Return_T`).
+        /// This effectively wraps the `@call` builtin function by using this Command's Values as the function parameters.
+        pub fn callAs(self: *const @This(), comptime call_fn: anytype, comptime Return_T: type) !Return_T {
+            const fn_info = @typeInfo(@TypeOf(call_fn));
+            const fn_name = @typeName(@TypeOf(call_fn));
+            if (fn_info != .Fn) {
+                log.err("Expected a Function but received '{s}'.", .{ fn_name });
+                return error.ExpectedFn;
+            }
+            if (self.vals == null or self.vals.?.len < fn_info.Fn.params.len) {
+                log.err("The provided function requires {d} parameters but only {d} was/were provided.", .{ 
+                    fn_info.Fn.params.len, 
+                    if (self.vals == null) 0 else self.vals.?.len });
+                return error.ExpectedMoreParameters;
+            }
+            if (fn_info.Fn.return_type != Return_T) {
+                log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(Return_T) });
+                return error.ReturnTypeMismatch;
+            }
+
+            const params = valsToParams: { // TODO figure this out.
+                const param_types = comptime paramTypes: {
+                    var types: [fn_info.Fn.params.len]type = undefined;
+                    for (types[0..], fn_info.Fn.params) |*T, param| T.* = param.type.?;
+                    break :paramTypes types;
+                };
+                var params_tuple: meta.Tuple(param_types[0..]) = undefined;
+                inline for (self.vals.?, &params_tuple) |val, *param| param.* = try val.getAs(@TypeOf(param.*)); 
+                
+                break :valsToParams params_tuple;
+            };
+
+            return @call(.auto, call_fn, params); 
         }
 
         /// Create Sub Commands Enum.

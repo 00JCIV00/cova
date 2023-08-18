@@ -185,9 +185,6 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             for (self._set_args[0..self._arg_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
         }
-
-        /// Get the Value Type
-        pub fn getType() type { return ChildT; }
     };
 }
 
@@ -331,14 +328,14 @@ pub fn Custom(comptime config: Config) type {
         /// Custom Generic Value type.
         pub const GenericT = Generic(config);
 
-        /// Wrapped Generic Value union
+        /// Wrapped Generic Value union.
         generic: GenericT = .{ .bool = .{} },
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
         // TODO: See if this can be made Runtime
         pub inline fn get(self: *const @This()) !switch (meta.activeTag(self.*.generic)) { 
-            inline else => |tag| @TypeOf(@field(self.*.generic, @tagName(tag))).getType(), 
+            inline else => |tag| @TypeOf(@field(self.*.generic, @tagName(tag))).ChildT, 
         } {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| try @field(self.*.generic, @tagName(tag)).get(),
@@ -349,8 +346,8 @@ pub fn Custom(comptime config: Config) type {
         pub fn getAs(self: *const @This(), comptime T: type) !T {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
-                    const field_self = @field(self.*.generic, @tagName(tag));
-                    if (@TypeOf(field_self).ChildT == T) return try field_self.get()
+                    const typed_val = @field(self.*.generic, @tagName(tag));
+                    if (@TypeOf(typed_val).ChildT == T) return try typed_val.get()
                     else return error.RequestedTypeMismatch;
                 },
             };
@@ -373,7 +370,7 @@ pub fn Custom(comptime config: Config) type {
         pub fn valType(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @typeName(@TypeOf(@field(self.*.generic, @tagName(tag))).getType()),
+                inline else => |tag| @typeName(@TypeOf(@field(self.*.generic, @tagName(tag))).ChildT),
             };
         }
         /// Get the inner Typed Value's Description.
@@ -401,52 +398,68 @@ pub fn Custom(comptime config: Config) type {
             };
         }
 
-        /// Create a Generic Value with a specific Type (`T`).
+        /// Create a Custom Value with a specific Type (`T`).
         pub fn ofType(comptime T: type, comptime typed_val: Typed(T, config)) @This() {
             const active_tag = if (T == []const u8) "string" else @typeName(T);
             return @This(){ .generic = @unionInit(GenericT, active_tag, typed_val) };
         }
 
-        /// Config for creating Values from Struct Fields using `from()`.
+        /// Config for creating Values from Componenet Types (Function Parameters, Struct Fields, and Union Fields) using `from()`.
         pub const FromConfig = struct {
             /// Ignore Incompatible types or error during compile time.
             ignore_incompatible: bool = true,
+            /// Name for the Value.
+            /// If this is left blank, an attempt will be made to create a name based on the Component Type.
+            val_name: []const u8 = "",
             /// Description for the Value.
             val_description: ?[]const u8 = null,
         };
 
-        /// Create a Generic Value from a Valid Value StructField (`field`) using the provided FromConfig (`from_config`).
+        /// Create a Generic Value from a Valid Componenent Param, StructField, or UnionField (`from_comp`) using the provided FromConfig (`from_config`).
         /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
-        pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?@This() {
-            const field_info = @typeInfo(field.type);
-            if (field_info == .Pointer and field_info.Pointer.child != u8) {
-                if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+        pub fn from(comptime from_comp: anytype, from_config: FromConfig) ?@This() {
+            const comp_name = 
+            if (from_config.val_name.len > 0) from_config.val_name    
+            else switch (@TypeOf(from_comp)) {
+                std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
+                std.builtin.Type.Fn.Param => "",
+                else => @compileError("The provided component must be a Function Parameter, Struct Field, or Union Field."), 
+            };
+
+            const From_T = switch(@TypeOf(from_comp)) {
+               std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.type,
+               std.builtin.Type.Fn.Param => from_comp.type.?,
+               else => unreachable,
+            };
+            const comp_info = @typeInfo(From_T);
+            if (comp_info == .Pointer and comp_info.Pointer.child != u8) {
+                if (!from_config.ignore_incompatible) @compileError("The component '" ++ if (comp_name.len > 0) comp_name else "funtion parameter" ++ "' of type '" ++ @typeName(From_T) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
                 else return null;
             }
-            const field_type = switch (field_info) {
-                .Optional => field_info.Optional.child,
+            const comp_type = switch (comp_info) {
+                .Optional => comp_info.Optional.child,
                 .Array => aryType: {
-                    const ary_info = @typeInfo(field_info.Array.child);
+                    const ary_info = @typeInfo(comp_info.Array.child);
                     if (ary_info == .Optional) break :aryType ary_info.Optional.child
-                    else break :aryType field_info.Array.child;
+                    else break :aryType comp_info.Array.child;
                 },
-                .Bool, .Int, .Float, .Pointer => field.type,
+                .Bool, .Int, .Float, .Pointer => From_T,
                 else => { 
-                    if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible.")
+                    if (!from_config.ignore_incompatible) @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(From_T) ++ "' is incompatible.")
                     else return null;
                 },
             };
-            return ofType(field_type, .{
-                .name = field.name,
-                .description = from_config.val_description orelse "The '" ++ field.name ++ "' Value of type '" ++ @typeName(field.type) ++ "'.",
+            return ofType(comp_type, .{
+                .name = comp_name,
+                .description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(From_T) ++ "'.",
                 .max_args = 
-                    if (field_info == .Array) field_info.Array.len
+                    if (comp_info == .Array) comp_info.Array.len
                     else 1,
                 .set_behavior =
-                    if (field_info == .Array) .Multi
+                    if (comp_info == .Array) .Multi
                     else .Last,
                 .default_val = 
-                    if (field.default_value != null and field_info != .Array) @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*
+                    if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null and comp_info != .Array) @as(*From_T, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
                     else null,
             });
         }
