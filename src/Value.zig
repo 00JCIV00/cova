@@ -459,7 +459,8 @@ pub fn Custom(comptime config: Config) type {
                     if (comp_info == .Array) .Multi
                     else .Last,
                 .default_val = 
-                    if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null and comp_info != .Array) @as(*From_T, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
+                    if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null and comp_info != .Array) 
+                        @as(*From_T, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
                     else null,
             });
         }

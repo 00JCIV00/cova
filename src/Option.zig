@@ -140,12 +140,15 @@ pub fn Custom(comptime config: Config) type {
             opt_description: ?[]const u8 = null,
         };
 
-        /// Create an Option from a Valid Optional StructField (`field`) with the provided FromConfig (`from_config`).
-        pub fn from(comptime field: std.builtin.Type.StructField, from_config: FromConfig) ?@This() {
-            const field_info = @typeInfo(field.type);
+        /// Create an Option from a Valid Optional StructField or UnionField (`field`) with the provided FromConfig (`from_config`).
+        pub fn from(comptime field: anytype, from_config: FromConfig) ?@This() {
+            const Field_T = @TypeOf(field);
+            if (Field_T != std.builtin.Type.StructField and Field_T != std.builtin.Type.UnionField) 
+                @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(Field_T) ++ "' was provided.");
+            const optl_info = @typeInfo(field.type);
             const optl =
-                if (field_info == .Optional) field_info.Optional
-                else if (field_info == .Array and @typeInfo(field_info.Array.child) == .Optional) @typeInfo(field_info.Array.child).Optional
+                if (optl_info == .Optional) optl_info.Optional
+                else if (optl_info == .Array and @typeInfo(optl_info.Array.child) == .Optional) @typeInfo(optl_info.Array.child).Optional
                 else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
             return .{
                 .name = field.name,
@@ -153,8 +156,8 @@ pub fn Custom(comptime config: Config) type {
                 .long_name = field.name,
                 .short_name = from_config.short_name, 
                 .val = optVal: {
-                    const optl_info = @typeInfo(optl.child);
-                    switch (optl_info) {
+                    const child_info = @typeInfo(optl.child);
+                    switch (child_info) {
                         .Bool, .Int, .Float, .Pointer => break :optVal ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_description = from_config.opt_description,

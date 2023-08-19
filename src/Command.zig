@@ -335,7 +335,7 @@ pub fn Custom(comptime config: Config) type {
             const from_info = @typeInfo(From_T);
             return switch (from_info) {
                 .Fn => fromFn(From_T, from_config),
-                .Struct => fromStruct(From_T, from_config),
+                .Struct, .Union => fromStructOrUnion(From_T, from_config),
                 else => @compileError("The provided type '" ++ @typeName(From_T) ++ "' must be a Function, Struct, or Union."),
             };
         }
@@ -344,14 +344,14 @@ pub fn Custom(comptime config: Config) type {
         /// The provided Struct must be Comptime-known.
         ///
         /// Field Types are converted as follows:
-        /// - Functions, Structs = Commands
+        /// - Functions, Structs, Unions = Commands
         /// - Valid Values = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
         /// - Valid Optionals = Single-Options (Valid Optionals are nullable versions of Valid Values.)
         /// - Arrays of Valid Values = Multi-Values
         /// - Arrays of Valid Optionals = Multi-Options 
-        pub fn fromStruct(comptime FromStruct: type, comptime from_config: FromConfig) @This() {
-            const from_info = @typeInfo(FromStruct);
-            if (from_info != .Struct) @compileError("Provided Type is not a Struct.");
+        pub fn fromStructOrUnion(comptime From_T: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(From_T);
+            if (from_info != .Struct and from_info != .Union) @compileError("Provided Type is not a Struct or Union.");
 
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
@@ -368,7 +368,7 @@ pub fn Custom(comptime config: Config) type {
 
             const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
 
-            const fields = meta.fields(FromStruct);
+            const fields = meta.fields(From_T);
             inline for (fields) |field| {
                 const arg_description = arg_descriptions.get(field.name);
                 // Handle Argument types.
@@ -485,7 +485,7 @@ pub fn Custom(comptime config: Config) type {
             }
 
             return @This(){
-                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(FromStruct),
+                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(From_T),
                 .description = from_config.cmd_description,
                 .help_prefix = from_config.cmd_help_prefix,
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
@@ -498,7 +498,7 @@ pub fn Custom(comptime config: Config) type {
         /// The provided Function must be Comptime-known.
         ///
         /// Types are converted as follows:
-        /// - Functions, Structs = Commands
+        /// - Functions, Structs, Unions = Commands
         /// - Valid Single-Parameters = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
         /// - Valid Array/Slice-Parameters = Multi-Values
         /// - Note: Options can not be generated from Functions due to the lack of parameter names in `std.builtin.Type.Fn.Param`.
@@ -521,7 +521,7 @@ pub fn Custom(comptime config: Config) type {
                 // Handle Argument types.
                 switch (@typeInfo(param.type.?)) {
                     // Commands
-                    .Fn, .Struct => {
+                    .Fn, .Struct, .Union => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
                             new_config.cmd_name = "cmd-" ++ &.{ cmds_idx + 48 };
@@ -579,17 +579,41 @@ pub fn Custom(comptime config: Config) type {
             allow_incompatible: bool = true,
         };
 
-        /// Convert this Command to an instance of the provided Struct Type (`to_T`).
+        /// Convert this Command to an instance of the provided Struct or Union Type (`to_T`).
         /// This is the inverse of `from()`.
         ///
         /// Types are converted as follows:
-        /// - Commmands: Structs by recursively calling `to()`.
+        /// - Commmands: Structs or Unions by recursively calling `to()`.
         /// - Single-Options: Optional versions of Values.
         /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
         // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
         pub fn to(self: *const @This(), comptime To_T: type, to_config: ToConfig) !To_T {
             if (!self._is_init) return error.CommandNotInitialized;
+            const type_info = @typeInfo(To_T);
+            if (type_info == .Union) { 
+                const vals_idx = if (self.vals) |vals| valsIdx: {
+                    var idx: u8 = 0;
+                    for (vals) |val| { if (val.isSet()) idx += 1; }
+                    break :valsIdx idx;
+                } else 0;
+                const opts_idx = if (self.opts) |opts| optsIdx: {
+                    var idx: u8 = 0;
+                    for (opts) |opt| { 
+                        if (
+                            opt.val.isSet() and
+                            !mem.eql(u8, opt.name, "usage") and
+                            !mem.eql(u8, opt.name, "help")
+                        ) idx += 1; 
+                    }
+                    break :optsIdx idx;
+                } else 0;
+                const total_idx = vals_idx + opts_idx;
+                if (total_idx > 1) { 
+                    log.err("Commands from Unions can only hold 1 Value or Option, but '{d}' were given.", .{ total_idx });
+                    return error.ExpectedOnlyOneValOrOpt;
+                }
+            }
             var out: To_T = undefined;
             const fields = meta.fields(To_T);
             inline for (fields) |field| {
@@ -598,16 +622,20 @@ pub fn Custom(comptime config: Config) type {
                     .Struct => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, field.name)) {
                         @field(out, field.name) = try self.sub_cmd.?.to(field.type);
                     },
+                    .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, field.name)) {
+                        return @unionInit(To_T, field.name, try self.sub_cmd.?.to(field.type));
+                    },
                     .Optional => |f_opt| if (self.opts != null) {
                         for (self.opts.?) |opt| {
                             if (mem.eql(u8, opt.name, field.name)) {
-                                if (!opt.val.isSet()) {
+                                if (!opt.val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
                                         @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
                                 const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
+                                if (type_info == .Union) return @unionInit(To_T, field.name, @field(opt.val.generic, val_tag).get() catch continue); 
                                 @field(out, field.name) = try @field(opt.val.generic, val_tag).get();
                             }
                         }
@@ -615,13 +643,14 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
                         for (self.vals.?) |val| {
                             if (mem.eql(u8, val.name(), field.name)) {
-                                if (!val.isSet() and val.argIdx() == val.maxArgs()) {
+                                if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
                                         @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
                                 const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
+                                if (type_info == .Union) return @unionInit(To_T, field.name, @field(val.generic, val_tag).get() catch continue); 
                                 @field(out, field.name) = try @field(val.generic, val_tag).get();
                             }
                         } 
@@ -632,9 +661,9 @@ pub fn Custom(comptime config: Config) type {
                             .Optional => |a_opt| if (self.opts != null) {
                                 for (self.opts.?) |opt| {
                                     if (mem.eql(u8, opt.name, field.name)) {
-                                        if (!opt.val.isSet()) {
+                                        if (!opt.val.isSet() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
-                                            if (field.default_value != null) 
+                                            if (field.default_value != null)  
                                                 @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                             break;
                                         }
@@ -642,6 +671,7 @@ pub fn Custom(comptime config: Config) type {
                                         var f_ary: field.type = undefined;
                                         const f_ary_slice = f_ary[0..];
                                         for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
+                                        if (type_info == .Union) return @unionInit(To_T, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -650,7 +680,7 @@ pub fn Custom(comptime config: Config) type {
                             .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
                                 for (self.vals.?) |val| {
                                     if (mem.eql(u8, val.name(), field.name)) {
-                                        if (!val.isSet() and val.argIdx() == val.maxArgs()) {
+                                        if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null) 
                                                 @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
@@ -660,6 +690,7 @@ pub fn Custom(comptime config: Config) type {
                                         var f_ary: field.type = undefined;
                                         const f_ary_slice = f_ary[0..];
                                         for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx];
+                                        if (type_info == .Union) return @unionInit(To_T, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -698,7 +729,7 @@ pub fn Custom(comptime config: Config) type {
                 return error.ReturnTypeMismatch;
             }
 
-            const params = valsToParams: { // TODO figure this out.
+            const params = valsToParams: { 
                 const param_types = comptime paramTypes: {
                     var types: [fn_info.Fn.params.len]type = undefined;
                     for (types[0..], fn_info.Fn.params) |*T, param| T.* = param.type.?;

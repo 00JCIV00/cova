@@ -56,6 +56,15 @@ pub const DemoStruct = struct {
     }),
 };
 
+pub const DemoUnion = union(enum) {
+    // Options
+    int: ?i32,
+    str: ?[]const u8,
+    // Values
+    union_uint: u8,
+    union_str: []const u8,
+};
+
 pub fn demoFn(int: i32, string: []const u8) void {
     log.info("Demo function result:\n - Int: {d}\n - String: {s}", .{ int, string });
 }
@@ -110,6 +119,14 @@ const setup_cmd: CustomCommand = .{
             .sub_descriptions = &.{
                 .{ "inner_config", "An inner/nested command for struct-cmd" },
                 .{ "int", "The first Integer Value for the struct-cmd." },
+            },
+        }),
+        CustomCommand.from(DemoUnion, .{
+            .cmd_name = "union-cmd",
+            .cmd_description = "A demo sub command made from a union.",
+            .sub_descriptions = &.{
+                .{ "int", "The first Integer Value for the union-cmd." },
+                .{ "str", "The first String Value for the union-cmd." },
             },
         }),
         CustomCommand.from(@TypeOf(demoFn), .{
@@ -254,6 +271,9 @@ pub fn main() !void {
 
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
         log.debug("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
+    }
+    if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "union-cmd")) {
+        log.debug("To Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
     }
     if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "fn-cmd")) {
         try main_cmd.sub_cmd.?.callAs(demoFn, void);
