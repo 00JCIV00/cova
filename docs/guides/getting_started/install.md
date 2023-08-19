@@ -32,7 +32,7 @@ exe.addModule("cova", cova_mod);
 .dependencies = .{
     .cova = .{
         .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-	    .hash = "HASH FROM STEP 5 HERE",
+        .hash = "HASH FROM STEP 5 HERE",
     },
 },
 ```
