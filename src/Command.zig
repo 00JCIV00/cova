@@ -155,6 +155,22 @@ pub fn Custom(comptime config: Config) type {
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
             @constCast(self).*.sub_cmd = set_cmd;
         }
+        /// Gets a reference to the Sub Command of this Command that matches the provided Name (`cmd_name`).
+        pub fn getSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
+            if (self.sub_cmds == null) return null;
+            for (self.sub_cmds.?[0..]) |*cmd| if (mem.eql(u8, cmd.name, cmd_name)) return cmd;
+            return null;
+        }
+        /// Check if the active Sub Command of this Command has the provided Name (`cmd_name`).
+        /// This is useful for analyzing Commands that DO NOT have Sub Commands that need to be subsequently analyzed.
+        pub fn checkSubCmd(self: *const @This(), cmd_name: []const u8) bool {
+            return self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, cmd_name);
+        }
+        /// Returns the active Sub Command of this Command if it matches the provided Name (`cmd_name`). 
+        /// This is useful for analyzing Commands that DO have Sub Commands that need to be subsequently analyzed.
+        pub fn matchSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
+            return if (self.checkSubCmd(cmd_name)) self.sub_cmd.? else null;
+        }
 
         /// Gets a StringHashMap of this Command's Options.
         pub fn getOpts(self: *const @This()) !StringHashMap(OptionT) {
@@ -747,7 +763,7 @@ pub fn Custom(comptime config: Config) type {
         /// Create Sub Commands Enum.
         /// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
         pub fn SubCommandsEnum(comptime self: *const @This()) ?type {
-            if (self.sub_cmds == null) @compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
+            if (self.sub_cmds == null) return null; //@compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
             var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
             for (self.sub_cmds.?, cmd_fields[0..], 0..) |cmd, *field, idx| {
                 field.* = .{

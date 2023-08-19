@@ -75,7 +75,7 @@ const setup_cmd: CustomCommand = .{
     .description = "A demo of the Cova command line argument parser.",
     .sub_cmds = &.{
         .{
-            .name = "demo-cmd",
+            .name = "sub-cmd",
             .description = "A demo sub command.",
             .opts = &.{
                 .{
@@ -269,15 +269,47 @@ pub fn main() !void {
     try stdout.print("\n", .{});
     try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
 
-    if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "add-user")) {
-        log.debug("To Struct:\n{any}\n\n", .{ main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) });
+    log.info("Main Cmd", .{});
+    if (main_cmd.checkSubCmd("sub-cmd"))
+        log.info("-> Sub Cmd", .{});
+    if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
+        log.info("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
+    if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| {
+        log.info("-> Struct Cmd", .{});
+        if (struct_cmd.checkSubCmd("inner_cmd")) 
+            log.info("->-> Inner Cmd", .{});
     }
-    if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "union-cmd")) {
-        log.debug("To Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
+    if (main_cmd.checkSubCmd("union-cmd"))
+        log.info("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
+    if (main_cmd.matchSubCmd("fn-cmd")) |fn_cmd| {
+        log.info("-> Fn Cmd", .{});
+        try fn_cmd.callAs(demoFn, void);
     }
-    if (main_cmd.sub_cmd != null and mem.eql(u8, main_cmd.sub_cmd.?.name, "fn-cmd")) {
-        try main_cmd.sub_cmd.?.callAs(demoFn, void);
-    }
+
+    //if (main_cmd.sub_cmd) |sub_cmd| {
+    //    const Cmd_E = setup_cmd.SubCommandsEnum() orelse return;
+    //    const ct_sub_cmd = setup_cmd.getSubCmd(sub_cmd.name) orelse return;
+    //    if (meta.stringToEnum(Cmd_E, sub_cmd.name)) |cmd_tag| {
+    //        switch (cmd_tag) {
+    //            .@"sub-cmd" => {
+    //                if (sub_cmd.sub_cmd) |sub_cmd2| {
+    //                    const Cmd_E2 = ct_sub_cmd.SubCommandsEnum() orelse return;
+    //                    //const ct_sub_cmd2 = ct_sub_cmd.getSubCmd(sub_cmd2.name);
+    //                    if (meta.stringToEnum(Cmd_E2, sub_cmd2.name)) |cmd_tag2| {
+    //                        switch (cmd_tag2) {
+    //                            .@"inner_cmd" => log.debug("Main Cmd > Sub Cmd > Inner Cmd", .{}),
+    //                        }
+    //                    }
+    //                }
+    //            },
+    //            .@"add-user" => log.debug("To Struct:\n{any}\n\n", .{ try main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) }),
+    //            .@"union-cmd" => log.debug("To Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) }),
+    //            .@"fn-cmd" => try main_cmd.sub_cmd.?.callAs(demoFn, void),
+    //            else => {},
+    //        }
+    //    }
+    //}
+
 
     // Verbosity Change (WIP)
     //@constCast(&log_level).* = verbosity: {
