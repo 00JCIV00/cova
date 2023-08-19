@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     cova_demo.addModule("cova", cova_mod);
-    const build_cova_demo = b.addInstallArtifact(cova_demo);
+    const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
     const build_cova_demo_step = b.step("demo", "Build the 'covademo' example (default: Debug)");
     build_cova_demo_step.dependOn(&build_cova_demo.step);
 }
