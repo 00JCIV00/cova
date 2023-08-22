@@ -132,8 +132,12 @@ pub fn Custom(comptime config: Config) type {
 
         /// Config for creating Options from Struct Fields using `from()`.
         pub const FromConfig = struct {
+            /// Name for the Option.
+            name: ?[]const u8 = null,
             /// Short Name for the Option.
             short_name: ?u8 = null,
+            /// Long Name for the Option.
+            long_name: ?[]const u8 = null,
             /// Ignore Incompatible types or error during Comptime.
             ignore_incompatible: bool = true,
             /// Description for the Option.
@@ -151,9 +155,9 @@ pub fn Custom(comptime config: Config) type {
                 else if (optl_info == .Array and @typeInfo(optl_info.Array.child) == .Optional) @typeInfo(optl_info.Array.child).Optional
                 else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
             return .{
-                .name = field.name,
+                .name = if (from_config.name) |name| name else field.name,
                 .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
-                .long_name = field.name,
+                .long_name = if (from_config.long_name) |long_name| long_name else field.name,
                 .short_name = from_config.short_name, 
                 .val = optVal: {
                     const child_info = @typeInfo(optl.child);

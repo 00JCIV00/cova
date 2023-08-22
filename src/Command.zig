@@ -68,7 +68,7 @@ pub const Config = struct {
 
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used in for both `init()` and `from()` but can be overwritten for the latter.
-    max_args: u8 = 100, 
+    max_args: u8 = 25, 
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
     /// This will not include Usage/Help Commands.
@@ -175,7 +175,7 @@ pub fn Custom(comptime config: Config) type {
         /// Gets a StringHashMap of this Command's Options.
         pub fn getOpts(self: *const @This()) !StringHashMap(OptionT) {
             if (!self._is_init) return error.CommandNotInitialized;
-            return getOptsAlloc(self._alloc.?);
+            return self.getOptsAlloc(self._alloc.?);
         }
         /// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(OptionT) {
@@ -188,7 +188,7 @@ pub fn Custom(comptime config: Config) type {
         /// Gets a StringHashMap of this Command's Values.
         pub fn getVals(self: *const @This()) !StringHashMap(Value) {
             if (!self._is_init) return error.CommandNotInitialized;
-            return getValsAlloc(self._alloc.?);
+            return self.getValsAlloc(self._alloc.?);
         }
         /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
@@ -320,9 +320,17 @@ pub fn Custom(comptime config: Config) type {
         pub const FromConfig = struct {
             /// Ignore incompatible types.
             ignore_incompatible: bool = true,
+            /// Ignore prefix.
+            /// Any Field that matches this prefix will not be converted in to an Argument Type.
+            /// Setting this to `null` will disable prefix checks.
+            ignore_prefix: ?[]const u8 = "_",
+            /// Convert underscores '_' to dashes '-' in field names.
+            /// Be sure to set the counterpart to this flag in the `ToConfig` if this Command will be converted back to a Struct or Union.
+            convert_syntax: bool = true,
             /// Attempt to create Short Options.
             /// This will attempt to make a short option name from the first letter of the field name in lowercase then uppercase, sequentially working through each next letter if the previous one has already been used. (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
             attempt_short_opts: bool = true,
+
             /// A Name for the Command.
             /// A blank value will default to the type name of the Struct.
             cmd_name: []const u8 = "",
@@ -336,6 +344,12 @@ pub fn Custom(comptime config: Config) type {
             ///
             /// Format: `.{ "argument_name", "Description of the Argument." }`
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
+            /// During parsing, mandate that a Sub Command be used with a Command if one is available.
+            /// This will not include Usage/Help Commands.
+            sub_cmds_mandatory: ?bool = null,
+            /// During parsing, mandate that all Values for a Command must be filled, otherwise error out.
+            /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
+            vals_mandatory: ?bool = null,
 
             /// Max number of Sub Commands.
             max_cmds: u8 = max_args,
@@ -386,6 +400,14 @@ pub fn Custom(comptime config: Config) type {
 
             const fields = meta.fields(From_T);
             inline for (fields) |field| {
+                if (from_config.ignore_prefix) |prefix| {
+                    if (field.name.len > prefix.len and mem.eql(u8, field.name[0..prefix.len], prefix)) continue;
+                }
+                var arg_name_buf: [field.name.len]u8 = field.name[0..].*;
+                const arg_name = if (!from_config.convert_syntax) field.name else argName: {
+                    _ = mem.replace(u8, field.name[1..], "_", "-", arg_name_buf[1..]);
+                    break :argName arg_name_buf[0..];
+                };
                 const arg_description = arg_descriptions.get(field.name);
                 // Handle Argument types.
                 switch (field.type) {
@@ -420,8 +442,8 @@ pub fn Custom(comptime config: Config) type {
                     .Fn, .Struct => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
-                            new_config.cmd_name = field.name;
-                            new_config.cmd_description = arg_description orelse "The '" ++ field.name ++ "' Command.";
+                            new_config.cmd_name = arg_name;
+                            new_config.cmd_description = arg_description orelse "The '" ++ arg_name ++ "' Command.";
                             break :subConfig new_config;
                         };
                         from_cmds[cmds_idx] = from(field.type, sub_config);
@@ -432,7 +454,7 @@ pub fn Custom(comptime config: Config) type {
                     .Optional => {
                         const short_name = shortName: {
                             if (!from_config.attempt_short_opts) break :shortName null;
-                            for (field.name) |char| {
+                            for (arg_name) |char| {
                                 const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
                                 for (ul_chars) |ul| {
                                     if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
@@ -444,7 +466,9 @@ pub fn Custom(comptime config: Config) type {
                             break :shortName null;
                         };
                         from_opts[opts_idx] = (OptionT.from(field, .{ 
+                            .name = arg_name,
                             .short_name = short_name, 
+                            .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .opt_description = arg_description
                         }) orelse continue);
@@ -454,6 +478,7 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Pointer => {
                         from_vals[vals_idx] = (ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
+                            .val_name = arg_name,
                             .val_description = arg_description
                         }) orelse continue);
                         vals_idx += 1;
@@ -466,7 +491,7 @@ pub fn Custom(comptime config: Config) type {
                             .Optional => {
                                 const short_name = shortName: {
                                     if (!from_config.attempt_short_opts) break :shortName null;
-                                    for (field.name) |char| {
+                                    for (arg_name) |char| {
                                         const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
                                         for (ul_chars) |ul| {
                                             if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
@@ -478,7 +503,9 @@ pub fn Custom(comptime config: Config) type {
                                     break :shortName null;
                                 };
                                 from_opts[opts_idx] = OptionT.from(field, .{
+                                    .name = arg_name,
                                     .short_name = short_name, 
+                                    .long_name = arg_name,
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .opt_description = arg_description
                                 }) orelse continue;
@@ -488,6 +515,7 @@ pub fn Custom(comptime config: Config) type {
                             .Bool, .Int, .Float, .Pointer => {
                                 from_vals[vals_idx] = ValueT.from(field, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
+                                    .val_name = arg_name,
                                     .val_description = arg_description
                                 }) orelse continue;
                                 vals_idx += 1;
@@ -500,13 +528,22 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
 
+            var cmd_name_buf: [@typeName(From_T).len]u8 = undefined;
+            const cmd_name = if (from_config.cmd_name.len > 0) from_config.cmd_name else cmdName: {
+                if (!from_config.convert_syntax) break :cmdName @typeName(From_T) else {
+                    _ = mem.replace(u8, @typeName(From_T), "_", "-", cmd_name_buf);
+                    break :cmdName cmd_name_buf[0..];
+                }
+            };
             return @This(){
-                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(From_T),
+                .name = cmd_name,
                 .description = from_config.cmd_description,
                 .help_prefix = from_config.cmd_help_prefix,
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
+                .sub_cmds_mandatory = if (from_config.sub_cmds_mandatory) |config_sub_man| config_sub_man else config.sub_cmds_mandatory,
+                .vals_mandatory = if (from_config.vals_mandatory) |config_vals_man| config_vals_man else config.vals_mandatory,
             };
         }
 
@@ -592,7 +629,11 @@ pub fn Custom(comptime config: Config) type {
             allow_unset: bool = true,
             /// Ignore Incompatible types. Incompatible types are those that fall outside of the conversion rules listed under `from()`.
             /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Incompatible type.
+            /// This will also allow Values to be set to sane defaults for Integers and Floats (0) as well as Strings ("").
             allow_incompatible: bool = true,
+            /// Convert dashes '-' to underscores '_' in field names.
+            /// Be sure to set the counterpart to this flag in the `FromConfig` if this Command will be converted from a Struct or Union.
+            convert_syntax: bool = true,
         };
 
         /// Convert this Command to an instance of the provided Struct or Union Type (`to_T`).
@@ -633,41 +674,59 @@ pub fn Custom(comptime config: Config) type {
             var out: To_T = undefined;
             const fields = meta.fields(To_T);
             inline for (fields) |field| {
+                if (field.type == @This() or field.type == OptionT or field.type == ValueT) continue;
+                var arg_name_buf: [field.name.len]u8 = field.name[0..].*;
+                const arg_name = if (!to_config.convert_syntax) field.name else argName: {
+                    _ = mem.replace(u8, field.name[1..], "_", "-", arg_name_buf[1..]);
+                    break :argName arg_name_buf[0..];
+                };
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
-                    .Struct => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, field.name)) {
-                        @field(out, field.name) = try self.sub_cmd.?.to(field.type);
+                    .Struct => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
+                        @field(out, field.name) = try self.sub_cmd.?.to(field.type, to_config);
                     },
-                    .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, field.name)) {
-                        return @unionInit(To_T, field.name, try self.sub_cmd.?.to(field.type));
+                    .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
+                        return @unionInit(To_T, field.name, try self.sub_cmd.?.to(field.type, to_config));
                     },
                     .Optional => |f_opt| if (self.opts != null) {
                         for (self.opts.?) |opt| {
-                            if (mem.eql(u8, opt.name, field.name)) {
+                            if (mem.eql(u8, opt.name, arg_name)) {
                                 if (!opt.val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
                                         @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
-                                const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
-                                if (type_info == .Union) return @unionInit(To_T, field.name, @field(opt.val.generic, val_tag).get() catch continue); 
-                                @field(out, field.name) = try @field(opt.val.generic, val_tag).get();
+                                //const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
+                                //if (type_info == .Union) return @unionInit(To_T, field.name, @field(opt.val.generic, val_tag).get() catch continue); 
+                                //@field(out, field.name) = try @field(opt.val.generic, val_tag).get();
+                                if (type_info == .Union) return @unionInit(To_T, field.name, opt.val.getAs(f_opt.child) catch continue); 
+                                @field(out, field.name) = try opt.val.getAs(f_opt.child);
                             }
                         }
                     },
                     .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
                         for (self.vals.?) |val| {
-                            if (mem.eql(u8, val.name(), field.name)) {
+                            if (mem.eql(u8, val.name(), arg_name)) {
                                 if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     if (field.default_value != null) 
                                         @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
-                                const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
-                                if (type_info == .Union) return @unionInit(To_T, field.name, @field(val.generic, val_tag).get() catch continue); 
-                                @field(out, field.name) = try @field(val.generic, val_tag).get();
+                                //const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
+                                //if (type_info == .Union) return @unionInit(To_T, field.name, @field(val.generic, val_tag).get() catch continue); 
+                                //@field(out, field.name) = try @field(val.generic, val_tag).get();
+                                if (type_info == .Union) return @unionInit(To_T, field.name, val.getAs(field.type) catch continue); 
+                                @field(out, field.name) = val.getAs(field.type) catch |err| setVal: {
+                                    if (!to_config.allow_incompatible) return error.IncompatibleType;
+                                    break :setVal switch (field_info) {
+                                        .Bool => false,
+                                        .Int, .Float, => @as(field.type, 0),
+                                        .Pointer => "",    
+                                        else => return err,
+                                    };
+                                };
                             }
                         } 
                     },
@@ -676,7 +735,7 @@ pub fn Custom(comptime config: Config) type {
                         switch (ary_info) {
                             .Optional => |a_opt| if (self.opts != null) {
                                 for (self.opts.?) |opt| {
-                                    if (mem.eql(u8, opt.name, field.name)) {
+                                    if (mem.eql(u8, opt.name, arg_name)) {
                                         if (!opt.val.isSet() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null)  
@@ -695,7 +754,7 @@ pub fn Custom(comptime config: Config) type {
                             },
                             .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
                                 for (self.vals.?) |val| {
-                                    if (mem.eql(u8, val.name(), field.name)) {
+                                    if (mem.eql(u8, val.name(), arg_name)) {
                                         if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             if (field.default_value != null) 
@@ -705,7 +764,14 @@ pub fn Custom(comptime config: Config) type {
                                         const val_tag = if (ary.child == []const u8) "string" else @typeName(ary.child);
                                         var f_ary: field.type = undefined;
                                         const f_ary_slice = f_ary[0..];
-                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx];
+                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx] orelse elmVal: {
+                                            break :elmVal switch (ary_info) {
+                                                .Bool => false,
+                                                .Int, .Float, => @as(ary.child, 0),
+                                                .Pointer => "",    
+                                                else => if (!to_config.allow_incompatible) return error.IncompatibleType,
+                                            };
+                                        };
                                         if (type_info == .Union) return @unionInit(To_T, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
@@ -726,7 +792,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`Return_T`).
-        /// This effectively wraps the `@call` builtin function by using this Command's Values as the function parameters.
+        /// This effectively wraps the `@call()` builtin function by using this Command's Values as the function parameters.
         pub fn callAs(self: *const @This(), comptime call_fn: anytype, comptime Return_T: type) !Return_T {
             const fn_info = @typeInfo(@TypeOf(call_fn));
             const fn_name = @typeName(@TypeOf(call_fn));

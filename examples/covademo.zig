@@ -41,13 +41,14 @@ pub const DemoStruct = struct {
     str2: ?[]const u8 = "Demo Opt string 2.",
     flt: ?f16 = 0,
     int2: ?u16 = 0,
-    multi_str: [5]?[]const u8,
     multi_int: [3]?u8,
+    multi_str: [5]?[]const u8,
     // Values
     struct_bool: bool = false,
     struct_str: []const u8 = "Demo Struct string.",
     struct_int: i64,
     multi_int_val: [2]u16,
+    _ignored_int: i8 = 15,
     // Cova Argument Types
     cova_val_int: CustomValue = CustomValue.ofType(i8, .{
         .name = "cova_val_int",
@@ -73,6 +74,7 @@ pub fn demoFn(int: i32, string: []const u8) void {
 const setup_cmd: CustomCommand = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
+    .sub_cmds_mandatory = false,
     .sub_cmds = &.{
         .{
             .name = "sub-cmd",
@@ -116,6 +118,7 @@ const setup_cmd: CustomCommand = .{
         CustomCommand.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
+            .sub_cmds_mandatory = false,
             .sub_descriptions = &.{
                 .{ "inner_config", "An inner/nested command for struct-cmd" },
                 .{ "int", "The first Integer Value for the struct-cmd." },
@@ -172,8 +175,21 @@ const setup_cmd: CustomCommand = .{
             .description = "An integer option. (Can be given up to 10 times.)",
         },
         .{
-            .name = "file_opt",
+            .name = "float_opt",
             .short_name = 'f',
+            .long_name = "float",
+            .val = CustomValue.ofType(f16, .{
+                .name = "float_val",
+                .description = "A float value.",
+                .valid_fn = Value.ValidationFns.Builder.inRange(f16, 0.0, 36_000.0, true),
+                .set_behavior = .Multi,
+                .max_args = 10,
+            }),
+            .description = "An float option. (Can be given up to 10 times.)",
+        },
+        .{
+            .name = "file_opt",
+            .short_name = 'F',
             .long_name = "file",
             .val = CustomValue.ofType([]const u8, .{
                 .name = "file_val",
@@ -253,6 +269,7 @@ const setup_cmd: CustomCommand = .{
 };
 
 pub fn main() !void {
+    // Setup
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
@@ -260,24 +277,30 @@ pub fn main() !void {
 
     const main_cmd = &(try setup_cmd.init(alloc, .{})); 
     defer main_cmd.deinit();
-
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
+
+    // Parsing
     try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{ 
         .auto_handle_usage_help = false,
     });
+
+    // Analysis
+    // - Debug Output of Commands after Parsing. 
     try stdout.print("\n", .{});
     try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
 
+    // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
     if (main_cmd.checkSubCmd("sub-cmd"))
         log.info("-> Sub Cmd", .{});
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
         log.info("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| {
-        log.info("-> Struct Cmd", .{});
-        if (struct_cmd.checkSubCmd("inner_cmd")) 
-            log.info("->-> Inner Cmd", .{});
+        const demo_struct = try struct_cmd.to(DemoStruct, .{});
+        log.info("-> Struct Cmd\n{any}", .{ demo_struct });
+        if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
+            log.info("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
     }
     if (main_cmd.checkSubCmd("union-cmd"))
         log.info("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
@@ -286,41 +309,4 @@ pub fn main() !void {
         try fn_cmd.callAs(demoFn, void);
     }
 
-    //if (main_cmd.sub_cmd) |sub_cmd| {
-    //    const Cmd_E = setup_cmd.SubCommandsEnum() orelse return;
-    //    const ct_sub_cmd = setup_cmd.getSubCmd(sub_cmd.name) orelse return;
-    //    if (meta.stringToEnum(Cmd_E, sub_cmd.name)) |cmd_tag| {
-    //        switch (cmd_tag) {
-    //            .@"sub-cmd" => {
-    //                if (sub_cmd.sub_cmd) |sub_cmd2| {
-    //                    const Cmd_E2 = ct_sub_cmd.SubCommandsEnum() orelse return;
-    //                    //const ct_sub_cmd2 = ct_sub_cmd.getSubCmd(sub_cmd2.name);
-    //                    if (meta.stringToEnum(Cmd_E2, sub_cmd2.name)) |cmd_tag2| {
-    //                        switch (cmd_tag2) {
-    //                            .@"inner_cmd" => log.debug("Main Cmd > Sub Cmd > Inner Cmd", .{}),
-    //                        }
-    //                    }
-    //                }
-    //            },
-    //            .@"add-user" => log.debug("To Struct:\n{any}\n\n", .{ try main_cmd.sub_cmd.?.to(ex_structs.add_user, .{}) }),
-    //            .@"union-cmd" => log.debug("To Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) }),
-    //            .@"fn-cmd" => try main_cmd.sub_cmd.?.callAs(demoFn, void),
-    //            else => {},
-    //        }
-    //    }
-    //}
-
-
-    // Verbosity Change (WIP)
-    //@constCast(&log_level).* = verbosity: {
-    //    var opt_map = try cmd.getOpts(alloc);
-    //    defer opt_map.deinit();
-    //    const log_lvl = try opt_map.get("verbosity").?.val.u4.get();
-    //    break :verbosity @intToEnum(log.Level, log_lvl);
-    //};
-    //try stdout.print("\n\nLogging Level ({any}):\n", .{ log.default_level });
-    //log.err("Err", .{});
-    //log.warn("Warn", .{});
-    //log.info("Info", .{});
-    //log.debug("Debug", .{});
 }

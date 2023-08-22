@@ -15,6 +15,7 @@ const builtin = std.builtin;
 const ascii = std.ascii;
 const fmt = std.fmt;
 const fs = std.fs;
+const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 
@@ -173,7 +174,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             return 
                 if (self.is_set) self._set_args[0].?
                 else if (ChildT == bool) false
-                else if (self.default_val != null) self.default_val.?
+                else if (self.default_val) |def_val| def_val
                 else error.ValueNotSet;
         }
 
@@ -419,12 +420,12 @@ pub fn Custom(comptime config: Config) type {
         /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
         pub fn from(comptime from_comp: anytype, from_config: FromConfig) ?@This() {
             const comp_name = 
-            if (from_config.val_name.len > 0) from_config.val_name    
-            else switch (@TypeOf(from_comp)) {
-                std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
-                std.builtin.Type.Fn.Param => "",
-                else => @compileError("The provided component must be a Function Parameter, Struct Field, or Union Field."), 
-            };
+                if (from_config.val_name.len > 0) from_config.val_name    
+                else switch (@TypeOf(from_comp)) {
+                    std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
+                    std.builtin.Type.Fn.Param => "",
+                    else => @compileError("The provided component must be a Function Parameter, Struct Field, or Union Field."), 
+                };
 
             const From_T = switch(@TypeOf(from_comp)) {
                std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.type,
@@ -458,6 +459,7 @@ pub fn Custom(comptime config: Config) type {
                 .set_behavior =
                     if (comp_info == .Array) .Multi
                     else .Last,
+                // TODO: Handle default Array Elements.
                 .default_val = 
                     if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null and comp_info != .Array) 
                         @as(*From_T, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
@@ -524,7 +526,7 @@ pub const ValidationFns = struct {
         pub fn inRange(comptime NumT: type, comptime start: NumT, comptime end: NumT, comptime inclusive: bool) fn(NumT) bool {
             const num_info = @typeInfo(NumT);
             switch (num_info) {
-                .Int, .Pointer => {},
+                .Int, .Float => {},
                 inline else => @compileError("The provided type '" ++ @typeName(NumT) ++ "' is not a numeric type. It must be an Integer or a Float."),
             }
 
@@ -536,7 +538,10 @@ pub const ValidationFns = struct {
 
     /// Check if the provided argument token (`filepath`) is a valid filepath.
     pub fn validFilepath(filepath: []const u8) bool {
-        const test_file = fs.cwd().openFile(filepath, .{}) catch return false;
+        const test_file = fs.cwd().openFile(filepath, .{}) catch {
+            log.err("The file '{s}' could not be found.", .{ filepath });
+            return false;
+        };
         test_file.close();
         return true;
     } 

@@ -167,7 +167,7 @@ pub fn parseArgs(
                             else => |cmd_err| {
                                 log.err("Could not parse Command '{s}'.", .{ sub_cmd.name });
                                 try sub_cmd.usage(writer);
-                                log.err("\n", .{});
+                                try writer.print("\n", .{});
                                 return cmd_err;
                             }
                         }
@@ -199,7 +199,7 @@ pub fn parseArgs(
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    log.err("\n", .{});
+                                    try writer.print("\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
                                 if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
@@ -211,7 +211,7 @@ pub fn parseArgs(
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    log.err("\n", .{});
+                                    try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
@@ -228,7 +228,7 @@ pub fn parseArgs(
                                             opt.name 
                                         });
                                         try opt.usage(writer);
-                                        log.err("\n", .{});
+                                        try writer.print("\n", .{});
                                         return error.CouldNotParseOption;
                                     };
                                 }
@@ -256,7 +256,7 @@ pub fn parseArgs(
                     }
                     log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
                     try cmd.usage(writer);
-                    log.err("\n", .{});
+                    try writer.print("\n", .{});
                     return error.CouldNotParseOption;
                 }
             }
@@ -280,7 +280,7 @@ pub fn parseArgs(
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    log.err("\n", .{});
+                                    try writer.print("\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
                                 if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
@@ -291,7 +291,7 @@ pub fn parseArgs(
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    log.err("\n", .{});
+                                    try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
                                 log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
@@ -311,7 +311,7 @@ pub fn parseArgs(
                                         opt.name 
                                     });
                                     try opt.usage(writer);
-                                    log.err("\n", .{});
+                                    try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
                             }
@@ -322,7 +322,7 @@ pub fn parseArgs(
                 }
                 log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
                 try cmd.usage(writer);
-                log.err("\n", .{});
+                try writer.print("\n", .{});
                 return error.CouldNotParseOption;
             }
             unmatched = true;
