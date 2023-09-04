@@ -164,7 +164,7 @@ pub fn Custom(comptime config: Config) type {
         /// Check if the active Sub Command of this Command has the provided Name (`cmd_name`).
         /// This is useful for analyzing Commands that DO NOT have Sub Commands that need to be subsequently analyzed.
         pub fn checkSubCmd(self: *const @This(), cmd_name: []const u8) bool {
-            return self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, cmd_name);
+            return if (self.sub_cmd) |cmd| mem.eql(u8, cmd.name, cmd_name) else false;
         }
         /// Returns the active Sub Command of this Command if it matches the provided Name (`cmd_name`). 
         /// This is useful for analyzing Commands that DO have Sub Commands that need to be subsequently analyzed.
@@ -324,6 +324,9 @@ pub fn Custom(comptime config: Config) type {
             /// Any Field that matches this prefix will not be converted in to an Argument Type.
             /// Setting this to `null` will disable prefix checks.
             ignore_prefix: ?[]const u8 = "_",
+            /// Ignore the first field or parameter.
+            /// This is particularly useful when converting a Function that has a `self` parameter.
+            ignore_first: bool = false,
             /// Convert underscores '_' to dashes '-' in field names.
             /// Be sure to set the counterpart to this flag in the `ToConfig` if this Command will be converted back to a Struct or Union.
             convert_syntax: bool = true,
@@ -399,7 +402,8 @@ pub fn Custom(comptime config: Config) type {
             const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
 
             const fields = meta.fields(From_T);
-            inline for (fields) |field| {
+            const start_idx = if (from_config.ignore_first) 1 else 0;
+            inline for (fields[start_idx..]) |field| {
                 if (from_config.ignore_prefix) |prefix| {
                     if (field.name.len > prefix.len and mem.eql(u8, field.name[0..prefix.len], prefix)) continue;
                 }
@@ -569,7 +573,8 @@ pub fn Custom(comptime config: Config) type {
             //const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
 
             const params = from_info.Fn.params;
-            inline for (params) |param| {
+            const start_idx = if (from_config.ignore_first) 1 else 0;
+            inline for (params[start_idx..]) |param| {
                 const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
                 // Handle Argument types.
                 switch (@typeInfo(param.type.?)) {
@@ -792,8 +797,10 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`Return_T`).
+        /// If the Return Type is an Error Union, this method expects only the payload Type.
+        /// If the Function has a `self` parameter it can be provided using (`fn_self`). 
         /// This effectively wraps the `@call()` builtin function by using this Command's Values as the function parameters.
-        pub fn callAs(self: *const @This(), comptime call_fn: anytype, comptime Return_T: type) !Return_T {
+        pub fn callAs(self: *const @This(), comptime call_fn: anytype, fn_self: anytype, comptime Return_T: type) !Return_T {
             const fn_info = @typeInfo(@TypeOf(call_fn));
             const fn_name = @typeName(@TypeOf(call_fn));
             if (fn_info != .Fn) {
@@ -806,7 +813,9 @@ pub fn Custom(comptime config: Config) type {
                     if (self.vals == null) 0 else self.vals.?.len });
                 return error.ExpectedMoreParameters;
             }
-            if (fn_info.Fn.return_type != Return_T) {
+            if (fn_info.Fn.return_type.? != Return_T) checkErrorUnion: {
+                const return_info = @typeInfo(fn_info.Fn.return_type.?);
+                if (return_info == .ErrorUnion and return_info.ErrorUnion.payload == Return_T) break :checkErrorUnion;
                 log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(Return_T) });
                 return error.ReturnTypeMismatch;
             }
@@ -818,7 +827,12 @@ pub fn Custom(comptime config: Config) type {
                     break :paramTypes types;
                 };
                 var params_tuple: meta.Tuple(param_types[0..]) = undefined;
-                inline for (self.vals.?, &params_tuple) |val, *param| param.* = try val.getAs(@TypeOf(param.*)); 
+                const start_idx = if (@TypeOf(fn_self) == param_types[0]) 1 else 0;
+                if (start_idx == 1) params_tuple[0] = fn_self;
+                inline for (self.vals.?, &params_tuple, 0..) |val, *param, idx| {
+                    if (idx < start_idx) continue;
+                    param.* = try val.getAs(@TypeOf(param.*)); 
+                }
                 
                 break :valsToParams params_tuple;
             };
