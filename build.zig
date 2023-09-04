@@ -51,4 +51,16 @@ pub fn build(b: *std.Build) void {
     const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
     const build_cova_demo_step = b.step("demo", "Build the 'covademo' example (default: Debug)");
     build_cova_demo_step.dependOn(&build_cova_demo.step);
+
+    // Basic App Exe
+    const basic_app = b.addExecutable(.{
+        .name = "basic-app",
+        .root_source_file = .{ .path = "examples/basic_app.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    basic_app.addModule("cova", cova_mod);
+    const build_basic_app = b.addInstallArtifact(basic_app, .{});
+    const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
+    build_basic_app_step.dependOn(&build_basic_app.step);
 }

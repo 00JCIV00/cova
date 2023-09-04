@@ -17,11 +17,11 @@ const Option = cova.Option;
 const Value = cova.Value;
 const utils = cova.utils;
 const ex_structs = @import("example_structs.zig");
-pub const CustomCommand = Command.Custom(.{ 
+pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .vals_mandatory = false,
 }); 
-pub const CustomValue = CustomCommand.ValueT;
+pub const ValueT = CommandT.ValueT;
 
 //pub const log_level: log.Level = .err;
 
@@ -50,7 +50,7 @@ pub const DemoStruct = struct {
     multi_int_val: [2]u16,
     _ignored_int: i8 = 15,
     // Cova Argument Types
-    cova_val_int: CustomValue = CustomValue.ofType(i8, .{
+    cova_val_int: ValueT = ValueT.ofType(i8, .{
         .name = "cova_val_int",
         .description = "A test cova Value within a struct.",
         .default_val = 50,
@@ -71,7 +71,7 @@ pub fn demoFn(int: i32, string: []const u8) void {
 }
 
 // Comptime Setup Command
-const setup_cmd: CustomCommand = .{
+const setup_cmd: CommandT = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
     .sub_cmds_mandatory = false,
@@ -84,7 +84,7 @@ const setup_cmd: CustomCommand = .{
                     .name = "nested_int_opt",
                     .short_name = 'i',
                     .long_name = "nested_int",
-                    .val = CustomValue.ofType(u8, .{
+                    .val = ValueT.ofType(u8, .{
                         .name = "nested_int_val",
                         .description = "A nested integer value.",
                         .default_val = 203,
@@ -95,7 +95,7 @@ const setup_cmd: CustomCommand = .{
                     .name = "nested_str_opt",
                     .short_name = 's',
                     .long_name = "nested_str",
-                    .val = CustomValue.ofType([]const u8, .{
+                    .val = ValueT.ofType([]const u8, .{
                         .name = "nested_str_val",
                         .description = "A nested string value.",
                         .default_val = "A nested string value.",
@@ -104,7 +104,7 @@ const setup_cmd: CustomCommand = .{
                 },
             },
             .vals = &.{
-                CustomValue.ofType(f32, .{
+                ValueT.ofType(f32, .{
                     .name = "nested_float_val",
                     .description = "A nested float value.",
                     .default_val = 0,
@@ -115,16 +115,16 @@ const setup_cmd: CustomCommand = .{
             .name = "basic",
             .description = "The most basic Command.",
         },
-        CustomCommand.from(DemoStruct, .{
+        CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
             .sub_cmds_mandatory = false,
             .sub_descriptions = &.{
-                .{ "inner_config", "An inner/nested command for struct-cmd" },
+                .{ "inner_cmd", "An inner/nested command for struct-cmd" },
                 .{ "int", "The first Integer Value for the struct-cmd." },
             },
         }),
-        CustomCommand.from(DemoUnion, .{
+        CommandT.from(DemoUnion, .{
             .cmd_name = "union-cmd",
             .cmd_description = "A demo sub command made from a union.",
             .sub_descriptions = &.{
@@ -132,7 +132,7 @@ const setup_cmd: CustomCommand = .{
                 .{ "str", "The first String Value for the union-cmd." },
             },
         }),
-        CustomCommand.from(@TypeOf(demoFn), .{
+        CommandT.from(@TypeOf(demoFn), .{
             .cmd_name = "fn-cmd",
             .cmd_description = "A demo sub command made from a function.",
             .sub_descriptions = &.{
@@ -142,7 +142,7 @@ const setup_cmd: CustomCommand = .{
             },
             .ignore_incompatible = false,
         }),
-        CustomCommand.from(ex_structs.add_user, .{
+        CommandT.from(ex_structs.add_user, .{
             .cmd_name = "add-user",
             .cmd_description = "A demo sub command for adding a user.",
         }),
@@ -152,7 +152,7 @@ const setup_cmd: CustomCommand = .{
             .name = "string_opt",
             .short_name = 's',
             .long_name = "string",
-            .val = CustomValue.ofType([]const u8, .{
+            .val = ValueT.ofType([]const u8, .{
                 .name = "string_val",
                 .description = "A string value.",
                 .default_val = "A string value.",
@@ -165,7 +165,7 @@ const setup_cmd: CustomCommand = .{
             .name = "int_opt",
             .short_name = 'i',
             .long_name = "int",
-            .val = CustomValue.ofType(i16, .{
+            .val = ValueT.ofType(i16, .{
                 .name = "int_val",
                 .description = "An integer value.",
                 .valid_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
@@ -178,7 +178,7 @@ const setup_cmd: CustomCommand = .{
             .name = "float_opt",
             .short_name = 'f',
             .long_name = "float",
-            .val = CustomValue.ofType(f16, .{
+            .val = ValueT.ofType(f16, .{
                 .name = "float_val",
                 .description = "A float value.",
                 .valid_fn = Value.ValidationFns.Builder.inRange(f16, 0.0, 36_000.0, true),
@@ -191,7 +191,7 @@ const setup_cmd: CustomCommand = .{
             .name = "file_opt",
             .short_name = 'F',
             .long_name = "file",
-            .val = CustomValue.ofType([]const u8, .{
+            .val = ValueT.ofType([]const u8, .{
                 .name = "file_val",
                 .description = "A filepath value.",
                 .valid_fn = Value.ValidationFns.validFilepath,
@@ -202,7 +202,7 @@ const setup_cmd: CustomCommand = .{
             .name = "ordinal_opt",
             .short_name = 'o',
             .long_name = "ordinal",
-            .val = CustomValue.ofType([]const u8, .{
+            .val = ValueT.ofType([]const u8, .{
                 .name = "ordinal_val",
                 .description = "An ordinal number value.",
                 .valid_fn = Value.ValidationFns.ordinalNum,
@@ -213,7 +213,7 @@ const setup_cmd: CustomCommand = .{
             .name = "cardinal_opt",
             .short_name = 'c',
             .long_name = "cardinal",
-            .val = CustomValue.ofType(u8, .{
+            .val = ValueT.ofType(u8, .{
                 .name = "cardinal_val",
                 .description = "A cardinal number value.",
                 .parse_fn = Value.ParsingFns.Builder.asEnumType(enum(u8) { zero, one, two }),
@@ -226,7 +226,7 @@ const setup_cmd: CustomCommand = .{
             .name = "toggle_opt",
             .short_name = 't',
             .long_name = "toggle",
-            .val = CustomValue.ofType(bool, .{
+            .val = ValueT.ofType(bool, .{
                 .name = "toggle_val",
                 .description = "A toggle/boolean value.",
             }),
@@ -236,7 +236,7 @@ const setup_cmd: CustomCommand = .{
             .name = "verbosity_opt",
             .short_name = 'v',
             .long_name = "verbosity",
-            .val = CustomValue.ofType(u4, .{
+            .val = ValueT.ofType(u4, .{
                 .name = "verbosity_level",
                 .description = "The verbosity level from 0 (err) to 3 (debug).",
                 .default_val = 3,
@@ -246,17 +246,17 @@ const setup_cmd: CustomCommand = .{
         },
     },
     .vals = &.{
-        CustomValue.ofType([]const u8, .{
+        ValueT.ofType([]const u8, .{
             .name = "cmd_str",
             .description = "A string value for the command.",
             .parse_fn = Value.ParsingFns.trimWhitespace,
         }),
-        CustomValue.ofType(bool, .{
+        ValueT.ofType(bool, .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
             .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "potatoe" }),
         }),
-        CustomValue.ofType(u128, .{
+        ValueT.ofType(u128, .{
             .name = "cmd_u128",
             .description = "A u128 value for the command.",
             .default_val = 654321,
@@ -281,14 +281,17 @@ pub fn main() !void {
     defer args_iter.deinit();
 
     // Parsing
-    try cova.parseArgs(&args_iter, CustomCommand, main_cmd, stdout, .{ 
-        .auto_handle_usage_help = false,
-    });
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ 
+        //.auto_handle_usage_help = false,
+    }) catch |err| switch (err) {
+        error.UsageHelpCalled => {},
+        else => return err,
+    };
 
     // Analysis
     // - Debug Output of Commands after Parsing. 
     try stdout.print("\n", .{});
-    try utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
+    try utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
@@ -306,7 +309,7 @@ pub fn main() !void {
         log.info("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
     if (main_cmd.matchSubCmd("fn-cmd")) |fn_cmd| {
         log.info("-> Fn Cmd", .{});
-        try fn_cmd.callAs(demoFn, void);
+        try fn_cmd.callAs(demoFn, null, void);
     }
 
 }

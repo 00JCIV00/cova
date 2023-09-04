@@ -17,7 +17,7 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
 
-        _ = try cmd.checkUsageHelp(writer);
+        //_ = try cmd.checkUsageHelp(writer);
 
         try writer.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
