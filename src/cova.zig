@@ -125,6 +125,18 @@ pub const ParseConfig = struct {
     /// This is especially useful if used in conjuction with the default auto-generated Usage/Help messages from Command and Option.
     /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
     auto_handle_usage_help: bool = true,
+    /// Decide how to react to parsing errors.
+    err_reaction: ParseErrorReaction = .Usage,
+
+    /// Reactions for Parsing Errors.
+    const ParseErrorReaction = enum {
+        /// Display the current Argument Type's Usage message.
+        Usage,
+        /// Display the current Argument Type's Help message.
+        Help,
+        /// Do nothing. This is useful for custom handling.
+        None,
+    };
 };
 
 var usage_help_flag: bool = false;
@@ -141,6 +153,8 @@ pub fn parseArgs(
 
     var val_idx: u8 = 0;
     const optType = @TypeOf(cmd.*).OptionT;
+    // TODO: Implement err_reaction
+    // const err_reaction: *const fn(anytype) anyerror!void = switch (parse_config.err_reaction) {}
 
     // Bypass argument 0 (the filename being executed);
     const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peek();

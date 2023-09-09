@@ -186,12 +186,12 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Gets a StringHashMap of this Command's Values.
-        pub fn getVals(self: *const @This()) !StringHashMap(Value) {
+        pub fn getVals(self: *const @This()) !StringHashMap(ValueT) {
             if (!self._is_init) return error.CommandNotInitialized;
             return self.getValsAlloc(self._alloc.?);
         }
         /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
-        pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(Value) {
+        pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(ValueT) {
             if (self.vals == null) return error.NoValuesInCommand;
             var map = StringHashMap(Value).init(alloc);
             for (self.vals.?) |val| { try map.put(val.name, val); }

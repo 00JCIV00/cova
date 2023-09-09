@@ -1,4 +1,6 @@
 //! This is a basic user management application designed to highlight key features of the Cova library.
+//! Please note that the comments below only cover how to use the Cova library, so there are many
+//! undocumented blocks.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -8,7 +10,7 @@ const cova = @import("cova");
 // - Types
 // A custom Command Type should be set up for any project using Cova. The easiest way to do this
 // is to simply use `cova.Command.BaseCommand()` which will provide a Command Type with default
-// values. However, customization via `cova.Command.Custom()` and configuring the provided
+// values. However, customization via `cova.Command.Custom()` and configuration of the provided
 // `cova.Command.Config` will create a Command Type that's more tailored to a project.
 // The most basic example of this is simply adding a title to the help page as seen below.
 pub const CommandT = cova.Command.Custom(.{ 
@@ -16,7 +18,7 @@ pub const CommandT = cova.Command.Custom(.{
 }); 
 // Customized Option and Value Types can also be created via their respective `from()` functions
 // and `Config` structs. The `Config` structs can be provided directly to the `cova.Command.Config`
-// that's configured above so that the Types are created with the Command Type. This is the 
+// that's configured above so that the Types are created within the Command Type. This is the 
 // preferred way to set up these Argument Types and allows them to be referenced as seen below.
 pub const OptionT = CommandT.OptionT;
 pub const ValueT = CommandT.ValueT;
@@ -34,10 +36,12 @@ pub const setup_cmd: CommandT = .{
     .name = "basic-app",
     .description = "A basic user management application designed to highlight key features of the Cova library.",
     .sub_cmds = &.{
-        // A Command created from a Struct. (Details below).
+        // A Command created from a Struct. (Details further down).
         CommandT.from(User, .{
             .cmd_name = "new",
             .cmd_description = "Add a new user.",
+            // Descriptions can be added for Options and Values of Struct or Union conversions as
+            // seen here.
             .sub_descriptions = &.{
                 .{ "is_admin", "Add this user as an admin?" },
                 .{ "first_name", "User's First Name." }, 
@@ -47,7 +51,7 @@ pub const setup_cmd: CommandT = .{
                 .{ "address", "User's Address." },
             },
         }),
-        // A Command created from a Function. (Details below).
+        // A Command created from a Function. (Details further down).
         CommandT.from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
@@ -58,18 +62,36 @@ pub const setup_cmd: CommandT = .{
             .description = "List all current users.",
             .sub_cmds_mandatory = false,
             .sub_cmds = &.{
-                // A Command created from a Union. (Details below).
+                // A Command created from a Union. (Details further down).
                 CommandT.from(Filter, .{
                     .cmd_name = "filter",
                     .cmd_description = "List all current users matching the provided filter. Filters can be exactly ONE of any user field.",
                 }),
             },
         },
-        // Another "raw" Command example.
+        // Another "raw" Command example w/ a "raw" Option as well.
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
-        }
+            .opts = &.{
+                // TODO Handle this Option during Analysis
+                OptionT{
+                    .name = "clean_file",
+                    .description = "Specify a single file to be cleaned (deleted) instead of the defaults.",
+                    .short_name = 'f',
+                    .long_name = "file",
+                    .val = ValueT.ofType([]const u8, .{
+                        .name = "clean_file",
+                        .description = "The file to be cleaned.",
+                        .valid_fn = cova.Value.ValidationFns.validFilepath,
+                    }),
+                },
+            },
+        },
+        CommandT{
+            .name = "view-lists",
+            .description = "View all lists (csv files) in the current directory.",
+        },
     },
 };
 
@@ -228,11 +250,22 @@ pub fn main() !void {
     // will trigger an error. This allow's that specific case to be handled specially if needed. If
     // there's no need to handle it specially, the below example will simply bypass the error.
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
-        error.UsageHelpCalled => {},
+        error.UsageHelpCalled,
+        // Other common errors can also be handled in the same way. The errors below will call the
+        // Command's Usage or Help prompt automatically when triggered.
+        error.TooManyValues,
+        error.UnrecognizedArgument,
+        error.UnexpectedArgument,
+        error.CouldNotParseOption => {},
         else => return err,
     };
 
     // Analysis
+    //
+    // In the context of Cova, Analysis refers to dealing with the result of parsed Argument Types.
+    // This can range from simply debugging the results, to checking if an Argument Type was set,
+    // to utilizing the resulting values in a project. All of which are demonstrated below.
+    //
     // - Debug Output of Commands after Parsing.
     // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed 
     // Command. This is done recursively for any sub Argument Types within the Command and can be
@@ -268,9 +301,13 @@ pub fn main() !void {
     // Commands have two primary methods for analysis.
     //
     // `cova.Command.Custom.matchSubCmd()` will return the Active Sub Command of a Command if it's
-    // name matches the provided string. Otherwise, it returns null. This fits nicely with Zig's syntax
-    // for handling nullable returns as seen below.
+    // name matches the provided string. Otherwise, it returns null. This fits nicely with Zig's 
+    // syntax for handling optional/nullable returns as seen below.
     if (main_cmd.matchSubCmd("new")) |new_cmd| {
+        // Using `cova.Command.Custom.to()` is effectively the opposite of `from()`. It allows a
+        // Command to be converted into a Struct or Union. As with `from()`, there is a config
+        // Struct, `cova.Command.Custom.ToConfig`, that can be configured to dictate the rules for
+        // how the Command is converted.
         var new_user = try new_cmd.to(User, .{});
         var rand = std.rand.DefaultPrng.init(@as(u64, @truncate(@as(u128, @bitCast(std.time.nanoTimestamp())))));
         var user_id = rand.random().int(u16);
@@ -284,6 +321,10 @@ pub fn main() !void {
         try stdout.print("Added:\n{s}\n", .{ new_user });
     }
     if (main_cmd.matchSubCmd("open")) |open_cmd| {
+        // Using `cova.Command.Custom.callAs()` is similar to the `to()` function but converts the
+        // Command to a Function then calls it directly. If the Function being called is a method,
+        // (if its first parameter is `self`) the host object can be specified as the second
+        // parameter to `callAs()`, otherwise that parameter should be null.
         user_file = try open_cmd.callAs(open, null, std.fs.File);
     }
     if (main_cmd.matchSubCmd("list")) |list_cmd| {
@@ -301,12 +342,38 @@ pub fn main() !void {
             if (print_user) try stdout.print("{s}\n", .{ user });
         }
     }
-    // Conversely, if the Command doesn't need to be returned, using the method 
-    // `cova.Command.Custom.checkSubCmd()` will simply return a boolean check on whether or not 
-    // the provided string is the same Active Sub Command's name.
-    if (main_cmd.checkSubCmd("clean")) {
+    if (main_cmd.matchSubCmd("clean")) |clean_cmd| cleanCmd: {
+        // The Sub-Commands, Options, and Values of a Command can be referenced by name using 
+        // the following methods:
+        // - `cova.Command.Custom.getSubCmds()`
+        // - `cova.Command.Custom.getOpts()`
+        // - `cova.Command.Custom.getVals()`
+        // These methods create StringHashMaps of the Argument Types using their `name`s as keys.
+        if ((try clean_cmd.getOpts()).get("clean_file")) |clean_opt| {
+            if (clean_opt.val.isSet()) {
+                const filename = try clean_opt.val.getAs([]const u8);
+                try delete(filename);
+                break :cleanCmd;
+            }
+        }
         try delete("users.csv");
         try delete(".ba_persist");
+    }
+    // Conversely, the `cova.Command.Custom.checkSubCmd()` method should be used if the Command 
+    // doesn't need to be returned. This will simply return a boolean check on whether or not 
+    // the provided string is the same Active Sub Command's name.
+    if (main_cmd.checkSubCmd("view-lists")) {
+        try stdout.print("Available Lists:\n", .{});
+        var dir_walker = try (try std.fs.cwd().openIterableDir(".", .{})).walk(alloc);
+        var found_list = false;
+        while (try dir_walker.next()) |entry| {
+            const filename = entry.basename;
+            if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) {
+                found_list = true;
+                try stdout.print("- {s}\n", .{ filename });
+            }
+        }
+        if (!found_list) try stdout.print("- None Found!\n", .{});
     }
 }
 

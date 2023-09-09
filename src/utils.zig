@@ -12,8 +12,8 @@ const Value = @import("Value.zig");
 
 
 /// Display what is captured within a Command `display_cmd` after Cova parsing.
-pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCommand, alloc: mem.Allocator, writer: anytype) !void {
-    var cur_cmd: ?*const CustomCommand = display_cmd;
+pub fn displayCmdInfo(comptime CommandT: type, display_cmd: *const CommandT, alloc: mem.Allocator, writer: anytype) !void {
+    var cur_cmd: ?*const CommandT = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
 
@@ -21,10 +21,10 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
 
         try writer.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| try displayValInfo(CustomCommand.ValueT, opt.val, opt.long_name, true, alloc, writer);
+            for (cmd.opts.?) |opt| try displayValInfo(CommandT.ValueT, opt.val, opt.long_name, true, alloc, writer);
         }
         if (cmd.vals != null) {
-            for (cmd.vals.?) |val| try displayValInfo(CustomCommand.ValueT, val, val.name(), false, alloc, writer);
+            for (cmd.vals.?) |val| try displayValInfo(CommandT.ValueT, val, val.name(), false, alloc, writer);
         }
         try writer.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
@@ -33,7 +33,7 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
 
 /// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
-fn displayValInfo(comptime CustomValue: type, val: CustomValue, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
+fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
     switch (meta.activeTag(val.generic)) {
