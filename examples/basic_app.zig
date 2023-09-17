@@ -282,7 +282,6 @@ pub fn main() !void {
     const user_filename = user_filename_buf[0..ufb_end];
     std.log.debug("User File Name: '{s}'", .{ user_filename });
 
-    // TODO: Figure out wonkiness with the filename
     var user_file: std.fs.File = try open(user_filename);
     defer user_file.close();
     var user_file_buf: []const u8 = try user_file.readToEndAlloc(alloc, 8192);

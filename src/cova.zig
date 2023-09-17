@@ -126,7 +126,7 @@ pub const ParseConfig = struct {
     /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
     auto_handle_usage_help: bool = true,
     /// Decide how to react to parsing errors.
-    err_reaction: ParseErrorReaction = .Usage,
+    err_reaction: ParseErrorReaction = .Help,
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
@@ -152,9 +152,7 @@ pub fn parseArgs(
     if (!cmd._is_init) return error.CommandNotInitialized;
 
     var val_idx: u8 = 0;
-    const optType = @TypeOf(cmd.*).OptionT;
-    // TODO: Implement err_reaction
-    // const err_reaction: *const fn(anytype) anyerror!void = switch (parse_config.err_reaction) {}
+    const OptionT = CommandT.OptionT;
 
     // Bypass argument 0 (the filename being executed);
     const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peek();
@@ -174,18 +172,7 @@ pub fn parseArgs(
             log.debug("Attempting to Parse Commands...", .{});
             for (cmd.sub_cmds.?) |*sub_cmd| {
                 if (mem.eql(u8, sub_cmd.name, arg)) {
-                    parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch |err| { 
-                        const parse_err: anyerror = err;
-                        switch (parse_err) {
-                            error.UsageHelpCalled => return err,
-                            else => |cmd_err| {
-                                log.err("Could not parse Command '{s}'.", .{ sub_cmd.name });
-                                try sub_cmd.usage(writer);
-                                try writer.print("\n", .{});
-                                return cmd_err;
-                            }
-                        }
-                    };
+                    parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch |err| return err;
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
                 }
@@ -196,8 +183,8 @@ pub fn parseArgs(
         // ...Then for any Options...
         if (cmd.opts != null) {
             log.debug("Attempting to Parse Options...", .{});
-            const short_pf = optType.short_prefix;
-            const long_pf = optType.long_prefix;
+            const short_pf = OptionT.short_prefix;
+            const long_pf = OptionT.long_prefix;
             // - Short Options
             if (arg[0] == short_pf and arg[1] != short_pf) {
                 const short_opts = arg[1..];
@@ -212,7 +199,7 @@ pub fn parseArgs(
                                         opt.short_name, 
                                         opt.name 
                                     });
-                                    try opt.usage(writer);
+                                    try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
@@ -224,7 +211,7 @@ pub fn parseArgs(
                                         opt.short_name, 
                                         opt.name 
                                     });
-                                    try opt.usage(writer);
+                                    try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
@@ -235,13 +222,13 @@ pub fn parseArgs(
                             else if (short_idx == short_opts.len - 1) { 
                                 if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
-                                    parseOpt(args, @TypeOf(opt.*), opt) catch {
+                                    parseOpt(args, OptionT, opt) catch {
                                         log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
                                             short_pf,
                                             opt.short_name, 
                                             opt.name 
                                         });
-                                        try opt.usage(writer);
+                                        try errReaction(parse_config.err_reaction, opt, writer);
                                         try writer.print("\n", .{});
                                         return error.CouldNotParseOption;
                                     };
@@ -269,22 +256,22 @@ pub fn parseArgs(
                         }
                     }
                     log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
-                    try cmd.usage(writer);
+                    try errReaction(parse_config.err_reaction, cmd, writer);
                     try writer.print("\n", .{});
                     return error.CouldNotParseOption;
                 }
             }
             // - Long Options
             else if (mem.eql(u8, arg[0..long_pf.len], long_pf)) {
-                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], CommandT.OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
+                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                 const long_opt = arg[long_pf.len..split_idx]; 
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
-                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], CommandT.OptionT.opt_val_seps) != null; 
+                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
                 for (cmd.opts.?) |*opt| {
                     if (opt.long_name != null) {
                         if (
                             mem.eql(u8, long_opt, opt.long_name.?) or
-                            (CommandT.OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, opt.long_name.?, long_opt) != null and opt.long_name.?[0] == long_opt[0])
+                            (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, opt.long_name.?, long_opt) != null and opt.long_name.?[0] == long_opt[0])
                         ) {
                             if (sep_flag) {
                                 if (mem.eql(u8, opt.val.valType(), "bool")) {
@@ -293,7 +280,7 @@ pub fn parseArgs(
                                         opt.long_name, 
                                         opt.name 
                                     });
-                                    try opt.usage(writer);
+                                    try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.BoolCannotTakeArgument;
                                 }
@@ -304,7 +291,7 @@ pub fn parseArgs(
                                         opt.long_name, 
                                         opt.name 
                                     });
-                                    try opt.usage(writer);
+                                    try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
@@ -318,13 +305,13 @@ pub fn parseArgs(
                             if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
                             // Handle Option with normal Argument.
                             else {
-                                parseOpt(args, @TypeOf(opt.*), opt) catch {
+                                parseOpt(args, OptionT, opt) catch {
                                     log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
                                         long_pf,
                                         opt.long_name, 
                                         opt.name 
                                     });
-                                    try opt.usage(writer);
+                                    try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
@@ -335,7 +322,7 @@ pub fn parseArgs(
                     }
                 }
                 log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
-                try cmd.usage(writer);
+                try errReaction(parse_config.err_reaction, cmd, writer);
                 try writer.print("\n", .{});
                 return error.CouldNotParseOption;
             }
@@ -347,13 +334,13 @@ pub fn parseArgs(
             log.debug("Attempting to Parse Values...", .{});
             if (val_idx >= cmd.vals.?.len) {
                 log.err("Too many Values provided for Command '{s}'.", .{ cmd.name });
-                try cmd.usage(writer);
+                try errReaction(parse_config.err_reaction, cmd, writer);
                 return error.TooManyValues;
             }
             const val = &cmd.vals.?[val_idx];
             val.set(arg) catch {
                 log.err("Could not parse Argument '{s}' to Value '{s}'.", .{ arg, val.name() });
-                try cmd.usage(writer);
+                try errReaction(parse_config.err_reaction, cmd, writer);
                 log.err("", .{});
             };
 
@@ -366,13 +353,13 @@ pub fn parseArgs(
         // Check if the Command expected an Argument but didn't get a match.
         if (unmatched) {
             log.err("Unrecognized Argument '{s}' for Command '{s}'.", .{ arg, cmd.name });
-            try cmd.help(writer);
+            try errReaction(parse_config.err_reaction, cmd, writer);
             return error.UnrecognizedArgument;
         }
         // For Commands that expect no Arguments but are given one, fail to the Help message.
         else {
             log.err("Command '{s}' does not expect any arguments, but '{s}' was passed.", .{ cmd.name, arg });
-            try cmd.help(writer);
+            try errReaction(parse_config.err_reaction, cmd, writer);
             return error.UnexpectedArgument;
         }
     }
@@ -384,7 +371,7 @@ pub fn parseArgs(
         !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
     ) {
         log.err("Command '{s}' requires a Sub Command.", .{ cmd.name });
-        try cmd.help(writer);
+        try errReaction(parse_config.err_reaction, cmd, writer);
         return error.ExpectedSubCommand;
     }
     // Check for missing Values if they are Mandated for the current Command.
@@ -399,7 +386,7 @@ pub fn parseArgs(
             cmd.vals.?.len,
             val_idx,
         });
-        try cmd.help(writer);
+        try errReaction(parse_config.err_reaction, cmd, writer);
         return error.ExpectedMoreValues;
     }
     // Check for Usage/Help flags and run their respective methods.
@@ -418,6 +405,15 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
         else args.next().?;
     log.debug("Current Arg: {s}", .{ set_arg });
     try opt.val.set(set_arg);
+}
+
+/// React to Parsing Errors
+fn errReaction(reaction: ParseConfig.ParseErrorReaction, arg: anytype, writer: anytype) !void {
+    return switch(reaction) {
+        .Usage => arg.usage(writer),
+        .Help => arg.help(writer),
+        .None => {},
+    };
 }
 
 
