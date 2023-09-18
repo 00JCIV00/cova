@@ -109,7 +109,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
-            if (self.parse_fn != null) return self.parse_fn.?(arg) catch error.CannotParseArgToValue;
+            if (self.parse_fn) |parseFn| return parseFn(arg) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
             var san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(ChildT)) {
@@ -146,7 +146,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             // Single Arg
             const parsed_arg = try self.parse(set_arg);
             @constCast(self).is_set =
-                if (self.valid_fn != null) self.valid_fn.?(parsed_arg)
+                if (self.valid_fn) |validFn| validFn(parsed_arg)
                 else true;
             if (self.is_set) {
                 switch (self.set_behavior) {

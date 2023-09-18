@@ -127,6 +127,8 @@ pub const ParseConfig = struct {
     auto_handle_usage_help: bool = true,
     /// Decide how to react to parsing errors.
     err_reaction: ParseErrorReaction = .Help,
+    /// Enable Option Termination using `--` per the POSIX standard (or whatever symbol is chosen for Option long names).
+    enable_opt_termination: bool = true,
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
@@ -152,6 +154,7 @@ pub fn parseArgs(
     if (!cmd._is_init) return error.CommandNotInitialized;
 
     var val_idx: u8 = 0;
+    var opt_term: bool = false;
     const OptionT = CommandT.OptionT;
 
     // Bypass argument 0 (the filename being executed);
@@ -181,7 +184,7 @@ pub fn parseArgs(
             log.debug("No Commands Matched for Command '{s}'.", .{ cmd.name });
         }
         // ...Then for any Options...
-        if (cmd.opts != null) {
+        if (cmd.opts != null and !opt_term) {
             log.debug("Attempting to Parse Options...", .{});
             const short_pf = OptionT.short_prefix;
             const long_pf = OptionT.long_prefix;
@@ -263,6 +266,10 @@ pub fn parseArgs(
             }
             // - Long Options
             else if (mem.eql(u8, arg[0..long_pf.len], long_pf)) {
+                if (arg.len == long_pf.len) {
+                    opt_term = true;
+                    continue;
+                }
                 const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                 const long_opt = arg[long_pf.len..split_idx]; 
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
