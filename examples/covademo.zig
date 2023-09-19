@@ -312,4 +312,9 @@ pub fn main() !void {
         try fn_cmd.callAs(demoFn, null, void);
     }
 
+    // Tokenization Example
+    const arg_str = "cova struct-cmd --multi-str \"demo str\" -m 'a \"quoted string\"' -m \"A string using an 'apostrophe'\" -m (quick parans test) 50";
+    const args = try cova.tokenizeArgs(arg_str, alloc, .{ .groupers_open = "\"'(", .groupers_close = "\"')" });
+    defer alloc.free(args);
+    log.debug("Tokenized Args:\n{s}", .{ args });
 }

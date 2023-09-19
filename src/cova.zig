@@ -266,7 +266,7 @@ pub fn parseArgs(
             }
             // - Long Options
             else if (mem.eql(u8, arg[0..long_pf.len], long_pf)) {
-                if (arg.len == long_pf.len) {
+                if (arg.len == long_pf.len and parse_config.enable_opt_termination) {
                     opt_term = true;
                     continue;
                 }
@@ -414,13 +414,69 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
     try opt.val.set(set_arg);
 }
 
-/// React to Parsing Errors
+/// React to Parsing Errors with the given Reaction (`reaction`) based on the provided Argument (`arg`) to the provided Writer (`writer`).
 fn errReaction(reaction: ParseConfig.ParseErrorReaction, arg: anytype, writer: anytype) !void {
     return switch(reaction) {
         .Usage => arg.usage(writer),
         .Help => arg.help(writer),
         .None => {},
     };
+}
+
+pub const TokenizeConfig = struct{
+    /// Delimiter Characters
+    delimiters: []const u8 = " ",
+    /// Grouping Open Characters
+    /// Note, these Characters must line up with `groupers_close` in pairs.
+    groupers_open: []const u8 = "\"'",
+    /// Grouping Close Characters
+    groupers_close: []const u8 = "\"'",
+};
+
+/// Tokenize an Argument String (`arg_str`) into a slice of Strings using the provided Allocator (`alloc`) and TokenizeConfig (`token_config`).
+/// This handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
+pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: TokenizeConfig) ![]const []const u8 {
+    var start: usize = 0;
+    var end: usize = 0;
+    var quote_char: ?u8 = null;
+    var args_list = std.ArrayList([]const u8).init(alloc);
+
+    if (token_config.groupers_open.len != token_config.groupers_close.len) {
+        log.err("The length `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
+        return error.UnbalancedGrouperPairs;
+    }
+
+    for (arg_str, 0..) |char, idx| {
+        if (mem.indexOfScalar(u8, token_config.delimiters, char) != null and quote_char == null) {
+            end = idx;
+            if (start == end) {
+                start += 1;
+                continue;
+            }
+            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+            start = end + 1;
+        }
+        else if (quote_char == null and mem.indexOfScalar(u8, token_config.groupers_open, char) != null) {
+            if (mem.indexOfScalar(u8, token_config.groupers_open, char)) |close_idx| {
+                quote_char = token_config.groupers_close[close_idx];
+                start = idx + 1;
+            }
+        }
+        else if (quote_char) |q_char| {
+            if (char == q_char) {
+                end = idx;
+                try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+                start = end + 1;
+                quote_char = null;
+            }
+        }
+        else if (idx == arg_str.len - 1) {
+            end = arg_str.len;
+            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+        }
+    }
+
+    return try args_list.toOwnedSlice();
 }
 
 
@@ -563,6 +619,15 @@ const TestCmdFromStruct = struct {
 };
 const test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});
 
+test "tokenize args" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const arg_str = "cova struct-cmd --multi-str \"demo str\" -m 'a \"quoted string\"' -m \"A string using an 'apostrophe'\" 50";
+    const test_args = try tokenizeArgs(arg_str, alloc, .{});
+    const expect_args = [_][]const u8{ "cova", "struct-cmd", "--multi-str", "demo str", "-m", "a \"quoted string\"", "-m", "A string using an 'apostrophe'", "50" };
+    for (test_args, expect_args[0..]) |t_arg, e_arg| try testing.expectEqualStrings(t_arg, e_arg);
+}
 
 test "command setup" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);

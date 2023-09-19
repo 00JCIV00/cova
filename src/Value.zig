@@ -444,6 +444,7 @@ pub fn Custom(comptime config: Config) type {
                     if (ary_info == .Optional) break :aryType ary_info.Optional.child
                     else break :aryType comp_info.Array.child;
                 },
+                // TODO: Check if Pointer is a String.
                 .Bool, .Int, .Float, .Pointer => From_T,
                 else => { 
                     if (!from_config.ignore_incompatible) @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(From_T) ++ "' is incompatible.")

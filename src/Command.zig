@@ -535,7 +535,7 @@ pub fn Custom(comptime config: Config) type {
             var cmd_name_buf: [@typeName(From_T).len]u8 = undefined;
             const cmd_name = if (from_config.cmd_name.len > 0) from_config.cmd_name else cmdName: {
                 if (!from_config.convert_syntax) break :cmdName @typeName(From_T) else {
-                    _ = mem.replace(u8, @typeName(From_T), "_", "-", cmd_name_buf);
+                    _ = mem.replace(u8, @typeName(From_T), "_", "-", cmd_name_buf[0..]);
                     break :cmdName cmd_name_buf[0..];
                 }
             };
