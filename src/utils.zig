@@ -12,19 +12,19 @@ const Value = @import("Value.zig");
 
 
 /// Display what is captured within a Command `display_cmd` after Cova parsing.
-pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCommand, alloc: mem.Allocator, writer: anytype) !void {
-    var cur_cmd: ?*const CustomCommand = display_cmd;
+pub fn displayCmdInfo(comptime CommandT: type, display_cmd: *const CommandT, alloc: mem.Allocator, writer: anytype) !void {
+    var cur_cmd: ?*const CommandT = display_cmd;
     while (cur_cmd != null) {
         const cmd = cur_cmd.?;
 
-        _ = try cmd.checkUsageHelp(writer);
+        //_ = try cmd.checkUsageHelp(writer);
 
         try writer.print("- Command: {s}\n", .{ cmd.name });
         if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| try displayValInfo(opt.val, opt.long_name, true, alloc, writer);
+            for (cmd.opts.?) |opt| try displayValInfo(CommandT.ValueT, opt.val, opt.long_name, true, alloc, writer);
         }
         if (cmd.vals != null) {
-            for (cmd.vals.?) |val| try displayValInfo(val, val.name(), false, alloc, writer);
+            for (cmd.vals.?) |val| try displayValInfo(CommandT.ValueT, val, val.name(), false, alloc, writer);
         }
         try writer.print("\n", .{});
         cur_cmd = cmd.sub_cmd;
@@ -33,19 +33,19 @@ pub fn displayCmdInfo(comptime CustomCommand: type, display_cmd: *const CustomCo
 
 /// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
-fn displayValInfo(val: Value.Generic, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
+fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
-    switch (meta.activeTag(val)) {
+    switch (meta.activeTag(val.generic)) {
         .string => {
             try writer.print("    {s}: {?s}, Data: \"{s}\"\n", .{
                 prefix,
                 name, 
-                mem.join(alloc, "\" \"", val.string.getAll(alloc) catch &.{ "" }) catch "",
+                mem.join(alloc, "\" \"", val.generic.string.getAll(alloc) catch &.{ "" }) catch "",
             });
         },
         inline else => |tag| {
-            const tag_self = @field(val, @tagName(tag));
+            const tag_self = @field(val.generic, @tagName(tag));
             if (tag_self.set_behavior == .Multi) {
                 const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
                     if (tag_self.getAll(alloc) catch null) |data| break :rawData data;

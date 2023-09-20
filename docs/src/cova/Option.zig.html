@@ -129,136 +129,169 @@
 <span class="line" id="L16"><span class="tok-kw">const</span> toUpper = ascii.toUpper;</span>
 <span class="line" id="L17"></span>
 <span class="line" id="L18"><span class="tok-kw">const</span> Value = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Value.zig&quot;</span>);</span>
-<span class="line" id="L19">    </span>
+<span class="line" id="L19"></span>
 <span class="line" id="L20"><span class="tok-comment">/// Config for custom Option types.</span></span>
 <span class="line" id="L21"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Config = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L22">    <span class="tok-comment">/// Format for the Help message. </span></span>
-<span class="line" id="L23">    <span class="tok-comment">///</span></span>
-<span class="line" id="L24">    <span class="tok-comment">/// Must support the following format types in this order:</span></span>
-<span class="line" id="L25">    <span class="tok-comment">/// 1. String (Name)</span></span>
-<span class="line" id="L26">    <span class="tok-comment">/// 2. String (Description)</span></span>
-<span class="line" id="L27">    help_fmt: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L28"></span>
-<span class="line" id="L29">    <span class="tok-comment">/// Format for the Usage message.</span></span>
-<span class="line" id="L30">    <span class="tok-comment">///</span></span>
-<span class="line" id="L31">    <span class="tok-comment">/// Must support the following format types in this order:</span></span>
-<span class="line" id="L32">    <span class="tok-comment">/// 1. Character (Short Prefix) </span></span>
-<span class="line" id="L33">    <span class="tok-comment">/// 2. Optional Character &quot;{?c} (Short Name)</span></span>
-<span class="line" id="L34">    <span class="tok-comment">/// 3. String (Long Prefix)</span></span>
-<span class="line" id="L35">    <span class="tok-comment">/// 4. Optional String &quot;{?s}&quot; (Long Name)</span></span>
-<span class="line" id="L36">    <span class="tok-comment">/// 5. String (Value Name)</span></span>
-<span class="line" id="L37">    <span class="tok-comment">/// 6. String (Value Type)</span></span>
-<span class="line" id="L38">    usage_fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;[{c}{?c},{s}{?s} \&quot;{s} ({s})\&quot;]&quot;</span>,</span>
-<span class="line" id="L39"></span>
-<span class="line" id="L40">    <span class="tok-comment">/// Prefix for Short Options.</span></span>
-<span class="line" id="L41">    short_prefix: <span class="tok-type">u8</span> = <span class="tok-str">'-'</span>,</span>
+<span class="line" id="L22">    <span class="tok-comment">/// Value Config for this Option type.</span></span>
+<span class="line" id="L23">    <span class="tok-comment">/// This will default to the same Value.Config used by the overarching custom Command type of this custom Option type.</span></span>
+<span class="line" id="L24">    val_config: Value.Config = .{},</span>
+<span class="line" id="L25"></span>
+<span class="line" id="L26">    <span class="tok-comment">/// Format for the Help message. </span></span>
+<span class="line" id="L27">    <span class="tok-comment">///</span></span>
+<span class="line" id="L28">    <span class="tok-comment">/// Must support the following format types in this order:</span></span>
+<span class="line" id="L29">    <span class="tok-comment">/// 1. String (Name)</span></span>
+<span class="line" id="L30">    <span class="tok-comment">/// 2. String (Description)</span></span>
+<span class="line" id="L31">    help_fmt: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L32">    <span class="tok-comment">/// Format for the Usage message.</span></span>
+<span class="line" id="L33">    <span class="tok-comment">///</span></span>
+<span class="line" id="L34">    <span class="tok-comment">/// Must support the following format types in this order:</span></span>
+<span class="line" id="L35">    <span class="tok-comment">/// 1. Character (Short Prefix) </span></span>
+<span class="line" id="L36">    <span class="tok-comment">/// 2. Optional Character &quot;{?c} (Short Name)</span></span>
+<span class="line" id="L37">    <span class="tok-comment">/// 3. String (Long Prefix)</span></span>
+<span class="line" id="L38">    <span class="tok-comment">/// 4. Optional String &quot;{?s}&quot; (Long Name)</span></span>
+<span class="line" id="L39">    <span class="tok-comment">/// 5. String (Value Name)</span></span>
+<span class="line" id="L40">    <span class="tok-comment">/// 6. String (Value Type)</span></span>
+<span class="line" id="L41">    usage_fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;[{c}{?c},{s}{?s} \&quot;{s} ({s})\&quot;]&quot;</span>,</span>
 <span class="line" id="L42"></span>
-<span class="line" id="L43">    <span class="tok-comment">/// Prefix for Long Options.</span></span>
-<span class="line" id="L44">    long_prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;--&quot;</span>,</span>
-<span class="line" id="L45">};</span>
-<span class="line" id="L46"></span>
-<span class="line" id="L47"><span class="tok-comment">/// Create a Option type with the Base (default) configuration.</span></span>
-<span class="line" id="L48"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Base</span>() <span class="tok-type">type</span> { <span class="tok-kw">return</span> Custom(.{}); }</span>
-<span class="line" id="L49"></span>
-<span class="line" id="L50"><span class="tok-comment">/// Create a Custom Option type from the provided Config (`config`).</span></span>
-<span class="line" id="L51"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Custom</span>(<span class="tok-kw">comptime</span> config: Config) <span class="tok-type">type</span> {</span>
-<span class="line" id="L52">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L53">        <span class="tok-comment">/// This Option's Short Name (ex: `-s`).</span></span>
-<span class="line" id="L54">        short_name: ?<span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L55">        <span class="tok-comment">/// This Option's Long Name (ex: `--intOpt`).</span></span>
-<span class="line" id="L56">        long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L57">        <span class="tok-comment">/// This Option's wrapped Value.</span></span>
-<span class="line" id="L58">        val: Value.Generic = Value.ofType(<span class="tok-type">bool</span>, .{}),</span>
+<span class="line" id="L43">    <span class="tok-comment">/// Prefix for Short Options.</span></span>
+<span class="line" id="L44">    short_prefix: <span class="tok-type">u8</span> = <span class="tok-str">'-'</span>,</span>
+<span class="line" id="L45">    <span class="tok-comment">/// Prefix for Long Options.</span></span>
+<span class="line" id="L46">    long_prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;--&quot;</span>,</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">    <span class="tok-comment">/// During parsing, allow there to be no space ' ' between Options and Values.</span></span>
+<span class="line" id="L49">    <span class="tok-comment">/// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.</span></span>
+<span class="line" id="L50">    allow_opt_val_no_space: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L51">    <span class="tok-comment">/// Specify custom Separators between Options and their Values for parsing. (i.e. `--opt=value`)</span></span>
+<span class="line" id="L52">    <span class="tok-comment">/// Spaces ' ' are implicitly included.</span></span>
+<span class="line" id="L53">    opt_val_seps: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;=&quot;</span>,</span>
+<span class="line" id="L54">    <span class="tok-comment">/// During parsing, allow Abbreviated Long Options. (i.e. '--long' working for '--long-opt')</span></span>
+<span class="line" id="L55">    <span class="tok-comment">/// This is allowed per the POSIX standard, but may not be ideal in every use case.</span></span>
+<span class="line" id="L56">    <span class="tok-comment">/// Note, this does not check for uniqueness and will simply match on the first Option matching the abbreviation.</span></span>
+<span class="line" id="L57">    allow_abbreviated_long_opts: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L58">};</span>
 <span class="line" id="L59"></span>
-<span class="line" id="L60">        <span class="tok-comment">/// The Name of this Option for user identification and Usage/Help messages.</span></span>
-<span class="line" id="L61">        <span class="tok-comment">/// Limited to 100B.</span></span>
-<span class="line" id="L62">        name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L63">        <span class="tok-comment">/// The Description of this Option for Usage/Help messages.</span></span>
-<span class="line" id="L64">        description: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;&quot;</span>,</span>
-<span class="line" id="L65"></span>
-<span class="line" id="L66">        <span class="tok-comment">/// Help Format.</span></span>
-<span class="line" id="L67">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
-<span class="line" id="L68">        <span class="tok-kw">const</span> help_fmt = config.help_fmt;</span>
-<span class="line" id="L69">        <span class="tok-comment">/// Usage Format.</span></span>
+<span class="line" id="L60"><span class="tok-comment">/// Create a Option type with the Base (default) configuration.</span></span>
+<span class="line" id="L61"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Base</span>() <span class="tok-type">type</span> { <span class="tok-kw">return</span> Custom(.{}); }</span>
+<span class="line" id="L62"></span>
+<span class="line" id="L63"><span class="tok-comment">/// Create a Custom Option type from the provided Config (`config`).</span></span>
+<span class="line" id="L64"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Custom</span>(<span class="tok-kw">comptime</span> config: Config) <span class="tok-type">type</span> {</span>
+<span class="line" id="L65">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L66">        <span class="tok-comment">/// The Custom Value type used by this Custom Option type.</span></span>
+<span class="line" id="L67">        <span class="tok-kw">const</span> ValueT = Value.Custom(config.val_config);</span>
+<span class="line" id="L68"></span>
+<span class="line" id="L69">        <span class="tok-comment">/// Help Format.</span></span>
 <span class="line" id="L70">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
-<span class="line" id="L71">        <span class="tok-kw">const</span> usage_fmt = config.usage_fmt;</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">        <span class="tok-comment">/// Short Prefix.</span></span>
-<span class="line" id="L74">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
-<span class="line" id="L75">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> short_prefix = config.short_prefix;</span>
-<span class="line" id="L76">        <span class="tok-comment">/// Long Prefix. </span></span>
+<span class="line" id="L71">        <span class="tok-kw">const</span> help_fmt = config.help_fmt;</span>
+<span class="line" id="L72">        <span class="tok-comment">/// Usage Format.</span></span>
+<span class="line" id="L73">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
+<span class="line" id="L74">        <span class="tok-kw">const</span> usage_fmt = config.usage_fmt;</span>
+<span class="line" id="L75"></span>
+<span class="line" id="L76">        <span class="tok-comment">/// Short Prefix.</span></span>
 <span class="line" id="L77">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
-<span class="line" id="L78">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> long_prefix = config.long_prefix;</span>
-<span class="line" id="L79"></span>
-<span class="line" id="L80">        <span class="tok-comment">/// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).</span></span>
-<span class="line" id="L81">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">help</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L82">            <span class="tok-kw">var</span> upper_name_buf: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L83">            <span class="tok-kw">const</span> upper_name = upper_name_buf[<span class="tok-number">0</span>..self.name.len];</span>
-<span class="line" id="L84">            upper_name[<span class="tok-number">0</span>] = toUpper(self.name[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L85">            <span class="tok-kw">for</span>(upper_name[<span class="tok-number">1</span>..self.name.len], <span class="tok-number">1</span>..) |*c, i| c.* = self.name[i];</span>
-<span class="line" id="L86">            <span class="tok-kw">if</span> (help_fmt == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L87">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{s}:\n            &quot;</span>, .{ upper_name });</span>
-<span class="line" id="L88">                <span class="tok-kw">try</span> self.usage(writer);</span>
-<span class="line" id="L89">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n            {s}&quot;</span>, .{ self.description });</span>
-<span class="line" id="L90">                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L91">            }</span>
-<span class="line" id="L92">            <span class="tok-kw">try</span> writer.print(help_fmt.?, .{ upper_name, self.description });</span>
-<span class="line" id="L93">        }</span>
-<span class="line" id="L94"></span>
-<span class="line" id="L95">        <span class="tok-comment">/// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).</span></span>
-<span class="line" id="L96">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">usage</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L97">            <span class="tok-kw">try</span> writer.print(usage_fmt, .{ </span>
-<span class="line" id="L98">                short_prefix,</span>
-<span class="line" id="L99">                self.short_name,</span>
-<span class="line" id="L100">                long_prefix,</span>
-<span class="line" id="L101">                self.long_name,</span>
-<span class="line" id="L102">                self.val.name(),</span>
-<span class="line" id="L103">                self.val.valType(),</span>
-<span class="line" id="L104">            });</span>
-<span class="line" id="L105">        }</span>
-<span class="line" id="L106"></span>
-<span class="line" id="L107">        <span class="tok-comment">/// Config for creating Options from Struct Fields using `from()`.</span></span>
-<span class="line" id="L108">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> FromConfig = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L109">            <span class="tok-comment">/// Short Name for the Option.</span></span>
-<span class="line" id="L110">            short_name: ?<span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L111">            <span class="tok-comment">/// Ignore Incompatible types or error during Comptime.</span></span>
-<span class="line" id="L112">            ignore_incompatible: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L113">            <span class="tok-comment">/// Description for the Option.</span></span>
-<span class="line" id="L114">            opt_description: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L115">        };</span>
-<span class="line" id="L116"></span>
-<span class="line" id="L117">        <span class="tok-comment">/// Create an Option from a Valid Optional StructField (`field`) with the provided FromConfig (`from_config`).</span></span>
-<span class="line" id="L118">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(<span class="tok-kw">comptime</span> field: std.builtin.Type.StructField, from_config: FromConfig) ?<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L119">            <span class="tok-kw">const</span> field_info = <span class="tok-builtin">@typeInfo</span>(field.<span class="tok-type">type</span>);</span>
-<span class="line" id="L120">            <span class="tok-kw">const</span> optl =</span>
-<span class="line" id="L121">                <span class="tok-kw">if</span> (field_info == .Optional) field_info.Optional</span>
-<span class="line" id="L122">                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (field_info == .Array <span class="tok-kw">and</span> <span class="tok-builtin">@typeInfo</span>(field_info.Array.child) == .Optional) <span class="tok-builtin">@typeInfo</span>(field_info.Array.child).Optional</span>
-<span class="line" id="L123">                <span class="tok-kw">else</span> <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' is not an Optional or Array of Optionals.&quot;</span>);</span>
-<span class="line" id="L124">            <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L125">                .name = field.name,</span>
-<span class="line" id="L126">                .description = from_config.opt_description <span class="tok-kw">orelse</span> <span class="tok-str">&quot;The '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' Option of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;'.&quot;</span>,</span>
-<span class="line" id="L127">                .long_name = field.name,</span>
-<span class="line" id="L128">                .short_name = from_config.short_name, </span>
-<span class="line" id="L129">                .val = optVal: {</span>
-<span class="line" id="L130">                    <span class="tok-kw">const</span> optl_info = <span class="tok-builtin">@typeInfo</span>(optl.child);</span>
-<span class="line" id="L131">                    <span class="tok-kw">switch</span> (optl_info) {</span>
-<span class="line" id="L132">                        .Bool, .Int, .Float, .Pointer =&gt; <span class="tok-kw">break</span> :optVal Value.from(field, .{</span>
-<span class="line" id="L133">                            .ignore_incompatible = from_config.ignore_incompatible,</span>
-<span class="line" id="L134">                            .val_description = from_config.opt_description,</span>
-<span class="line" id="L135">                        }) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L136">                        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L137">                            <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible as it cannot be converted to a Valid Option or Value.&quot;</span>)</span>
-<span class="line" id="L138">                            <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L139">                        },</span>
-<span class="line" id="L140">                    }</span>
-<span class="line" id="L141">                }</span>
-<span class="line" id="L142">            };</span>
-<span class="line" id="L143">        </span>
-<span class="line" id="L144">        }</span>
-<span class="line" id="L145">    };</span>
-<span class="line" id="L146">} </span>
-<span class="line" id="L147"></span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149"></span>
+<span class="line" id="L78">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> short_prefix = config.short_prefix;</span>
+<span class="line" id="L79">        <span class="tok-comment">/// Long Prefix. </span></span>
+<span class="line" id="L80">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
+<span class="line" id="L81">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> long_prefix = config.long_prefix;</span>
+<span class="line" id="L82"></span>
+<span class="line" id="L83">        <span class="tok-comment">/// Allow no space between Options and Values.</span></span>
+<span class="line" id="L84">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
+<span class="line" id="L85">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> allow_opt_val_no_space = config.allow_opt_val_no_space;</span>
+<span class="line" id="L86">        <span class="tok-comment">/// Custom Separators between Options and Values.</span></span>
+<span class="line" id="L87">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
+<span class="line" id="L88">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> opt_val_seps = config.opt_val_seps;</span>
+<span class="line" id="L89">        <span class="tok-comment">/// Allow Abbreviated Long Options.</span></span>
+<span class="line" id="L90">        <span class="tok-comment">/// Check `Options.Config` for details.</span></span>
+<span class="line" id="L91">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> allow_abbreviated_long_opts = config.allow_abbreviated_long_opts;</span>
+<span class="line" id="L92"></span>
+<span class="line" id="L93">        <span class="tok-comment">/// This Option's Short Name (ex: `-s`).</span></span>
+<span class="line" id="L94">        short_name: ?<span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L95">        <span class="tok-comment">/// This Option's Long Name (ex: `--intOpt`).</span></span>
+<span class="line" id="L96">        long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L97">        <span class="tok-comment">/// This Option's wrapped Value.</span></span>
+<span class="line" id="L98">        val: ValueT = ValueT.ofType(<span class="tok-type">bool</span>, .{}),</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">        <span class="tok-comment">/// The Name of this Option for user identification and Usage/Help messages.</span></span>
+<span class="line" id="L101">        <span class="tok-comment">/// Limited to 100B.</span></span>
+<span class="line" id="L102">        name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L103">        <span class="tok-comment">/// The Description of this Option for Usage/Help messages.</span></span>
+<span class="line" id="L104">        description: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;&quot;</span>,</span>
+<span class="line" id="L105"></span>
+<span class="line" id="L106">        <span class="tok-comment">/// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).</span></span>
+<span class="line" id="L107">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">help</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L108">            <span class="tok-kw">var</span> upper_name_buf: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L109">            <span class="tok-kw">const</span> upper_name = upper_name_buf[<span class="tok-number">0</span>..self.name.len];</span>
+<span class="line" id="L110">            upper_name[<span class="tok-number">0</span>] = toUpper(self.name[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L111">            <span class="tok-kw">for</span>(upper_name[<span class="tok-number">1</span>..self.name.len], <span class="tok-number">1</span>..) |*c, i| c.* = self.name[i];</span>
+<span class="line" id="L112">            <span class="tok-kw">if</span> (help_fmt == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L113">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{s}:\n            &quot;</span>, .{ upper_name });</span>
+<span class="line" id="L114">                <span class="tok-kw">try</span> self.usage(writer);</span>
+<span class="line" id="L115">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n            {s}&quot;</span>, .{ self.description });</span>
+<span class="line" id="L116">                <span class="tok-kw">return</span>;</span>
+<span class="line" id="L117">            }</span>
+<span class="line" id="L118">            <span class="tok-kw">try</span> writer.print(help_fmt.?, .{ upper_name, self.description });</span>
+<span class="line" id="L119">        }</span>
+<span class="line" id="L120"></span>
+<span class="line" id="L121">        <span class="tok-comment">/// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).</span></span>
+<span class="line" id="L122">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">usage</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L123">            <span class="tok-kw">try</span> writer.print(usage_fmt, .{ </span>
+<span class="line" id="L124">                short_prefix,</span>
+<span class="line" id="L125">                self.short_name,</span>
+<span class="line" id="L126">                long_prefix,</span>
+<span class="line" id="L127">                self.long_name,</span>
+<span class="line" id="L128">                self.val.name(),</span>
+<span class="line" id="L129">                self.val.valType(),</span>
+<span class="line" id="L130">            });</span>
+<span class="line" id="L131">        }</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">        <span class="tok-comment">/// Config for creating Options from Struct Fields using `from()`.</span></span>
+<span class="line" id="L134">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> FromConfig = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L135">            <span class="tok-comment">/// Name for the Option.</span></span>
+<span class="line" id="L136">            name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L137">            <span class="tok-comment">/// Short Name for the Option.</span></span>
+<span class="line" id="L138">            short_name: ?<span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L139">            <span class="tok-comment">/// Long Name for the Option.</span></span>
+<span class="line" id="L140">            long_name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L141">            <span class="tok-comment">/// Ignore Incompatible types or error during Comptime.</span></span>
+<span class="line" id="L142">            ignore_incompatible: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L143">            <span class="tok-comment">/// Description for the Option.</span></span>
+<span class="line" id="L144">            opt_description: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L145">        };</span>
+<span class="line" id="L146"></span>
+<span class="line" id="L147">        <span class="tok-comment">/// Create an Option from a Valid Optional StructField or UnionField (`field`) with the provided FromConfig (`from_config`).</span></span>
+<span class="line" id="L148">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(<span class="tok-kw">comptime</span> field: <span class="tok-kw">anytype</span>, from_config: FromConfig) ?<span class="tok-builtin">@This</span>() {</span>
+<span class="line" id="L149">            <span class="tok-kw">const</span> FieldT = <span class="tok-builtin">@TypeOf</span>(field);</span>
+<span class="line" id="L150">            <span class="tok-kw">if</span> (FieldT != std.builtin.Type.StructField <span class="tok-kw">and</span> FieldT != std.builtin.Type.UnionField) </span>
+<span class="line" id="L151">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The provided `field` must be a StructField or UnionField but a '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(FieldT) ++ <span class="tok-str">&quot;' was provided.&quot;</span>);</span>
+<span class="line" id="L152">            <span class="tok-kw">const</span> optl_info = <span class="tok-builtin">@typeInfo</span>(field.<span class="tok-type">type</span>);</span>
+<span class="line" id="L153">            <span class="tok-kw">const</span> optl =</span>
+<span class="line" id="L154">                <span class="tok-kw">if</span> (optl_info == .Optional) optl_info.Optional</span>
+<span class="line" id="L155">                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (optl_info == .Array <span class="tok-kw">and</span> <span class="tok-builtin">@typeInfo</span>(optl_info.Array.child) == .Optional) <span class="tok-builtin">@typeInfo</span>(optl_info.Array.child).Optional</span>
+<span class="line" id="L156">                <span class="tok-kw">else</span> <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' is not a Valid Optional or Array of Optionals.&quot;</span>);</span>
+<span class="line" id="L157">            <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L158">                .name = <span class="tok-kw">if</span> (from_config.name) |name| name <span class="tok-kw">else</span> field.name,</span>
+<span class="line" id="L159">                .description = from_config.opt_description <span class="tok-kw">orelse</span> <span class="tok-str">&quot;The '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' Option of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;'.&quot;</span>,</span>
+<span class="line" id="L160">                .long_name = <span class="tok-kw">if</span> (from_config.long_name) |long_name| long_name <span class="tok-kw">else</span> field.name,</span>
+<span class="line" id="L161">                .short_name = from_config.short_name, </span>
+<span class="line" id="L162">                .val = optVal: {</span>
+<span class="line" id="L163">                    <span class="tok-kw">const</span> child_info = <span class="tok-builtin">@typeInfo</span>(optl.child);</span>
+<span class="line" id="L164">                    <span class="tok-kw">switch</span> (child_info) {</span>
+<span class="line" id="L165">                        .Bool, .Int, .Float, .Pointer =&gt; <span class="tok-kw">break</span> :optVal ValueT.from(field, .{</span>
+<span class="line" id="L166">                            .ignore_incompatible = from_config.ignore_incompatible,</span>
+<span class="line" id="L167">                            .val_description = from_config.opt_description,</span>
+<span class="line" id="L168">                        }) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L169">                        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L170">                            <span class="tok-kw">if</span> (!from_config.ignore_incompatible) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The field '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' of type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(field.<span class="tok-type">type</span>) ++ <span class="tok-str">&quot;' is incompatible as it cannot be converted to a Valid Option or Value.&quot;</span>)</span>
+<span class="line" id="L171">                            <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L172">                        },</span>
+<span class="line" id="L173">                    }</span>
+<span class="line" id="L174">                }</span>
+<span class="line" id="L175">            };</span>
+<span class="line" id="L176">        </span>
+<span class="line" id="L177">        }</span>
+<span class="line" id="L178">    };</span>
+<span class="line" id="L179">} </span>
+<span class="line" id="L180"></span>
+<span class="line" id="L181"></span>
+<span class="line" id="L182"></span>
 </code></pre></body>
 </html>

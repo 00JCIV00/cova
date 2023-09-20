@@ -1,8 +1,13 @@
 # Value
-A Value (also known as a Positional Argument) is an Argument type that is expected in a specific order and should be interpreted as a specific type. The full list of available types can be seen in `src/Value.zig/Generic`, but the basics are Boolean, String (`[]const u8`), Integer (`u/i##`), or Float (`f##`). A single Value can store individual or multiple instances of one of these data types. Values are also used to hold and represent the data held by an Option via the Option's `.val` field. As such, anything that applies to Values is also "inherited" by Options.
+A Value (also known as a Positional Argument) is an Argument Type that is expected in a specific order and should be interpreted as a specific Type. The full list of available Types can be seen in `cova.Value.Generic` and customized via `cova.Value.Custom`, but the basics are Boolean, String (`[]const u8`), Integer (`u/i##`), or Float (`f##`). A single Value can store individual or multiple instances of one of these Types. Values are also used to hold and represent the data held by an Option via the `cova.Option.Custom.val` field. As such, anything that applies to Values is also "inherited" by Options.
 
-## Understanding Generic Values vs Typed Values
+## Understanding Typed vs Generic vs Custom Values
 The base data for a Value is held within a `cova.Value.Typed` instance. However, to provide flexibility for the cova library and library users, the `cova.Value.Generic` union will wrap any `cova.Value.Typed` and provide access to several common-to-all methods. This allows Values to be handled in a generic manner in cases such as function parameters, function returns, collections, etc. However, if the actual parsed data of the Value is needed, the appropriate `cova.Value.Generic` field must be used. Field names for this union are simply the data type name with the exception of `[]const u8` which is the `.string` field.
+
+Finally, the `cova.Value.Custom` sets up and wraps `cova.Value.Generic` union. This Type is used similary to `cova.Command.Custom` and `cova.Option.Custom`. It allows common-to-all properties of Values within a project to be configured and provides easy methods for accessing properties of individual Values. 
+
+## Configuring a Value Type
+This process mirrors that of Option Types nearly one-for-one. A `cova.Value.Config` can be figured directly within the Command Type via the `cova.Command.Config.val_config` field. If not configured, the defaults will be used. A major feature of the Custom Value Type and Generic Value Union combination is the ability to set custom types for the Generic Value Union. This is accomplished via the `cova.Value.Config`, by setting the `cova.Value.Config.custom_types` field.
 
 ## Setting up a Value
 Similar to Options, Values are designed to be set up within a Command. Specifically, within a Command's `.vals` field. This can be done using a combination of Zig's Union and Anonymous Struct (Tuple) syntax or by using the `cova.Value.ofType`() function.
@@ -19,21 +24,19 @@ Values will be parsed to their corresponding types which can then be retrieved u
 // Within a Command
 ...
 .vals = &.{
-	// Two ways to create directly
-	// Using `ofType()`
     Value.ofType([]const u8, .{
         .name = "str_val",
         .description = "A string value for the command.",
     }),
 	// Using Zig's union creation syntax
-    .{ .u128, .{
+    .{ .generic = .{ .u128, .{
         .name = "cmd_u128",
         .description = "A u128 value for the command.",
         // Default Value
         .default_val = 654321,
         // Validation Function
         .valid_fn = struct{ fn valFn(val: u128) bool { return val > 123 and val < 987654321; } }.valFn,
-    } },
+    } } },
 }
 ```
 

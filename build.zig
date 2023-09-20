@@ -2,7 +2,6 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-    //const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseSafe });
     const optimize = b.standardOptimizeOption(.{});
     b.exe_dir = "./bin";
 
@@ -32,9 +31,11 @@ pub fn build(b: *std.Build) void {
 
     // Docs
     const cova_docs = cova_tests;
-    cova_docs.emit_docs = .emit;
-    const build_docs = b.addRunArtifact(cova_docs);
-    build_docs.has_side_effects = true;
+    const build_docs = b.addInstallDirectory(.{
+        .source_dir = cova_docs.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "../docs",
+    });
     const build_docs_step = b.step("docs", "Build the cova library docs");
     build_docs_step.dependOn(&build_docs.step);
 
@@ -46,7 +47,19 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     cova_demo.addModule("cova", cova_mod);
-    const build_cova_demo = b.addInstallArtifact(cova_demo);
+    const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
     const build_cova_demo_step = b.step("demo", "Build the 'covademo' example (default: Debug)");
     build_cova_demo_step.dependOn(&build_cova_demo.step);
+
+    // Basic App Exe
+    const basic_app = b.addExecutable(.{
+        .name = "basic-app",
+        .root_source_file = .{ .path = "examples/basic_app.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    basic_app.addModule("cova", cova_mod);
+    const build_basic_app = b.addInstallArtifact(basic_app, .{});
+    const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
+    build_basic_app_step.dependOn(&build_basic_app.step);
 }
