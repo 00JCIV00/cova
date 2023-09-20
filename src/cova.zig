@@ -1,14 +1,14 @@
-//!zig-autodoc-guide: ../../docs/guides/overview.md 
 //!zig-autodoc-section: Getting Started
-//!zig-autodoc-guide: ../../docs/guides/getting_started/install.md 
-//!zig-autodoc-guide: ../../docs/guides/getting_started/quick_setup.md 
+//!zig-autodoc-guide: ./../docs/guides/overview.md 
+//!zig-autodoc-guide: ./../docs/guides/getting_started/install.md 
+//!zig-autodoc-guide: ./../docs/guides/getting_started/quick_setup.md 
 //!zig-autodoc-section: Argument Types
-//!zig-autodoc-guide: ../../docs/guides/arg_types/command.md 
-//!zig-autodoc-guide: ../../docs/guides/arg_types/option.md 
-//!zig-autodoc-guide: ../../docs/guides/arg_types/value.md 
+//!zig-autodoc-guide: ./../docs/guides/arg_types/command.md 
+//!zig-autodoc-guide: ./../docs/guides/arg_types/option.md 
+//!zig-autodoc-guide: ./../docs/guides/arg_types/value.md 
 //!zig-autodoc-section: Parsing & Analysis
-//!zig-autodoc-guide: ../../docs/guides/parsing_analysis/parsing.md 
-//!zig-autodoc-guide: ../../docs/guides/parsing_analysis/analysis.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/parsing.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/analysis.md 
 
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
@@ -28,6 +28,64 @@ pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
 pub const utils = @import("utils.zig");
+
+
+/// Config for custom argument tokenization using `tokenizeArgs()`.
+pub const TokenizeConfig = struct{
+    /// Delimiter Characters
+    delimiters: []const u8 = " ",
+    /// Grouping Open Characters
+    /// Note, these Characters must line up with `groupers_close` in pairs.
+    groupers_open: []const u8 = "\"'",
+    /// Grouping Close Characters
+    groupers_close: []const u8 = "\"'",
+};
+
+/// Tokenize an Argument String (`arg_str`) into a slice of Strings using the provided Allocator (`alloc`) and TokenizeConfig (`token_config`).
+/// This handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
+pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: TokenizeConfig) ![]const []const u8 {
+    var start: usize = 0;
+    var end: usize = 0;
+    var quote_char: ?u8 = null;
+    var args_list = std.ArrayList([]const u8).init(alloc);
+
+    if (token_config.groupers_open.len != token_config.groupers_close.len) {
+        log.err("The length `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
+        return error.UnbalancedGrouperPairs;
+    }
+
+    for (arg_str, 0..) |char, idx| {
+        if (mem.indexOfScalar(u8, token_config.delimiters, char) != null and quote_char == null) {
+            end = idx;
+            if (start == end) {
+                start += 1;
+                continue;
+            }
+            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+            start = end + 1;
+        }
+        else if (quote_char == null and mem.indexOfScalar(u8, token_config.groupers_open, char) != null) {
+            if (mem.indexOfScalar(u8, token_config.groupers_open, char)) |close_idx| {
+                quote_char = token_config.groupers_close[close_idx];
+                start = idx + 1;
+            }
+        }
+        else if (quote_char) |q_char| {
+            if (char == q_char) {
+                end = idx;
+                try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+                start = end + 1;
+                quote_char = null;
+            }
+        }
+        else if (idx == arg_str.len - 1) {
+            end = arg_str.len;
+            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+        }
+    }
+
+    return try args_list.toOwnedSlice();
+}
 
 /// A basic Raw Argument Iterator.
 /// This is intended for testing, but can also be used to process an externally sourced slice of utf8 argument tokens.
@@ -132,9 +190,9 @@ pub const ParseConfig = struct {
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
-        /// Display the current Argument Type's Usage message.
+        /// Display the current Argument's Usage message.
         Usage,
-        /// Display the current Argument Type's Help message.
+        /// Display the current Argument's Help message.
         Help,
         /// Do nothing. This is useful for custom handling.
         None,
@@ -143,7 +201,7 @@ pub const ParseConfig = struct {
 
 var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
-/// The resulted is stored to the provided `CommandT` (`cmd`) for user analysis.
+/// The parsed result is stored to the provided `CommandT` (`cmd`) for user analysis.
 pub fn parseArgs(
     args: *ArgIteratorGeneric,
     comptime CommandT: type, 
@@ -421,62 +479,6 @@ fn errReaction(reaction: ParseConfig.ParseErrorReaction, arg: anytype, writer: a
         .Help => arg.help(writer),
         .None => {},
     };
-}
-
-pub const TokenizeConfig = struct{
-    /// Delimiter Characters
-    delimiters: []const u8 = " ",
-    /// Grouping Open Characters
-    /// Note, these Characters must line up with `groupers_close` in pairs.
-    groupers_open: []const u8 = "\"'",
-    /// Grouping Close Characters
-    groupers_close: []const u8 = "\"'",
-};
-
-/// Tokenize an Argument String (`arg_str`) into a slice of Strings using the provided Allocator (`alloc`) and TokenizeConfig (`token_config`).
-/// This handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
-pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: TokenizeConfig) ![]const []const u8 {
-    var start: usize = 0;
-    var end: usize = 0;
-    var quote_char: ?u8 = null;
-    var args_list = std.ArrayList([]const u8).init(alloc);
-
-    if (token_config.groupers_open.len != token_config.groupers_close.len) {
-        log.err("The length `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
-        return error.UnbalancedGrouperPairs;
-    }
-
-    for (arg_str, 0..) |char, idx| {
-        if (mem.indexOfScalar(u8, token_config.delimiters, char) != null and quote_char == null) {
-            end = idx;
-            if (start == end) {
-                start += 1;
-                continue;
-            }
-            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
-            start = end + 1;
-        }
-        else if (quote_char == null and mem.indexOfScalar(u8, token_config.groupers_open, char) != null) {
-            if (mem.indexOfScalar(u8, token_config.groupers_open, char)) |close_idx| {
-                quote_char = token_config.groupers_close[close_idx];
-                start = idx + 1;
-            }
-        }
-        else if (quote_char) |q_char| {
-            if (char == q_char) {
-                end = idx;
-                try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
-                start = end + 1;
-                quote_char = null;
-            }
-        }
-        else if (idx == arg_str.len - 1) {
-            end = arg_str.len;
-            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
-        }
-    }
-
-    return try args_list.toOwnedSlice();
 }
 
 

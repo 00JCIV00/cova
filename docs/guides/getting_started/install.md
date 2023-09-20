@@ -37,16 +37,16 @@ exe.addModule("cova", cova_mod);
 },
 ```
 
-## Build the Demo from source
-1. Use Zig v0.11 for your system. Available [here](https://ziglang.org/download/).
+## Build the Basic-App Demo from source
+1. Use Zig v0.12 for your system. Available [here](https://ziglang.org/download/).
 2. Run the following in whichever directory you'd like to install to:
 ```
 git clone https://github.com/00JCIV00/cova.git
 cd cova
-zig build demo
+zig build basic-app -Doptimize=ReleaseSafe
 ```
 3. Try it out!
 ```
 cd bin 
-./covademo help
+./basic-app help
 ```

@@ -74,7 +74,6 @@ pub const setup_cmd: CommandT = .{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
             .opts = &.{
-                // TODO Handle this Option during Analysis
                 OptionT{
                     .name = "clean_file",
                     .description = "Specify a single file to be cleaned (deleted) instead of the defaults.",
@@ -83,6 +82,10 @@ pub const setup_cmd: CommandT = .{
                     .val = ValueT.ofType([]const u8, .{
                         .name = "clean_file",
                         .description = "The file to be cleaned.",
+                        // Validation Functions are a powerful feature to ensure end user input
+                        // matches what a project expects. Parsing Functions similarly allow a
+                        // library user to customize how an argument token is parsed into a
+                        // specific type.
                         .valid_fn = cova.Value.ValidationFns.validFilepath,
                     }),
                 },

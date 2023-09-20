@@ -146,9 +146,9 @@ pub fn Custom(comptime config: Config) type {
 
         /// Create an Option from a Valid Optional StructField or UnionField (`field`) with the provided FromConfig (`from_config`).
         pub fn from(comptime field: anytype, from_config: FromConfig) ?@This() {
-            const Field_T = @TypeOf(field);
-            if (Field_T != std.builtin.Type.StructField and Field_T != std.builtin.Type.UnionField) 
-                @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(Field_T) ++ "' was provided.");
+            const FieldT = @TypeOf(field);
+            if (FieldT != std.builtin.Type.StructField and FieldT != std.builtin.Type.UnionField) 
+                @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(FieldT) ++ "' was provided.");
             const optl_info = @typeInfo(field.type);
             const optl =
                 if (optl_info == .Optional) optl_info.Optional

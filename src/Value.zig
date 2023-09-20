@@ -427,14 +427,14 @@ pub fn Custom(comptime config: Config) type {
                     else => @compileError("The provided component must be a Function Parameter, Struct Field, or Union Field."), 
                 };
 
-            const From_T = switch(@TypeOf(from_comp)) {
+            const FromT = switch(@TypeOf(from_comp)) {
                std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.type,
                std.builtin.Type.Fn.Param => from_comp.type.?,
                else => unreachable,
             };
-            const comp_info = @typeInfo(From_T);
+            const comp_info = @typeInfo(FromT);
             if (comp_info == .Pointer and comp_info.Pointer.child != u8) {
-                if (!from_config.ignore_incompatible) @compileError("The component '" ++ if (comp_name.len > 0) comp_name else "funtion parameter" ++ "' of type '" ++ @typeName(From_T) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+                if (!from_config.ignore_incompatible) @compileError("The component '" ++ if (comp_name.len > 0) comp_name else "funtion parameter of type '" ++ @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
                 else return null;
             }
             const comp_type = switch (comp_info) {
@@ -445,15 +445,15 @@ pub fn Custom(comptime config: Config) type {
                     else break :aryType comp_info.Array.child;
                 },
                 // TODO: Check if Pointer is a String.
-                .Bool, .Int, .Float, .Pointer => From_T,
+                .Bool, .Int, .Float, .Pointer => FromT,
                 else => { 
-                    if (!from_config.ignore_incompatible) @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(From_T) ++ "' is incompatible.")
+                    if (!from_config.ignore_incompatible) @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(FromT) ++ "' is incompatible.")
                     else return null;
                 },
             };
             return ofType(comp_type, .{
                 .name = comp_name,
-                .description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(From_T) ++ "'.",
+                .description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
                 .max_args = 
                     if (comp_info == .Array) comp_info.Array.len
                     else 1,
@@ -463,7 +463,7 @@ pub fn Custom(comptime config: Config) type {
                 // TODO: Handle default Array Elements.
                 .default_val = 
                     if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null and comp_info != .Array) 
-                        @as(*From_T, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
+                        @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
                     else null,
             });
         }

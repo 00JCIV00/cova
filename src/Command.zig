@@ -362,14 +362,14 @@ pub fn Custom(comptime config: Config) type {
             max_vals: u8 = max_args,
         };
         
-        /// Create a Command from the provided Type (`From_T`).
+        /// Create a Command from the provided Type (`FromT`).
         /// The provided Type must be a Comptime-known Function, Struct, or Union.
-        pub fn from(comptime From_T: type, comptime from_config: FromConfig) @This() {
-            const from_info = @typeInfo(From_T);
+        pub fn from(comptime FromT: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(FromT);
             return switch (from_info) {
-                .Fn => fromFn(From_T, from_config),
-                .Struct, .Union => fromStructOrUnion(From_T, from_config),
-                else => @compileError("The provided type '" ++ @typeName(From_T) ++ "' must be a Function, Struct, or Union."),
+                .Fn => fromFn(FromT, from_config),
+                .Struct, .Union => fromStructOrUnion(FromT, from_config),
+                else => @compileError("The provided type '" ++ @typeName(FromT) ++ "' must be a Function, Struct, or Union."),
             };
         }
 
@@ -382,8 +382,8 @@ pub fn Custom(comptime config: Config) type {
         /// - Valid Optionals = Single-Options (Valid Optionals are nullable versions of Valid Values.)
         /// - Arrays of Valid Values = Multi-Values
         /// - Arrays of Valid Optionals = Multi-Options 
-        pub fn fromStructOrUnion(comptime From_T: type, comptime from_config: FromConfig) @This() {
-            const from_info = @typeInfo(From_T);
+        pub fn fromStructOrUnion(comptime FromT: type, comptime from_config: FromConfig) @This() {
+            const from_info = @typeInfo(FromT);
             if (from_info != .Struct and from_info != .Union) @compileError("Provided Type is not a Struct or Union.");
 
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
@@ -401,7 +401,7 @@ pub fn Custom(comptime config: Config) type {
 
             const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
 
-            const fields = meta.fields(From_T);
+            const fields = meta.fields(FromT);
             const start_idx = if (from_config.ignore_first) 1 else 0;
             inline for (fields[start_idx..]) |field| {
                 if (from_config.ignore_prefix) |prefix| {
@@ -413,7 +413,7 @@ pub fn Custom(comptime config: Config) type {
                     break :argName arg_name_buf[0..];
                 };
                 const arg_description = arg_descriptions.get(field.name);
-                // Handle Argument types.
+                // Handle Argument Types.
                 switch (field.type) {
                     @This() => {
                         if (field.default_value != null) {
@@ -440,7 +440,7 @@ pub fn Custom(comptime config: Config) type {
                 }
 
                 const field_info = @typeInfo(field.type);
-                // Handle non-Argument types.
+                // Handle non-Argument Types.
                 switch (field_info) {
                     // Commands
                     .Fn, .Struct => {
@@ -532,10 +532,10 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
 
-            var cmd_name_buf: [@typeName(From_T).len]u8 = undefined;
+            var cmd_name_buf: [@typeName(FromT).len]u8 = undefined;
             const cmd_name = if (from_config.cmd_name.len > 0) from_config.cmd_name else cmdName: {
-                if (!from_config.convert_syntax) break :cmdName @typeName(From_T) else {
-                    _ = mem.replace(u8, @typeName(From_T), "_", "-", cmd_name_buf[0..]);
+                if (!from_config.convert_syntax) break :cmdName @typeName(FromT) else {
+                    _ = mem.replace(u8, @typeName(FromT), "_", "-", cmd_name_buf[0..]);
                     break :cmdName cmd_name_buf[0..];
                 }
             };
@@ -576,7 +576,7 @@ pub fn Custom(comptime config: Config) type {
             const start_idx = if (from_config.ignore_first) 1 else 0;
             inline for (params[start_idx..]) |param| {
                 const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
-                // Handle Argument types.
+                // Handle Argument Types.
                 switch (@typeInfo(param.type.?)) {
                     // Commands
                     .Fn, .Struct, .Union => {
@@ -641,7 +641,7 @@ pub fn Custom(comptime config: Config) type {
             convert_syntax: bool = true,
         };
 
-        /// Convert this Command to an instance of the provided Struct or Union Type (`to_T`).
+        /// Convert this Command to an instance of the provided Struct or Union Type (`toT`).
         /// This is the inverse of `from()`.
         ///
         /// Types are converted as follows:
@@ -650,9 +650,9 @@ pub fn Custom(comptime config: Config) type {
         /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
         // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
-        pub fn to(self: *const @This(), comptime To_T: type, to_config: ToConfig) !To_T {
+        pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
             if (!self._is_init) return error.CommandNotInitialized;
-            const type_info = @typeInfo(To_T);
+            const type_info = @typeInfo(ToT);
             if (type_info == .Union) { 
                 const vals_idx = if (self.vals) |vals| valsIdx: {
                     var idx: u8 = 0;
@@ -676,8 +676,8 @@ pub fn Custom(comptime config: Config) type {
                     return error.ExpectedOnlyOneValOrOpt;
                 }
             }
-            var out: To_T = undefined;
-            const fields = meta.fields(To_T);
+            var out: ToT = undefined;
+            const fields = meta.fields(ToT);
             inline for (fields) |field| {
                 if (field.type == @This() or field.type == OptionT or field.type == ValueT) continue;
                 var arg_name_buf: [field.name.len]u8 = field.name[0..].*;
@@ -691,7 +691,7 @@ pub fn Custom(comptime config: Config) type {
                         @field(out, field.name) = try self.sub_cmd.?.to(field.type, to_config);
                     },
                     .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
-                        return @unionInit(To_T, field.name, try self.sub_cmd.?.to(field.type, to_config));
+                        return @unionInit(ToT, field.name, try self.sub_cmd.?.to(field.type, to_config));
                     },
                     .Optional => |f_opt| if (self.opts != null) {
                         for (self.opts.?) |opt| {
@@ -703,9 +703,9 @@ pub fn Custom(comptime config: Config) type {
                                     break;
                                 }
                                 //const val_tag = if (f_opt.child == []const u8) "string" else @typeName(f_opt.child);
-                                //if (type_info == .Union) return @unionInit(To_T, field.name, @field(opt.val.generic, val_tag).get() catch continue); 
+                                //if (type_info == .Union) return @unionInit(ToT, field.name, @field(opt.val.generic, val_tag).get() catch continue); 
                                 //@field(out, field.name) = try @field(opt.val.generic, val_tag).get();
-                                if (type_info == .Union) return @unionInit(To_T, field.name, opt.val.getAs(f_opt.child) catch continue); 
+                                if (type_info == .Union) return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
                                 @field(out, field.name) = try opt.val.getAs(f_opt.child);
                             }
                         }
@@ -720,9 +720,9 @@ pub fn Custom(comptime config: Config) type {
                                     break;
                                 }
                                 //const val_tag = if (field.type == []const u8) "string" else @typeName(field.type);
-                                //if (type_info == .Union) return @unionInit(To_T, field.name, @field(val.generic, val_tag).get() catch continue); 
+                                //if (type_info == .Union) return @unionInit(ToT, field.name, @field(val.generic, val_tag).get() catch continue); 
                                 //@field(out, field.name) = try @field(val.generic, val_tag).get();
-                                if (type_info == .Union) return @unionInit(To_T, field.name, val.getAs(field.type) catch continue); 
+                                if (type_info == .Union) return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
                                 @field(out, field.name) = val.getAs(field.type) catch |err| setVal: {
                                     if (!to_config.allow_incompatible) return error.IncompatibleType;
                                     break :setVal switch (field_info) {
@@ -751,7 +751,7 @@ pub fn Custom(comptime config: Config) type {
                                         var f_ary: field.type = undefined;
                                         const f_ary_slice = f_ary[0..];
                                         for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
-                                        if (type_info == .Union) return @unionInit(To_T, field.name, f_ary); 
+                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -777,7 +777,7 @@ pub fn Custom(comptime config: Config) type {
                                                 else => if (!to_config.allow_incompatible) return error.IncompatibleType,
                                             };
                                         };
-                                        if (type_info == .Union) return @unionInit(To_T, field.name, f_ary); 
+                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -796,11 +796,11 @@ pub fn Custom(comptime config: Config) type {
             return out;
         }
 
-        /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`Return_T`).
+        /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`ReturnT`).
         /// If the Return Type is an Error Union, this method expects only the payload Type.
         /// If the Function has a `self` parameter it can be provided using (`fn_self`). 
         /// This effectively wraps the `@call()` builtin function by using this Command's Values as the function parameters.
-        pub fn callAs(self: *const @This(), comptime call_fn: anytype, fn_self: anytype, comptime Return_T: type) !Return_T {
+        pub fn callAs(self: *const @This(), comptime call_fn: anytype, fn_self: anytype, comptime ReturnT: type) !ReturnT {
             const fn_info = @typeInfo(@TypeOf(call_fn));
             const fn_name = @typeName(@TypeOf(call_fn));
             if (fn_info != .Fn) {
@@ -813,10 +813,10 @@ pub fn Custom(comptime config: Config) type {
                     if (self.vals == null) 0 else self.vals.?.len });
                 return error.ExpectedMoreParameters;
             }
-            if (fn_info.Fn.return_type.? != Return_T) checkErrorUnion: {
+            if (fn_info.Fn.return_type.? != ReturnT) checkErrorUnion: {
                 const return_info = @typeInfo(fn_info.Fn.return_type.?);
-                if (return_info == .ErrorUnion and return_info.ErrorUnion.payload == Return_T) break :checkErrorUnion;
-                log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(Return_T) });
+                if (return_info == .ErrorUnion and return_info.ErrorUnion.payload == ReturnT) break :checkErrorUnion;
+                log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(ReturnT) });
                 return error.ReturnTypeMismatch;
             }
 

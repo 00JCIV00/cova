@@ -1183,352 +1183,371 @@
 </span>
 <span class="line" id="L1060"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Coff = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L1061">    data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1062">    is_image: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L1063">    coff_header_offset: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L1064"></span>
-<span class="line" id="L1065">    guid: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1066">    age: <span class="tok-type">u32</span> = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1067"></span>
-<span class="line" id="L1068">    <span class="tok-comment">// The lifetime of `data` must be longer than the lifetime of the returned Coff</span>
+<span class="line" id="L1062">    <span class="tok-comment">// Set if `data` is backed by the image as loaded by the loader</span>
 </span>
-<span class="line" id="L1069">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !Coff {</span>
-<span class="line" id="L1070">        <span class="tok-kw">const</span> pe_pointer_offset = <span class="tok-number">0x3C</span>;</span>
-<span class="line" id="L1071">        <span class="tok-kw">const</span> pe_magic = <span class="tok-str">&quot;PE\x00\x00&quot;</span>;</span>
-<span class="line" id="L1072"></span>
-<span class="line" id="L1073">        <span class="tok-kw">var</span> stream = std.io.fixedBufferStream(data);</span>
-<span class="line" id="L1074">        <span class="tok-kw">const</span> reader = stream.reader();</span>
-<span class="line" id="L1075">        <span class="tok-kw">try</span> stream.seekTo(pe_pointer_offset);</span>
-<span class="line" id="L1076">        <span class="tok-kw">var</span> coff_header_offset = <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L1077">        <span class="tok-kw">try</span> stream.seekTo(coff_header_offset);</span>
-<span class="line" id="L1078">        <span class="tok-kw">var</span> buf: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1079">        <span class="tok-kw">try</span> reader.readNoEof(&amp;buf);</span>
-<span class="line" id="L1080">        <span class="tok-kw">const</span> is_image = mem.eql(<span class="tok-type">u8</span>, pe_magic, &amp;buf);</span>
-<span class="line" id="L1081"></span>
-<span class="line" id="L1082">        <span class="tok-kw">var</span> coff = <span class="tok-builtin">@This</span>(){</span>
-<span class="line" id="L1083">            .data = data,</span>
-<span class="line" id="L1084">            .is_image = is_image,</span>
-<span class="line" id="L1085">            .coff_header_offset = coff_header_offset,</span>
-<span class="line" id="L1086">        };</span>
-<span class="line" id="L1087"></span>
-<span class="line" id="L1088">        <span class="tok-comment">// Do some basic validation upfront</span>
+<span class="line" id="L1063">    is_loaded: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L1064">    is_image: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L1065">    coff_header_offset: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L1066"></span>
+<span class="line" id="L1067">    guid: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1068">    age: <span class="tok-type">u32</span> = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1069"></span>
+<span class="line" id="L1070">    <span class="tok-comment">// The lifetime of `data` must be longer than the lifetime of the returned Coff</span>
 </span>
-<span class="line" id="L1089">        <span class="tok-kw">if</span> (is_image) {</span>
-<span class="line" id="L1090">            coff.coff_header_offset = coff.coff_header_offset + <span class="tok-number">4</span>;</span>
-<span class="line" id="L1091">            <span class="tok-kw">const</span> coff_header = coff.getCoffHeader();</span>
-<span class="line" id="L1092">            <span class="tok-kw">if</span> (coff_header.size_of_optional_header == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingPEHeader;</span>
-<span class="line" id="L1093">        }</span>
-<span class="line" id="L1094"></span>
-<span class="line" id="L1095">        <span class="tok-comment">// JK: we used to check for architecture here and throw an error if not x86 or derivative.</span>
+<span class="line" id="L1071">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, is_loaded: <span class="tok-type">bool</span>) !Coff {</span>
+<span class="line" id="L1072">        <span class="tok-kw">const</span> pe_pointer_offset = <span class="tok-number">0x3C</span>;</span>
+<span class="line" id="L1073">        <span class="tok-kw">const</span> pe_magic = <span class="tok-str">&quot;PE\x00\x00&quot;</span>;</span>
+<span class="line" id="L1074"></span>
+<span class="line" id="L1075">        <span class="tok-kw">var</span> stream = std.io.fixedBufferStream(data);</span>
+<span class="line" id="L1076">        <span class="tok-kw">const</span> reader = stream.reader();</span>
+<span class="line" id="L1077">        <span class="tok-kw">try</span> stream.seekTo(pe_pointer_offset);</span>
+<span class="line" id="L1078">        <span class="tok-kw">var</span> coff_header_offset = <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>);</span>
+<span class="line" id="L1079">        <span class="tok-kw">try</span> stream.seekTo(coff_header_offset);</span>
+<span class="line" id="L1080">        <span class="tok-kw">var</span> buf: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1081">        <span class="tok-kw">try</span> reader.readNoEof(&amp;buf);</span>
+<span class="line" id="L1082">        <span class="tok-kw">const</span> is_image = mem.eql(<span class="tok-type">u8</span>, pe_magic, &amp;buf);</span>
+<span class="line" id="L1083"></span>
+<span class="line" id="L1084">        <span class="tok-kw">var</span> coff = <span class="tok-builtin">@This</span>(){</span>
+<span class="line" id="L1085">            .data = data,</span>
+<span class="line" id="L1086">            .is_image = is_image,</span>
+<span class="line" id="L1087">            .is_loaded = is_loaded,</span>
+<span class="line" id="L1088">            .coff_header_offset = coff_header_offset,</span>
+<span class="line" id="L1089">        };</span>
+<span class="line" id="L1090"></span>
+<span class="line" id="L1091">        <span class="tok-comment">// Do some basic validation upfront</span>
 </span>
-<span class="line" id="L1096">        <span class="tok-comment">// However I am willing to take a leap of faith and let aarch64 have a shot also.</span>
-</span>
+<span class="line" id="L1092">        <span class="tok-kw">if</span> (is_image) {</span>
+<span class="line" id="L1093">            coff.coff_header_offset = coff.coff_header_offset + <span class="tok-number">4</span>;</span>
+<span class="line" id="L1094">            <span class="tok-kw">const</span> coff_header = coff.getCoffHeader();</span>
+<span class="line" id="L1095">            <span class="tok-kw">if</span> (coff_header.size_of_optional_header == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingPEHeader;</span>
+<span class="line" id="L1096">        }</span>
 <span class="line" id="L1097"></span>
-<span class="line" id="L1098">        <span class="tok-kw">return</span> coff;</span>
-<span class="line" id="L1099">    }</span>
+<span class="line" id="L1098">        <span class="tok-comment">// JK: we used to check for architecture here and throw an error if not x86 or derivative.</span>
+</span>
+<span class="line" id="L1099">        <span class="tok-comment">// However I am willing to take a leap of faith and let aarch64 have a shot also.</span>
+</span>
 <span class="line" id="L1100"></span>
-<span class="line" id="L1101">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getPdbPath</span>(self: *Coff, buffer: []<span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1102">        assert(self.is_image);</span>
+<span class="line" id="L1101">        <span class="tok-kw">return</span> coff;</span>
+<span class="line" id="L1102">    }</span>
 <span class="line" id="L1103"></span>
-<span class="line" id="L1104">        <span class="tok-kw">const</span> data_dirs = self.getDataDirectories();</span>
-<span class="line" id="L1105">        <span class="tok-kw">const</span> debug_dir = data_dirs[<span class="tok-builtin">@intFromEnum</span>(DirectoryEntry.DEBUG)];</span>
+<span class="line" id="L1104">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getPdbPath</span>(self: *Coff, buffer: []<span class="tok-type">u8</span>) !?<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1105">        assert(self.is_image);</span>
 <span class="line" id="L1106"></span>
-<span class="line" id="L1107">        <span class="tok-kw">var</span> stream = std.io.fixedBufferStream(self.data);</span>
-<span class="line" id="L1108">        <span class="tok-kw">const</span> reader = stream.reader();</span>
-<span class="line" id="L1109">        <span class="tok-kw">try</span> stream.seekTo(debug_dir.virtual_address);</span>
-<span class="line" id="L1110"></span>
-<span class="line" id="L1111">        <span class="tok-comment">// Find the correct DebugDirectoryEntry, and where its data is stored.</span>
+<span class="line" id="L1107">        <span class="tok-kw">const</span> data_dirs = self.getDataDirectories();</span>
+<span class="line" id="L1108">        <span class="tok-kw">if</span> (<span class="tok-builtin">@intFromEnum</span>(DirectoryEntry.DEBUG) &gt;= data_dirs.len) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1109"></span>
+<span class="line" id="L1110">        <span class="tok-kw">const</span> debug_dir = data_dirs[<span class="tok-builtin">@intFromEnum</span>(DirectoryEntry.DEBUG)];</span>
+<span class="line" id="L1111">        <span class="tok-kw">var</span> stream = std.io.fixedBufferStream(self.data);</span>
+<span class="line" id="L1112">        <span class="tok-kw">const</span> reader = stream.reader();</span>
+<span class="line" id="L1113"></span>
+<span class="line" id="L1114">        <span class="tok-kw">if</span> (self.is_loaded) {</span>
+<span class="line" id="L1115">            <span class="tok-kw">try</span> stream.seekTo(debug_dir.virtual_address);</span>
+<span class="line" id="L1116">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1117">            <span class="tok-comment">// Find what section the debug_dir is in, in order to convert the RVA to a file offset</span>
 </span>
-<span class="line" id="L1112">        <span class="tok-comment">// It can be in any section.</span>
+<span class="line" id="L1118">            <span class="tok-kw">for</span> (self.getSectionHeaders()) |*sect| {</span>
+<span class="line" id="L1119">                <span class="tok-kw">if</span> (debug_dir.virtual_address &gt;= sect.virtual_address <span class="tok-kw">and</span> debug_dir.virtual_address &lt; sect.virtual_address + sect.virtual_size) {</span>
+<span class="line" id="L1120">                    <span class="tok-kw">try</span> stream.seekTo(sect.pointer_to_raw_data + (debug_dir.virtual_address - sect.virtual_address));</span>
+<span class="line" id="L1121">                    <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1122">                }</span>
+<span class="line" id="L1123">            } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDebugDirectory;</span>
+<span class="line" id="L1124">        }</span>
+<span class="line" id="L1125"></span>
+<span class="line" id="L1126">        <span class="tok-comment">// Find the correct DebugDirectoryEntry, and where its data is stored.</span>
 </span>
-<span class="line" id="L1113">        <span class="tok-kw">const</span> debug_dir_entry_count = debug_dir.size / <span class="tok-builtin">@sizeOf</span>(DebugDirectoryEntry);</span>
-<span class="line" id="L1114">        <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1115">        blk: <span class="tok-kw">while</span> (i &lt; debug_dir_entry_count) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1116">            <span class="tok-kw">const</span> debug_dir_entry = <span class="tok-kw">try</span> reader.readStruct(DebugDirectoryEntry);</span>
-<span class="line" id="L1117">            <span class="tok-kw">if</span> (debug_dir_entry.<span class="tok-type">type</span> == .CODEVIEW) {</span>
-<span class="line" id="L1118">                <span class="tok-kw">try</span> stream.seekTo(debug_dir_entry.address_of_raw_data);</span>
-<span class="line" id="L1119">                <span class="tok-kw">break</span> :blk;</span>
-<span class="line" id="L1120">            }</span>
-<span class="line" id="L1121">        }</span>
-<span class="line" id="L1122"></span>
-<span class="line" id="L1123">        <span class="tok-kw">var</span> cv_signature: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>; <span class="tok-comment">// CodeView signature</span>
+<span class="line" id="L1127">        <span class="tok-comment">// It can be in any section.</span>
 </span>
-<span class="line" id="L1124">        <span class="tok-kw">try</span> reader.readNoEof(cv_signature[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L1125">        <span class="tok-comment">// 'RSDS' indicates PDB70 format, used by lld.</span>
-</span>
-<span class="line" id="L1126">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, &amp;cv_signature, <span class="tok-str">&quot;RSDS&quot;</span>))</span>
-<span class="line" id="L1127">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPEMagic;</span>
-<span class="line" id="L1128">        <span class="tok-kw">try</span> reader.readNoEof(self.guid[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L1129">        self.age = <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L1130"></span>
-<span class="line" id="L1131">        <span class="tok-comment">// Finally read the null-terminated string.</span>
-</span>
-<span class="line" id="L1132">        <span class="tok-kw">var</span> byte = <span class="tok-kw">try</span> reader.readByte();</span>
-<span class="line" id="L1133">        i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1134">        <span class="tok-kw">while</span> (byte != <span class="tok-number">0</span> <span class="tok-kw">and</span> i &lt; buffer.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1135">            buffer[i] = byte;</span>
-<span class="line" id="L1136">            byte = <span class="tok-kw">try</span> reader.readByte();</span>
-<span class="line" id="L1137">        }</span>
+<span class="line" id="L1128">        <span class="tok-kw">const</span> debug_dir_entry_count = debug_dir.size / <span class="tok-builtin">@sizeOf</span>(DebugDirectoryEntry);</span>
+<span class="line" id="L1129">        <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1130">        <span class="tok-kw">while</span> (i &lt; debug_dir_entry_count) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1131">            <span class="tok-kw">const</span> debug_dir_entry = <span class="tok-kw">try</span> reader.readStruct(DebugDirectoryEntry);</span>
+<span class="line" id="L1132">            <span class="tok-kw">if</span> (debug_dir_entry.<span class="tok-type">type</span> == .CODEVIEW) {</span>
+<span class="line" id="L1133">                <span class="tok-kw">const</span> dir_offset = <span class="tok-kw">if</span> (self.is_loaded) debug_dir_entry.address_of_raw_data <span class="tok-kw">else</span> debug_dir_entry.pointer_to_raw_data;</span>
+<span class="line" id="L1134">                <span class="tok-kw">try</span> stream.seekTo(dir_offset);</span>
+<span class="line" id="L1135">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1136">            }</span>
+<span class="line" id="L1137">        } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L1138"></span>
-<span class="line" id="L1139">        <span class="tok-kw">if</span> (byte != <span class="tok-number">0</span> <span class="tok-kw">and</span> i == buffer.len)</span>
-<span class="line" id="L1140">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L1141"></span>
-<span class="line" id="L1142">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, i);</span>
-<span class="line" id="L1143">    }</span>
-<span class="line" id="L1144"></span>
-<span class="line" id="L1145">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getCoffHeader</span>(self: Coff) CoffHeader {</span>
-<span class="line" id="L1146">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> CoffHeader, <span class="tok-builtin">@ptrCast</span>(self.data[self.coff_header_offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(CoffHeader)])).*;</span>
-<span class="line" id="L1147">    }</span>
-<span class="line" id="L1148"></span>
-<span class="line" id="L1149">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptionalHeader</span>(self: Coff) OptionalHeader {</span>
-<span class="line" id="L1150">        assert(self.is_image);</span>
-<span class="line" id="L1151">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader);</span>
-<span class="line" id="L1152">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> OptionalHeader, <span class="tok-builtin">@ptrCast</span>(self.data[offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(OptionalHeader)])).*;</span>
-<span class="line" id="L1153">    }</span>
+<span class="line" id="L1139">        <span class="tok-kw">var</span> cv_signature: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>; <span class="tok-comment">// CodeView signature</span>
+</span>
+<span class="line" id="L1140">        <span class="tok-kw">try</span> reader.readNoEof(cv_signature[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L1141">        <span class="tok-comment">// 'RSDS' indicates PDB70 format, used by lld.</span>
+</span>
+<span class="line" id="L1142">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, &amp;cv_signature, <span class="tok-str">&quot;RSDS&quot;</span>))</span>
+<span class="line" id="L1143">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPEMagic;</span>
+<span class="line" id="L1144">        <span class="tok-kw">try</span> reader.readNoEof(self.guid[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L1145">        self.age = <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>);</span>
+<span class="line" id="L1146"></span>
+<span class="line" id="L1147">        <span class="tok-comment">// Finally read the null-terminated string.</span>
+</span>
+<span class="line" id="L1148">        <span class="tok-kw">var</span> byte = <span class="tok-kw">try</span> reader.readByte();</span>
+<span class="line" id="L1149">        i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1150">        <span class="tok-kw">while</span> (byte != <span class="tok-number">0</span> <span class="tok-kw">and</span> i &lt; buffer.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1151">            buffer[i] = byte;</span>
+<span class="line" id="L1152">            byte = <span class="tok-kw">try</span> reader.readByte();</span>
+<span class="line" id="L1153">        }</span>
 <span class="line" id="L1154"></span>
-<span class="line" id="L1155">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptionalHeader32</span>(self: Coff) OptionalHeaderPE32 {</span>
-<span class="line" id="L1156">        assert(self.is_image);</span>
-<span class="line" id="L1157">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader);</span>
-<span class="line" id="L1158">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> OptionalHeaderPE32, <span class="tok-builtin">@ptrCast</span>(self.data[offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE32)])).*;</span>
+<span class="line" id="L1155">        <span class="tok-kw">if</span> (byte != <span class="tok-number">0</span> <span class="tok-kw">and</span> i == buffer.len)</span>
+<span class="line" id="L1156">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L1157"></span>
+<span class="line" id="L1158">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, i);</span>
 <span class="line" id="L1159">    }</span>
 <span class="line" id="L1160"></span>
-<span class="line" id="L1161">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptionalHeader64</span>(self: Coff) OptionalHeaderPE64 {</span>
-<span class="line" id="L1162">        assert(self.is_image);</span>
-<span class="line" id="L1163">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader);</span>
-<span class="line" id="L1164">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> OptionalHeaderPE64, <span class="tok-builtin">@ptrCast</span>(self.data[offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE64)])).*;</span>
-<span class="line" id="L1165">    }</span>
-<span class="line" id="L1166"></span>
-<span class="line" id="L1167">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getImageBase</span>(self: Coff) <span class="tok-type">u64</span> {</span>
-<span class="line" id="L1168">        <span class="tok-kw">const</span> hdr = self.getOptionalHeader();</span>
-<span class="line" id="L1169">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (hdr.magic) {</span>
-<span class="line" id="L1170">            IMAGE_NT_OPTIONAL_HDR32_MAGIC =&gt; self.getOptionalHeader32().image_base,</span>
-<span class="line" id="L1171">            IMAGE_NT_OPTIONAL_HDR64_MAGIC =&gt; self.getOptionalHeader64().image_base,</span>
-<span class="line" id="L1172">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// We assume we have validated the header already</span>
+<span class="line" id="L1161">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getCoffHeader</span>(self: Coff) CoffHeader {</span>
+<span class="line" id="L1162">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> CoffHeader, <span class="tok-builtin">@ptrCast</span>(self.data[self.coff_header_offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(CoffHeader)])).*;</span>
+<span class="line" id="L1163">    }</span>
+<span class="line" id="L1164"></span>
+<span class="line" id="L1165">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptionalHeader</span>(self: Coff) OptionalHeader {</span>
+<span class="line" id="L1166">        assert(self.is_image);</span>
+<span class="line" id="L1167">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader);</span>
+<span class="line" id="L1168">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> OptionalHeader, <span class="tok-builtin">@ptrCast</span>(self.data[offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(OptionalHeader)])).*;</span>
+<span class="line" id="L1169">    }</span>
+<span class="line" id="L1170"></span>
+<span class="line" id="L1171">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptionalHeader32</span>(self: Coff) OptionalHeaderPE32 {</span>
+<span class="line" id="L1172">        assert(self.is_image);</span>
+<span class="line" id="L1173">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader);</span>
+<span class="line" id="L1174">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> OptionalHeaderPE32, <span class="tok-builtin">@ptrCast</span>(self.data[offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE32)])).*;</span>
+<span class="line" id="L1175">    }</span>
+<span class="line" id="L1176"></span>
+<span class="line" id="L1177">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getOptionalHeader64</span>(self: Coff) OptionalHeaderPE64 {</span>
+<span class="line" id="L1178">        assert(self.is_image);</span>
+<span class="line" id="L1179">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader);</span>
+<span class="line" id="L1180">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> OptionalHeaderPE64, <span class="tok-builtin">@ptrCast</span>(self.data[offset..][<span class="tok-number">0</span>..<span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE64)])).*;</span>
+<span class="line" id="L1181">    }</span>
+<span class="line" id="L1182"></span>
+<span class="line" id="L1183">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getImageBase</span>(self: Coff) <span class="tok-type">u64</span> {</span>
+<span class="line" id="L1184">        <span class="tok-kw">const</span> hdr = self.getOptionalHeader();</span>
+<span class="line" id="L1185">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (hdr.magic) {</span>
+<span class="line" id="L1186">            IMAGE_NT_OPTIONAL_HDR32_MAGIC =&gt; self.getOptionalHeader32().image_base,</span>
+<span class="line" id="L1187">            IMAGE_NT_OPTIONAL_HDR64_MAGIC =&gt; self.getOptionalHeader64().image_base,</span>
+<span class="line" id="L1188">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// We assume we have validated the header already</span>
 </span>
-<span class="line" id="L1173">        };</span>
-<span class="line" id="L1174">    }</span>
-<span class="line" id="L1175"></span>
-<span class="line" id="L1176">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getNumberOfDataDirectories</span>(self: Coff) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L1177">        <span class="tok-kw">const</span> hdr = self.getOptionalHeader();</span>
-<span class="line" id="L1178">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (hdr.magic) {</span>
-<span class="line" id="L1179">            IMAGE_NT_OPTIONAL_HDR32_MAGIC =&gt; self.getOptionalHeader32().number_of_rva_and_sizes,</span>
-<span class="line" id="L1180">            IMAGE_NT_OPTIONAL_HDR64_MAGIC =&gt; self.getOptionalHeader64().number_of_rva_and_sizes,</span>
-<span class="line" id="L1181">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// We assume we have validated the header already</span>
+<span class="line" id="L1189">        };</span>
+<span class="line" id="L1190">    }</span>
+<span class="line" id="L1191"></span>
+<span class="line" id="L1192">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getNumberOfDataDirectories</span>(self: Coff) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L1193">        <span class="tok-kw">const</span> hdr = self.getOptionalHeader();</span>
+<span class="line" id="L1194">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (hdr.magic) {</span>
+<span class="line" id="L1195">            IMAGE_NT_OPTIONAL_HDR32_MAGIC =&gt; self.getOptionalHeader32().number_of_rva_and_sizes,</span>
+<span class="line" id="L1196">            IMAGE_NT_OPTIONAL_HDR64_MAGIC =&gt; self.getOptionalHeader64().number_of_rva_and_sizes,</span>
+<span class="line" id="L1197">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// We assume we have validated the header already</span>
 </span>
-<span class="line" id="L1182">        };</span>
-<span class="line" id="L1183">    }</span>
-<span class="line" id="L1184"></span>
-<span class="line" id="L1185">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getDataDirectories</span>(self: *<span class="tok-kw">const</span> Coff) []<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> ImageDataDirectory {</span>
-<span class="line" id="L1186">        <span class="tok-kw">const</span> hdr = self.getOptionalHeader();</span>
-<span class="line" id="L1187">        <span class="tok-kw">const</span> size: <span class="tok-type">usize</span> = <span class="tok-kw">switch</span> (hdr.magic) {</span>
-<span class="line" id="L1188">            IMAGE_NT_OPTIONAL_HDR32_MAGIC =&gt; <span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE32),</span>
-<span class="line" id="L1189">            IMAGE_NT_OPTIONAL_HDR64_MAGIC =&gt; <span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE64),</span>
-<span class="line" id="L1190">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// We assume we have validated the header already</span>
+<span class="line" id="L1198">        };</span>
+<span class="line" id="L1199">    }</span>
+<span class="line" id="L1200"></span>
+<span class="line" id="L1201">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getDataDirectories</span>(self: *<span class="tok-kw">const</span> Coff) []<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> ImageDataDirectory {</span>
+<span class="line" id="L1202">        <span class="tok-kw">const</span> hdr = self.getOptionalHeader();</span>
+<span class="line" id="L1203">        <span class="tok-kw">const</span> size: <span class="tok-type">usize</span> = <span class="tok-kw">switch</span> (hdr.magic) {</span>
+<span class="line" id="L1204">            IMAGE_NT_OPTIONAL_HDR32_MAGIC =&gt; <span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE32),</span>
+<span class="line" id="L1205">            IMAGE_NT_OPTIONAL_HDR64_MAGIC =&gt; <span class="tok-builtin">@sizeOf</span>(OptionalHeaderPE64),</span>
+<span class="line" id="L1206">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// We assume we have validated the header already</span>
 </span>
-<span class="line" id="L1191">        };</span>
-<span class="line" id="L1192">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader) + size;</span>
-<span class="line" id="L1193">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> ImageDataDirectory, <span class="tok-builtin">@ptrCast</span>(self.data[offset..]))[<span class="tok-number">0</span>..self.getNumberOfDataDirectories()];</span>
-<span class="line" id="L1194">    }</span>
-<span class="line" id="L1195"></span>
-<span class="line" id="L1196">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSymtab</span>(self: *<span class="tok-kw">const</span> Coff) ?Symtab {</span>
-<span class="line" id="L1197">        <span class="tok-kw">const</span> coff_header = self.getCoffHeader();</span>
-<span class="line" id="L1198">        <span class="tok-kw">if</span> (coff_header.pointer_to_symbol_table == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1199"></span>
-<span class="line" id="L1200">        <span class="tok-kw">const</span> offset = coff_header.pointer_to_symbol_table;</span>
-<span class="line" id="L1201">        <span class="tok-kw">const</span> size = coff_header.number_of_symbols * Symbol.sizeOf();</span>
-<span class="line" id="L1202">        <span class="tok-kw">return</span> .{ .buffer = self.data[offset..][<span class="tok-number">0</span>..size] };</span>
-<span class="line" id="L1203">    }</span>
-<span class="line" id="L1204"></span>
-<span class="line" id="L1205">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getStrtab</span>(self: *<span class="tok-kw">const</span> Coff) <span class="tok-kw">error</span>{InvalidStrtabSize}!?Strtab {</span>
-<span class="line" id="L1206">        <span class="tok-kw">const</span> coff_header = self.getCoffHeader();</span>
-<span class="line" id="L1207">        <span class="tok-kw">if</span> (coff_header.pointer_to_symbol_table == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1208"></span>
-<span class="line" id="L1209">        <span class="tok-kw">const</span> offset = coff_header.pointer_to_symbol_table + Symbol.sizeOf() * coff_header.number_of_symbols;</span>
-<span class="line" id="L1210">        <span class="tok-kw">const</span> size = mem.readIntLittle(<span class="tok-type">u32</span>, self.data[offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>]);</span>
-<span class="line" id="L1211">        <span class="tok-kw">if</span> ((offset + size) &gt; self.data.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidStrtabSize;</span>
-<span class="line" id="L1212"></span>
-<span class="line" id="L1213">        <span class="tok-kw">return</span> Strtab{ .buffer = self.data[offset..][<span class="tok-number">0</span>..size] };</span>
-<span class="line" id="L1214">    }</span>
+<span class="line" id="L1207">        };</span>
+<span class="line" id="L1208">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader) + size;</span>
+<span class="line" id="L1209">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> ImageDataDirectory, <span class="tok-builtin">@ptrCast</span>(self.data[offset..]))[<span class="tok-number">0</span>..self.getNumberOfDataDirectories()];</span>
+<span class="line" id="L1210">    }</span>
+<span class="line" id="L1211"></span>
+<span class="line" id="L1212">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSymtab</span>(self: *<span class="tok-kw">const</span> Coff) ?Symtab {</span>
+<span class="line" id="L1213">        <span class="tok-kw">const</span> coff_header = self.getCoffHeader();</span>
+<span class="line" id="L1214">        <span class="tok-kw">if</span> (coff_header.pointer_to_symbol_table == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L1215"></span>
-<span class="line" id="L1216">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">strtabRequired</span>(self: *<span class="tok-kw">const</span> Coff) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L1217">        <span class="tok-kw">for</span> (self.getSectionHeaders()) |*sect_hdr| <span class="tok-kw">if</span> (sect_hdr.getName() == <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L1218">        <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L1216">        <span class="tok-kw">const</span> offset = coff_header.pointer_to_symbol_table;</span>
+<span class="line" id="L1217">        <span class="tok-kw">const</span> size = coff_header.number_of_symbols * Symbol.sizeOf();</span>
+<span class="line" id="L1218">        <span class="tok-kw">return</span> .{ .buffer = self.data[offset..][<span class="tok-number">0</span>..size] };</span>
 <span class="line" id="L1219">    }</span>
 <span class="line" id="L1220"></span>
-<span class="line" id="L1221">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionHeaders</span>(self: *<span class="tok-kw">const</span> Coff) []<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader {</span>
+<span class="line" id="L1221">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getStrtab</span>(self: *<span class="tok-kw">const</span> Coff) <span class="tok-kw">error</span>{InvalidStrtabSize}!?Strtab {</span>
 <span class="line" id="L1222">        <span class="tok-kw">const</span> coff_header = self.getCoffHeader();</span>
-<span class="line" id="L1223">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader) + coff_header.size_of_optional_header;</span>
-<span class="line" id="L1224">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader, <span class="tok-builtin">@ptrCast</span>(self.data.ptr + offset))[<span class="tok-number">0</span>..coff_header.number_of_sections];</span>
-<span class="line" id="L1225">    }</span>
-<span class="line" id="L1226"></span>
-<span class="line" id="L1227">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionHeadersAlloc</span>(self: *<span class="tok-kw">const</span> Coff, allocator: mem.Allocator) ![]SectionHeader {</span>
-<span class="line" id="L1228">        <span class="tok-kw">const</span> section_headers = self.getSectionHeaders();</span>
-<span class="line" id="L1229">        <span class="tok-kw">const</span> out_buff = <span class="tok-kw">try</span> allocator.alloc(SectionHeader, section_headers.len);</span>
-<span class="line" id="L1230">        <span class="tok-kw">for</span> (out_buff, <span class="tok-number">0</span>..) |*section_header, i| {</span>
-<span class="line" id="L1231">            section_header.* = section_headers[i];</span>
-<span class="line" id="L1232">        }</span>
-<span class="line" id="L1233"></span>
-<span class="line" id="L1234">        <span class="tok-kw">return</span> out_buff;</span>
+<span class="line" id="L1223">        <span class="tok-kw">if</span> (coff_header.pointer_to_symbol_table == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1224"></span>
+<span class="line" id="L1225">        <span class="tok-kw">const</span> offset = coff_header.pointer_to_symbol_table + Symbol.sizeOf() * coff_header.number_of_symbols;</span>
+<span class="line" id="L1226">        <span class="tok-kw">const</span> size = mem.readIntLittle(<span class="tok-type">u32</span>, self.data[offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>]);</span>
+<span class="line" id="L1227">        <span class="tok-kw">if</span> ((offset + size) &gt; self.data.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidStrtabSize;</span>
+<span class="line" id="L1228"></span>
+<span class="line" id="L1229">        <span class="tok-kw">return</span> Strtab{ .buffer = self.data[offset..][<span class="tok-number">0</span>..size] };</span>
+<span class="line" id="L1230">    }</span>
+<span class="line" id="L1231"></span>
+<span class="line" id="L1232">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">strtabRequired</span>(self: *<span class="tok-kw">const</span> Coff) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1233">        <span class="tok-kw">for</span> (self.getSectionHeaders()) |*sect_hdr| <span class="tok-kw">if</span> (sect_hdr.getName() == <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L1234">        <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
 <span class="line" id="L1235">    }</span>
 <span class="line" id="L1236"></span>
-<span class="line" id="L1237">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionName</span>(self: *<span class="tok-kw">const</span> Coff, sect_hdr: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader) <span class="tok-kw">error</span>{InvalidStrtabSize}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1238">        <span class="tok-kw">const</span> name = sect_hdr.getName() <span class="tok-kw">orelse</span> blk: {</span>
-<span class="line" id="L1239">            <span class="tok-kw">const</span> strtab = (<span class="tok-kw">try</span> self.getStrtab()).?;</span>
-<span class="line" id="L1240">            <span class="tok-kw">const</span> name_offset = sect_hdr.getNameOffset().?;</span>
-<span class="line" id="L1241">            <span class="tok-kw">break</span> :blk strtab.get(name_offset);</span>
-<span class="line" id="L1242">        };</span>
-<span class="line" id="L1243">        <span class="tok-kw">return</span> name;</span>
-<span class="line" id="L1244">    }</span>
-<span class="line" id="L1245"></span>
-<span class="line" id="L1246">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionByName</span>(self: *<span class="tok-kw">const</span> Coff, <span class="tok-kw">comptime</span> name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader {</span>
-<span class="line" id="L1247">        <span class="tok-kw">for</span> (self.getSectionHeaders()) |*sect| {</span>
-<span class="line" id="L1248">            <span class="tok-kw">const</span> section_name = self.getSectionName(sect) <span class="tok-kw">catch</span> |e| <span class="tok-kw">switch</span> (e) {</span>
-<span class="line" id="L1249">                <span class="tok-kw">error</span>.InvalidStrtabSize =&gt; <span class="tok-kw">continue</span>, <span class="tok-comment">//ignore invalid(?) strtab entries - see also GitHub issue #15238</span>
-</span>
-<span class="line" id="L1250">            };</span>
-<span class="line" id="L1251">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, section_name, name)) {</span>
-<span class="line" id="L1252">                <span class="tok-kw">return</span> sect;</span>
-<span class="line" id="L1253">            }</span>
-<span class="line" id="L1254">        }</span>
-<span class="line" id="L1255">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1256">    }</span>
-<span class="line" id="L1257"></span>
-<span class="line" id="L1258">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionData</span>(self: *<span class="tok-kw">const</span> Coff, sec: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1259">        <span class="tok-kw">return</span> self.data[sec.pointer_to_raw_data..][<span class="tok-number">0</span>..sec.virtual_size];</span>
+<span class="line" id="L1237">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionHeaders</span>(self: *<span class="tok-kw">const</span> Coff) []<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader {</span>
+<span class="line" id="L1238">        <span class="tok-kw">const</span> coff_header = self.getCoffHeader();</span>
+<span class="line" id="L1239">        <span class="tok-kw">const</span> offset = self.coff_header_offset + <span class="tok-builtin">@sizeOf</span>(CoffHeader) + coff_header.size_of_optional_header;</span>
+<span class="line" id="L1240">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader, <span class="tok-builtin">@ptrCast</span>(self.data.ptr + offset))[<span class="tok-number">0</span>..coff_header.number_of_sections];</span>
+<span class="line" id="L1241">    }</span>
+<span class="line" id="L1242"></span>
+<span class="line" id="L1243">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionHeadersAlloc</span>(self: *<span class="tok-kw">const</span> Coff, allocator: mem.Allocator) ![]SectionHeader {</span>
+<span class="line" id="L1244">        <span class="tok-kw">const</span> section_headers = self.getSectionHeaders();</span>
+<span class="line" id="L1245">        <span class="tok-kw">const</span> out_buff = <span class="tok-kw">try</span> allocator.alloc(SectionHeader, section_headers.len);</span>
+<span class="line" id="L1246">        <span class="tok-kw">for</span> (out_buff, <span class="tok-number">0</span>..) |*section_header, i| {</span>
+<span class="line" id="L1247">            section_header.* = section_headers[i];</span>
+<span class="line" id="L1248">        }</span>
+<span class="line" id="L1249"></span>
+<span class="line" id="L1250">        <span class="tok-kw">return</span> out_buff;</span>
+<span class="line" id="L1251">    }</span>
+<span class="line" id="L1252"></span>
+<span class="line" id="L1253">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionName</span>(self: *<span class="tok-kw">const</span> Coff, sect_hdr: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader) <span class="tok-kw">error</span>{InvalidStrtabSize}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1254">        <span class="tok-kw">const</span> name = sect_hdr.getName() <span class="tok-kw">orelse</span> blk: {</span>
+<span class="line" id="L1255">            <span class="tok-kw">const</span> strtab = (<span class="tok-kw">try</span> self.getStrtab()).?;</span>
+<span class="line" id="L1256">            <span class="tok-kw">const</span> name_offset = sect_hdr.getNameOffset().?;</span>
+<span class="line" id="L1257">            <span class="tok-kw">break</span> :blk strtab.get(name_offset);</span>
+<span class="line" id="L1258">        };</span>
+<span class="line" id="L1259">        <span class="tok-kw">return</span> name;</span>
 <span class="line" id="L1260">    }</span>
 <span class="line" id="L1261"></span>
-<span class="line" id="L1262">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionDataAlloc</span>(self: *<span class="tok-kw">const</span> Coff, sec: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader, allocator: mem.Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1263">        <span class="tok-kw">const</span> section_data = self.getSectionData(sec);</span>
-<span class="line" id="L1264">        <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, section_data);</span>
-<span class="line" id="L1265">    }</span>
-<span class="line" id="L1266">};</span>
-<span class="line" id="L1267"></span>
-<span class="line" id="L1268"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Symtab = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1269">    buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1270"></span>
-<span class="line" id="L1271">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">len</span>(self: Symtab) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1272">        <span class="tok-kw">return</span> <span class="tok-builtin">@divExact</span>(self.buffer.len, Symbol.sizeOf());</span>
-<span class="line" id="L1273">    }</span>
-<span class="line" id="L1274"></span>
-<span class="line" id="L1275">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Tag = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L1276">        symbol,</span>
-<span class="line" id="L1277">        func_def,</span>
-<span class="line" id="L1278">        debug_info,</span>
-<span class="line" id="L1279">        weak_ext,</span>
-<span class="line" id="L1280">        file_def,</span>
-<span class="line" id="L1281">        sect_def,</span>
-<span class="line" id="L1282">    };</span>
-<span class="line" id="L1283"></span>
-<span class="line" id="L1284">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Record = <span class="tok-kw">union</span>(Tag) {</span>
-<span class="line" id="L1285">        symbol: Symbol,</span>
-<span class="line" id="L1286">        debug_info: DebugInfoDefinition,</span>
-<span class="line" id="L1287">        func_def: FunctionDefinition,</span>
-<span class="line" id="L1288">        weak_ext: WeakExternalDefinition,</span>
-<span class="line" id="L1289">        file_def: FileDefinition,</span>
-<span class="line" id="L1290">        sect_def: SectionDefinition,</span>
-<span class="line" id="L1291">    };</span>
-<span class="line" id="L1292"></span>
-<span class="line" id="L1293">    <span class="tok-comment">/// Lives as long as Symtab instance.</span></span>
-<span class="line" id="L1294">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">at</span>(self: Symtab, index: <span class="tok-type">usize</span>, tag: Tag) Record {</span>
-<span class="line" id="L1295">        <span class="tok-kw">const</span> offset = index * Symbol.sizeOf();</span>
-<span class="line" id="L1296">        <span class="tok-kw">const</span> raw = self.buffer[offset..][<span class="tok-number">0</span>..Symbol.sizeOf()];</span>
-<span class="line" id="L1297">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
-<span class="line" id="L1298">            .symbol =&gt; .{ .symbol = asSymbol(raw) },</span>
-<span class="line" id="L1299">            .debug_info =&gt; .{ .debug_info = asDebugInfo(raw) },</span>
-<span class="line" id="L1300">            .func_def =&gt; .{ .func_def = asFuncDef(raw) },</span>
-<span class="line" id="L1301">            .weak_ext =&gt; .{ .weak_ext = asWeakExtDef(raw) },</span>
-<span class="line" id="L1302">            .file_def =&gt; .{ .file_def = asFileDef(raw) },</span>
-<span class="line" id="L1303">            .sect_def =&gt; .{ .sect_def = asSectDef(raw) },</span>
-<span class="line" id="L1304">        };</span>
-<span class="line" id="L1305">    }</span>
-<span class="line" id="L1306"></span>
-<span class="line" id="L1307">    <span class="tok-kw">fn</span> <span class="tok-fn">asSymbol</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Symbol {</span>
-<span class="line" id="L1308">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1309">            .name = raw[<span class="tok-number">0</span>..<span class="tok-number">8</span>].*,</span>
-<span class="line" id="L1310">            .value = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
-<span class="line" id="L1311">            .section_number = <span class="tok-builtin">@as</span>(SectionNumber, <span class="tok-builtin">@enumFromInt</span>(mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>]))),</span>
-<span class="line" id="L1312">            .<span class="tok-type">type</span> = <span class="tok-builtin">@as</span>(SymType, <span class="tok-builtin">@bitCast</span>(mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">14</span>..<span class="tok-number">16</span>]))),</span>
-<span class="line" id="L1313">            .storage_class = <span class="tok-builtin">@as</span>(StorageClass, <span class="tok-builtin">@enumFromInt</span>(raw[<span class="tok-number">16</span>])),</span>
-<span class="line" id="L1314">            .number_of_aux_symbols = raw[<span class="tok-number">17</span>],</span>
-<span class="line" id="L1315">        };</span>
-<span class="line" id="L1316">    }</span>
-<span class="line" id="L1317"></span>
-<span class="line" id="L1318">    <span class="tok-kw">fn</span> <span class="tok-fn">asDebugInfo</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) DebugInfoDefinition {</span>
-<span class="line" id="L1319">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1320">            .unused_1 = raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>].*,</span>
-<span class="line" id="L1321">            .linenumber = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>]),</span>
-<span class="line" id="L1322">            .unused_2 = raw[<span class="tok-number">6</span>..<span class="tok-number">12</span>].*,</span>
-<span class="line" id="L1323">            .pointer_to_next_function = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>]),</span>
-<span class="line" id="L1324">            .unused_3 = raw[<span class="tok-number">16</span>..<span class="tok-number">18</span>].*,</span>
-<span class="line" id="L1325">        };</span>
-<span class="line" id="L1326">    }</span>
-<span class="line" id="L1327"></span>
-<span class="line" id="L1328">    <span class="tok-kw">fn</span> <span class="tok-fn">asFuncDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) FunctionDefinition {</span>
-<span class="line" id="L1329">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1330">            .tag_index = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
-<span class="line" id="L1331">            .total_size = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>]),</span>
-<span class="line" id="L1332">            .pointer_to_linenumber = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
-<span class="line" id="L1333">            .pointer_to_next_function = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>]),</span>
-<span class="line" id="L1334">            .unused = raw[<span class="tok-number">16</span>..<span class="tok-number">18</span>].*,</span>
-<span class="line" id="L1335">        };</span>
-<span class="line" id="L1336">    }</span>
-<span class="line" id="L1337"></span>
-<span class="line" id="L1338">    <span class="tok-kw">fn</span> <span class="tok-fn">asWeakExtDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WeakExternalDefinition {</span>
-<span class="line" id="L1339">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1340">            .tag_index = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
-<span class="line" id="L1341">            .flag = <span class="tok-builtin">@as</span>(WeakExternalFlag, <span class="tok-builtin">@enumFromInt</span>(mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>]))),</span>
-<span class="line" id="L1342">            .unused = raw[<span class="tok-number">8</span>..<span class="tok-number">18</span>].*,</span>
-<span class="line" id="L1343">        };</span>
-<span class="line" id="L1344">    }</span>
-<span class="line" id="L1345"></span>
-<span class="line" id="L1346">    <span class="tok-kw">fn</span> <span class="tok-fn">asFileDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) FileDefinition {</span>
-<span class="line" id="L1347">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1348">            .file_name = raw[<span class="tok-number">0</span>..<span class="tok-number">18</span>].*,</span>
-<span class="line" id="L1349">        };</span>
-<span class="line" id="L1350">    }</span>
-<span class="line" id="L1351"></span>
-<span class="line" id="L1352">    <span class="tok-kw">fn</span> <span class="tok-fn">asSectDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) SectionDefinition {</span>
-<span class="line" id="L1353">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1354">            .length = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
-<span class="line" id="L1355">            .number_of_relocations = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>]),</span>
-<span class="line" id="L1356">            .number_of_linenumbers = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">6</span>..<span class="tok-number">8</span>]),</span>
-<span class="line" id="L1357">            .checksum = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
-<span class="line" id="L1358">            .number = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>]),</span>
-<span class="line" id="L1359">            .selection = <span class="tok-builtin">@as</span>(ComdatSelection, <span class="tok-builtin">@enumFromInt</span>(raw[<span class="tok-number">14</span>])),</span>
-<span class="line" id="L1360">            .unused = raw[<span class="tok-number">15</span>..<span class="tok-number">18</span>].*,</span>
-<span class="line" id="L1361">        };</span>
-<span class="line" id="L1362">    }</span>
-<span class="line" id="L1363"></span>
-<span class="line" id="L1364">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Slice = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1365">        buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1366">        num: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L1367">        count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1262">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionByName</span>(self: *<span class="tok-kw">const</span> Coff, <span class="tok-kw">comptime</span> name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader {</span>
+<span class="line" id="L1263">        <span class="tok-kw">for</span> (self.getSectionHeaders()) |*sect| {</span>
+<span class="line" id="L1264">            <span class="tok-kw">const</span> section_name = self.getSectionName(sect) <span class="tok-kw">catch</span> |e| <span class="tok-kw">switch</span> (e) {</span>
+<span class="line" id="L1265">                <span class="tok-kw">error</span>.InvalidStrtabSize =&gt; <span class="tok-kw">continue</span>, <span class="tok-comment">//ignore invalid(?) strtab entries - see also GitHub issue #15238</span>
+</span>
+<span class="line" id="L1266">            };</span>
+<span class="line" id="L1267">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, section_name, name)) {</span>
+<span class="line" id="L1268">                <span class="tok-kw">return</span> sect;</span>
+<span class="line" id="L1269">            }</span>
+<span class="line" id="L1270">        }</span>
+<span class="line" id="L1271">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1272">    }</span>
+<span class="line" id="L1273"></span>
+<span class="line" id="L1274">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionData</span>(self: *<span class="tok-kw">const</span> Coff, sec: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1275">        <span class="tok-kw">const</span> offset = <span class="tok-kw">if</span> (self.is_loaded) sec.virtual_address <span class="tok-kw">else</span> sec.pointer_to_raw_data;</span>
+<span class="line" id="L1276">        <span class="tok-kw">return</span> self.data[offset..][<span class="tok-number">0</span>..sec.virtual_size];</span>
+<span class="line" id="L1277">    }</span>
+<span class="line" id="L1278"></span>
+<span class="line" id="L1279">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getSectionDataAlloc</span>(self: *<span class="tok-kw">const</span> Coff, sec: *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> SectionHeader, allocator: mem.Allocator) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1280">        <span class="tok-kw">const</span> section_data = self.getSectionData(sec);</span>
+<span class="line" id="L1281">        <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, section_data);</span>
+<span class="line" id="L1282">    }</span>
+<span class="line" id="L1283">};</span>
+<span class="line" id="L1284"></span>
+<span class="line" id="L1285"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Symtab = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1286">    buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1287"></span>
+<span class="line" id="L1288">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">len</span>(self: Symtab) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1289">        <span class="tok-kw">return</span> <span class="tok-builtin">@divExact</span>(self.buffer.len, Symbol.sizeOf());</span>
+<span class="line" id="L1290">    }</span>
+<span class="line" id="L1291"></span>
+<span class="line" id="L1292">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Tag = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L1293">        symbol,</span>
+<span class="line" id="L1294">        debug_info,</span>
+<span class="line" id="L1295">        func_def,</span>
+<span class="line" id="L1296">        weak_ext,</span>
+<span class="line" id="L1297">        file_def,</span>
+<span class="line" id="L1298">        sect_def,</span>
+<span class="line" id="L1299">    };</span>
+<span class="line" id="L1300"></span>
+<span class="line" id="L1301">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Record = <span class="tok-kw">union</span>(Tag) {</span>
+<span class="line" id="L1302">        symbol: Symbol,</span>
+<span class="line" id="L1303">        debug_info: DebugInfoDefinition,</span>
+<span class="line" id="L1304">        func_def: FunctionDefinition,</span>
+<span class="line" id="L1305">        weak_ext: WeakExternalDefinition,</span>
+<span class="line" id="L1306">        file_def: FileDefinition,</span>
+<span class="line" id="L1307">        sect_def: SectionDefinition,</span>
+<span class="line" id="L1308">    };</span>
+<span class="line" id="L1309"></span>
+<span class="line" id="L1310">    <span class="tok-comment">/// Lives as long as Symtab instance.</span></span>
+<span class="line" id="L1311">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">at</span>(self: Symtab, index: <span class="tok-type">usize</span>, tag: Tag) Record {</span>
+<span class="line" id="L1312">        <span class="tok-kw">const</span> offset = index * Symbol.sizeOf();</span>
+<span class="line" id="L1313">        <span class="tok-kw">const</span> raw = self.buffer[offset..][<span class="tok-number">0</span>..Symbol.sizeOf()];</span>
+<span class="line" id="L1314">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
+<span class="line" id="L1315">            .symbol =&gt; .{ .symbol = asSymbol(raw) },</span>
+<span class="line" id="L1316">            .debug_info =&gt; .{ .debug_info = asDebugInfo(raw) },</span>
+<span class="line" id="L1317">            .func_def =&gt; .{ .func_def = asFuncDef(raw) },</span>
+<span class="line" id="L1318">            .weak_ext =&gt; .{ .weak_ext = asWeakExtDef(raw) },</span>
+<span class="line" id="L1319">            .file_def =&gt; .{ .file_def = asFileDef(raw) },</span>
+<span class="line" id="L1320">            .sect_def =&gt; .{ .sect_def = asSectDef(raw) },</span>
+<span class="line" id="L1321">        };</span>
+<span class="line" id="L1322">    }</span>
+<span class="line" id="L1323"></span>
+<span class="line" id="L1324">    <span class="tok-kw">fn</span> <span class="tok-fn">asSymbol</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Symbol {</span>
+<span class="line" id="L1325">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1326">            .name = raw[<span class="tok-number">0</span>..<span class="tok-number">8</span>].*,</span>
+<span class="line" id="L1327">            .value = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
+<span class="line" id="L1328">            .section_number = <span class="tok-builtin">@as</span>(SectionNumber, <span class="tok-builtin">@enumFromInt</span>(mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>]))),</span>
+<span class="line" id="L1329">            .<span class="tok-type">type</span> = <span class="tok-builtin">@as</span>(SymType, <span class="tok-builtin">@bitCast</span>(mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">14</span>..<span class="tok-number">16</span>]))),</span>
+<span class="line" id="L1330">            .storage_class = <span class="tok-builtin">@as</span>(StorageClass, <span class="tok-builtin">@enumFromInt</span>(raw[<span class="tok-number">16</span>])),</span>
+<span class="line" id="L1331">            .number_of_aux_symbols = raw[<span class="tok-number">17</span>],</span>
+<span class="line" id="L1332">        };</span>
+<span class="line" id="L1333">    }</span>
+<span class="line" id="L1334"></span>
+<span class="line" id="L1335">    <span class="tok-kw">fn</span> <span class="tok-fn">asDebugInfo</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) DebugInfoDefinition {</span>
+<span class="line" id="L1336">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1337">            .unused_1 = raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>].*,</span>
+<span class="line" id="L1338">            .linenumber = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>]),</span>
+<span class="line" id="L1339">            .unused_2 = raw[<span class="tok-number">6</span>..<span class="tok-number">12</span>].*,</span>
+<span class="line" id="L1340">            .pointer_to_next_function = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>]),</span>
+<span class="line" id="L1341">            .unused_3 = raw[<span class="tok-number">16</span>..<span class="tok-number">18</span>].*,</span>
+<span class="line" id="L1342">        };</span>
+<span class="line" id="L1343">    }</span>
+<span class="line" id="L1344"></span>
+<span class="line" id="L1345">    <span class="tok-kw">fn</span> <span class="tok-fn">asFuncDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) FunctionDefinition {</span>
+<span class="line" id="L1346">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1347">            .tag_index = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
+<span class="line" id="L1348">            .total_size = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>]),</span>
+<span class="line" id="L1349">            .pointer_to_linenumber = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
+<span class="line" id="L1350">            .pointer_to_next_function = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>]),</span>
+<span class="line" id="L1351">            .unused = raw[<span class="tok-number">16</span>..<span class="tok-number">18</span>].*,</span>
+<span class="line" id="L1352">        };</span>
+<span class="line" id="L1353">    }</span>
+<span class="line" id="L1354"></span>
+<span class="line" id="L1355">    <span class="tok-kw">fn</span> <span class="tok-fn">asWeakExtDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WeakExternalDefinition {</span>
+<span class="line" id="L1356">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1357">            .tag_index = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
+<span class="line" id="L1358">            .flag = <span class="tok-builtin">@as</span>(WeakExternalFlag, <span class="tok-builtin">@enumFromInt</span>(mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>]))),</span>
+<span class="line" id="L1359">            .unused = raw[<span class="tok-number">8</span>..<span class="tok-number">18</span>].*,</span>
+<span class="line" id="L1360">        };</span>
+<span class="line" id="L1361">    }</span>
+<span class="line" id="L1362"></span>
+<span class="line" id="L1363">    <span class="tok-kw">fn</span> <span class="tok-fn">asFileDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) FileDefinition {</span>
+<span class="line" id="L1364">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1365">            .file_name = raw[<span class="tok-number">0</span>..<span class="tok-number">18</span>].*,</span>
+<span class="line" id="L1366">        };</span>
+<span class="line" id="L1367">    }</span>
 <span class="line" id="L1368"></span>
-<span class="line" id="L1369">        <span class="tok-comment">/// Lives as long as Symtab instance.</span></span>
-<span class="line" id="L1370">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">next</span>(self: *Slice) ?Symbol {</span>
-<span class="line" id="L1371">            <span class="tok-kw">if</span> (self.count &gt;= self.num) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1372">            <span class="tok-kw">const</span> sym = asSymbol(self.buffer[<span class="tok-number">0</span>..Symbol.sizeOf()]);</span>
-<span class="line" id="L1373">            self.count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1374">            self.buffer = self.buffer[Symbol.sizeOf()..];</span>
-<span class="line" id="L1375">            <span class="tok-kw">return</span> sym;</span>
-<span class="line" id="L1376">        }</span>
-<span class="line" id="L1377">    };</span>
-<span class="line" id="L1378"></span>
-<span class="line" id="L1379">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">slice</span>(self: Symtab, start: <span class="tok-type">usize</span>, end: ?<span class="tok-type">usize</span>) Slice {</span>
-<span class="line" id="L1380">        <span class="tok-kw">const</span> offset = start * Symbol.sizeOf();</span>
-<span class="line" id="L1381">        <span class="tok-kw">const</span> llen = <span class="tok-kw">if</span> (end) |e| e * Symbol.sizeOf() <span class="tok-kw">else</span> self.buffer.len;</span>
-<span class="line" id="L1382">        <span class="tok-kw">const</span> num = <span class="tok-builtin">@divExact</span>(llen - offset, Symbol.sizeOf());</span>
-<span class="line" id="L1383">        <span class="tok-kw">return</span> Slice{ .buffer = self.buffer[offset..][<span class="tok-number">0</span>..llen], .num = num };</span>
-<span class="line" id="L1384">    }</span>
-<span class="line" id="L1385">};</span>
-<span class="line" id="L1386"></span>
-<span class="line" id="L1387"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Strtab = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1388">    buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1389"></span>
-<span class="line" id="L1390">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: Strtab, off: <span class="tok-type">u32</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1391">        assert(off &lt; self.buffer.len);</span>
-<span class="line" id="L1392">        <span class="tok-kw">return</span> mem.sliceTo(<span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self.buffer.ptr + off)), <span class="tok-number">0</span>);</span>
-<span class="line" id="L1393">    }</span>
-<span class="line" id="L1394">};</span>
+<span class="line" id="L1369">    <span class="tok-kw">fn</span> <span class="tok-fn">asSectDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) SectionDefinition {</span>
+<span class="line" id="L1370">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1371">            .length = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
+<span class="line" id="L1372">            .number_of_relocations = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>]),</span>
+<span class="line" id="L1373">            .number_of_linenumbers = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">6</span>..<span class="tok-number">8</span>]),</span>
+<span class="line" id="L1374">            .checksum = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
+<span class="line" id="L1375">            .number = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>]),</span>
+<span class="line" id="L1376">            .selection = <span class="tok-builtin">@as</span>(ComdatSelection, <span class="tok-builtin">@enumFromInt</span>(raw[<span class="tok-number">14</span>])),</span>
+<span class="line" id="L1377">            .unused = raw[<span class="tok-number">15</span>..<span class="tok-number">18</span>].*,</span>
+<span class="line" id="L1378">        };</span>
+<span class="line" id="L1379">    }</span>
+<span class="line" id="L1380"></span>
+<span class="line" id="L1381">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Slice = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1382">        buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1383">        num: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L1384">        count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1385"></span>
+<span class="line" id="L1386">        <span class="tok-comment">/// Lives as long as Symtab instance.</span></span>
+<span class="line" id="L1387">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">next</span>(self: *Slice) ?Symbol {</span>
+<span class="line" id="L1388">            <span class="tok-kw">if</span> (self.count &gt;= self.num) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1389">            <span class="tok-kw">const</span> sym = asSymbol(self.buffer[<span class="tok-number">0</span>..Symbol.sizeOf()]);</span>
+<span class="line" id="L1390">            self.count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1391">            self.buffer = self.buffer[Symbol.sizeOf()..];</span>
+<span class="line" id="L1392">            <span class="tok-kw">return</span> sym;</span>
+<span class="line" id="L1393">        }</span>
+<span class="line" id="L1394">    };</span>
 <span class="line" id="L1395"></span>
+<span class="line" id="L1396">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">slice</span>(self: Symtab, start: <span class="tok-type">usize</span>, end: ?<span class="tok-type">usize</span>) Slice {</span>
+<span class="line" id="L1397">        <span class="tok-kw">const</span> offset = start * Symbol.sizeOf();</span>
+<span class="line" id="L1398">        <span class="tok-kw">const</span> llen = <span class="tok-kw">if</span> (end) |e| e * Symbol.sizeOf() <span class="tok-kw">else</span> self.buffer.len;</span>
+<span class="line" id="L1399">        <span class="tok-kw">const</span> num = <span class="tok-builtin">@divExact</span>(llen - offset, Symbol.sizeOf());</span>
+<span class="line" id="L1400">        <span class="tok-kw">return</span> Slice{ .buffer = self.buffer[offset..][<span class="tok-number">0</span>..llen], .num = num };</span>
+<span class="line" id="L1401">    }</span>
+<span class="line" id="L1402">};</span>
+<span class="line" id="L1403"></span>
+<span class="line" id="L1404"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Strtab = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1405">    buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1406"></span>
+<span class="line" id="L1407">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: Strtab, off: <span class="tok-type">u32</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1408">        assert(off &lt; self.buffer.len);</span>
+<span class="line" id="L1409">        <span class="tok-kw">return</span> mem.sliceTo(<span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self.buffer.ptr + off)), <span class="tok-number">0</span>);</span>
+<span class="line" id="L1410">    }</span>
+<span class="line" id="L1411">};</span>
+<span class="line" id="L1412"></span>
 </code></pre></body>
 </html>
