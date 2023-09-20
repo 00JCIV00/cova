@@ -32,8 +32,8 @@ pub const Config = struct {
     /// Format for the Usage message.
     ///
     /// Must support the following format types in this order:
-    /// 1. Character (Short Prefix) 
-    /// 2. Optional Character "{?c} (Short Name)
+    /// 1. Optional Character (Short Prefix) 
+    /// 2. Optional Character "{?c}" (Short Name)
     /// 3. String (Long Prefix)
     /// 4. Optional String "{?s}" (Long Name)
     /// 5. String (Value Name)
@@ -41,9 +41,9 @@ pub const Config = struct {
     usage_fmt: []const u8 = "[{c}{?c},{s}{?s} \"{s} ({s})\"]",
 
     /// Prefix for Short Options.
-    short_prefix: u8 = '-',
+    short_prefix: ?u8 = '-',
     /// Prefix for Long Options.
-    long_prefix: []const u8 = "--",
+    long_prefix: ?[]const u8 = "--",
 
     /// During parsing, allow there to be no space ' ' between Options and Values.
     /// This is allowed per the POSIX standard, but may not be ideal as it interrupts the parsing of chained booleans even in the event of a misstype.
@@ -62,6 +62,7 @@ pub fn Base() type { return Custom(.{}); }
 
 /// Create a Custom Option type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
+    if (config.short_prefix == null and config.long_prefix == null) @compileError("Either a Short or Long prefix must be set for Option Types!");
     return struct {
         /// The Custom Value type used by this Custom Option type.
         const ValueT = Value.Custom(config.val_config);
@@ -121,10 +122,10 @@ pub fn Custom(comptime config: Config) type {
         /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             try writer.print(usage_fmt, .{ 
-                short_prefix,
-                self.short_name,
-                long_prefix,
-                self.long_name,
+                short_prefix orelse 0,
+                if (short_prefix != null) self.short_name else 0,
+                long_prefix orelse "",
+                if (long_prefix != null) self.long_name else "",
                 self.val.name(),
                 self.val.valType(),
             });

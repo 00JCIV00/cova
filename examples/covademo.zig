@@ -20,6 +20,10 @@ const ex_structs = @import("example_structs.zig");
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .vals_mandatory = false,
+    .opt_config = .{
+        .short_prefix = null,
+        .long_prefix = "-",
+    },
 }); 
 pub const ValueT = CommandT.ValueT;
 
