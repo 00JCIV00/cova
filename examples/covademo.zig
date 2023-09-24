@@ -15,14 +15,13 @@ const cova = @import("cova");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
-const utils = cova.utils;
 const ex_structs = @import("example_structs.zig");
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .vals_mandatory = false,
     .opt_config = .{
-        .short_prefix = null,
-        .long_prefix = "-",
+        //.short_prefix = null,
+        //.long_prefix = "-",
     },
 }); 
 pub const ValueT = CommandT.ValueT;
@@ -75,7 +74,7 @@ pub fn demoFn(int: i32, string: []const u8) void {
 }
 
 // Comptime Setup Command
-const setup_cmd: CommandT = .{
+pub const setup_cmd: CommandT = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
     .sub_cmds_mandatory = false,
@@ -196,7 +195,7 @@ const setup_cmd: CommandT = .{
             .short_name = 'F',
             .long_name = "file",
             .val = ValueT.ofType([]const u8, .{
-                .name = "file_val",
+                .name = "filepath",
                 .description = "A filepath value.",
                 .valid_fn = Value.ValidationFns.validFilepath,
             }),
@@ -272,6 +271,7 @@ const setup_cmd: CommandT = .{
     }
 };
 
+
 pub fn main() !void {
     // Setup
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -295,7 +295,7 @@ pub fn main() !void {
     // Analysis
     // - Debug Output of Commands after Parsing. 
     try stdout.print("\n", .{});
-    try utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});

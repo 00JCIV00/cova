@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) void {
     //    .optimize = optimize,
     //});
     //b.installArtifact(lib);
+    
 
     // Tests 
     const cova_tests = b.addTest(.{
@@ -24,11 +25,6 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run cova library tests");
     test_step.dependOn(&run_cova_tests.step);
 
-    // Lib Module
-    const cova_mod = b.addModule("cova", .{
-        .source_file = std.Build.FileSource.relative("src/cova.zig"),
-    });
-
     // Docs
     const cova_docs = cova_tests;
     const build_docs = b.addInstallDirectory(.{
@@ -39,7 +35,12 @@ pub fn build(b: *std.Build) void {
     const build_docs_step = b.step("docs", "Build the cova library docs");
     build_docs_step.dependOn(&build_docs.step);
 
-    // Demo Exe
+    // Lib Module
+    const cova_mod = b.addModule("cova", .{
+        .source_file = std.Build.FileSource.relative("src/cova.zig"),
+    });
+
+    // Cova Demo Exe
     const cova_demo = b.addExecutable(.{
         .name = "covademo",
         .root_source_file = .{ .path = "examples/covademo.zig" },
@@ -47,8 +48,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     cova_demo.addModule("cova", cova_mod);
+    // - Build Exe
     const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
-    const build_cova_demo_step = b.step("demo", "Build the 'covademo' example (default: Debug)");
+    const build_cova_demo_step = b.step("cova-demo", "Build the 'covademo' example (default: Debug)");
     build_cova_demo_step.dependOn(&build_cova_demo.step);
 
     // Basic App Exe
@@ -62,4 +64,61 @@ pub fn build(b: *std.Build) void {
     const build_basic_app = b.addInstallArtifact(basic_app, .{});
     const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
     build_basic_app_step.dependOn(&build_basic_app.step);
+
+
+    // Build Options for Aux Docs
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "no_manpages", 
+        b.option(bool, "no-manpages", "Don't generate manpages (only applies to 'aux-doc' builds)") orelse false
+    );
+    const TabCompletionKind = enum {
+        bash,
+        ps1,
+        all,
+        none,
+    };
+    build_options.addOption(TabCompletionKind, "tab_completion_kind", 
+        b.option(TabCompletionKind, "tab-completion-kind", "Generate tab completion scripts of the given kind (only applies to exe builds)") orelse .all
+    );
+
+    // Cova Demo Aux Docs
+    const cova_demo_aux = b.addExecutable(.{
+        .name = "covademo-aux",
+        .root_source_file = .{ .path = "aux_doc_gen.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    cova_demo_aux.addModule("cova", cova_mod);
+    const cova_demo_mod = b.addModule("covademo", .{
+        .source_file = std.Build.FileSource.relative("examples/covademo.zig"),
+    });
+    cova_demo_mod.dependencies.put("cova", cova_mod) catch @panic("OOM");
+    cova_demo_aux.addModule("program", cova_demo_mod);
+    // - Add Build Options
+    cova_demo_aux.addOptions("aux_opts", build_options);
+    // - Run Exe and Build Aux Docs
+    const build_cova_demo_aux = b.addRunArtifact(cova_demo_aux);
+    const build_cova_demo_aux_step = b.step("cova-demo-aux-docs", "Build the Manpages and Tab Completion scripts for the 'covademo' example");
+    build_cova_demo_aux_step.dependOn(&build_cova_demo_aux.step);
+
+    // Basic App Aux Docs
+    const basic_app_aux = b.addExecutable(.{
+        .name = "basic-app-aux",
+        .root_source_file = .{ .path = "aux_doc_gen.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    basic_app_aux.addModule("cova", cova_mod);
+    const basic_app_mod = b.addModule("basic-app", .{
+        .source_file = std.Build.FileSource.relative("examples/basic_app.zig"),
+    });
+    basic_app_mod.dependencies.put("cova", cova_mod) catch @panic("OOM");
+    basic_app_aux.addModule("program", basic_app_mod);
+    // - Add Build Options
+    basic_app_aux.addOptions("aux_opts", build_options);
+    // - Run Exe and Build Aux Docs
+    const build_basic_app_aux = b.addRunArtifact(basic_app_aux);
+    const build_basic_app_aux_step = b.step("basic-app-aux-docs", "Build the Manpages and Tab Completion scripts for the 'basic-app' example");
+    build_basic_app_aux_step.dependOn(&build_basic_app_aux.step);
 }
+

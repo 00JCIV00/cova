@@ -1,0 +1,77 @@
+.TH covademo(1)
+
+.SH NAME
+.B covademo
+
+
+.SH DESCRIPTION
+.B A demo of the Cova command line argument parser.
+.SH ARGUMENTS
+.SS COMMANDS
+.B sub-cmd:
+A demo sub command.
+
+.B basic:
+The most basic Command.
+
+.B struct-cmd:
+A demo sub command made from a struct.
+
+.B union-cmd:
+A demo sub command made from a union.
+
+.B fn-cmd:
+A demo sub command made from a function.
+
+.B add-user:
+A demo sub command for adding a user.
+
+.SS OPTIONS
+.B string_opt:
+[-s,--string "string_val ([]const u8)"]:
+  A string option. (Can be given up to 4 times.)
+
+.B int_opt:
+[-i,--int "int_val (i16)"]:
+  An integer option. (Can be given up to 10 times.)
+
+.B float_opt:
+[-f,--float "float_val (f16)"]:
+  An float option. (Can be given up to 10 times.)
+
+.B file_opt:
+[-F,--file "filepath ([]const u8)"]:
+  A filepath option.
+
+.B ordinal_opt:
+[-o,--ordinal "ordinal_val ([]const u8)"]:
+  An ordinal number option.
+
+.B cardinal_opt:
+[-c,--cardinal "cardinal_val (u8)"]:
+  A cardinal number option.
+
+.B toggle_opt:
+[-t,--toggle "toggle_val (bool)"]:
+  A toggle/boolean option.
+
+.B verbosity_opt:
+[-v,--verbosity "verbosity_level (u4)"]:
+  Set the CovaDemo verbosity level. (WIP)
+
+.SS VALUES
+.B cmd_str:
+([]const u8): A string value for the command.
+
+.B cmd_bool:
+(bool): A boolean value for the command.
+
+.B cmd_u128:
+(u128): A u128 value for the command.
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B Free to use.
