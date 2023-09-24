@@ -333,9 +333,9 @@
 <span class="line" id="L214">                , .{ self.name, self.description }</span>
 <span class="line" id="L215">            );</span>
 <span class="line" id="L216">            </span>
-<span class="line" id="L217">            <span class="tok-kw">if</span> (self.sub_cmds != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L217">            <span class="tok-kw">if</span> (self.sub_cmds) |sub_cmds| {</span>
 <span class="line" id="L218">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    SUB COMMANDS:\n&quot;</span>, .{});</span>
-<span class="line" id="L219">                <span class="tok-kw">for</span> (self.sub_cmds.?) |cmd| {</span>
+<span class="line" id="L219">                <span class="tok-kw">for</span> (sub_cmds) |cmd| {</span>
 <span class="line" id="L220">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;        &quot;</span>, .{});</span>
 <span class="line" id="L221">                    <span class="tok-kw">try</span> writer.print(subcmds_help_fmt, .{cmd.name, cmd.description});</span>
 <span class="line" id="L222">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
@@ -343,9 +343,9 @@
 <span class="line" id="L224">            }</span>
 <span class="line" id="L225">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
 <span class="line" id="L226"></span>
-<span class="line" id="L227">            <span class="tok-kw">if</span> (self.opts != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L227">            <span class="tok-kw">if</span> (self.opts) |opts| {</span>
 <span class="line" id="L228">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    OPTIONS:\n&quot;</span>, .{});</span>
-<span class="line" id="L229">                <span class="tok-kw">for</span> (self.opts.?) |opt| {</span>
+<span class="line" id="L229">                <span class="tok-kw">for</span> (opts) |opt| {</span>
 <span class="line" id="L230">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;        &quot;</span>, .{});</span>
 <span class="line" id="L231">                    <span class="tok-kw">try</span> opt.help(writer);</span>
 <span class="line" id="L232">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
@@ -353,9 +353,9 @@
 <span class="line" id="L234">            }</span>
 <span class="line" id="L235">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
 <span class="line" id="L236"></span>
-<span class="line" id="L237">            <span class="tok-kw">if</span> (self.vals != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L237">            <span class="tok-kw">if</span> (self.vals) |vals| {</span>
 <span class="line" id="L238">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;    VALUES:\n&quot;</span>, .{});</span>
-<span class="line" id="L239">                <span class="tok-kw">for</span> (self.vals.?) |val| {</span>
+<span class="line" id="L239">                <span class="tok-kw">for</span> (vals) |val| {</span>
 <span class="line" id="L240">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;        &quot;</span>, .{});</span>
 <span class="line" id="L241">                    <span class="tok-kw">try</span> writer.print(vals_help_fmt, .{ val.name(), val.valType(), val.description() });</span>
 <span class="line" id="L242">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
