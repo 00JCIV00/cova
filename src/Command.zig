@@ -214,9 +214,9 @@ pub fn Custom(comptime config: Config) type {
                 , .{ self.name, self.description }
             );
             
-            if (self.sub_cmds != null) {
+            if (self.sub_cmds) |sub_cmds| {
                 try writer.print("    SUB COMMANDS:\n", .{});
-                for (self.sub_cmds.?) |cmd| {
+                for (sub_cmds) |cmd| {
                     try writer.print("        ", .{});
                     try writer.print(subcmds_help_fmt, .{cmd.name, cmd.description});
                     try writer.print("\n", .{});
@@ -224,9 +224,9 @@ pub fn Custom(comptime config: Config) type {
             }
             try writer.print("\n", .{});
 
-            if (self.opts != null) {
+            if (self.opts) |opts| {
                 try writer.print("    OPTIONS:\n", .{});
-                for (self.opts.?) |opt| {
+                for (opts) |opt| {
                     try writer.print("        ", .{});
                     try opt.help(writer);
                     try writer.print("\n", .{});
@@ -234,9 +234,9 @@ pub fn Custom(comptime config: Config) type {
             }
             try writer.print("\n", .{});
 
-            if (self.vals != null) {
+            if (self.vals) |vals| {
                 try writer.print("    VALUES:\n", .{});
-                for (self.vals.?) |val| {
+                for (vals) |val| {
                     try writer.print("        ", .{});
                     try writer.print(vals_help_fmt, .{ val.name(), val.valType(), val.description() });
                     try writer.print("\n", .{});

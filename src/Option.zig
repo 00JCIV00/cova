@@ -32,7 +32,7 @@ pub const Config = struct {
     /// Format for the Usage message.
     ///
     /// Must support the following format types in this order:
-    /// 1. Optional Character (Short Prefix) 
+    /// 1. Character (Short Prefix) 
     /// 2. Optional Character "{?c}" (Short Name)
     /// 3. String (Long Prefix)
     /// 4. Optional String "{?s}" (Long Name)

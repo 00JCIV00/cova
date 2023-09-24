@@ -27,6 +27,7 @@ const testing = std.testing;
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
+pub const aux_docs = @import("aux_docs.zig");
 pub const utils = @import("utils.zig");
 
 
@@ -35,14 +36,18 @@ pub const TokenizeConfig = struct{
     /// Delimiter Characters
     delimiters: []const u8 = " ",
     /// Grouping Open Characters
-    /// Note, these Characters must line up with `groupers_close` in pairs.
+    /// Note, these Characters must line up with `groupers_close` in pairs. These pairs represent either side of a grouped argument.
+    /// For example, setting open to `'('` and closed to `')'` will group all tokens between parantheses into one argument as seen here:
+    ///
+    /// `my-cmd --str-opt (this whole string will be one argument.)`
     groupers_open: []const u8 = "\"'",
     /// Grouping Close Characters
+    /// Refer to `groupers_open` for more info.
     groupers_close: []const u8 = "\"'",
 };
 
 /// Tokenize an Argument String (`arg_str`) into a slice of Strings using the provided Allocator (`alloc`) and TokenizeConfig (`token_config`).
-/// This handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
+/// By default, this handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
 pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: TokenizeConfig) ![]const []const u8 {
     var start: usize = 0;
     var end: usize = 0;

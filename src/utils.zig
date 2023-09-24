@@ -80,3 +80,4 @@ pub fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
         inline else => return mem.indexOfScalar(T, haystack, needle),
     }
 }
+
