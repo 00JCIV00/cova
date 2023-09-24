@@ -78,7 +78,15 @@ pub fn build(b: *std.Build) void {
         none,
     };
     build_options.addOption(TabCompletionKind, "tab_completion_kind", 
-        b.option(TabCompletionKind, "tab-completion-kind", "Generate tab completion scripts of the given kind (only applies to exe builds)") orelse .all
+        b.option(TabCompletionKind, "tab-completion-kind", "Generate tab completion scripts of the given kind (only applies to exe builds)") orelse .bash
+    );
+    build_options.addOption([]const u8, "cmd_type_field_name",
+        b.option([]const u8, "cmd-type-field-name", "The name of the Command Type field being used to generate the Auxiliary Docs (default: \"CommandT\")") 
+        orelse "CommandT"
+    );
+    build_options.addOption([]const u8, "setup_cmd_field_name",
+        b.option([]const u8, "setup-cmd-field-name", "The name of the command field being used to generate the Auxiliary Docs (default: \"setup_cmd\")") 
+        orelse "setup_cmd"
     );
 
     // Cova Demo Aux Docs
