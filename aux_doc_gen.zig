@@ -17,6 +17,9 @@ pub fn main() !void {
             @field(program, aux_opts.setup_cmd_field_name), 
             .{
                 .local_filepath = "aux",
+                .version = "0.9.0",
+                .ver_date = "25 SEP 2023",
+                .man_name = "User's Manual",
                 .author = "00JCIV00",
                 .copyright = "Copyright info here",
             }
@@ -30,6 +33,7 @@ pub fn main() !void {
                 @field(program, aux_opts.setup_cmd_field_name), 
                 .{
                     .local_filepath = "aux",
+                    .include_opts = true,
                     .shell_kind = .bash,
                 }
             );

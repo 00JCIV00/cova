@@ -435,7 +435,7 @@ pub fn parseArgs(
             return error.UnexpectedArgument;
         }
     }
-    // Check if a Sub Command has been set if it in Mandated for the current Command.
+    // Check if a Sub Command has been set if it is Mandated for the current Command.
     if (cmd.sub_cmds_mandatory and cmd.sub_cmd == null and
         !(cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and 
             (mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or mem.eql(u8, cmd.sub_cmds.?[0].name, "help"))) and

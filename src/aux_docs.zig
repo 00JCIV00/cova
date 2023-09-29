@@ -21,6 +21,15 @@ pub const ManpageConfig = struct{
     /// Treat this as a character (ex: `'1'`)
     /// Valid values can be found [here](https://en.wikipedia.org/wiki/Man_page#Manual_sections).
     section: u8 = '1',
+    /// Version of the program
+    /// This is shown in the Bottom Left.
+    version: ?[]const u8 = "",
+    /// Date of the program version.
+    /// This is shown in the Bottm Center.
+    ver_date: ?[]const u8 = "",
+    /// Name of the manpage group.
+    /// This is shown in the Upper Center.
+    man_name: ?[]const u8 = "",
     /// Name of the program.
     /// Note, if this is left null, the provided CommandT's name will be used.
     name: ?[]const u8 = null,
@@ -67,9 +76,15 @@ pub fn createManpage(comptime CommandT: type, comptime cmd: CommandT, comptime m
     const mp_name = mp_config.name orelse cmd.name;
     const mp_description = mp_config.description orelse cmd.description;
     const title = fmt.comptimePrint(
-        \\.TH {s}({c})
+        \\.TH {s} {c} {s}{s}{s}
         \\
-        , .{ mp_name, mp_config.section }
+        , .{ 
+            mp_name, 
+            mp_config.section,
+            if (mp_config.ver_date) |date| "\"" ++ date ++ "\" " else "",
+            if (mp_config.version) |ver| "\"" ++ ver ++ "\" " else "",
+            if (mp_config.man_name) |man_name| "\"" ++ man_name ++ "\" " else "",
+        }
     );
     const name = fmt.comptimePrint(
         \\.SH NAME
@@ -249,7 +264,12 @@ pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comp
             else "",
         }
     );
-    const tc_ctx = TabCompletionContext{ .name = tc_name };
+    const tc_ctx = TabCompletionContext{ 
+        .name = tc_name, 
+        .include_cmds = tc_config.include_cmds,
+        .include_opts = tc_config.include_opts,
+        .include_usage_help = tc_config.include_usage_help,
+    };
         
     switch (tc_config.shell_kind) {
         .bash => try cmdTabCompletionBash(CommandT, cmd, tc_writer, tc_ctx),
@@ -276,16 +296,16 @@ const TabCompletionContext = struct{
 /// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
 fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
     // Get Sub Commands and Options
+    const long_pf = CommandT.OptionT.long_prefix orelse "";
     const args_list: []const u8 = comptime genArgList: {
         var args: []const u8 = "";
         if (tc_ctx.include_cmds) {
             if (cmd.sub_cmds) |sub_cmds| {
                 for (sub_cmds) |sub_cmd| args = args ++ sub_cmd.name ++ " ";
             }
-            if (tc_ctx.include_usage_help) args = args ++ "help usage";
+            if (tc_ctx.include_usage_help) args = args ++ "help usage ";
         }
         if (tc_ctx.include_opts) {
-            const long_pf = CommandT.OptionT.long_prefix orelse "";
             if (cmd.opts) |opts| {
                 for (opts) |opt| {
                     if (opt.long_name) |long_name| args = args ++ long_pf ++ long_name ++ " ";
@@ -314,9 +334,12 @@ fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writ
     );
     var args_iter = mem.splitScalar(u8, args_list, ' ');
     while (args_iter.next()) |arg| {
-        if (utils.indexOfEql([]const u8, &.{ "usage", "help"}, arg) != null) continue;
+        if (
+            utils.indexOfEql([]const u8, &.{ "usage", "help"}, arg) != null or
+            mem.eql(u8, arg[0..long_pf.len], long_pf)
+        ) continue;
         try tc_writer.print(
-            \\        {s})
+            \\        "{s}")
             \\            _{s}_{s}_completions
             \\            ;;
             \\
@@ -327,13 +350,17 @@ fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writ
         );
     }
     try tc_writer.print(
-        \\        *)
+        \\        "{s}")
         \\            COMPREPLY=($(compgen -W "{s}" -- ${{cur}}))
+        \\            ;;
+        \\        *)
+        \\            COMPREPLY=($(compgen -f -- ${{cur}}))
         \\    esac
         \\}}
         \\
         \\
         , .{ 
+            tc_ctx.name,
             args_list,
         }
     );
