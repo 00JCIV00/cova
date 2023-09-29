@@ -50,6 +50,19 @@ pub const Config = struct {
     /// Minimum Bit Width for Ints and UInts in this Custom Value type.
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     max_int_bit_width: u16 = 256,
+
+    /// Values Usage Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Value Name)
+    /// 2. String (Value Type)
+    vals_usage_fmt: []const u8 = "\"{s} ({s})\"",
+    /// Values Help Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Value Name)
+    /// 2. String (Value Type)
+    /// 3. String (Value Description)
+    vals_help_fmt: []const u8 = "{s} ({s}): {s}",
+    
 };
 
 /// The Behavior for Setting Values with `set()`.
@@ -332,6 +345,13 @@ pub fn Custom(comptime config: Config) type {
         /// Wrapped Generic Value union.
         generic: GenericT = .{ .bool = .{} },
 
+        /// Values Help Format.
+        /// Check (`Command.Config`) for details.
+        pub const vals_help_fmt = config.vals_help_fmt;
+        /// Values Usage Format.
+        /// Check (`Command.Config`) for details.
+        pub const vals_usage_fmt = config.vals_usage_fmt;
+
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
         // TODO: See if this can be made Runtime
@@ -466,6 +486,15 @@ pub fn Custom(comptime config: Config) type {
                         @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
                     else null,
             });
+        }
+
+        /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
+        pub fn help(self: *const @This(), writer: anytype) !void {
+            try writer.print(vals_help_fmt, .{ self.name(), self.valType(), self.description() });
+        }
+        /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
+        pub fn usage(self: *const @This(), writer: anytype) !void {
+            try writer.print(vals_usage_fmt, .{ self.name(), self.valType() });
         }
     };
 

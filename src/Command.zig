@@ -46,21 +46,10 @@ pub const Config = struct {
     /// 1. String (Command Name)
     /// 2. String (Command Description)
     subcmds_help_fmt: []const u8 = "{s}: {s}",
-    /// Values Help Format.
-    /// Must support the following format types in this order:
-    /// 1. String (Value Name)
-    /// 2. String (Value Type)
-    /// 3. String (Value Description)
-    vals_help_fmt: []const u8 = "{s} ({s}): {s}",
     /// Sub Commands Usage Format.
     /// Must support the following format types in this order:
     /// 1. String (Command Name)
     subcmds_usage_fmt: []const u8 ="'{s}'", 
-    /// Values Usage Format.
-    /// Must support the following format types in this order:
-    /// 1. String (Value Name)
-    /// 2. String (Value Type)
-    vals_usage_fmt: []const u8 = "\"{s} ({s})\"",
 
     /// The Global Help Prefix for all instances of this Command type.
     /// This can be overwritten per instance using the `help_prefix` field. 
@@ -99,15 +88,9 @@ pub fn Custom(comptime config: Config) type {
         /// Sub Commands Help Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_help_fmt = config.subcmds_help_fmt;
-        /// Values Help Format.
-        /// Check (`Command.Config`) for details.
-        pub const vals_help_fmt = config.vals_help_fmt;
         /// Sub Commands Usage Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_usage_fmt = config.subcmds_usage_fmt;
-        /// Values Usage Format.
-        /// Check (`Command.Config`) for details.
-        pub const vals_usage_fmt = config.vals_usage_fmt;
         /// Global Help Prefix.
         /// Check (`Command.Config`) for details.
         pub const global_help_prefix = config.global_help_prefix;
@@ -238,7 +221,7 @@ pub fn Custom(comptime config: Config) type {
                 try writer.print("    VALUES:\n", .{});
                 for (vals) |val| {
                     try writer.print("        ", .{});
-                    try writer.print(vals_help_fmt, .{ val.name(), val.valType(), val.description() });
+                    try val.help(writer);
                     try writer.print("\n", .{});
                 }
             }
@@ -257,7 +240,7 @@ pub fn Custom(comptime config: Config) type {
             }
             if (self.vals != null) {
                 for (self.vals.?) |val| {
-                    try writer.print(vals_usage_fmt, .{ val.name(), val.valType() });
+                    try val.usage(writer);
                     try writer.print(" ", .{});
                 }
                 try writer.print("| ", .{});
