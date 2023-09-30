@@ -175,9 +175,13 @@ pub fn Custom(comptime config: Config) type {
             /// This technically breaks from actual XOR Logic, but allows a specific number of Options to be checked or matched.
             xor_max: u8 = 1,
 
+            /// Boolean Logic types for checking/matching Options.
             const CheckLogic = enum{
+                /// All Options from the provided list must be set.
                 AND,
+                /// At least one Option from the provided list must be set.
                 OR,
+                /// Exactly `xor_mx` number of Options from the provided list must be set.
                 XOR,
             };
         };

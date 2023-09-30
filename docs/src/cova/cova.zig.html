@@ -372,483 +372,484 @@
 <span class="line" id="L251">            log.debug(<span class="tok-str">&quot;Attempting to Parse Options...&quot;</span>, .{});</span>
 <span class="line" id="L252">            <span class="tok-comment">// - Short Options</span>
 </span>
-<span class="line" id="L253">            <span class="tok-kw">if</span> (OptionT.short_prefix) |short_pf| {</span>
-<span class="line" id="L254">                <span class="tok-kw">if</span> (arg[<span class="tok-number">0</span>] == short_pf <span class="tok-kw">and</span> arg[<span class="tok-number">1</span>] != short_pf) {</span>
-<span class="line" id="L255">                    <span class="tok-kw">const</span> short_opts = arg[<span class="tok-number">1</span>..];</span>
-<span class="line" id="L256">                    shortOpts: <span class="tok-kw">for</span> (short_opts, <span class="tok-number">0</span>..) |short_opt, short_idx| {</span>
-<span class="line" id="L257">                        <span class="tok-kw">for</span> (cmd.opts.?) |*opt| {</span>
-<span class="line" id="L258">                            <span class="tok-kw">if</span> (opt.short_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> short_opt == opt.short_name.?) {</span>
-<span class="line" id="L259">                                <span class="tok-comment">// Handle Argument provided to this Option with '=' instead of ' '.</span>
+<span class="line" id="L253">            <span class="tok-kw">if</span> (OptionT.short_prefix) |short_pf| checkShortOpt: {</span>
+<span class="line" id="L254">                <span class="tok-kw">if</span> (!(arg[<span class="tok-number">0</span>] == short_pf <span class="tok-kw">and</span> arg[<span class="tok-number">1</span>] != short_pf)) <span class="tok-kw">break</span> :checkShortOpt;</span>
+<span class="line" id="L255">                log.debug(<span class="tok-str">&quot;Parsing Short Option...&quot;</span>, .{});</span>
+<span class="line" id="L256">                <span class="tok-kw">const</span> short_opts = arg[<span class="tok-number">1</span>..];</span>
+<span class="line" id="L257">                shortOpts: <span class="tok-kw">for</span> (short_opts, <span class="tok-number">0</span>..) |short_opt, short_idx| {</span>
+<span class="line" id="L258">                    <span class="tok-kw">for</span> (cmd.opts.?) |*opt| {</span>
+<span class="line" id="L259">                        <span class="tok-kw">if</span> (opt.short_name != <span class="tok-null">null</span> <span class="tok-kw">and</span> short_opt == opt.short_name.?) {</span>
+<span class="line" id="L260">                            <span class="tok-comment">// Handle Argument provided to this Option with '=' instead of ' '.</span>
 </span>
-<span class="line" id="L260">                                <span class="tok-kw">if</span> (mem.indexOfScalar(<span class="tok-type">u8</span>, CommandT.OptionT.opt_val_seps, short_opts[short_idx + <span class="tok-number">1</span>]) != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L261">                                    <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
-<span class="line" id="L262">                                        log.err(<span class="tok-str">&quot;The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
-<span class="line" id="L263">                                            short_pf, </span>
-<span class="line" id="L264">                                            opt.short_name, </span>
-<span class="line" id="L265">                                            opt.name </span>
-<span class="line" id="L266">                                        });</span>
-<span class="line" id="L267">                                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
-<span class="line" id="L268">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L269">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
-<span class="line" id="L270">                                    }</span>
-<span class="line" id="L271">                                    <span class="tok-kw">if</span> (short_idx + <span class="tok-number">2</span> &gt;= short_opts.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
-<span class="line" id="L272">                                    <span class="tok-kw">const</span> opt_arg = short_opts[(short_idx + <span class="tok-number">2</span>)..];</span>
-<span class="line" id="L273">                                    opt.val.set(opt_arg) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L274">                                        log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.&quot;</span>, .{ </span>
-<span class="line" id="L275">                                            short_pf,</span>
-<span class="line" id="L276">                                            opt.short_name, </span>
-<span class="line" id="L277">                                            opt.name </span>
-<span class="line" id="L278">                                        });</span>
-<span class="line" id="L279">                                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
-<span class="line" id="L280">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L281">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L282">                                    };</span>
-<span class="line" id="L283">                                    log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
-<span class="line" id="L284">                                    <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L285">                                }</span>
-<span class="line" id="L286">                                <span class="tok-comment">// Handle final Option in a chain of Short Options</span>
+<span class="line" id="L261">                            <span class="tok-kw">if</span> (mem.indexOfScalar(<span class="tok-type">u8</span>, CommandT.OptionT.opt_val_seps, short_opts[short_idx + <span class="tok-number">1</span>]) != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L262">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L263">                                    log.err(<span class="tok-str">&quot;The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
+<span class="line" id="L264">                                        short_pf, </span>
+<span class="line" id="L265">                                        opt.short_name, </span>
+<span class="line" id="L266">                                        opt.name </span>
+<span class="line" id="L267">                                    });</span>
+<span class="line" id="L268">                                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
+<span class="line" id="L269">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L270">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
+<span class="line" id="L271">                                }</span>
+<span class="line" id="L272">                                <span class="tok-kw">if</span> (short_idx + <span class="tok-number">2</span> &gt;= short_opts.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L273">                                <span class="tok-kw">const</span> opt_arg = short_opts[(short_idx + <span class="tok-number">2</span>)..];</span>
+<span class="line" id="L274">                                opt.val.set(opt_arg) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L275">                                    log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.&quot;</span>, .{ </span>
+<span class="line" id="L276">                                        short_pf,</span>
+<span class="line" id="L277">                                        opt.short_name, </span>
+<span class="line" id="L278">                                        opt.name </span>
+<span class="line" id="L279">                                    });</span>
+<span class="line" id="L280">                                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
+<span class="line" id="L281">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L282">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L283">                                };</span>
+<span class="line" id="L284">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L285">                                <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L286">                            }</span>
+<span class="line" id="L287">                            <span class="tok-comment">// Handle final Option in a chain of Short Options</span>
 </span>
-<span class="line" id="L287">                                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (short_idx == short_opts.len - <span class="tok-number">1</span>) { </span>
-<span class="line" id="L288">                                    <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
-<span class="line" id="L289">                                    <span class="tok-kw">else</span> {</span>
-<span class="line" id="L290">                                        parseOpt(args, OptionT, opt) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L291">                                            log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.&quot;</span>, .{ </span>
-<span class="line" id="L292">                                                short_pf,</span>
-<span class="line" id="L293">                                                opt.short_name, </span>
-<span class="line" id="L294">                                                opt.name </span>
-<span class="line" id="L295">                                            });</span>
-<span class="line" id="L296">                                            <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
-<span class="line" id="L297">                                            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L298">                                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L299">                                        };</span>
-<span class="line" id="L300">                                    }</span>
-<span class="line" id="L301">                                    log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
-<span class="line" id="L302">                                    <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L303">                                }</span>
-<span class="line" id="L304">                                <span class="tok-comment">// Handle a boolean Option before the final Short Option in a chain.</span>
+<span class="line" id="L288">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (short_idx == short_opts.len - <span class="tok-number">1</span>) { </span>
+<span class="line" id="L289">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
+<span class="line" id="L290">                                <span class="tok-kw">else</span> {</span>
+<span class="line" id="L291">                                    parseOpt(args, OptionT, opt) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L292">                                        log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.&quot;</span>, .{ </span>
+<span class="line" id="L293">                                            short_pf,</span>
+<span class="line" id="L294">                                            opt.short_name, </span>
+<span class="line" id="L295">                                            opt.name </span>
+<span class="line" id="L296">                                        });</span>
+<span class="line" id="L297">                                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
+<span class="line" id="L298">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L299">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L300">                                    };</span>
+<span class="line" id="L301">                                }</span>
+<span class="line" id="L302">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L303">                                <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L304">                            }</span>
+<span class="line" id="L305">                            <span class="tok-comment">// Handle a boolean Option before the final Short Option in a chain.</span>
 </span>
-<span class="line" id="L305">                                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
-<span class="line" id="L306">                                    <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>);</span>
-<span class="line" id="L307">                                    log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
-<span class="line" id="L308">                                    <span class="tok-kw">continue</span> :shortOpts;</span>
-<span class="line" id="L309">                                }</span>
-<span class="line" id="L310">                                <span class="tok-comment">// Handle a non-boolean Option which is given a Value without a space ' ' to separate them.</span>
+<span class="line" id="L306">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L307">                                <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>);</span>
+<span class="line" id="L308">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L309">                                <span class="tok-kw">continue</span> :shortOpts;</span>
+<span class="line" id="L310">                            }</span>
+<span class="line" id="L311">                            <span class="tok-comment">// Handle a non-boolean Option which is given a Value without a space ' ' to separate them.</span>
 </span>
-<span class="line" id="L311">                                <span class="tok-kw">else</span> <span class="tok-kw">if</span> (CommandT.OptionT.allow_opt_val_no_space) {</span>
-<span class="line" id="L312">                                    <span class="tok-kw">var</span> short_names_buf: [CommandT.max_args]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L313">                                    <span class="tok-kw">const</span> short_names = short_names_buf[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L314">                                    <span class="tok-kw">for</span> (cmd.opts.?, <span class="tok-number">0</span>..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;</span>
-<span class="line" id="L315">                                    <span class="tok-kw">if</span> (mem.indexOfScalar(<span class="tok-type">u8</span>, short_names, short_opts[short_idx + <span class="tok-number">1</span>]) == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L316">                                        <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(short_opts[(short_idx + <span class="tok-number">1</span>)..]);</span>
-<span class="line" id="L317">                                        log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
-<span class="line" id="L318">                                        <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L319">                                    }</span>
+<span class="line" id="L312">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (CommandT.OptionT.allow_opt_val_no_space) {</span>
+<span class="line" id="L313">                                <span class="tok-kw">var</span> short_names_buf: [CommandT.max_args]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L314">                                <span class="tok-kw">const</span> short_names = short_names_buf[<span class="tok-number">0</span>..];</span>
+<span class="line" id="L315">                                <span class="tok-kw">for</span> (cmd.opts.?, <span class="tok-number">0</span>..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;</span>
+<span class="line" id="L316">                                <span class="tok-kw">if</span> (mem.indexOfScalar(<span class="tok-type">u8</span>, short_names, short_opts[short_idx + <span class="tok-number">1</span>]) == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L317">                                    <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(short_opts[(short_idx + <span class="tok-number">1</span>)..]);</span>
+<span class="line" id="L318">                                    log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
+<span class="line" id="L319">                                    <span class="tok-kw">continue</span> :parseArg;</span>
 <span class="line" id="L320">                                }</span>
 <span class="line" id="L321">                            }</span>
 <span class="line" id="L322">                        }</span>
-<span class="line" id="L323">                        log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}'.&quot;</span>, .{ short_pf, short_opt });</span>
-<span class="line" id="L324">                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L325">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L326">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L327">                    }</span>
+<span class="line" id="L323">                    }</span>
+<span class="line" id="L324">                    log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}'.&quot;</span>, .{ short_pf, short_opt });</span>
+<span class="line" id="L325">                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L326">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L327">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
 <span class="line" id="L328">                }</span>
 <span class="line" id="L329">            }</span>
 <span class="line" id="L330">            <span class="tok-comment">// - Long Options</span>
 </span>
-<span class="line" id="L331">            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (OptionT.long_prefix) |long_pf| {</span>
-<span class="line" id="L332">                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, arg[<span class="tok-number">0</span>..long_pf.len], long_pf)) {</span>
-<span class="line" id="L333">                    <span class="tok-kw">if</span> (arg.len == long_pf.len <span class="tok-kw">and</span> parse_config.enable_opt_termination) {</span>
-<span class="line" id="L334">                        opt_term = <span class="tok-null">true</span>;</span>
-<span class="line" id="L335">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L336">                    }</span>
-<span class="line" id="L337">                    <span class="tok-kw">const</span> split_idx = (mem.indexOfAny(<span class="tok-type">u8</span>, arg[long_pf.len..], OptionT.opt_val_seps) <span class="tok-kw">orelse</span> arg.len - long_pf.len) + long_pf.len;</span>
-<span class="line" id="L338">                    <span class="tok-kw">const</span> long_opt = arg[long_pf.len..split_idx]; </span>
-<span class="line" id="L339">                    <span class="tok-kw">const</span> sep_arg = <span class="tok-kw">if</span> (split_idx &lt; arg.len) arg[split_idx + <span class="tok-number">1</span>..] <span class="tok-kw">else</span> <span class="tok-str">&quot;&quot;</span>;</span>
-<span class="line" id="L340">                    <span class="tok-kw">const</span> sep_flag = mem.indexOfAny(<span class="tok-type">u8</span>, arg[long_pf.len..], OptionT.opt_val_seps) != <span class="tok-null">null</span>; </span>
-<span class="line" id="L341">                    <span class="tok-kw">for</span> (cmd.opts.?) |*opt| {</span>
-<span class="line" id="L342">                        <span class="tok-kw">if</span> (opt.long_name) |long_name| {</span>
-<span class="line" id="L343">                            <span class="tok-kw">if</span> (</span>
-<span class="line" id="L344">                                mem.eql(<span class="tok-type">u8</span>, long_opt, long_name) <span class="tok-kw">or</span></span>
-<span class="line" id="L345">                                (OptionT.allow_abbreviated_long_opts <span class="tok-kw">and</span> mem.indexOf(<span class="tok-type">u8</span>, long_name, long_opt) != <span class="tok-null">null</span> <span class="tok-kw">and</span> long_name[<span class="tok-number">0</span>] == long_opt[<span class="tok-number">0</span>])</span>
-<span class="line" id="L346">                            ) {</span>
-<span class="line" id="L347">                                <span class="tok-kw">if</span> (sep_flag) {</span>
-<span class="line" id="L348">                                    <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
-<span class="line" id="L349">                                        log.err(<span class="tok-str">&quot;The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
-<span class="line" id="L350">                                            long_pf, </span>
-<span class="line" id="L351">                                            long_name, </span>
-<span class="line" id="L352">                                            opt.name </span>
-<span class="line" id="L353">                                        });</span>
-<span class="line" id="L354">                                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
-<span class="line" id="L355">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L356">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
-<span class="line" id="L357">                                    }</span>
-<span class="line" id="L358">                                    <span class="tok-kw">if</span> (sep_arg.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
-<span class="line" id="L359">                                    opt.val.set(sep_arg) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L360">                                        log.err(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.&quot;</span>, .{ </span>
-<span class="line" id="L361">                                            long_pf,</span>
-<span class="line" id="L362">                                            long_name, </span>
-<span class="line" id="L363">                                            opt.name </span>
-<span class="line" id="L364">                                        });</span>
-<span class="line" id="L365">                                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
-<span class="line" id="L366">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L367">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L368">                                    };</span>
-<span class="line" id="L369">                                    log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.&quot;</span>, .{ opt.long_name });</span>
-<span class="line" id="L370">                                    <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L371">                                }</span>
-<span class="line" id="L372">                            </span>
-<span class="line" id="L373">                                <span class="tok-comment">// Handle normally provided Value to Option</span>
-</span>
+<span class="line" id="L331">            <span class="tok-kw">if</span> (OptionT.long_prefix) |long_pf| checkLongOpt: {</span>
+<span class="line" id="L332">                <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, arg[<span class="tok-number">0</span>..long_pf.len], long_pf)) <span class="tok-kw">break</span> :checkLongOpt;</span>
+<span class="line" id="L333">                log.debug(<span class="tok-str">&quot;Parsing Long Option...&quot;</span>, .{});</span>
+<span class="line" id="L334">                <span class="tok-kw">if</span> (arg.len == long_pf.len <span class="tok-kw">and</span> parse_config.enable_opt_termination) {</span>
+<span class="line" id="L335">                    opt_term = <span class="tok-null">true</span>;</span>
+<span class="line" id="L336">                    log.debug(<span class="tok-str">&quot;Terminated Option Parsing!&quot;</span>, .{});</span>
+<span class="line" id="L337">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L338">                }</span>
+<span class="line" id="L339">                <span class="tok-kw">const</span> split_idx = (mem.indexOfAny(<span class="tok-type">u8</span>, arg[long_pf.len..], OptionT.opt_val_seps) <span class="tok-kw">orelse</span> arg.len - long_pf.len) + long_pf.len;</span>
+<span class="line" id="L340">                <span class="tok-kw">const</span> long_opt = arg[long_pf.len..split_idx]; </span>
+<span class="line" id="L341">                <span class="tok-kw">const</span> sep_arg = <span class="tok-kw">if</span> (split_idx &lt; arg.len) arg[split_idx + <span class="tok-number">1</span>..] <span class="tok-kw">else</span> <span class="tok-str">&quot;&quot;</span>;</span>
+<span class="line" id="L342">                <span class="tok-kw">const</span> sep_flag = mem.indexOfAny(<span class="tok-type">u8</span>, arg[long_pf.len..], OptionT.opt_val_seps) != <span class="tok-null">null</span>; </span>
+<span class="line" id="L343">                <span class="tok-kw">for</span> (cmd.opts.?) |*opt| {</span>
+<span class="line" id="L344">                    <span class="tok-kw">if</span> (opt.long_name) |long_name| {</span>
+<span class="line" id="L345">                        <span class="tok-kw">if</span> (</span>
+<span class="line" id="L346">                            mem.eql(<span class="tok-type">u8</span>, long_opt, long_name) <span class="tok-kw">or</span></span>
+<span class="line" id="L347">                            (OptionT.allow_abbreviated_long_opts <span class="tok-kw">and</span> mem.indexOf(<span class="tok-type">u8</span>, long_name, long_opt) != <span class="tok-null">null</span> <span class="tok-kw">and</span> long_name[<span class="tok-number">0</span>] == long_opt[<span class="tok-number">0</span>])</span>
+<span class="line" id="L348">                        ) {</span>
+<span class="line" id="L349">                            <span class="tok-kw">if</span> (sep_flag) {</span>
+<span class="line" id="L350">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L351">                                    log.err(<span class="tok-str">&quot;The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
+<span class="line" id="L352">                                        long_pf, </span>
+<span class="line" id="L353">                                        long_name, </span>
+<span class="line" id="L354">                                        opt.name </span>
+<span class="line" id="L355">                                    });</span>
+<span class="line" id="L356">                                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
+<span class="line" id="L357">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L358">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BoolCannotTakeArgument;</span>
+<span class="line" id="L359">                                }</span>
+<span class="line" id="L360">                                <span class="tok-kw">if</span> (sep_arg.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L361">                                opt.val.set(sep_arg) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L362">                                    log.err(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.&quot;</span>, .{ </span>
+<span class="line" id="L363">                                        long_pf,</span>
+<span class="line" id="L364">                                        long_name, </span>
+<span class="line" id="L365">                                        opt.name </span>
+<span class="line" id="L366">                                    });</span>
+<span class="line" id="L367">                                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
+<span class="line" id="L368">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L369">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L370">                                };</span>
+<span class="line" id="L371">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.&quot;</span>, .{ opt.long_name });</span>
+<span class="line" id="L372">                                <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L373">                            }</span>
 <span class="line" id="L374"></span>
-<span class="line" id="L375">                                <span class="tok-comment">// Handle Boolean/Toggle Option.</span>
+<span class="line" id="L375">                            <span class="tok-comment">// Handle normally provided Value to Option</span>
 </span>
-<span class="line" id="L376">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
-<span class="line" id="L377">                                <span class="tok-comment">// Handle Option with normal Argument.</span>
+<span class="line" id="L376"></span>
+<span class="line" id="L377">                            <span class="tok-comment">// Handle Boolean/Toggle Option.</span>
 </span>
-<span class="line" id="L378">                                <span class="tok-kw">else</span> {</span>
-<span class="line" id="L379">                                    parseOpt(args, OptionT, opt) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L380">                                        log.err(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.&quot;</span>, .{ </span>
-<span class="line" id="L381">                                            long_pf,</span>
-<span class="line" id="L382">                                            long_name, </span>
-<span class="line" id="L383">                                            opt.name </span>
-<span class="line" id="L384">                                        });</span>
-<span class="line" id="L385">                                        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
-<span class="line" id="L386">                                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L387">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L388">                                    };</span>
-<span class="line" id="L389">                                }</span>
-<span class="line" id="L390">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.&quot;</span>, .{ opt.long_name });</span>
-<span class="line" id="L391">                                <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L392">                            }</span>
-<span class="line" id="L393">                        }</span>
-<span class="line" id="L394">                    }</span>
-<span class="line" id="L395">                    log.err(<span class="tok-str">&quot;Could not parse Argument '{s}{?s}' to an Option.&quot;</span>, .{ long_pf, long_opt });</span>
-<span class="line" id="L396">                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L397">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L398">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
-<span class="line" id="L399">                }</span>
-<span class="line" id="L400">            }</span>
-<span class="line" id="L401">            unmatched = <span class="tok-null">true</span>;</span>
-<span class="line" id="L402">            log.debug(<span class="tok-str">&quot;No Options Matched for Command '{s}'.&quot;</span>, .{ cmd.name });</span>
-<span class="line" id="L403">        }</span>
-<span class="line" id="L404">        <span class="tok-comment">// ...Finally, for any Values.</span>
+<span class="line" id="L378">                            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
+<span class="line" id="L379">                                <span class="tok-comment">// Handle Option with normal Argument.</span>
 </span>
-<span class="line" id="L405">        <span class="tok-kw">if</span> (cmd.vals != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L406">            log.debug(<span class="tok-str">&quot;Attempting to Parse Values...&quot;</span>, .{});</span>
-<span class="line" id="L407">            <span class="tok-kw">if</span> (val_idx &gt;= cmd.vals.?.len) {</span>
-<span class="line" id="L408">                log.err(<span class="tok-str">&quot;Too many Values provided for Command '{s}'.&quot;</span>, .{ cmd.name });</span>
-<span class="line" id="L409">                <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L410">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TooManyValues;</span>
-<span class="line" id="L411">            }</span>
-<span class="line" id="L412">            <span class="tok-kw">const</span> val = &amp;cmd.vals.?[val_idx];</span>
-<span class="line" id="L413">            val.set(arg) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L414">                log.err(<span class="tok-str">&quot;Could not parse Argument '{s}' to Value '{s}'.&quot;</span>, .{ arg, val.name() });</span>
-<span class="line" id="L415">                <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L416">                log.err(<span class="tok-str">&quot;&quot;</span>, .{});</span>
-<span class="line" id="L417">            };</span>
-<span class="line" id="L418"></span>
-<span class="line" id="L419">            <span class="tok-kw">if</span> (val.argIdx() == val.maxArgs()) val_idx += <span class="tok-number">1</span>;</span>
-<span class="line" id="L420"></span>
-<span class="line" id="L421">            log.debug(<span class="tok-str">&quot;Parsed Value '{?s}'.&quot;</span>, .{ val.name() });</span>
-<span class="line" id="L422">            <span class="tok-kw">continue</span> :parseArg;</span>
-<span class="line" id="L423">        }</span>
-<span class="line" id="L424"></span>
-<span class="line" id="L425">        <span class="tok-comment">// Check if the Command expected an Argument but didn't get a match.</span>
+<span class="line" id="L380">                            <span class="tok-kw">else</span> {</span>
+<span class="line" id="L381">                                parseOpt(args, OptionT, opt) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L382">                                    log.err(<span class="tok-str">&quot;Could not parse Option '{s}{?s}: {s}'.&quot;</span>, .{ </span>
+<span class="line" id="L383">                                        long_pf,</span>
+<span class="line" id="L384">                                        long_name, </span>
+<span class="line" id="L385">                                        opt.name </span>
+<span class="line" id="L386">                                    });</span>
+<span class="line" id="L387">                                    <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, opt, writer);</span>
+<span class="line" id="L388">                                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L389">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L390">                                };</span>
+<span class="line" id="L391">                            }</span>
+<span class="line" id="L392">                            log.debug(<span class="tok-str">&quot;Parsed Option '{?s}'.&quot;</span>, .{ opt.long_name });</span>
+<span class="line" id="L393">                            <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L394">                        }</span>
+<span class="line" id="L395">                    }</span>
+<span class="line" id="L396">                }</span>
+<span class="line" id="L397">                log.err(<span class="tok-str">&quot;Could not parse Argument '{s}{?s}' to an Option.&quot;</span>, .{ long_pf, long_opt });</span>
+<span class="line" id="L398">                <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L399">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L400">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CouldNotParseOption;</span>
+<span class="line" id="L401">            }</span>
+<span class="line" id="L402">            unmatched = <span class="tok-null">true</span>;</span>
+<span class="line" id="L403">            log.debug(<span class="tok-str">&quot;No Options Matched for Command '{s}'.&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L404">        }</span>
+<span class="line" id="L405">        <span class="tok-comment">// ...Finally, for any Values.</span>
 </span>
-<span class="line" id="L426">        <span class="tok-kw">if</span> (unmatched) {</span>
-<span class="line" id="L427">            log.err(<span class="tok-str">&quot;Unrecognized Argument '{s}' for Command '{s}'.&quot;</span>, .{ arg, cmd.name });</span>
-<span class="line" id="L428">            <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L429">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecognizedArgument;</span>
-<span class="line" id="L430">        }</span>
-<span class="line" id="L431">        <span class="tok-comment">// For Commands that expect no Arguments but are given one, fail to the Help message.</span>
+<span class="line" id="L406">        <span class="tok-kw">if</span> (cmd.vals != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L407">            log.debug(<span class="tok-str">&quot;Attempting to Parse Values...&quot;</span>, .{});</span>
+<span class="line" id="L408">            <span class="tok-kw">if</span> (val_idx &gt;= cmd.vals.?.len) {</span>
+<span class="line" id="L409">                log.err(<span class="tok-str">&quot;Too many Values provided for Command '{s}'.&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L410">                <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L411">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TooManyValues;</span>
+<span class="line" id="L412">            }</span>
+<span class="line" id="L413">            <span class="tok-kw">const</span> val = &amp;cmd.vals.?[val_idx];</span>
+<span class="line" id="L414">            val.set(arg) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L415">                log.err(<span class="tok-str">&quot;Could not parse Argument '{s}' to Value '{s}'.&quot;</span>, .{ arg, val.name() });</span>
+<span class="line" id="L416">                <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L417">                log.err(<span class="tok-str">&quot;&quot;</span>, .{});</span>
+<span class="line" id="L418">            };</span>
+<span class="line" id="L419"></span>
+<span class="line" id="L420">            <span class="tok-kw">if</span> (val.argIdx() == val.maxArgs()) val_idx += <span class="tok-number">1</span>;</span>
+<span class="line" id="L421"></span>
+<span class="line" id="L422">            log.debug(<span class="tok-str">&quot;Parsed Value '{?s}'.&quot;</span>, .{ val.name() });</span>
+<span class="line" id="L423">            <span class="tok-kw">continue</span> :parseArg;</span>
+<span class="line" id="L424">        }</span>
+<span class="line" id="L425"></span>
+<span class="line" id="L426">        <span class="tok-comment">// Check if the Command expected an Argument but didn't get a match.</span>
 </span>
-<span class="line" id="L432">        <span class="tok-kw">else</span> {</span>
-<span class="line" id="L433">            log.err(<span class="tok-str">&quot;Command '{s}' does not expect any arguments, but '{s}' was passed.&quot;</span>, .{ cmd.name, arg });</span>
-<span class="line" id="L434">            <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L435">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedArgument;</span>
-<span class="line" id="L436">        }</span>
-<span class="line" id="L437">    }</span>
-<span class="line" id="L438">    <span class="tok-comment">// Check if a Sub Command has been set if it is Mandated for the current Command.</span>
+<span class="line" id="L427">        <span class="tok-kw">if</span> (unmatched) {</span>
+<span class="line" id="L428">            log.err(<span class="tok-str">&quot;Unrecognized Argument '{s}' for Command '{s}'.&quot;</span>, .{ arg, cmd.name });</span>
+<span class="line" id="L429">            <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L430">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecognizedArgument;</span>
+<span class="line" id="L431">        }</span>
+<span class="line" id="L432">        <span class="tok-comment">// For Commands that expect no Arguments but are given one, fail to the Help message.</span>
 </span>
-<span class="line" id="L439">    <span class="tok-kw">if</span> (cmd.sub_cmds_mandatory <span class="tok-kw">and</span> cmd.sub_cmd == <span class="tok-null">null</span> <span class="tok-kw">and</span></span>
-<span class="line" id="L440">        !(cmd.sub_cmds != <span class="tok-null">null</span> <span class="tok-kw">and</span> cmd.sub_cmds.?.len == <span class="tok-number">2</span> <span class="tok-kw">and</span> </span>
-<span class="line" id="L441">            (mem.eql(<span class="tok-type">u8</span>, cmd.sub_cmds.?[<span class="tok-number">0</span>].name, <span class="tok-str">&quot;usage&quot;</span>) <span class="tok-kw">or</span> mem.eql(<span class="tok-type">u8</span>, cmd.sub_cmds.?[<span class="tok-number">0</span>].name, <span class="tok-str">&quot;help&quot;</span>))) <span class="tok-kw">and</span></span>
-<span class="line" id="L442">        !(cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>)) <span class="tok-kw">and</span></span>
-<span class="line" id="L443">        !(mem.eql(<span class="tok-type">u8</span>, cmd.name, <span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> mem.eql(<span class="tok-type">u8</span>, cmd.name, <span class="tok-str">&quot;usage&quot;</span>))</span>
-<span class="line" id="L444">    ) {</span>
-<span class="line" id="L445">        log.err(<span class="tok-str">&quot;Command '{s}' requires a Sub Command.&quot;</span>, .{ cmd.name });</span>
-<span class="line" id="L446">        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L447">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedSubCommand;</span>
-<span class="line" id="L448">    }</span>
-<span class="line" id="L449">    <span class="tok-comment">// Check for missing Values if they are Mandated for the current Command.</span>
+<span class="line" id="L433">        <span class="tok-kw">else</span> {</span>
+<span class="line" id="L434">            log.err(<span class="tok-str">&quot;Command '{s}' does not expect any arguments, but '{s}' was passed.&quot;</span>, .{ cmd.name, arg });</span>
+<span class="line" id="L435">            <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L436">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedArgument;</span>
+<span class="line" id="L437">        }</span>
+<span class="line" id="L438">    }</span>
+<span class="line" id="L439">    <span class="tok-comment">// Check if a Sub Command has been set if it is Mandated for the current Command.</span>
 </span>
-<span class="line" id="L450">    <span class="tok-kw">if</span> (!usage_help_flag) usage_help_flag = (cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>));</span>
-<span class="line" id="L451">    <span class="tok-kw">if</span> (cmd.vals_mandatory <span class="tok-kw">and</span> </span>
-<span class="line" id="L452">        cmd.vals != <span class="tok-null">null</span> <span class="tok-kw">and</span> </span>
-<span class="line" id="L453">        val_idx &lt; cmd.vals.?.len <span class="tok-kw">and</span></span>
-<span class="line" id="L454">        !usage_help_flag</span>
-<span class="line" id="L455">    ) {</span>
-<span class="line" id="L456">        log.err(<span class="tok-str">&quot;Command '{s}' expects {d} Values, but only received {d}.&quot;</span>, .{</span>
-<span class="line" id="L457">            cmd.name,</span>
-<span class="line" id="L458">            cmd.vals.?.len,</span>
-<span class="line" id="L459">            val_idx,</span>
-<span class="line" id="L460">        });</span>
-<span class="line" id="L461">        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
-<span class="line" id="L462">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedMoreValues;</span>
-<span class="line" id="L463">    }</span>
-<span class="line" id="L464">    <span class="tok-comment">// Check for Usage/Help flags and run their respective methods.</span>
+<span class="line" id="L440">    <span class="tok-kw">if</span> (cmd.sub_cmds_mandatory <span class="tok-kw">and</span> cmd.sub_cmd == <span class="tok-null">null</span> <span class="tok-kw">and</span></span>
+<span class="line" id="L441">        !(cmd.sub_cmds != <span class="tok-null">null</span> <span class="tok-kw">and</span> cmd.sub_cmds.?.len == <span class="tok-number">2</span> <span class="tok-kw">and</span> </span>
+<span class="line" id="L442">            (mem.eql(<span class="tok-type">u8</span>, cmd.sub_cmds.?[<span class="tok-number">0</span>].name, <span class="tok-str">&quot;usage&quot;</span>) <span class="tok-kw">or</span> mem.eql(<span class="tok-type">u8</span>, cmd.sub_cmds.?[<span class="tok-number">0</span>].name, <span class="tok-str">&quot;help&quot;</span>))) <span class="tok-kw">and</span></span>
+<span class="line" id="L443">        !(cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>)) <span class="tok-kw">and</span></span>
+<span class="line" id="L444">        !(mem.eql(<span class="tok-type">u8</span>, cmd.name, <span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> mem.eql(<span class="tok-type">u8</span>, cmd.name, <span class="tok-str">&quot;usage&quot;</span>))</span>
+<span class="line" id="L445">    ) {</span>
+<span class="line" id="L446">        log.err(<span class="tok-str">&quot;Command '{s}' requires a Sub Command.&quot;</span>, .{ cmd.name });</span>
+<span class="line" id="L447">        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L448">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedSubCommand;</span>
+<span class="line" id="L449">    }</span>
+<span class="line" id="L450">    <span class="tok-comment">// Check for missing Values if they are Mandated for the current Command.</span>
 </span>
-<span class="line" id="L465">    <span class="tok-kw">if</span> (parse_config.auto_handle_usage_help <span class="tok-kw">and</span> <span class="tok-kw">try</span> cmd.checkUsageHelp(writer)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UsageHelpCalled; </span>
-<span class="line" id="L466">}</span>
-<span class="line" id="L467"></span>
-<span class="line" id="L468"><span class="tok-comment">/// Parse the provided `OptionType` (`opt`).</span></span>
-<span class="line" id="L469"><span class="tok-kw">fn</span> <span class="tok-fn">parseOpt</span>(args: *ArgIteratorGeneric, <span class="tok-kw">comptime</span> OptionType: <span class="tok-type">type</span>, opt: *<span class="tok-kw">const</span> OptionType) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L470">    <span class="tok-kw">const</span> peek_arg = args.peek();</span>
-<span class="line" id="L471">    <span class="tok-kw">const</span> set_arg = </span>
-<span class="line" id="L472">        <span class="tok-kw">if</span> (peek_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peek_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>
-<span class="line" id="L473">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
-<span class="line" id="L474">            _ = args.next();</span>
-<span class="line" id="L475">            <span class="tok-kw">break</span> :setArg <span class="tok-str">&quot;true&quot;</span>;</span>
-<span class="line" id="L476">        }</span>
-<span class="line" id="L477">        <span class="tok-kw">else</span> args.next().?;</span>
-<span class="line" id="L478">    log.debug(<span class="tok-str">&quot;Current Arg: {s}&quot;</span>, .{ set_arg });</span>
-<span class="line" id="L479">    <span class="tok-kw">try</span> opt.val.set(set_arg);</span>
-<span class="line" id="L480">}</span>
-<span class="line" id="L481"></span>
-<span class="line" id="L482"><span class="tok-comment">/// React to Parsing Errors with the given Reaction (`reaction`) based on the provided Argument (`arg`) to the provided Writer (`writer`).</span></span>
-<span class="line" id="L483"><span class="tok-kw">fn</span> <span class="tok-fn">errReaction</span>(reaction: ParseConfig.ParseErrorReaction, arg: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L484">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span>(reaction) {</span>
-<span class="line" id="L485">        .Usage =&gt; arg.usage(writer),</span>
-<span class="line" id="L486">        .Help =&gt; arg.help(writer),</span>
-<span class="line" id="L487">        .None =&gt; {},</span>
-<span class="line" id="L488">    };</span>
-<span class="line" id="L489">}</span>
-<span class="line" id="L490"></span>
+<span class="line" id="L451">    <span class="tok-kw">if</span> (!usage_help_flag) usage_help_flag = (cmd.checkFlag(<span class="tok-str">&quot;help&quot;</span>) <span class="tok-kw">or</span> cmd.checkFlag(<span class="tok-str">&quot;usage&quot;</span>));</span>
+<span class="line" id="L452">    <span class="tok-kw">if</span> (cmd.vals_mandatory <span class="tok-kw">and</span> </span>
+<span class="line" id="L453">        cmd.vals != <span class="tok-null">null</span> <span class="tok-kw">and</span> </span>
+<span class="line" id="L454">        val_idx &lt; cmd.vals.?.len <span class="tok-kw">and</span></span>
+<span class="line" id="L455">        !usage_help_flag</span>
+<span class="line" id="L456">    ) {</span>
+<span class="line" id="L457">        log.err(<span class="tok-str">&quot;Command '{s}' expects {d} Values, but only received {d}.&quot;</span>, .{</span>
+<span class="line" id="L458">            cmd.name,</span>
+<span class="line" id="L459">            cmd.vals.?.len,</span>
+<span class="line" id="L460">            val_idx,</span>
+<span class="line" id="L461">        });</span>
+<span class="line" id="L462">        <span class="tok-kw">try</span> errReaction(parse_config.err_reaction, cmd, writer);</span>
+<span class="line" id="L463">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedMoreValues;</span>
+<span class="line" id="L464">    }</span>
+<span class="line" id="L465">    <span class="tok-comment">// Check for Usage/Help flags and run their respective methods.</span>
+</span>
+<span class="line" id="L466">    <span class="tok-kw">if</span> (parse_config.auto_handle_usage_help <span class="tok-kw">and</span> <span class="tok-kw">try</span> cmd.checkUsageHelp(writer)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UsageHelpCalled; </span>
+<span class="line" id="L467">}</span>
+<span class="line" id="L468"></span>
+<span class="line" id="L469"><span class="tok-comment">/// Parse the provided `OptionType` (`opt`).</span></span>
+<span class="line" id="L470"><span class="tok-kw">fn</span> <span class="tok-fn">parseOpt</span>(args: *ArgIteratorGeneric, <span class="tok-kw">comptime</span> OptionType: <span class="tok-type">type</span>, opt: *<span class="tok-kw">const</span> OptionType) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L471">    <span class="tok-kw">const</span> peek_arg = args.peek();</span>
+<span class="line" id="L472">    <span class="tok-kw">const</span> set_arg = </span>
+<span class="line" id="L473">        <span class="tok-kw">if</span> (peek_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peek_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>
+<span class="line" id="L474">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L475">            _ = args.next();</span>
+<span class="line" id="L476">            <span class="tok-kw">break</span> :setArg <span class="tok-str">&quot;true&quot;</span>;</span>
+<span class="line" id="L477">        }</span>
+<span class="line" id="L478">        <span class="tok-kw">else</span> args.next().?;</span>
+<span class="line" id="L479">    log.debug(<span class="tok-str">&quot;Current Arg: {s}&quot;</span>, .{ set_arg });</span>
+<span class="line" id="L480">    <span class="tok-kw">try</span> opt.val.set(set_arg);</span>
+<span class="line" id="L481">}</span>
+<span class="line" id="L482"></span>
+<span class="line" id="L483"><span class="tok-comment">/// React to Parsing Errors with the given Reaction (`reaction`) based on the provided Argument (`arg`) to the provided Writer (`writer`).</span></span>
+<span class="line" id="L484"><span class="tok-kw">fn</span> <span class="tok-fn">errReaction</span>(reaction: ParseConfig.ParseErrorReaction, arg: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L485">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span>(reaction) {</span>
+<span class="line" id="L486">        .Usage =&gt; arg.usage(writer),</span>
+<span class="line" id="L487">        .Help =&gt; arg.help(writer),</span>
+<span class="line" id="L488">        .None =&gt; {},</span>
+<span class="line" id="L489">    };</span>
+<span class="line" id="L490">}</span>
 <span class="line" id="L491"></span>
-<span class="line" id="L492"><span class="tok-comment">// TESTING</span>
+<span class="line" id="L492"></span>
+<span class="line" id="L493"><span class="tok-comment">// TESTING</span>
 </span>
-<span class="line" id="L493"><span class="tok-kw">const</span> TestCommand = Command.Custom(.{ </span>
-<span class="line" id="L494">    .vals_mandatory = <span class="tok-null">false</span>,</span>
-<span class="line" id="L495">    .sub_cmds_mandatory = <span class="tok-null">false</span>,</span>
-<span class="line" id="L496">});</span>
-<span class="line" id="L497"><span class="tok-kw">const</span> TestValue = TestCommand.ValueT;</span>
-<span class="line" id="L498"><span class="tok-kw">const</span> test_setup_cmd: TestCommand = .{</span>
-<span class="line" id="L499">    .name = <span class="tok-str">&quot;test-cmd&quot;</span>,</span>
-<span class="line" id="L500">    .description = <span class="tok-str">&quot;A Test Command.&quot;</span>,</span>
-<span class="line" id="L501">    .sub_cmds = &amp;.{</span>
-<span class="line" id="L502">        .{</span>
-<span class="line" id="L503">            .name = <span class="tok-str">&quot;sub-test-cmd&quot;</span>,</span>
-<span class="line" id="L504">            .description = <span class="tok-str">&quot;A Test Sub Command.&quot;</span>,</span>
-<span class="line" id="L505">            .opts = &amp;.{            </span>
-<span class="line" id="L506">                .{</span>
-<span class="line" id="L507">                    .name = <span class="tok-str">&quot;sub_string_opt&quot;</span>,</span>
-<span class="line" id="L508">                    .description = <span class="tok-str">&quot;A test sub string long option.&quot;</span>,</span>
-<span class="line" id="L509">                    .short_name = <span class="tok-str">'S'</span>,</span>
-<span class="line" id="L510">                    .long_name = <span class="tok-str">&quot;sub-string&quot;</span>,</span>
-<span class="line" id="L511">                    .val = TestValue.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
-<span class="line" id="L512">                        .name = <span class="tok-str">&quot;sub_string_opt_val&quot;</span>,</span>
-<span class="line" id="L513">                        .description = <span class="tok-str">&quot;A test sub string opt value.&quot;</span>,</span>
-<span class="line" id="L514">                    }),</span>
-<span class="line" id="L515">                },</span>
-<span class="line" id="L516">                .{</span>
-<span class="line" id="L517">                    .name = <span class="tok-str">&quot;sub_int_opt&quot;</span>,</span>
-<span class="line" id="L518">                    .description = <span class="tok-str">&quot;A test sub integer option.&quot;</span>,</span>
-<span class="line" id="L519">                    .short_name = <span class="tok-str">'I'</span>,</span>
-<span class="line" id="L520">                    .long_name = <span class="tok-str">&quot;sub-int&quot;</span>,</span>
-<span class="line" id="L521">                    .val = TestValue.ofType(<span class="tok-type">i16</span>, .{</span>
-<span class="line" id="L522">                        .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
-<span class="line" id="L523">                        .description = <span class="tok-str">&quot;A test sub integer opt value.&quot;</span>,</span>
-<span class="line" id="L524">                    }),</span>
-<span class="line" id="L525">                },</span>
-<span class="line" id="L526">            },</span>
-<span class="line" id="L527">        },</span>
-<span class="line" id="L528">    },</span>
-<span class="line" id="L529">    .opts = &amp;.{</span>
-<span class="line" id="L530">        .{</span>
-<span class="line" id="L531">            .name = <span class="tok-str">&quot;string_opt&quot;</span>,</span>
-<span class="line" id="L532">            .description = <span class="tok-str">&quot;A test string long option.&quot;</span>,</span>
-<span class="line" id="L533">            .short_name = <span class="tok-str">'s'</span>,</span>
-<span class="line" id="L534">            .long_name = <span class="tok-str">&quot;string&quot;</span>,</span>
-<span class="line" id="L535">            .val = TestValue.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
-<span class="line" id="L536">                .name = <span class="tok-str">&quot;string_opt_val&quot;</span>,</span>
-<span class="line" id="L537">                .description = <span class="tok-str">&quot;A test string opt value.&quot;</span>,</span>
-<span class="line" id="L538">                .set_behavior = .Multi,</span>
-<span class="line" id="L539">                .max_args = <span class="tok-number">6</span>,</span>
-<span class="line" id="L540">            }),</span>
-<span class="line" id="L541">        },</span>
-<span class="line" id="L542">        .{</span>
-<span class="line" id="L543">            .name = <span class="tok-str">&quot;int_opt&quot;</span>,</span>
-<span class="line" id="L544">            .description = <span class="tok-str">&quot;A test integer option.&quot;</span>,</span>
-<span class="line" id="L545">            .short_name = <span class="tok-str">'i'</span>,</span>
-<span class="line" id="L546">            .long_name = <span class="tok-str">&quot;int&quot;</span>,</span>
-<span class="line" id="L547">            .val = TestValue.ofType(<span class="tok-type">i16</span>, .{</span>
-<span class="line" id="L548">                .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
-<span class="line" id="L549">                .description = <span class="tok-str">&quot;A test integer opt value.&quot;</span>,</span>
-<span class="line" id="L550">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(int: <span class="tok-type">i16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> int &lt;= <span class="tok-number">666</span>; } }.valFn,</span>
-<span class="line" id="L551">                .set_behavior = .Multi,</span>
-<span class="line" id="L552">                .max_args = <span class="tok-number">6</span>,</span>
-<span class="line" id="L553">            }),</span>
-<span class="line" id="L554">        },</span>
-<span class="line" id="L555">        .{</span>
-<span class="line" id="L556">            .name = <span class="tok-str">&quot;float_opt&quot;</span>,</span>
-<span class="line" id="L557">            .description = <span class="tok-str">&quot;A test float option.&quot;</span>,</span>
-<span class="line" id="L558">            .short_name = <span class="tok-str">'f'</span>,</span>
-<span class="line" id="L559">            .long_name = <span class="tok-str">&quot;float&quot;</span>,</span>
-<span class="line" id="L560">            .val = TestValue.ofType(<span class="tok-type">f16</span>, .{</span>
-<span class="line" id="L561">                .name = <span class="tok-str">&quot;float_opt_val&quot;</span>,</span>
-<span class="line" id="L562">                .description = <span class="tok-str">&quot;An float opt value.&quot;</span>,</span>
-<span class="line" id="L563">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(float: <span class="tok-type">f16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> float &lt; <span class="tok-number">30000</span>; } }.valFn,</span>
-<span class="line" id="L564">                .set_behavior = .Multi,</span>
-<span class="line" id="L565">                .max_args = <span class="tok-number">6</span>,</span>
-<span class="line" id="L566">            }),</span>
-<span class="line" id="L567">        },</span>
-<span class="line" id="L568">        .{</span>
-<span class="line" id="L569">            .name = <span class="tok-str">&quot;toggle_opt&quot;</span>,</span>
-<span class="line" id="L570">            .description = <span class="tok-str">&quot;A test toggle/boolean option.&quot;</span>,</span>
-<span class="line" id="L571">            .short_name = <span class="tok-str">'t'</span>,</span>
-<span class="line" id="L572">            .long_name = <span class="tok-str">&quot;toggle&quot;</span>,</span>
-<span class="line" id="L573">            .val = TestValue.ofType(<span class="tok-type">bool</span>, .{</span>
-<span class="line" id="L574">                .name = <span class="tok-str">&quot;toggle_opt_val&quot;</span>,</span>
-<span class="line" id="L575">                .description = <span class="tok-str">&quot;A test toggle/boolean option value.&quot;</span>,</span>
-<span class="line" id="L576">            }),</span>
-<span class="line" id="L577">        },</span>
-<span class="line" id="L578">        </span>
-<span class="line" id="L579">    },</span>
-<span class="line" id="L580">    .vals = &amp;.{</span>
-<span class="line" id="L581">        TestValue.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
-<span class="line" id="L582">            .name = <span class="tok-str">&quot;string_val&quot;</span>,</span>
-<span class="line" id="L583">            .description = <span class="tok-str">&quot;A test string value.&quot;</span>,</span>
-<span class="line" id="L584">            .default_val = <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L585">        }),</span>
-<span class="line" id="L586">    },</span>
-<span class="line" id="L587">};</span>
-<span class="line" id="L588"></span>
-<span class="line" id="L589"><span class="tok-kw">const</span> TestCmdFromStruct = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L590">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SubCmdFromStruct = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L591">        sub_bool: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L592">        sub_float: <span class="tok-type">f32</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L593">    };</span>
-<span class="line" id="L594">    <span class="tok-comment">// Command</span>
+<span class="line" id="L494"><span class="tok-kw">const</span> TestCommand = Command.Custom(.{ </span>
+<span class="line" id="L495">    .vals_mandatory = <span class="tok-null">false</span>,</span>
+<span class="line" id="L496">    .sub_cmds_mandatory = <span class="tok-null">false</span>,</span>
+<span class="line" id="L497">});</span>
+<span class="line" id="L498"><span class="tok-kw">const</span> TestValue = TestCommand.ValueT;</span>
+<span class="line" id="L499"><span class="tok-kw">const</span> test_setup_cmd: TestCommand = .{</span>
+<span class="line" id="L500">    .name = <span class="tok-str">&quot;test-cmd&quot;</span>,</span>
+<span class="line" id="L501">    .description = <span class="tok-str">&quot;A Test Command.&quot;</span>,</span>
+<span class="line" id="L502">    .sub_cmds = &amp;.{</span>
+<span class="line" id="L503">        .{</span>
+<span class="line" id="L504">            .name = <span class="tok-str">&quot;sub-test-cmd&quot;</span>,</span>
+<span class="line" id="L505">            .description = <span class="tok-str">&quot;A Test Sub Command.&quot;</span>,</span>
+<span class="line" id="L506">            .opts = &amp;.{            </span>
+<span class="line" id="L507">                .{</span>
+<span class="line" id="L508">                    .name = <span class="tok-str">&quot;sub_string_opt&quot;</span>,</span>
+<span class="line" id="L509">                    .description = <span class="tok-str">&quot;A test sub string long option.&quot;</span>,</span>
+<span class="line" id="L510">                    .short_name = <span class="tok-str">'S'</span>,</span>
+<span class="line" id="L511">                    .long_name = <span class="tok-str">&quot;sub-string&quot;</span>,</span>
+<span class="line" id="L512">                    .val = TestValue.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
+<span class="line" id="L513">                        .name = <span class="tok-str">&quot;sub_string_opt_val&quot;</span>,</span>
+<span class="line" id="L514">                        .description = <span class="tok-str">&quot;A test sub string opt value.&quot;</span>,</span>
+<span class="line" id="L515">                    }),</span>
+<span class="line" id="L516">                },</span>
+<span class="line" id="L517">                .{</span>
+<span class="line" id="L518">                    .name = <span class="tok-str">&quot;sub_int_opt&quot;</span>,</span>
+<span class="line" id="L519">                    .description = <span class="tok-str">&quot;A test sub integer option.&quot;</span>,</span>
+<span class="line" id="L520">                    .short_name = <span class="tok-str">'I'</span>,</span>
+<span class="line" id="L521">                    .long_name = <span class="tok-str">&quot;sub-int&quot;</span>,</span>
+<span class="line" id="L522">                    .val = TestValue.ofType(<span class="tok-type">i16</span>, .{</span>
+<span class="line" id="L523">                        .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
+<span class="line" id="L524">                        .description = <span class="tok-str">&quot;A test sub integer opt value.&quot;</span>,</span>
+<span class="line" id="L525">                    }),</span>
+<span class="line" id="L526">                },</span>
+<span class="line" id="L527">            },</span>
+<span class="line" id="L528">        },</span>
+<span class="line" id="L529">    },</span>
+<span class="line" id="L530">    .opts = &amp;.{</span>
+<span class="line" id="L531">        .{</span>
+<span class="line" id="L532">            .name = <span class="tok-str">&quot;string_opt&quot;</span>,</span>
+<span class="line" id="L533">            .description = <span class="tok-str">&quot;A test string long option.&quot;</span>,</span>
+<span class="line" id="L534">            .short_name = <span class="tok-str">'s'</span>,</span>
+<span class="line" id="L535">            .long_name = <span class="tok-str">&quot;string&quot;</span>,</span>
+<span class="line" id="L536">            .val = TestValue.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
+<span class="line" id="L537">                .name = <span class="tok-str">&quot;string_opt_val&quot;</span>,</span>
+<span class="line" id="L538">                .description = <span class="tok-str">&quot;A test string opt value.&quot;</span>,</span>
+<span class="line" id="L539">                .set_behavior = .Multi,</span>
+<span class="line" id="L540">                .max_args = <span class="tok-number">6</span>,</span>
+<span class="line" id="L541">            }),</span>
+<span class="line" id="L542">        },</span>
+<span class="line" id="L543">        .{</span>
+<span class="line" id="L544">            .name = <span class="tok-str">&quot;int_opt&quot;</span>,</span>
+<span class="line" id="L545">            .description = <span class="tok-str">&quot;A test integer option.&quot;</span>,</span>
+<span class="line" id="L546">            .short_name = <span class="tok-str">'i'</span>,</span>
+<span class="line" id="L547">            .long_name = <span class="tok-str">&quot;int&quot;</span>,</span>
+<span class="line" id="L548">            .val = TestValue.ofType(<span class="tok-type">i16</span>, .{</span>
+<span class="line" id="L549">                .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
+<span class="line" id="L550">                .description = <span class="tok-str">&quot;A test integer opt value.&quot;</span>,</span>
+<span class="line" id="L551">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(int: <span class="tok-type">i16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> int &lt;= <span class="tok-number">666</span>; } }.valFn,</span>
+<span class="line" id="L552">                .set_behavior = .Multi,</span>
+<span class="line" id="L553">                .max_args = <span class="tok-number">6</span>,</span>
+<span class="line" id="L554">            }),</span>
+<span class="line" id="L555">        },</span>
+<span class="line" id="L556">        .{</span>
+<span class="line" id="L557">            .name = <span class="tok-str">&quot;float_opt&quot;</span>,</span>
+<span class="line" id="L558">            .description = <span class="tok-str">&quot;A test float option.&quot;</span>,</span>
+<span class="line" id="L559">            .short_name = <span class="tok-str">'f'</span>,</span>
+<span class="line" id="L560">            .long_name = <span class="tok-str">&quot;float&quot;</span>,</span>
+<span class="line" id="L561">            .val = TestValue.ofType(<span class="tok-type">f16</span>, .{</span>
+<span class="line" id="L562">                .name = <span class="tok-str">&quot;float_opt_val&quot;</span>,</span>
+<span class="line" id="L563">                .description = <span class="tok-str">&quot;An float opt value.&quot;</span>,</span>
+<span class="line" id="L564">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(float: <span class="tok-type">f16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> float &lt; <span class="tok-number">30000</span>; } }.valFn,</span>
+<span class="line" id="L565">                .set_behavior = .Multi,</span>
+<span class="line" id="L566">                .max_args = <span class="tok-number">6</span>,</span>
+<span class="line" id="L567">            }),</span>
+<span class="line" id="L568">        },</span>
+<span class="line" id="L569">        .{</span>
+<span class="line" id="L570">            .name = <span class="tok-str">&quot;toggle_opt&quot;</span>,</span>
+<span class="line" id="L571">            .description = <span class="tok-str">&quot;A test toggle/boolean option.&quot;</span>,</span>
+<span class="line" id="L572">            .short_name = <span class="tok-str">'t'</span>,</span>
+<span class="line" id="L573">            .long_name = <span class="tok-str">&quot;toggle&quot;</span>,</span>
+<span class="line" id="L574">            .val = TestValue.ofType(<span class="tok-type">bool</span>, .{</span>
+<span class="line" id="L575">                .name = <span class="tok-str">&quot;toggle_opt_val&quot;</span>,</span>
+<span class="line" id="L576">                .description = <span class="tok-str">&quot;A test toggle/boolean option value.&quot;</span>,</span>
+<span class="line" id="L577">            }),</span>
+<span class="line" id="L578">        },</span>
+<span class="line" id="L579">        </span>
+<span class="line" id="L580">    },</span>
+<span class="line" id="L581">    .vals = &amp;.{</span>
+<span class="line" id="L582">        TestValue.ofType([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, .{</span>
+<span class="line" id="L583">            .name = <span class="tok-str">&quot;string_val&quot;</span>,</span>
+<span class="line" id="L584">            .description = <span class="tok-str">&quot;A test string value.&quot;</span>,</span>
+<span class="line" id="L585">            .default_val = <span class="tok-str">&quot;test&quot;</span>,</span>
+<span class="line" id="L586">        }),</span>
+<span class="line" id="L587">    },</span>
+<span class="line" id="L588">};</span>
+<span class="line" id="L589"></span>
+<span class="line" id="L590"><span class="tok-kw">const</span> TestCmdFromStruct = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L591">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SubCmdFromStruct = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L592">        sub_bool: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L593">        sub_float: <span class="tok-type">f32</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L594">    };</span>
+<span class="line" id="L595">    <span class="tok-comment">// Command</span>
 </span>
-<span class="line" id="L595">    @&quot;sub-cmd&quot;: SubCmdFromStruct = .{</span>
-<span class="line" id="L596">        .sub_bool = <span class="tok-null">true</span>,</span>
-<span class="line" id="L597">        .sub_float = <span class="tok-number">0</span>,</span>
-<span class="line" id="L598">    },</span>
-<span class="line" id="L599">    <span class="tok-comment">// Options</span>
+<span class="line" id="L596">    @&quot;sub-cmd&quot;: SubCmdFromStruct = .{</span>
+<span class="line" id="L597">        .sub_bool = <span class="tok-null">true</span>,</span>
+<span class="line" id="L598">        .sub_float = <span class="tok-number">0</span>,</span>
+<span class="line" id="L599">    },</span>
+<span class="line" id="L600">    <span class="tok-comment">// Options</span>
 </span>
-<span class="line" id="L600">    int: ?<span class="tok-type">i32</span> = <span class="tok-number">26</span>,</span>
-<span class="line" id="L601">    str: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Opt string.&quot;</span>,</span>
-<span class="line" id="L602">    str2: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Opt string 2.&quot;</span>,</span>
-<span class="line" id="L603">    flt: ?<span class="tok-type">f16</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L604">    int2: ?<span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L605">    multi_str: [<span class="tok-number">5</span>]?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L606">    multi_int: [<span class="tok-number">3</span>]?<span class="tok-type">u8</span>,</span>
-<span class="line" id="L607">    <span class="tok-comment">// Values</span>
+<span class="line" id="L601">    int: ?<span class="tok-type">i32</span> = <span class="tok-number">26</span>,</span>
+<span class="line" id="L602">    str: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Opt string.&quot;</span>,</span>
+<span class="line" id="L603">    str2: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Opt string 2.&quot;</span>,</span>
+<span class="line" id="L604">    flt: ?<span class="tok-type">f16</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L605">    int2: ?<span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L606">    multi_str: [<span class="tok-number">5</span>]?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L607">    multi_int: [<span class="tok-number">3</span>]?<span class="tok-type">u8</span>,</span>
+<span class="line" id="L608">    <span class="tok-comment">// Values</span>
 </span>
-<span class="line" id="L608">    struct_bool: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L609">    struct_str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Val string.&quot;</span>,</span>
-<span class="line" id="L610">    struct_int: <span class="tok-type">i64</span>,</span>
-<span class="line" id="L611">    multi_int_val: [<span class="tok-number">2</span>]<span class="tok-type">u16</span>,</span>
-<span class="line" id="L612">    <span class="tok-comment">// Cova Command</span>
+<span class="line" id="L609">    struct_bool: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L610">    struct_str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;Val string.&quot;</span>,</span>
+<span class="line" id="L611">    struct_int: <span class="tok-type">i64</span>,</span>
+<span class="line" id="L612">    multi_int_val: [<span class="tok-number">2</span>]<span class="tok-type">u16</span>,</span>
+<span class="line" id="L613">    <span class="tok-comment">// Cova Command</span>
 </span>
-<span class="line" id="L613">    cova_cmd: TestCommand = .{</span>
-<span class="line" id="L614">        .name = <span class="tok-str">&quot;test-struct-cova-cmd&quot;</span>,</span>
-<span class="line" id="L615">        .description = <span class="tok-str">&quot;A test cova Command within a struct.&quot;</span>,</span>
-<span class="line" id="L616">    },</span>
-<span class="line" id="L617">    <span class="tok-comment">// Cova Option</span>
+<span class="line" id="L614">    cova_cmd: TestCommand = .{</span>
+<span class="line" id="L615">        .name = <span class="tok-str">&quot;test-struct-cova-cmd&quot;</span>,</span>
+<span class="line" id="L616">        .description = <span class="tok-str">&quot;A test cova Command within a struct.&quot;</span>,</span>
+<span class="line" id="L617">    },</span>
+<span class="line" id="L618">    <span class="tok-comment">// Cova Option</span>
 </span>
-<span class="line" id="L618">    cova_opt: TestCommand.OptionT = .{</span>
-<span class="line" id="L619">        .name = <span class="tok-str">&quot;test_struct_cova_opt&quot;</span>,</span>
-<span class="line" id="L620">        .description = <span class="tok-str">&quot;A test cova Option within a struct.&quot;</span>,</span>
-<span class="line" id="L621">    },</span>
-<span class="line" id="L622">    <span class="tok-comment">// Cova Value</span>
+<span class="line" id="L619">    cova_opt: TestCommand.OptionT = .{</span>
+<span class="line" id="L620">        .name = <span class="tok-str">&quot;test_struct_cova_opt&quot;</span>,</span>
+<span class="line" id="L621">        .description = <span class="tok-str">&quot;A test cova Option within a struct.&quot;</span>,</span>
+<span class="line" id="L622">    },</span>
+<span class="line" id="L623">    <span class="tok-comment">// Cova Value</span>
 </span>
-<span class="line" id="L623">    cova_val: TestValue = TestValue.ofType(<span class="tok-type">i8</span>, .{</span>
-<span class="line" id="L624">        .name = <span class="tok-str">&quot;test_struct_cova_val&quot;</span>,</span>
-<span class="line" id="L625">        .description = <span class="tok-str">&quot;A test cova Value within a struct.&quot;</span>,</span>
-<span class="line" id="L626">        .default_val = <span class="tok-number">50</span>,</span>
-<span class="line" id="L627">    }),</span>
-<span class="line" id="L628">};</span>
-<span class="line" id="L629"><span class="tok-kw">const</span> test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});</span>
-<span class="line" id="L630"></span>
-<span class="line" id="L631"><span class="tok-kw">test</span> <span class="tok-str">&quot;tokenize args&quot;</span> {</span>
-<span class="line" id="L632">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L633">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L634">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L635">    <span class="tok-kw">const</span> arg_str = <span class="tok-str">&quot;cova struct-cmd --multi-str \&quot;demo str\&quot; -m 'a \&quot;quoted string\&quot;' -m \&quot;A string using an 'apostrophe'\&quot; 50&quot;</span>;</span>
-<span class="line" id="L636">    <span class="tok-kw">const</span> test_args = <span class="tok-kw">try</span> tokenizeArgs(arg_str, alloc, .{});</span>
-<span class="line" id="L637">    <span class="tok-kw">const</span> expect_args = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ <span class="tok-str">&quot;cova&quot;</span>, <span class="tok-str">&quot;struct-cmd&quot;</span>, <span class="tok-str">&quot;--multi-str&quot;</span>, <span class="tok-str">&quot;demo str&quot;</span>, <span class="tok-str">&quot;-m&quot;</span>, <span class="tok-str">&quot;a \&quot;quoted string\&quot;&quot;</span>, <span class="tok-str">&quot;-m&quot;</span>, <span class="tok-str">&quot;A string using an 'apostrophe'&quot;</span>, <span class="tok-str">&quot;50&quot;</span> };</span>
-<span class="line" id="L638">    <span class="tok-kw">for</span> (test_args, expect_args[<span class="tok-number">0</span>..]) |t_arg, e_arg| <span class="tok-kw">try</span> testing.expectEqualStrings(t_arg, e_arg);</span>
-<span class="line" id="L639">}</span>
-<span class="line" id="L640"></span>
-<span class="line" id="L641"><span class="tok-kw">test</span> <span class="tok-str">&quot;command setup&quot;</span> {</span>
-<span class="line" id="L642">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L643">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L644">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L645"></span>
-<span class="line" id="L646">    <span class="tok-kw">const</span> test_cmd = <span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{});</span>
-<span class="line" id="L647">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L648"></span>
-<span class="line" id="L649">    <span class="tok-kw">const</span> test_cmd_from_struct = <span class="tok-kw">try</span> test_setup_cmd_from_struct.init(alloc, .{</span>
-<span class="line" id="L650">        .add_help_cmds = <span class="tok-null">false</span>,</span>
-<span class="line" id="L651">        .add_help_opts = <span class="tok-null">false</span>,</span>
-<span class="line" id="L652">    });</span>
-<span class="line" id="L653">    <span class="tok-kw">defer</span> test_cmd_from_struct.deinit();</span>
-<span class="line" id="L654">}</span>
-<span class="line" id="L655"></span>
-<span class="line" id="L656"><span class="tok-kw">test</span> <span class="tok-str">&quot;argument parsing&quot;</span> {</span>
-<span class="line" id="L657">    testing.log_level = .info;</span>
-<span class="line" id="L658">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L659">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L660">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L661">    <span class="tok-kw">var</span> writer_list = std.ArrayList(<span class="tok-type">u8</span>).init(alloc);</span>
-<span class="line" id="L662">    <span class="tok-kw">defer</span> writer_list.deinit();</span>
-<span class="line" id="L663">    <span class="tok-kw">const</span> writer = writer_list.writer();</span>
-<span class="line" id="L664"></span>
-<span class="line" id="L665">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{</span>
-<span class="line" id="L666">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;sub_test_cmd&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-string&quot;</span>, <span class="tok-str">&quot;sub cmd string opt&quot;</span>, <span class="tok-str">&quot;--sub-int=15984&quot;</span> },</span>
-<span class="line" id="L667">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;string opt 1&quot;</span>, <span class="tok-str">&quot;--str&quot;</span>, <span class="tok-str">&quot;string opt 2&quot;</span>, <span class="tok-str">&quot;--string=string_opt_3&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;string opt 4&quot;</span>, <span class="tok-str">&quot;-s=string_opt_5&quot;</span>, <span class="tok-str">&quot;-s_string_opt_6&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
-<span class="line" id="L668">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--int&quot;</span>, <span class="tok-str">&quot;11&quot;</span>, <span class="tok-str">&quot;--in&quot;</span>, <span class="tok-str">&quot;22&quot;</span>, <span class="tok-str">&quot;--int=33&quot;</span>, <span class="tok-str">&quot;-i&quot;</span>, <span class="tok-str">&quot;444&quot;</span>, <span class="tok-str">&quot;-i=555&quot;</span>, <span class="tok-str">&quot;-i666&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
-<span class="line" id="L669">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--float&quot;</span>, <span class="tok-str">&quot;1111.12&quot;</span>, <span class="tok-str">&quot;--flo&quot;</span>, <span class="tok-str">&quot;2222.123&quot;</span>, <span class="tok-str">&quot;--float=3333.1234&quot;</span>, <span class="tok-str">&quot;-f&quot;</span>, <span class="tok-str">&quot;4444.12345&quot;</span>, <span class="tok-str">&quot;-f=5555.123456&quot;</span>, <span class="tok-str">&quot;-f6666.1234567&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
-<span class="line" id="L670">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--toggle&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span>, },</span>
-<span class="line" id="L671">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span>, },</span>
-<span class="line" id="L672">    };</span>
-<span class="line" id="L673">    <span class="tok-kw">for</span> (test_args) |tokens_list| {</span>
-<span class="line" id="L674">        <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
-<span class="line" id="L675">        <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L676">        <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = tokens_list };</span>
-<span class="line" id="L677">        <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
-<span class="line" id="L678">        <span class="tok-kw">try</span> parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{});</span>
-<span class="line" id="L679">    }</span>
-<span class="line" id="L680">}</span>
-<span class="line" id="L681"></span>
-<span class="line" id="L682"><span class="tok-kw">test</span> <span class="tok-str">&quot;argument analysis&quot;</span> {</span>
-<span class="line" id="L683">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
-<span class="line" id="L684">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L685">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
-<span class="line" id="L686">    <span class="tok-kw">var</span> writer_list = std.ArrayList(<span class="tok-type">u8</span>).init(alloc);</span>
-<span class="line" id="L687">    <span class="tok-kw">defer</span> writer_list.deinit();</span>
-<span class="line" id="L688">    <span class="tok-kw">const</span> writer = writer_list.writer();</span>
-<span class="line" id="L689"></span>
-<span class="line" id="L690">    <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
-<span class="line" id="L691">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
-<span class="line" id="L692">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;opt string 1&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;opt string 2&quot;</span>, <span class="tok-str">&quot;--int=1,22,333,444,555,666&quot;</span>, <span class="tok-str">&quot;--flo=5.1&quot;</span>, <span class="tok-str">&quot;-f10.1,20.2,30.3&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;val string&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-s=sub_opt_str&quot;</span>, <span class="tok-str">&quot;--sub-int&quot;</span>, <span class="tok-str">&quot;21523&quot;</span>, <span class="tok-str">&quot;help&quot;</span> }; </span>
-<span class="line" id="L693">    <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = test_args };</span>
-<span class="line" id="L694">    <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
-<span class="line" id="L695">    parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{}) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L696">        <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L697">            <span class="tok-kw">error</span>.UsageHelpCalled =&gt; {},</span>
-<span class="line" id="L698">            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L699">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Parsing Error during Testing: {!}\n&quot;</span>, .{ err });</span>
-<span class="line" id="L700">                <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L701">            },</span>
-<span class="line" id="L702">        }    </span>
-<span class="line" id="L703">    };</span>
-<span class="line" id="L704"></span>
-<span class="line" id="L705">    <span class="tok-kw">try</span> utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);</span>
-<span class="line" id="L706"></span>
-<span class="line" id="L707">    _ = test_setup_cmd.SubCommandsEnum();</span>
-<span class="line" id="L708">}</span>
-<span class="line" id="L709"></span>
+<span class="line" id="L624">    cova_val: TestValue = TestValue.ofType(<span class="tok-type">i8</span>, .{</span>
+<span class="line" id="L625">        .name = <span class="tok-str">&quot;test_struct_cova_val&quot;</span>,</span>
+<span class="line" id="L626">        .description = <span class="tok-str">&quot;A test cova Value within a struct.&quot;</span>,</span>
+<span class="line" id="L627">        .default_val = <span class="tok-number">50</span>,</span>
+<span class="line" id="L628">    }),</span>
+<span class="line" id="L629">};</span>
+<span class="line" id="L630"><span class="tok-kw">const</span> test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});</span>
+<span class="line" id="L631"></span>
+<span class="line" id="L632"><span class="tok-kw">test</span> <span class="tok-str">&quot;tokenize args&quot;</span> {</span>
+<span class="line" id="L633">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+<span class="line" id="L634">    <span class="tok-kw">defer</span> arena.deinit();</span>
+<span class="line" id="L635">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
+<span class="line" id="L636">    <span class="tok-kw">const</span> arg_str = <span class="tok-str">&quot;cova struct-cmd --multi-str \&quot;demo str\&quot; -m 'a \&quot;quoted string\&quot;' -m \&quot;A string using an 'apostrophe'\&quot; 50&quot;</span>;</span>
+<span class="line" id="L637">    <span class="tok-kw">const</span> test_args = <span class="tok-kw">try</span> tokenizeArgs(arg_str, alloc, .{});</span>
+<span class="line" id="L638">    <span class="tok-kw">const</span> expect_args = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ <span class="tok-str">&quot;cova&quot;</span>, <span class="tok-str">&quot;struct-cmd&quot;</span>, <span class="tok-str">&quot;--multi-str&quot;</span>, <span class="tok-str">&quot;demo str&quot;</span>, <span class="tok-str">&quot;-m&quot;</span>, <span class="tok-str">&quot;a \&quot;quoted string\&quot;&quot;</span>, <span class="tok-str">&quot;-m&quot;</span>, <span class="tok-str">&quot;A string using an 'apostrophe'&quot;</span>, <span class="tok-str">&quot;50&quot;</span> };</span>
+<span class="line" id="L639">    <span class="tok-kw">for</span> (test_args, expect_args[<span class="tok-number">0</span>..]) |t_arg, e_arg| <span class="tok-kw">try</span> testing.expectEqualStrings(t_arg, e_arg);</span>
+<span class="line" id="L640">}</span>
+<span class="line" id="L641"></span>
+<span class="line" id="L642"><span class="tok-kw">test</span> <span class="tok-str">&quot;command setup&quot;</span> {</span>
+<span class="line" id="L643">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+<span class="line" id="L644">    <span class="tok-kw">defer</span> arena.deinit();</span>
+<span class="line" id="L645">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
+<span class="line" id="L646"></span>
+<span class="line" id="L647">    <span class="tok-kw">const</span> test_cmd = <span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{});</span>
+<span class="line" id="L648">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
+<span class="line" id="L649"></span>
+<span class="line" id="L650">    <span class="tok-kw">const</span> test_cmd_from_struct = <span class="tok-kw">try</span> test_setup_cmd_from_struct.init(alloc, .{</span>
+<span class="line" id="L651">        .add_help_cmds = <span class="tok-null">false</span>,</span>
+<span class="line" id="L652">        .add_help_opts = <span class="tok-null">false</span>,</span>
+<span class="line" id="L653">    });</span>
+<span class="line" id="L654">    <span class="tok-kw">defer</span> test_cmd_from_struct.deinit();</span>
+<span class="line" id="L655">}</span>
+<span class="line" id="L656"></span>
+<span class="line" id="L657"><span class="tok-kw">test</span> <span class="tok-str">&quot;argument parsing&quot;</span> {</span>
+<span class="line" id="L658">    testing.log_level = .info;</span>
+<span class="line" id="L659">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+<span class="line" id="L660">    <span class="tok-kw">defer</span> arena.deinit();</span>
+<span class="line" id="L661">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
+<span class="line" id="L662">    <span class="tok-kw">var</span> writer_list = std.ArrayList(<span class="tok-type">u8</span>).init(alloc);</span>
+<span class="line" id="L663">    <span class="tok-kw">defer</span> writer_list.deinit();</span>
+<span class="line" id="L664">    <span class="tok-kw">const</span> writer = writer_list.writer();</span>
+<span class="line" id="L665"></span>
+<span class="line" id="L666">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{</span>
+<span class="line" id="L667">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;sub_test_cmd&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-string&quot;</span>, <span class="tok-str">&quot;sub cmd string opt&quot;</span>, <span class="tok-str">&quot;--sub-int=15984&quot;</span> },</span>
+<span class="line" id="L668">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;string opt 1&quot;</span>, <span class="tok-str">&quot;--str&quot;</span>, <span class="tok-str">&quot;string opt 2&quot;</span>, <span class="tok-str">&quot;--string=string_opt_3&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;string opt 4&quot;</span>, <span class="tok-str">&quot;-s=string_opt_5&quot;</span>, <span class="tok-str">&quot;-s_string_opt_6&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
+<span class="line" id="L669">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--int&quot;</span>, <span class="tok-str">&quot;11&quot;</span>, <span class="tok-str">&quot;--in&quot;</span>, <span class="tok-str">&quot;22&quot;</span>, <span class="tok-str">&quot;--int=33&quot;</span>, <span class="tok-str">&quot;-i&quot;</span>, <span class="tok-str">&quot;444&quot;</span>, <span class="tok-str">&quot;-i=555&quot;</span>, <span class="tok-str">&quot;-i666&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
+<span class="line" id="L670">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--float&quot;</span>, <span class="tok-str">&quot;1111.12&quot;</span>, <span class="tok-str">&quot;--flo&quot;</span>, <span class="tok-str">&quot;2222.123&quot;</span>, <span class="tok-str">&quot;--float=3333.1234&quot;</span>, <span class="tok-str">&quot;-f&quot;</span>, <span class="tok-str">&quot;4444.12345&quot;</span>, <span class="tok-str">&quot;-f=5555.123456&quot;</span>, <span class="tok-str">&quot;-f6666.1234567&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span> },</span>
+<span class="line" id="L671">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--toggle&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span>, },</span>
+<span class="line" id="L672">        &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;string value text&quot;</span>, },</span>
+<span class="line" id="L673">    };</span>
+<span class="line" id="L674">    <span class="tok-kw">for</span> (test_args) |tokens_list| {</span>
+<span class="line" id="L675">        <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
+<span class="line" id="L676">        <span class="tok-kw">defer</span> test_cmd.deinit();</span>
+<span class="line" id="L677">        <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = tokens_list };</span>
+<span class="line" id="L678">        <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
+<span class="line" id="L679">        <span class="tok-kw">try</span> parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{});</span>
+<span class="line" id="L680">    }</span>
+<span class="line" id="L681">}</span>
+<span class="line" id="L682"></span>
+<span class="line" id="L683"><span class="tok-kw">test</span> <span class="tok-str">&quot;argument analysis&quot;</span> {</span>
+<span class="line" id="L684">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(testing.allocator);</span>
+<span class="line" id="L685">    <span class="tok-kw">defer</span> arena.deinit();</span>
+<span class="line" id="L686">    <span class="tok-kw">const</span> alloc = arena.allocator();</span>
+<span class="line" id="L687">    <span class="tok-kw">var</span> writer_list = std.ArrayList(<span class="tok-type">u8</span>).init(alloc);</span>
+<span class="line" id="L688">    <span class="tok-kw">defer</span> writer_list.deinit();</span>
+<span class="line" id="L689">    <span class="tok-kw">const</span> writer = writer_list.writer();</span>
+<span class="line" id="L690"></span>
+<span class="line" id="L691">    <span class="tok-kw">const</span> test_cmd = &amp;(<span class="tok-kw">try</span> test_setup_cmd.init(alloc, .{}));</span>
+<span class="line" id="L692">    <span class="tok-kw">defer</span> test_cmd.deinit();</span>
+<span class="line" id="L693">    <span class="tok-kw">const</span> test_args: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{ <span class="tok-str">&quot;test-cmd&quot;</span>, <span class="tok-str">&quot;--string&quot;</span>, <span class="tok-str">&quot;opt string 1&quot;</span>, <span class="tok-str">&quot;-s&quot;</span>, <span class="tok-str">&quot;opt string 2&quot;</span>, <span class="tok-str">&quot;--int=1,22,333,444,555,666&quot;</span>, <span class="tok-str">&quot;--flo=5.1&quot;</span>, <span class="tok-str">&quot;-f10.1,20.2,30.3&quot;</span>, <span class="tok-str">&quot;-t&quot;</span>, <span class="tok-str">&quot;val string&quot;</span>, <span class="tok-str">&quot;sub-test-cmd&quot;</span>, <span class="tok-str">&quot;--sub-s=sub_opt_str&quot;</span>, <span class="tok-str">&quot;--sub-int&quot;</span>, <span class="tok-str">&quot;21523&quot;</span>, <span class="tok-str">&quot;help&quot;</span> }; </span>
+<span class="line" id="L694">    <span class="tok-kw">var</span> raw_iter = RawArgIterator{ .args = test_args };</span>
+<span class="line" id="L695">    <span class="tok-kw">var</span> test_iter = ArgIteratorGeneric.from(raw_iter);</span>
+<span class="line" id="L696">    parseArgs(&amp;test_iter, TestCommand, test_cmd, writer, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L697">        <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L698">            <span class="tok-kw">error</span>.UsageHelpCalled =&gt; {},</span>
+<span class="line" id="L699">            <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L700">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;Parsing Error during Testing: {!}\n&quot;</span>, .{ err });</span>
+<span class="line" id="L701">                <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L702">            },</span>
+<span class="line" id="L703">        }    </span>
+<span class="line" id="L704">    };</span>
+<span class="line" id="L705"></span>
+<span class="line" id="L706">    <span class="tok-kw">try</span> utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);</span>
+<span class="line" id="L707"></span>
+<span class="line" id="L708">    _ = test_setup_cmd.SubCommandsEnum();</span>
+<span class="line" id="L709">}</span>
+<span class="line" id="L710"></span>
 </code></pre></body>
 </html>
