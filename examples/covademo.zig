@@ -300,6 +300,23 @@ pub fn main() !void {
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
+    const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt" };
+    const and_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .AND });
+    const or_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .OR });
+    const xor_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .XOR });
+    log.debug(
+        \\ Check Options: {s}
+        \\ - AND: {}
+        \\ -  OR: {}
+        \\ - XOR: {}
+        \\\n
+        , .{
+            opts_check_names,
+            and_opts_check,
+            or_opts_check,
+            xor_opts_check,
+        }
+    );
     if (main_cmd.checkSubCmd("sub-cmd"))
         log.info("-> Sub Cmd", .{});
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|

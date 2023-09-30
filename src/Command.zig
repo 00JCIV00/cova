@@ -167,6 +167,68 @@ pub fn Custom(comptime config: Config) type {
             for (self.opts.?) |opt| { try map.put(opt.name, opt); }
             return map;
         }
+        /// Config for Checking or Matching multiple Options from this Command.
+        pub const OptionsCheckConfig = struct{
+            /// The type of Boolean Logic to be used when checking or matching Options.
+            logic: CheckLogic = .OR,
+            /// The maximum number of Options allowed for XOR Logic.
+            /// This technically breaks from actual XOR Logic, but allows a specific number of Options to be checked or matched.
+            xor_max: u8 = 1,
+
+            const CheckLogic = enum{
+                AND,
+                OR,
+                XOR,
+            };
+        };
+        /// Check if certain Options (`opt_names`) of this Command have been set using the provided OptionsCheckConfig (`check_config`).
+        pub fn checkOpts(self: *const @This(), opt_names: []const []const u8, check_config: OptionsCheckConfig) bool {
+            const match_opts = self.matchOpts(opt_names, check_config) catch return false;
+            defer self._alloc.?.free(match_opts);
+            return true;
+        }
+        /// Returns a slice of Options `[]OptionT` Matching the given Options list (`opt_names`) and rules provided in the OptionCheckConfig (`check_config`).
+        pub fn matchOpts(self: *const @This(), opt_names: []const []const u8, check_config: OptionsCheckConfig) ![]OptionT {
+            if (!self._is_init) return error.CommandNotInitialized;
+            return self.matchOptsAlloc(opt_names, self._alloc.?, check_config);
+        }
+        /// Returns a slice of Options `[]OptionT` Matching the given Options list (`opt_names`) and rules provided in the OptionCheckConfig (`check_config`).
+        /// This implementation uses the provided Allocator (`alloc`) to allocate the OptionT slice.
+        pub fn matchOptsAlloc(self: *const @This(), opt_names: []const []const u8, alloc: mem.Allocator, check_config: OptionsCheckConfig) ![]OptionT {
+            const cmd_opts = self.opts orelse return error.NoOptionsInCommand;
+            var opts_list = std.ArrayList(OptionT).init(alloc);
+            errdefer opts_list.deinit();
+            var logic_flag = false;
+            for (cmd_opts) |opt| {
+                _ = utils.indexOfEql([]const u8, opt_names, opt.name) orelse continue;
+                if (!opt.val.isSet()) continue;
+                try opts_list.append(opt);
+                switch (check_config.logic) {
+                    .AND => {
+                        if (opts_list.items.len == opt_names.len) {
+                            logic_flag = true;
+                            break;   
+                        }    
+                    },
+                    .OR => logic_flag = true,
+                    .XOR => {
+                        if (opts_list.items.len > check_config.xor_max) {
+                            logic_flag = false;
+                            break;
+                        }
+                        logic_flag = true;
+                    },
+                }
+            }
+            if (!logic_flag) {
+                return switch (check_config.logic) {
+                    .AND => error.CheckOptionLogicFailAND,
+                    .OR => error.CheckOptionLogicFailOR,
+                    .XOR => error.CheckOptionLogicFailXOR,
+                };
+            }
+            return try opts_list.toOwnedSlice();
+        }
 
         /// Gets a StringHashMap of this Command's Values.
         pub fn getVals(self: *const @This()) !StringHashMap(ValueT) {
