@@ -51,6 +51,9 @@ pub const Config = struct {
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     max_int_bit_width: u16 = 256,
 
+    /// Indent string used for Usage/Help formatting.
+    /// Note, if this is left null, it will inherit from the Command Config. 
+    indent_fmt: ?[]const u8 = null,
     /// Values Usage Format.
     /// Must support the following format types in this order:
     /// 1. String (Value Name)

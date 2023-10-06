@@ -205,7 +205,7 @@
 <span class="line" id="L89">        <span class="tok-kw">return</span> self;</span>
 <span class="line" id="L90">    }</span>
 <span class="line" id="L91"></span>
-<span class="line" id="L92">    <span class="tok-kw">if</span> (builtin.os.tag == .solaris) {</span>
+<span class="line" id="L92">    <span class="tok-kw">if</span> (builtin.os.tag.isSolarish()) {</span>
 <span class="line" id="L93">        <span class="tok-kw">try</span> self.addLibDir(<span class="tok-str">&quot;/usr/lib/64&quot;</span>);</span>
 <span class="line" id="L94">        <span class="tok-kw">try</span> self.addLibDir(<span class="tok-str">&quot;/usr/local/lib/64&quot;</span>);</span>
 <span class="line" id="L95">        <span class="tok-kw">try</span> self.addLibDir(<span class="tok-str">&quot;/lib/64&quot;</span>);</span>

@@ -694,7 +694,7 @@
 <span class="line" id="L539">        strings: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L540">    };</span>
 <span class="line" id="L541"></span>
-<span class="line" id="L542">    <span class="tok-kw">fn</span> <span class="tok-fn">parseAndDump</span>(step: *Step, bytes: []<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u64</span>)) <span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L542">    <span class="tok-kw">fn</span> <span class="tok-fn">parseAndDump</span>(step: *Step, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
 <span class="line" id="L543">        <span class="tok-kw">const</span> gpa = step.owner.allocator;</span>
 <span class="line" id="L544">        <span class="tok-kw">var</span> stream = std.io.fixedBufferStream(bytes);</span>
 <span class="line" id="L545">        <span class="tok-kw">const</span> reader = stream.reader();</span>
@@ -711,7 +711,7 @@
 <span class="line" id="L556">        <span class="tok-kw">var</span> sections = std.ArrayList(macho.section_64).init(gpa);</span>
 <span class="line" id="L557">        <span class="tok-kw">var</span> imports = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(gpa);</span>
 <span class="line" id="L558"></span>
-<span class="line" id="L559">        <span class="tok-kw">var</span> it = LoadCommandIterator{</span>
+<span class="line" id="L559">        <span class="tok-kw">var</span> it: LoadCommandIterator = .{</span>
 <span class="line" id="L560">            .ncmds = hdr.ncmds,</span>
 <span class="line" id="L561">            .buffer = bytes[<span class="tok-builtin">@sizeOf</span>(macho.mach_header_64)..][<span class="tok-number">0</span>..hdr.sizeofcmds],</span>
 <span class="line" id="L562">        };</span>

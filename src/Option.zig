@@ -23,6 +23,9 @@ pub const Config = struct {
     /// This will default to the same Value.Config used by the overarching custom Command type of this custom Option type.
     val_config: Value.Config = .{},
 
+    /// Indent string used for Usage/Help formatting.
+    /// Note, if this is left null, it will inherit from the Command Config. 
+    indent_fmt: ?[]const u8 = null,
     /// Format for the Help message. 
     ///
     /// Must support the following format types in this order:
@@ -67,6 +70,9 @@ pub fn Custom(comptime config: Config) type {
         /// The Custom Value type used by this Custom Option type.
         const ValueT = Value.Custom(config.val_config);
 
+        /// Indent Format.
+        /// Check (`Command.Config`) for details.
+        pub const indent_fmt = config.indent_fmt;
         /// Help Format.
         /// Check `Options.Config` for details.
         const help_fmt = config.help_fmt;
@@ -111,9 +117,9 @@ pub fn Custom(comptime config: Config) type {
             upper_name[0] = toUpper(self.name[0]);
             for(upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
             if (help_fmt == null) {
-                try writer.print("{s}:\n            ", .{ upper_name });
+                try writer.print("{s}:\n{?s}{?s}{?s}", .{ upper_name, indent_fmt, indent_fmt, indent_fmt });
                 try self.usage(writer);
-                try writer.print("\n            {s}", .{ self.description });
+                try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
                 return;
             }
             try writer.print(help_fmt.?, .{ upper_name, self.description });

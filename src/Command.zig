@@ -41,6 +41,44 @@ pub const Config = struct {
     /// Value Config for this Command type.
     val_config: Value.Config = .{},
 
+    /// The Global Help Prefix for all instances of this Command type.
+    /// This can be overwritten per instance using the `help_prefix` field. 
+    global_help_prefix: []const u8 = "",
+
+    /// Indent string used for Usage/Help formatting.
+    /// Note, this will be used as the default across all Argument Types,
+    /// but it can be overriden in the Option and Value Configs.
+    indent_fmt: []const u8 = "    ",
+    /// Help Format for the displayed Command
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    /// 2. String (Command Name)
+    /// 3. String (Indent)
+    /// 4. String (Command Description)
+    help_header_fmt: []const u8 = 
+        \\HELP:
+        \\{s}COMMAND: {s}
+        \\
+        \\{s}DESCRIPTION: {s}
+        \\
+        \\
+    ,
+    /// Usage Header Format
+    /// Must support the following format types in this order:
+    /// 1. String (Command)
+    usage_header_fmt: []const u8 = "USAGE: {s} ",
+    /// Sub Commands Help Title Format
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    subcmds_help_title_fmt: []const u8 = "{s}SUBCOMMANDS:\n",
+    /// Options Help Title Format
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    opts_help_title_fmt: []const u8 = "{s}OPTIONS:\n",
+    /// Values Help Title Format
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    vals_help_title_fmt: []const u8 = "{s}VALUES:\n",
     /// Sub Commands Help Format.
     /// Must support the following format types in this order:
     /// 1. String (Command Name)
@@ -51,12 +89,8 @@ pub const Config = struct {
     /// 1. String (Command Name)
     subcmds_usage_fmt: []const u8 ="'{s}'", 
 
-    /// The Global Help Prefix for all instances of this Command type.
-    /// This can be overwritten per instance using the `help_prefix` field. 
-    global_help_prefix: []const u8 = "",
-
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
-    /// This is used in for both `init()` and `from()` but can be overwritten for the latter.
+    /// This is used for both `init()` and `from()` but can be overwritten for the latter.
     max_args: u8 = 25, 
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
@@ -75,16 +109,42 @@ pub fn Base() type { return Custom(.{}); }
 /// Create a Custom Command type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct {
-        /// The Custom Option type to be used by this Custom Command type.
-        const opt_config = optConfig: {
-            var val_opt_config = config.opt_config;
-            val_opt_config.val_config = config.val_config;
-            break :optConfig val_opt_config;
+        /// Value Config Setup
+        const val_config = valConfig: {
+            var setup_val_config = config.val_config;
+            setup_val_config.indent_fmt = setup_val_config.indent_fmt orelse config.indent_fmt;
+            break :valConfig setup_val_config;
         };
+        /// Option Config Setup
+        const opt_config = optConfig: {
+            var setup_opt_config = config.opt_config;
+            setup_opt_config.val_config = val_config;
+            setup_opt_config.indent_fmt = setup_opt_config.indent_fmt orelse config.indent_fmt;
+            break :optConfig setup_opt_config;
+        };
+        /// The Custom Option type to be used by this Custom Command type.
         pub const OptionT = Option.Custom(opt_config);
         /// The Custom Value type to be used by this Custom Command type.
-        pub const ValueT = Value.Custom(config.val_config);
+        pub const ValueT = Value.Custom(val_config);
 
+        /// Indent Format.
+        /// Check (`Command.Config`) for details.
+        pub const indent_fmt = config.indent_fmt;
+        /// Help Header Format.
+        /// Check (`Command.Config`) for details.
+        pub const help_header_fmt = config.help_header_fmt;
+        /// Usage Header Format.
+        /// Check (`Command.Config`) for details.
+        pub const usage_header_fmt = config.usage_header_fmt;
+        /// Sub Commands Help Title Format.
+        /// Check (`Command.Config`) for details.
+        pub const subcmds_help_title_fmt = config.subcmds_help_title_fmt;
+        /// Options Help Title Format.
+        /// Check (`Command.Config`) for details.
+        pub const opts_help_title_fmt = config.opts_help_title_fmt;
+        /// Value Help Title Format.
+        /// Check (`Command.Config`) for details.
+        pub const vals_help_title_fmt = config.vals_help_title_fmt;
         /// Sub Commands Help Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_help_fmt = config.subcmds_help_fmt;
@@ -176,7 +236,7 @@ pub fn Custom(comptime config: Config) type {
             xor_max: u8 = 1,
 
             /// Boolean Logic types for checking/matching Options.
-            const CheckLogic = enum{
+            pub const CheckLogic = enum{
                 /// All Options from the provided list must be set.
                 AND,
                 /// At least one Option from the provided list must be set.
@@ -253,20 +313,15 @@ pub fn Custom(comptime config: Config) type {
 
             try self.usage(writer);
 
-            try writer.print(
-                \\HELP:
-                \\    COMMAND: {s}
-                \\
-                \\    DESCRIPTION: {s}
-                \\
-                \\
-                , .{ self.name, self.description }
-            );
+            try writer.print(help_header_fmt, .{ 
+                indent_fmt, self.name, 
+                indent_fmt, self.description 
+            });
             
             if (self.sub_cmds) |sub_cmds| {
-                try writer.print("    SUB COMMANDS:\n", .{});
+                try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
                 for (sub_cmds) |cmd| {
-                    try writer.print("        ", .{});
+                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try writer.print(subcmds_help_fmt, .{cmd.name, cmd.description});
                     try writer.print("\n", .{});
                 }
@@ -274,9 +329,9 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.opts) |opts| {
-                try writer.print("    OPTIONS:\n", .{});
+                try writer.print(opts_help_title_fmt, .{ indent_fmt });
                 for (opts) |opt| {
-                    try writer.print("        ", .{});
+                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try opt.help(writer);
                     try writer.print("\n", .{});
                 }
@@ -284,9 +339,9 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.vals) |vals| {
-                try writer.print("    VALUES:\n", .{});
+                try writer.print(vals_help_title_fmt, .{ indent_fmt });
                 for (vals) |val| {
-                    try writer.print("        ", .{});
+                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try val.help(writer);
                     try writer.print("\n", .{});
                 }
@@ -296,7 +351,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Usage message for this Command and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            try writer.print("USAGE: {s} ", .{ self.name });
+            try writer.print(usage_header_fmt, .{ self.name });
             if (self.opts != null) {
                 for (self.opts.?) |opt| {
                     try opt.usage(writer);

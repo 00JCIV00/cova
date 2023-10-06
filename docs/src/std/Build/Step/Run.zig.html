@@ -1158,7 +1158,7 @@
 <span class="line" id="L993">    <span class="tok-kw">if</span> (self.captured_stdout != <span class="tok-null">null</span>) child.stdout_behavior = .Pipe;</span>
 <span class="line" id="L994">    <span class="tok-kw">if</span> (self.captured_stderr != <span class="tok-null">null</span>) child.stderr_behavior = .Pipe;</span>
 <span class="line" id="L995">    <span class="tok-kw">if</span> (self.stdin != .none) {</span>
-<span class="line" id="L996">        assert(child.stdin_behavior != .Inherit);</span>
+<span class="line" id="L996">        assert(self.stdio != .inherit);</span>
 <span class="line" id="L997">        child.stdin_behavior = .Pipe;</span>
 <span class="line" id="L998">    }</span>
 <span class="line" id="L999"></span>

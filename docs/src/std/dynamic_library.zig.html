@@ -124,7 +124,7 @@
 <span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DynLib = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
 <span class="line" id="L11">    .linux =&gt; <span class="tok-kw">if</span> (builtin.link_libc) DlDynlib <span class="tok-kw">else</span> ElfDynLib,</span>
 <span class="line" id="L12">    .windows =&gt; WindowsDynLib,</span>
-<span class="line" id="L13">    .macos, .tvos, .watchos, .ios, .freebsd, .netbsd, .openbsd, .dragonfly, .solaris =&gt; DlDynlib,</span>
+<span class="line" id="L13">    .macos, .tvos, .watchos, .ios, .freebsd, .netbsd, .openbsd, .dragonfly, .solaris, .illumos =&gt; DlDynlib,</span>
 <span class="line" id="L14">    <span class="tok-kw">else</span> =&gt; <span class="tok-type">void</span>,</span>
 <span class="line" id="L15">};</span>
 <span class="line" id="L16"></span>
@@ -523,7 +523,7 @@
 <span class="line" id="L388"></span>
 <span class="line" id="L389"><span class="tok-kw">test</span> <span class="tok-str">&quot;dynamic_library&quot;</span> {</span>
 <span class="line" id="L390">    <span class="tok-kw">const</span> libname = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L391">        .linux, .freebsd, .openbsd =&gt; <span class="tok-str">&quot;invalid_so.so&quot;</span>,</span>
+<span class="line" id="L391">        .linux, .freebsd, .openbsd, .solaris, .illumos =&gt; <span class="tok-str">&quot;invalid_so.so&quot;</span>,</span>
 <span class="line" id="L392">        .windows =&gt; <span class="tok-str">&quot;invalid_dll.dll&quot;</span>,</span>
 <span class="line" id="L393">        .macos, .tvos, .watchos, .ios =&gt; <span class="tok-str">&quot;invalid_dylib.dylib&quot;</span>,</span>
 <span class="line" id="L394">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>

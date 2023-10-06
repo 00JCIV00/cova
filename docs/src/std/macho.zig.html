@@ -2141,7 +2141,7 @@
 <span class="line" id="L1853"></span>
 <span class="line" id="L1854"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> LoadCommandIterator = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L1855">    ncmds: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L1856">    buffer: []<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u64</span>)) <span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1856">    buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L1857">    index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
 <span class="line" id="L1858"></span>
 <span class="line" id="L1859">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> LoadCommand = <span class="tok-kw">struct</span> {</span>

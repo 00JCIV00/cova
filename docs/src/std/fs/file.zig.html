@@ -476,7 +476,7 @@
 <span class="line" id="L359">                    os.S.IFSOCK =&gt; <span class="tok-kw">break</span> :blk .unix_domain_socket,</span>
 <span class="line" id="L360">                    <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L361">                }</span>
-<span class="line" id="L362">                <span class="tok-kw">if</span> (builtin.os.tag == .solaris) <span class="tok-kw">switch</span> (m) {</span>
+<span class="line" id="L362">                <span class="tok-kw">if</span> (builtin.os.tag.isSolarish()) <span class="tok-kw">switch</span> (m) {</span>
 <span class="line" id="L363">                    os.S.IFDOOR =&gt; <span class="tok-kw">break</span> :blk .door,</span>
 <span class="line" id="L364">                    os.S.IFPORT =&gt; <span class="tok-kw">break</span> :blk .event_port,</span>
 <span class="line" id="L365">                    <span class="tok-kw">else</span> =&gt; {},</span>
@@ -806,7 +806,7 @@
 <span class="line" id="L685">                <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L686">            }</span>
 <span class="line" id="L687"></span>
-<span class="line" id="L688">            <span class="tok-kw">if</span> (builtin.os.tag == .solaris) <span class="tok-kw">switch</span> (m) {</span>
+<span class="line" id="L688">            <span class="tok-kw">if</span> (builtin.os.tag.isSolarish()) <span class="tok-kw">switch</span> (m) {</span>
 <span class="line" id="L689">                os.S.IFDOOR =&gt; <span class="tok-kw">return</span> .door,</span>
 <span class="line" id="L690">                os.S.IFPORT =&gt; <span class="tok-kw">return</span> .event_port,</span>
 <span class="line" id="L691">                <span class="tok-kw">else</span> =&gt; {},</span>

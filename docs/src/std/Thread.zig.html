@@ -157,7 +157,7 @@
 <span class="line" id="L43">    .freebsd =&gt; <span class="tok-number">15</span>,</span>
 <span class="line" id="L44">    .openbsd =&gt; <span class="tok-number">23</span>,</span>
 <span class="line" id="L45">    .dragonfly =&gt; <span class="tok-number">1023</span>,</span>
-<span class="line" id="L46">    .solaris =&gt; <span class="tok-number">31</span>,</span>
+<span class="line" id="L46">    .solaris, .illumos =&gt; <span class="tok-number">31</span>,</span>
 <span class="line" id="L47">    <span class="tok-kw">else</span> =&gt; <span class="tok-number">0</span>,</span>
 <span class="line" id="L48">};</span>
 <span class="line" id="L49"></span>
@@ -240,7 +240,7 @@
 <span class="line" id="L123">                <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> os.unexpectedErrno(e),</span>
 <span class="line" id="L124">            }</span>
 <span class="line" id="L125">        },</span>
-<span class="line" id="L126">        .netbsd, .solaris =&gt; <span class="tok-kw">if</span> (use_pthreads) {</span>
+<span class="line" id="L126">        .netbsd, .solaris, .illumos =&gt; <span class="tok-kw">if</span> (use_pthreads) {</span>
 <span class="line" id="L127">            <span class="tok-kw">const</span> err = std.c.pthread_setname_np(self.getHandle(), name_with_terminator.ptr, <span class="tok-null">null</span>);</span>
 <span class="line" id="L128">            <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L129">                .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
@@ -352,7 +352,7 @@
 <span class="line" id="L229">                <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> os.unexpectedErrno(e),</span>
 <span class="line" id="L230">            }</span>
 <span class="line" id="L231">        },</span>
-<span class="line" id="L232">        .netbsd, .solaris =&gt; <span class="tok-kw">if</span> (use_pthreads) {</span>
+<span class="line" id="L232">        .netbsd, .solaris, .illumos =&gt; <span class="tok-kw">if</span> (use_pthreads) {</span>
 <span class="line" id="L233">            <span class="tok-kw">const</span> err = std.c.pthread_getname_np(self.getHandle(), buffer.ptr, max_name_len + <span class="tok-number">1</span>);</span>
 <span class="line" id="L234">            <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L235">                .SUCCESS =&gt; <span class="tok-kw">return</span> std.mem.sliceTo(buffer, <span class="tok-number">0</span>),</span>
@@ -771,7 +771,7 @@
 <span class="line" id="L636">                };</span>
 <span class="line" id="L637">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(count));</span>
 <span class="line" id="L638">            },</span>
-<span class="line" id="L639">            .solaris =&gt; {</span>
+<span class="line" id="L639">            .solaris, .illumos =&gt; {</span>
 <span class="line" id="L640">                <span class="tok-comment">// The &quot;proper&quot; way to get the cpu count would be to query</span>
 </span>
 <span class="line" id="L641">                <span class="tok-comment">// /dev/kstat via ioctls, and traverse a linked list for each</span>
