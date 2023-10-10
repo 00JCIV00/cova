@@ -1243,7 +1243,7 @@
 <span class="line" id="L1002"><span class="tok-comment">/// of the other target.</span></span>
 <span class="line" id="L1003"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getExternalExecutor</span>(</span>
 <span class="line" id="L1004">    host: NativeTargetInfo,</span>
-<span class="line" id="L1005">    candidate: NativeTargetInfo,</span>
+<span class="line" id="L1005">    candidate: *<span class="tok-kw">const</span> NativeTargetInfo,</span>
 <span class="line" id="L1006">    options: GetExternalExecutorOptions,</span>
 <span class="line" id="L1007">) Executor {</span>
 <span class="line" id="L1008">    <span class="tok-kw">const</span> os_match = host.target.os.tag == candidate.target.os.tag;</span>

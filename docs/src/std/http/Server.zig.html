@@ -521,7 +521,7 @@
 <span class="line" id="L393">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> DoError = Connection.WriteError || <span class="tok-kw">error</span>{ UnsupportedTransferEncoding, InvalidContentLength };</span>
 <span class="line" id="L394"></span>
 <span class="line" id="L395">    <span class="tok-comment">/// Send the response headers.</span></span>
-<span class="line" id="L396">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">do</span>(res: *Response) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L396">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">do</span>(res: *Response) DoError!<span class="tok-type">void</span> {</span>
 <span class="line" id="L397">        <span class="tok-kw">switch</span> (res.state) {</span>
 <span class="line" id="L398">            .waited =&gt; res.state = .responded,</span>
 <span class="line" id="L399">            .first, .start, .responded, .finished =&gt; <span class="tok-kw">unreachable</span>,</span>
@@ -800,7 +800,7 @@
 <span class="line" id="L668"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ListenError = std.os.SocketError || std.os.BindError || std.os.ListenError || std.os.SetSockOptError || std.os.GetSockNameError;</span>
 <span class="line" id="L669"></span>
 <span class="line" id="L670"><span class="tok-comment">/// Start the HTTP server listening on the given address.</span></span>
-<span class="line" id="L671"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">listen</span>(server: *Server, address: net.Address) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L671"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">listen</span>(server: *Server, address: net.Address) ListenError!<span class="tok-type">void</span> {</span>
 <span class="line" id="L672">    <span class="tok-kw">try</span> server.socket.listen(address);</span>
 <span class="line" id="L673">}</span>
 <span class="line" id="L674"></span>

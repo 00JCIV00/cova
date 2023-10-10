@@ -45,6 +45,19 @@ pub const Config = struct {
     /// This can be overwritten per instance using the `help_prefix` field. 
     global_help_prefix: []const u8 = "",
 
+    /// A custom Help function to override the default `help()`.
+    ///
+    /// Function parameters:
+    /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
+    /// 2. Writer (This is the Writer that will written to.)
+    help_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// A custom Usage function to override the default `usage()`.
+    ///
+    /// Function parameters:
+    /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
+    /// 2. Writer (This is the Writer that will written to.)
+    usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
     /// but it can be overriden in the Option and Value Configs.
@@ -127,6 +140,13 @@ pub fn Custom(comptime config: Config) type {
         /// The Custom Value type to be used by this Custom Command type.
         pub const ValueT = Value.Custom(val_config);
 
+        /// Custom Help Function.
+        /// Check (`Command.Config`) for details.
+        pub const help_fn = config.help_fn;
+        /// Custom Usage Function.
+        /// Check (`Command.Config`) for details.
+        pub const usage_fn = config.usage_fn;
+
         /// Indent Format.
         /// Check (`Command.Config`) for details.
         pub const indent_fmt = config.indent_fmt;
@@ -193,6 +213,7 @@ pub fn Custom(comptime config: Config) type {
         /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
         /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
         vals_mandatory: bool = config.vals_mandatory,
+
 
         /// Sets the active Sub Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
@@ -309,10 +330,10 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Command and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
+            if (help_fn) |helpFn| return helpFn(self, writer);
+
             try writer.print("{s}\n", .{ self.help_prefix });
-
             try self.usage(writer);
-
             try writer.print(help_header_fmt, .{ 
                 indent_fmt, self.name, 
                 indent_fmt, self.description 
@@ -351,6 +372,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Usage message for this Command and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
+            if (usage_fn) |usageFn| return usageFn(self, writer);
+
             try writer.print(usage_header_fmt, .{ self.name });
             if (self.opts != null) {
                 for (self.opts.?) |opt| {
@@ -435,7 +458,9 @@ pub fn Custom(comptime config: Config) type {
             /// Be sure to set the counterpart to this flag in the `ToConfig` if this Command will be converted back to a Struct or Union.
             convert_syntax: bool = true,
             /// Attempt to create Short Options.
-            /// This will attempt to make a short option name from the first letter of the field name in lowercase then uppercase, sequentially working through each next letter if the previous one has already been used. (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
+            /// This will attempt to make a short option name from the first letter of the field name in lowercase then uppercase, 
+            /// sequentially working through each next letter if the previous one has already been used. 
+            /// (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
             attempt_short_opts: bool = true,
 
             /// A Name for the Command.
@@ -503,6 +528,7 @@ pub fn Custom(comptime config: Config) type {
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
+            // TODO: Make this a nullable field and just use null conditional syntax for adding descriptions below.
             const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
 
             const fields = meta.fields(FromT);

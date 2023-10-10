@@ -24,6 +24,13 @@ pub const CommandT = Command.Custom(.{
     //    .long_prefix = "-",
     //    .usage_fmt = "[{c}{?c}{s}{?s} \"{s} ({s})\"]",
     //},
+    .usage_fn = struct{ 
+        fn usage(self: anytype, writer: anytype) !void { 
+            // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
+            _ = self; 
+            try writer.print("This is an overriding usage message!\n\n", .{}); 
+        } 
+    }.usage,
 }); 
 pub const ValueT = CommandT.ValueT;
 

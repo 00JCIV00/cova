@@ -807,7 +807,7 @@
 <span class="line" id="L679">            }</span>
 <span class="line" id="L680"></span>
 <span class="line" id="L681">            <span class="tok-kw">const</span> need_cross_glibc = exe.target.isGnuLibC() <span class="tok-kw">and</span> exe.is_linking_libc;</span>
-<span class="line" id="L682">            <span class="tok-kw">switch</span> (b.host.getExternalExecutor(exe.target_info, .{</span>
+<span class="line" id="L682">            <span class="tok-kw">switch</span> (b.host.getExternalExecutor(&amp;exe.target_info, .{</span>
 <span class="line" id="L683">                .qemu_fixes_dl = need_cross_glibc <span class="tok-kw">and</span> b.glibc_runtimes_dir != <span class="tok-null">null</span>,</span>
 <span class="line" id="L684">                .link_libc = exe.is_linking_libc,</span>
 <span class="line" id="L685">            })) {</span>
