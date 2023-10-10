@@ -96,17 +96,20 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 
 ## Install
 ### Package Manager
-1. Find the latest `v#.#.#` commit [here](https://github.com/00JCIV00/cova/commits/main).
-2. Copy the full SHA for the commit.
-3. Add the dependency to `build.zig.zon`:
+1. Get the package hash by running:
+ ```shell
+ zig fetch https://github.com/00JCIV00/cova/archive/master.tar.gz
+ ```
+2. Add the dependency to `build.zig.zon`:
 ```zig 
 .dependencies = .{
     .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
+        .url = "https://github.com/00JCIV00/cova/archive/master.tar.gz",
+        .hash = "HASH FROM STEP 1 HERE",
     },
 },
 ```
-4. Add the dependency and module to `build.zig`:
+3. Add the dependency and module to `build.zig`:
 ```zig
 // Cova Dependency
 const cova_dep = b.dependency("cova", .{ .target = target });
@@ -121,16 +124,6 @@ const exe = b.addExecutable(.{
 });
 // Add the Cova Module to the Executable
 exe.addModule("cova", cova_mod);
-```
-5. Run `zig build <PROJECT BUILD STEP IF APPLICABLE>` to get the hash.
-6. Insert the hash into `build.zig.zon`:
-```zig 
-.dependencies = .{
-    .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-        .hash = "HASH FROM STEP 5 HERE",
-    },
-},
 ```
 
 ### Build the Basic-App Demo from source
@@ -285,7 +278,7 @@ pub fn main() !void {
     // tokens into Argument Types within the provided Command (`main_cmd`).
     try cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{});
     // Once parsed, the provided Command will be available for analysis by the
-    // project code. Using `utils.displayCmdInfoi()` will create a neat display
+    // project code. Using `utils.displayCmdInfo()` will create a neat display
     // of the parsed Command for debugging.
     try utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
 }
