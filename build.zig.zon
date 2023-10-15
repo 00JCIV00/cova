@@ -1,5 +1,6 @@
 .{
-	.name = "cova",
-	.version = "0.7.0",
-	.dependencies = .{},
+    .name = "cova",
+    .paths = .{ "." },
+    .version = "0.9.0",
+    .dependencies = .{},
 }
