@@ -51,6 +51,19 @@ pub const Config = struct {
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     max_int_bit_width: u16 = 256,
 
+    /// A custom Help function to override the default `help()`.
+    ///
+    /// Function parameters:
+    /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
+    /// 2. Writer (This is the Writer that will written to.)
+    help_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// A custom Usage function to override the default `usage()`.
+    ///
+    /// Function parameters:
+    /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
+    /// 2. Writer (This is the Writer that will written to.)
+    usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+
     /// Indent string used for Usage/Help formatting.
     /// Note, if this is left null, it will inherit from the Command Config. 
     indent_fmt: ?[]const u8 = null,
@@ -348,6 +361,13 @@ pub fn Custom(comptime config: Config) type {
         /// Wrapped Generic Value union.
         generic: GenericT = .{ .bool = .{} },
 
+        /// Custom Help Function.
+        /// Check (`Command.Config`) for details.
+        pub const help_fn = config.help_fn;
+        /// Custom Usage Function.
+        /// Check (`Command.Config`) for details.
+        pub const usage_fn = config.usage_fn;
+
         /// Values Help Format.
         /// Check (`Command.Config`) for details.
         pub const vals_help_fmt = config.vals_help_fmt;
@@ -493,10 +513,12 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
+            if (help_fn) |helpFn| return helpFn(self, writer);
             try writer.print(vals_help_fmt, .{ self.name(), self.valType(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
+            if (usage_fn) |usageFn| return usageFn(self, writer);
             try writer.print(vals_usage_fmt, .{ self.name(), self.valType() });
         }
     };

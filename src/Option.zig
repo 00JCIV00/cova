@@ -23,6 +23,19 @@ pub const Config = struct {
     /// This will default to the same Value.Config used by the overarching custom Command type of this custom Option type.
     val_config: Value.Config = .{},
 
+    /// A custom Help function to override the default `help()`.
+    ///
+    /// Function parameters:
+    /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
+    /// 2. Writer (This is the Writer that will written to.)
+    help_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// A custom Usage function to override the default `usage()`.
+    ///
+    /// Function parameters:
+    /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
+    /// 2. Writer (This is the Writer that will written to.)
+    usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+
     /// Indent string used for Usage/Help formatting.
     /// Note, if this is left null, it will inherit from the Command Config. 
     indent_fmt: ?[]const u8 = null,
@@ -70,6 +83,13 @@ pub fn Custom(comptime config: Config) type {
         /// The Custom Value type used by this Custom Option type.
         const ValueT = Value.Custom(config.val_config);
 
+        /// Custom Help Function.
+        /// Check (`Command.Config`) for details.
+        pub const help_fn = config.help_fn;
+        /// Custom Usage Function.
+        /// Check (`Command.Config`) for details.
+        pub const usage_fn = config.usage_fn;
+
         /// Indent Format.
         /// Check (`Command.Config`) for details.
         pub const indent_fmt = config.indent_fmt;
@@ -112,21 +132,20 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
+            if (help_fn) |helpFn| return helpFn(self, writer);
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
             upper_name[0] = toUpper(self.name[0]);
             for(upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
-            if (help_fmt == null) {
-                try writer.print("{s}:\n{?s}{?s}{?s}", .{ upper_name, indent_fmt, indent_fmt, indent_fmt });
-                try self.usage(writer);
-                try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
-                return;
-            }
-            try writer.print(help_fmt.?, .{ upper_name, self.description });
+            if (help_fmt) |h_fmt| return try writer.print(h_fmt, .{ upper_name, self.description });
+            try writer.print("{s}:\n{?s}{?s}{?s}", .{ upper_name, indent_fmt, indent_fmt, indent_fmt });
+            try self.usage(writer);
+            try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
         }
 
         /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
+            if (usage_fn) |usageFn| return usageFn(self, writer);
             try writer.print(usage_fmt, .{ 
                 short_prefix orelse 0,
                 if (short_prefix != null) self.short_name else 0,

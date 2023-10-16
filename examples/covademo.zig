@@ -19,11 +19,15 @@ const ex_structs = @import("example_structs.zig");
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .vals_mandatory = false,
-    //.opt_config = .{
-    //    .short_prefix = null,
-    //    .long_prefix = "-",
-    //    .usage_fmt = "[{c}{?c}{s}{?s} \"{s} ({s})\"]",
-    //},
+    .opt_config = .{
+        .help_fn = struct{
+            fn help(self: anytype, writer: anytype) !void {
+                const indent_fmt = "    ";
+                try self.usage(writer);
+                try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
+            }
+        }.help
+    },
     .usage_fn = struct{ 
         fn usage(self: anytype, writer: anytype) !void { 
             // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
