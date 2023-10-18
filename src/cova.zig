@@ -259,7 +259,7 @@ pub fn parseArgs(
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             // Handle Argument provided to this Option with '=' instead of ' '.
                             if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
-                                if (mem.eql(u8, opt.val.valType(), "bool")) {
+                                if (mem.eql(u8, opt.val.valType(), "bool") and !opt.val.hasCustomParseFn()) {
                                     log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
                                         short_pf, 
                                         opt.short_name, 
@@ -347,7 +347,7 @@ pub fn parseArgs(
                             (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
                         ) {
                             if (sep_flag) {
-                                if (mem.eql(u8, opt.val.valType(), "bool")) {
+                                if (mem.eql(u8, opt.val.valType(), "bool") and !opt.val.hasCustomParseFn()) {
                                     log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
                                         long_pf, 
                                         long_name, 

@@ -441,6 +441,24 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).max_args,
             };
         }
+        /// Check if the inner Typed Value's has a custom `parse_fn`.
+        pub fn hasCustomParseFn(self: *const @This()) bool {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).parse_fn != null,
+            };
+        }
+        /// Check if the inner Typed Value's has a custom `valid_fn`.
+        pub fn hasCustomValidFn(self: *const @This()) bool {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).valid_fn != null,
+            };
+        }
+        /// Check if the inner Typed Value's has a custom `parse_fn` or `valid_fn`.
+        pub fn hasCustomFn(self: *const @This()) bool {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).parse_fn != null or @field(self.*.generic, @tagName(tag)).valid_fn != null,
+            };
+        }
 
         /// Create a Custom Value with a specific Type (`T`).
         pub fn ofType(comptime T: type, comptime typed_val: Typed(T, config)) @This() {

@@ -248,6 +248,17 @@ pub const setup_cmd: CommandT = .{
             .description = "A toggle/boolean option.",
         },
         .{
+            .name = "bool_opt",
+            .short_name = 'b',
+            .long_name = "bool",
+            .val = ValueT.ofType(bool, .{
+                .name = "bool_val",
+                .description = "A toggle/boolean value.",
+                .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "true", "t", "yes", "y" }),
+            }),
+            .description = "A toggle/boolean option.",
+        },
+        .{
             .name = "verbosity_opt",
             .short_name = 'v',
             .long_name = "verbosity",
@@ -269,7 +280,7 @@ pub const setup_cmd: CommandT = .{
         ValueT.ofType(bool, .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
-            .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "potatoe" }),
+            .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "true", "t", "yes", "y" }),
         }),
         ValueT.ofType(u128, .{
             .name = "cmd_u128",
