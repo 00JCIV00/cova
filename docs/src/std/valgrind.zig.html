@@ -301,7 +301,7 @@
 <span class="line" id="L171"></span>
 <span class="line" id="L172"><span class="tok-comment">/// Destroy a memory pool.</span></span>
 <span class="line" id="L173"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">destroyMempool</span>(pool: [*]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L174">    doClientRequestStmt(.DestroyMempool, pool, <span class="tok-number">0</span>, <span class="tok-number">0</span>, <span class="tok-number">0</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L174">    doClientRequestStmt(.DestroyMempool, <span class="tok-builtin">@intFromPtr</span>(pool), <span class="tok-number">0</span>, <span class="tok-number">0</span>, <span class="tok-number">0</span>, <span class="tok-number">0</span>);</span>
 <span class="line" id="L175">}</span>
 <span class="line" id="L176"></span>
 <span class="line" id="L177"><span class="tok-comment">/// Associate a piece of memory with a memory pool.</span></span>

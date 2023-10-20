@@ -120,7 +120,7 @@
 <span class="line" id="L6"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L7"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
 <span class="line" id="L8"></span>
-<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">suggestVectorSizeForCpu</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> cpu: std.Target.Cpu) ?<span class="tok-type">usize</span> {</span>
+<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">suggestVectorSizeForCpu</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> cpu: std.Target.Cpu) ?<span class="tok-type">comptime_int</span> {</span>
 <span class="line" id="L10">    <span class="tok-comment">// This is guesswork, if you have better suggestions can add it or edit the current here</span>
 </span>
 <span class="line" id="L11">    <span class="tok-comment">// This can run in comptime only, but stage 1 fails at it, stage 2 can understand it</span>
@@ -183,7 +183,7 @@
 <span class="line" id="L55"></span>
 <span class="line" id="L56"><span class="tok-comment">/// Suggests a target-dependant vector size for a given type, or null if scalars are recommended.</span></span>
 <span class="line" id="L57"><span class="tok-comment">/// Not yet implemented for every CPU architecture.</span></span>
-<span class="line" id="L58"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">suggestVectorSize</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) ?<span class="tok-type">usize</span> {</span>
+<span class="line" id="L58"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">suggestVectorSize</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) ?<span class="tok-type">comptime_int</span> {</span>
 <span class="line" id="L59">    <span class="tok-kw">return</span> suggestVectorSizeForCpu(T, builtin.cpu);</span>
 <span class="line" id="L60">}</span>
 <span class="line" id="L61"></span>

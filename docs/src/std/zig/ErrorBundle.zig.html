@@ -505,7 +505,7 @@
 <span class="line" id="L383">        };</span>
 <span class="line" id="L384">    }</span>
 <span class="line" id="L385"></span>
-<span class="line" id="L386">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addString</span>(wip: *Wip, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">u32</span> {</span>
+<span class="line" id="L386">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addString</span>(wip: *Wip, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Allocator.Error!<span class="tok-type">u32</span> {</span>
 <span class="line" id="L387">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
 <span class="line" id="L388">        <span class="tok-kw">const</span> index: <span class="tok-type">u32</span> = <span class="tok-builtin">@intCast</span>(wip.string_bytes.items.len);</span>
 <span class="line" id="L389">        <span class="tok-kw">try</span> wip.string_bytes.ensureUnusedCapacity(gpa, s.len + <span class="tok-number">1</span>);</span>
@@ -514,7 +514,7 @@
 <span class="line" id="L392">        <span class="tok-kw">return</span> index;</span>
 <span class="line" id="L393">    }</span>
 <span class="line" id="L394"></span>
-<span class="line" id="L395">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">printString</span>(wip: *Wip, <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args: <span class="tok-kw">anytype</span>) !<span class="tok-type">u32</span> {</span>
+<span class="line" id="L395">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">printString</span>(wip: *Wip, <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args: <span class="tok-kw">anytype</span>) Allocator.Error!<span class="tok-type">u32</span> {</span>
 <span class="line" id="L396">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
 <span class="line" id="L397">        <span class="tok-kw">const</span> index: <span class="tok-type">u32</span> = <span class="tok-builtin">@intCast</span>(wip.string_bytes.items.len);</span>
 <span class="line" id="L398">        <span class="tok-kw">try</span> wip.string_bytes.writer(gpa).print(fmt, args);</span>
@@ -522,12 +522,12 @@
 <span class="line" id="L400">        <span class="tok-kw">return</span> index;</span>
 <span class="line" id="L401">    }</span>
 <span class="line" id="L402"></span>
-<span class="line" id="L403">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addRootErrorMessage</span>(wip: *Wip, em: ErrorMessage) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L403">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addRootErrorMessage</span>(wip: *Wip, em: ErrorMessage) Allocator.Error!<span class="tok-type">void</span> {</span>
 <span class="line" id="L404">        <span class="tok-kw">try</span> wip.root_list.ensureUnusedCapacity(wip.gpa, <span class="tok-number">1</span>);</span>
 <span class="line" id="L405">        wip.root_list.appendAssumeCapacity(<span class="tok-kw">try</span> addErrorMessage(wip, em));</span>
 <span class="line" id="L406">    }</span>
 <span class="line" id="L407"></span>
-<span class="line" id="L408">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addErrorMessage</span>(wip: *Wip, em: ErrorMessage) !MessageIndex {</span>
+<span class="line" id="L408">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addErrorMessage</span>(wip: *Wip, em: ErrorMessage) Allocator.Error!MessageIndex {</span>
 <span class="line" id="L409">        <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(<span class="tok-kw">try</span> addExtra(wip, em));</span>
 <span class="line" id="L410">    }</span>
 <span class="line" id="L411"></span>
@@ -535,15 +535,15 @@
 <span class="line" id="L413">        <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(addExtraAssumeCapacity(wip, em));</span>
 <span class="line" id="L414">    }</span>
 <span class="line" id="L415"></span>
-<span class="line" id="L416">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addSourceLocation</span>(wip: *Wip, sl: SourceLocation) !SourceLocationIndex {</span>
+<span class="line" id="L416">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addSourceLocation</span>(wip: *Wip, sl: SourceLocation) Allocator.Error!SourceLocationIndex {</span>
 <span class="line" id="L417">        <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(<span class="tok-kw">try</span> addExtra(wip, sl));</span>
 <span class="line" id="L418">    }</span>
 <span class="line" id="L419"></span>
-<span class="line" id="L420">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addReferenceTrace</span>(wip: *Wip, rt: ReferenceTrace) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L420">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addReferenceTrace</span>(wip: *Wip, rt: ReferenceTrace) Allocator.Error!<span class="tok-type">void</span> {</span>
 <span class="line" id="L421">        _ = <span class="tok-kw">try</span> addExtra(wip, rt);</span>
 <span class="line" id="L422">    }</span>
 <span class="line" id="L423"></span>
-<span class="line" id="L424">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addBundleAsNotes</span>(wip: *Wip, other: ErrorBundle) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L424">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addBundleAsNotes</span>(wip: *Wip, other: ErrorBundle) Allocator.Error!<span class="tok-type">void</span> {</span>
 <span class="line" id="L425">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
 <span class="line" id="L426"></span>
 <span class="line" id="L427">        <span class="tok-kw">try</span> wip.string_bytes.ensureUnusedCapacity(gpa, other.string_bytes.len);</span>

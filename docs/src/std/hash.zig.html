@@ -148,33 +148,34 @@
 <span class="line" id="L33"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Wyhash = wyhash.Wyhash;</span>
 <span class="line" id="L34"></span>
 <span class="line" id="L35"><span class="tok-kw">const</span> xxhash = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;hash/xxhash.zig&quot;</span>);</span>
-<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> XxHash64 = xxhash.XxHash64;</span>
-<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> XxHash32 = xxhash.XxHash32;</span>
-<span class="line" id="L38"></span>
-<span class="line" id="L39"><span class="tok-comment">/// This is handy if you have a u32 and want a u32 and don't want to take a</span></span>
-<span class="line" id="L40"><span class="tok-comment">/// detour through many layers of abstraction elsewhere in the std.hash</span></span>
-<span class="line" id="L41"><span class="tok-comment">/// namespace.</span></span>
-<span class="line" id="L42"><span class="tok-comment">/// Copied from https://nullprogram.com/blog/2018/07/31/</span></span>
-<span class="line" id="L43"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">uint32</span>(input: <span class="tok-type">u32</span>) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L44">    <span class="tok-kw">var</span> x: <span class="tok-type">u32</span> = input;</span>
-<span class="line" id="L45">    x ^= x &gt;&gt; <span class="tok-number">16</span>;</span>
-<span class="line" id="L46">    x *%= <span class="tok-number">0x7feb352d</span>;</span>
-<span class="line" id="L47">    x ^= x &gt;&gt; <span class="tok-number">15</span>;</span>
-<span class="line" id="L48">    x *%= <span class="tok-number">0x846ca68b</span>;</span>
-<span class="line" id="L49">    x ^= x &gt;&gt; <span class="tok-number">16</span>;</span>
-<span class="line" id="L50">    <span class="tok-kw">return</span> x;</span>
-<span class="line" id="L51">}</span>
-<span class="line" id="L52"></span>
-<span class="line" id="L53"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L54">    _ = adler;</span>
-<span class="line" id="L55">    _ = auto_hash;</span>
-<span class="line" id="L56">    _ = crc;</span>
-<span class="line" id="L57">    _ = fnv;</span>
-<span class="line" id="L58">    _ = murmur;</span>
-<span class="line" id="L59">    _ = cityhash;</span>
-<span class="line" id="L60">    _ = wyhash;</span>
-<span class="line" id="L61">    _ = xxhash;</span>
-<span class="line" id="L62">}</span>
-<span class="line" id="L63"></span>
+<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> XxHash3 = xxhash.XxHash3;</span>
+<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> XxHash64 = xxhash.XxHash64;</span>
+<span class="line" id="L38"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> XxHash32 = xxhash.XxHash32;</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40"><span class="tok-comment">/// This is handy if you have a u32 and want a u32 and don't want to take a</span></span>
+<span class="line" id="L41"><span class="tok-comment">/// detour through many layers of abstraction elsewhere in the std.hash</span></span>
+<span class="line" id="L42"><span class="tok-comment">/// namespace.</span></span>
+<span class="line" id="L43"><span class="tok-comment">/// Copied from https://nullprogram.com/blog/2018/07/31/</span></span>
+<span class="line" id="L44"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">uint32</span>(input: <span class="tok-type">u32</span>) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L45">    <span class="tok-kw">var</span> x: <span class="tok-type">u32</span> = input;</span>
+<span class="line" id="L46">    x ^= x &gt;&gt; <span class="tok-number">16</span>;</span>
+<span class="line" id="L47">    x *%= <span class="tok-number">0x7feb352d</span>;</span>
+<span class="line" id="L48">    x ^= x &gt;&gt; <span class="tok-number">15</span>;</span>
+<span class="line" id="L49">    x *%= <span class="tok-number">0x846ca68b</span>;</span>
+<span class="line" id="L50">    x ^= x &gt;&gt; <span class="tok-number">16</span>;</span>
+<span class="line" id="L51">    <span class="tok-kw">return</span> x;</span>
+<span class="line" id="L52">}</span>
+<span class="line" id="L53"></span>
+<span class="line" id="L54"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L55">    _ = adler;</span>
+<span class="line" id="L56">    _ = auto_hash;</span>
+<span class="line" id="L57">    _ = crc;</span>
+<span class="line" id="L58">    _ = fnv;</span>
+<span class="line" id="L59">    _ = murmur;</span>
+<span class="line" id="L60">    _ = cityhash;</span>
+<span class="line" id="L61">    _ = wyhash;</span>
+<span class="line" id="L62">    _ = xxhash;</span>
+<span class="line" id="L63">}</span>
+<span class="line" id="L64"></span>
 </code></pre></body>
 </html>

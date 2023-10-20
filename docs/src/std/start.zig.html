@@ -516,9 +516,9 @@
 
 <span class="line" id="L329">            <span class="tok-str">\\ add %%o6, 2175, %%l0</span></span>
 
-<span class="line" id="L330">            <span class="tok-str">\\ stx %%l0, %[argc_argv_ptr]</span></span>
+<span class="line" id="L330">            <span class="tok-str">\\ ba %[posixCallMainAndExit]</span></span>
 
-<span class="line" id="L331">            <span class="tok-str">\\ ba %[posixCallMainAndExit]</span></span>
+<span class="line" id="L331">            <span class="tok-str">\\  stx %%l0, %[argc_argv_ptr]</span></span>
 
 <span class="line" id="L332">            ,</span>
 <span class="line" id="L333">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported arch&quot;</span>),</span>

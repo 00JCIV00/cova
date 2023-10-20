@@ -778,7 +778,7 @@
 <span class="line" id="L639">    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.os.raise unimplemented for this target&quot;</span>);</span>
 <span class="line" id="L640">}</span>
 <span class="line" id="L641"></span>
-<span class="line" id="L642"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> KillError = <span class="tok-kw">error</span>{PermissionDenied} || UnexpectedError;</span>
+<span class="line" id="L642"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> KillError = <span class="tok-kw">error</span>{ ProcessNotFound, PermissionDenied } || UnexpectedError;</span>
 <span class="line" id="L643"></span>
 <span class="line" id="L644"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">kill</span>(pid: pid_t, sig: <span class="tok-type">u8</span>) KillError!<span class="tok-type">void</span> {</span>
 <span class="line" id="L645">    <span class="tok-kw">switch</span> (errno(system.kill(pid, sig))) {</span>
@@ -786,8 +786,7 @@
 <span class="line" id="L647">        .INVAL =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// invalid signal</span>
 </span>
 <span class="line" id="L648">        .PERM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.PermissionDenied,</span>
-<span class="line" id="L649">        .SRCH =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// always a race condition</span>
-</span>
+<span class="line" id="L649">        .SRCH =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ProcessNotFound,</span>
 <span class="line" id="L650">        <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> unexpectedErrno(err),</span>
 <span class="line" id="L651">    }</span>
 <span class="line" id="L652">}</span>

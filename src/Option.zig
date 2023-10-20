@@ -12,6 +12,7 @@
 
 const std = @import("std");
 const ascii = std.ascii;
+const mem = std.mem;
 
 const toUpper = ascii.toUpper;
 
@@ -28,13 +29,15 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
-    help_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+    help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()`.
     ///
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
-    usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+    usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, if this is left null, it will inherit from the Command Config. 
@@ -73,7 +76,7 @@ pub const Config = struct {
     allow_abbreviated_long_opts: bool = true,
 };
 
-/// Create a Option type with the Base (default) configuration.
+/// Create an Option type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
 /// Create a Custom Option type from the provided Config (`config`).
@@ -117,6 +120,12 @@ pub fn Custom(comptime config: Config) type {
         /// Check `Options.Config` for details.
         pub const allow_abbreviated_long_opts = config.allow_abbreviated_long_opts;
 
+        /// The Allocator for this Option's parent Command.
+        /// This is set during the `init()` call of this Option's parent Command.
+        ///
+        /// **Internal Use.**
+        _alloc: ?mem.Allocator = null,
+
         /// This Option's Short Name (ex: `-s`).
         short_name: ?u8 = null,
         /// This Option's Long Name (ex: `--intOpt`).
@@ -132,7 +141,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (help_fn) |helpFn| return helpFn(self, writer);
+            if (help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
             upper_name[0] = toUpper(self.name[0]);
@@ -145,7 +154,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (usage_fn) |usageFn| return usageFn(self, writer);
+            if (usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             try writer.print(usage_fmt, .{ 
                 short_prefix orelse 0,
                 if (short_prefix != null) self.short_name else 0,
@@ -200,6 +209,13 @@ pub fn Custom(comptime config: Config) type {
                 }
             };
         
+        }
+
+        /// Initialize this Option with the provided Allocator (`alloc`).
+        pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
+            @constCast(self).*._alloc = alloc;
+            @constCast(self).*.val = self.*.val.init(alloc);
+            return self.*;
         }
     };
 } 

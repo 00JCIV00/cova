@@ -2036,7 +2036,7 @@
 <span class="line" id="L1803">        );</span>
 <span class="line" id="L1804">        <span class="tok-kw">switch</span> (rc) {</span>
 <span class="line" id="L1805">            .SUCCESS =&gt; <span class="tok-kw">return</span> result,</span>
-<span class="line" id="L1806">            .OBJECT_NAME_INVALID =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1806">            .OBJECT_NAME_INVALID =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BadPathName,</span>
 <span class="line" id="L1807">            .OBJECT_NAME_NOT_FOUND =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
 <span class="line" id="L1808">            .OBJECT_PATH_NOT_FOUND =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
 <span class="line" id="L1809">            .NOT_A_DIRECTORY =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NotDir,</span>

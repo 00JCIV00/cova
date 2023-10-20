@@ -548,7 +548,7 @@ const test_setup_cmd: TestCommand = .{
             .val = TestValue.ofType(i16, .{
                 .name = "int_opt_val",
                 .description = "A test integer opt value.",
-                .valid_fn = struct{ fn valFn(int: i16) bool { return int <= 666; } }.valFn,
+                .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int <= 666; } }.valFn,
                 .set_behavior = .Multi,
                 .max_args = 6,
             }),
@@ -561,7 +561,7 @@ const test_setup_cmd: TestCommand = .{
             .val = TestValue.ofType(f16, .{
                 .name = "float_opt_val",
                 .description = "An float opt value.",
-                .valid_fn = struct{ fn valFn(float: f16) bool { return float < 30000; } }.valFn,
+                .valid_fn = struct{ fn valFn(float: f16, alloc: mem.Allocator) bool { _ = alloc; return float < 30000; } }.valFn,
                 .set_behavior = .Multi,
                 .max_args = 6,
             }),

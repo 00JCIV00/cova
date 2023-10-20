@@ -56,13 +56,15 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
-    help_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+    help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()`.
     ///
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
-    usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+    usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, if this is left null, it will inherit from the Command Config. 
@@ -98,6 +100,12 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The child Type of this Value.
         pub const ChildT = SetT;
 
+        /// The Allocator for this Value's parent Command.
+        /// This is set during the `init()` call of this Value's parent Command.
+        ///
+        /// **Internal Use.**
+        _alloc: ?mem.Allocator = null,
+
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
         /// **Internal Use.**
@@ -127,9 +135,11 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
         /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
-        parse_fn: ?*const fn([]const u8) anyerror!ChildT = null,
+        parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = null,
         /// A Validation Function to be used for Argument Validation in `set()` following Argument Parsing with `parse()`.
-        valid_fn: ?*const fn(ChildT) bool = struct{ fn valFn(val: ChildT) bool { return @TypeOf(val) == ChildT; } }.valFn,
+        valid_fn: ?*const fn(ChildT, mem.Allocator) bool = struct{ 
+            fn valFn(val: ChildT, alloc: mem.Allocator) bool { _ = alloc; return @TypeOf(val) == ChildT; } 
+        }.valFn,
             
         /// The Name of this Value for user identification and Usage/Help messages.
         name: []const u8 = "",
@@ -138,7 +148,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
-            if (self.parse_fn) |parseFn| return parseFn(arg) catch error.CannotParseArgToValue;
+            if (self.parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
             var san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(ChildT)) {
@@ -175,7 +185,10 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             // Single Arg
             const parsed_arg = try self.parse(set_arg);
             @constCast(self).is_set =
-                if (self.valid_fn) |validFn| validFn(parsed_arg)
+                if (self.valid_fn) |validFn| validFn(parsed_arg, self._alloc orelse { 
+                    log.err("The Value '{s}' does not have an Allocator!", .{ self.name }); 
+                    return error.ValueNotInitialized; }
+                )
                 else true;
             if (self.is_set) {
                 switch (self.set_behavior) {
@@ -214,6 +227,12 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             var vals = try alloc.alloc(ChildT, self._arg_idx);
             for (self._set_args[0..self._arg_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
+        }
+
+        /// Initialize this Value with the provided Allocator (`alloc`).
+        pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
+            @constCast(self).*._alloc = alloc;
+            return self.*;
         }
     };
 }
@@ -404,6 +423,13 @@ pub fn Custom(comptime config: Config) type {
             }
         }
 
+        /// Get this Value's Allocator.
+        pub fn allocator(self: *const @This()) ?mem.Allocator {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag))._alloc,
+            };
+        }
+
         /// Get the inner Typed Value's Name.
         pub fn name(self: *const @This()) []const u8 {
             return switch (meta.activeTag(self.*.generic)) {
@@ -495,7 +521,10 @@ pub fn Custom(comptime config: Config) type {
             };
             const comp_info = @typeInfo(FromT);
             if (comp_info == .Pointer and comp_info.Pointer.child != u8) {
-                if (!from_config.ignore_incompatible) @compileError("The component '" ++ if (comp_name.len > 0) comp_name else "funtion parameter of type '" ++ @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+                if (!from_config.ignore_incompatible) @compileError(
+                    "The component '" ++ 
+                    if (comp_name.len > 0) comp_name else "' function parameter of type '" ++ 
+                    @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
                 else return null;
             }
             const comp_type = switch (comp_info) {
@@ -531,16 +560,22 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (help_fn) |helpFn| return helpFn(self, writer);
+            if (help_fn) |helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
             try writer.print(vals_help_fmt, .{ self.name(), self.valType(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (usage_fn) |usageFn| return usageFn(self, writer);
+            if (usage_fn) |usageFn| return usageFn(self, writer, self.allocator orelse return error.ValueNotInitialized);
             try writer.print(vals_usage_fmt, .{ self.name(), self.valType() });
         }
-    };
 
+        /// Initialize this Value with the provided Allocator (`alloc`).
+        pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @This(){ .generic = @unionInit(GenericT, @tagName(tag), @field(self.*.generic, @tagName(tag)).init(alloc)) },
+            };
+        }
+    };
 }
 
 /// Parsing Functions for various common requirements to be used with `parse_fn` in place of normal `parse()`.
@@ -549,9 +584,10 @@ pub const ParsingFns = struct {
     /// Builder Functions for common Parsing Functions.
     pub const Builder = struct {
         /// Check for Alternate True Words (`true_words`) when parsing the provided Argument (`arg`) to a Boolean.
-        pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8) anyerror!bool {
+        pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8, mem.Allocator) anyerror!bool {
             return struct {
-                fn isTrue(arg: []const u8) !bool {
+                fn isTrue(arg: []const u8, alloc: mem.Allocator) !bool {
+                    _ = alloc;
                     for (true_words[0..]) |word| { if (mem.eql(u8, word, arg)) return true; } else return false;
                 }
             }.isTrue;
@@ -563,19 +599,25 @@ pub const ParsingFns = struct {
         /// - 8: Base 8 / Octal
         /// - 10: Base 10 / Decimal
         /// - 16: Base 16 / Hexadecimal
-        pub fn asBase(comptime NumT: type, comptime base: u8) fn([]const u8) anyerror!NumT {
-            return struct { fn toBase(arg: []const u8) !NumT { return fmt.parseInt(NumT, arg, base); } }.toBase;
+        pub fn asBase(comptime NumT: type, comptime base: u8) fn([]const u8, mem.Allocator) anyerror!NumT {
+            return struct { 
+                fn toBase(arg: []const u8, alloc: mem.Allocator) !NumT { 
+                    _ = alloc;
+                    return fmt.parseInt(NumT, arg, base); 
+                } 
+            }.toBase;
         }
 
         /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
         pub fn asEnumType(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
             if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
-            break :enumFnType fn([]const u8) anyerror!enum_info.Enum.tag_type;
+            break :enumFnType fn([]const u8, mem.Allocator) anyerror!enum_info.Enum.tag_type;
         } {
             const EnumTagT: type = @typeInfo(EnumT).Enum.tag_type;
             return struct { 
-                fn enumInt(arg: []const u8) !EnumTagT { 
+                fn enumInt(arg: []const u8, alloc: mem.Allocator) !EnumTagT {
+                    _ = alloc;
                     const enum_tag = meta.stringToEnum(EnumT, arg) orelse return error.EnumTagDoesNotExist;
                     return @intFromEnum(enum_tag);
                 }
@@ -585,8 +627,21 @@ pub const ParsingFns = struct {
     };
 
     /// Trim all Whitespace from the beginning and end of the provided argument token (`arg`).
-    pub fn trimWhitespace(arg: []const u8) anyerror![]const u8 {
+    pub fn trimWhitespace(arg: []const u8, alloc: mem.Allocator) anyerror![]const u8 {
+        _ = alloc;
         return mem.trim(u8, arg, ascii.whitespace[0..]);
+    }
+
+    /// Return the provided argument token (`arg`) in all uppercase.
+    pub fn toUpper(arg: []const u8, alloc: mem.Allocator) anyerror![]const u8 {
+        var out_buf = try alloc.alloc(u8, arg.len);
+        return ascii.upperString(out_buf, arg);
+    }
+
+    /// Return the provided argument token (`arg`) in all lowercase.
+    pub fn toLower(arg: []const u8, alloc: mem.Allocator) anyerror![]const u8 {
+        var out_buf = try alloc.alloc(u8, arg.len);
+        return ascii.lowerString(out_buf, arg);
     }
 };
 
@@ -596,7 +651,7 @@ pub const ValidationFns = struct {
     /// Builder Functions for common Validation Functions.
     pub const Builder = struct {
         /// Check if the provided `NumT` (`num`) is within an inclusive or exclusive range.
-        pub fn inRange(comptime NumT: type, comptime start: NumT, comptime end: NumT, comptime inclusive: bool) fn(NumT) bool {
+        pub fn inRange(comptime NumT: type, comptime start: NumT, comptime end: NumT, comptime inclusive: bool) fn(NumT, mem.Allocator) bool {
             const num_info = @typeInfo(NumT);
             switch (num_info) {
                 .Int, .Float => {},
@@ -604,13 +659,14 @@ pub const ValidationFns = struct {
             }
 
             return 
-                if (inclusive) struct { fn inRng(num: NumT) bool { return num >= start and num <= end; } }.inRng
-                else struct { fn inRng(num: NumT) bool { return num > start and num < end; } }.inRng;
+                if (inclusive) struct { fn inRng(num: NumT, alloc: mem.Allocator) bool { _ = alloc; return num >= start and num <= end; } }.inRng
+                else struct { fn inRng(num: NumT, alloc: mem.Allocator) bool { _ = alloc; return num > start and num < end; } }.inRng;
         }
     };
 
     /// Check if the provided argument token (`filepath`) is a valid filepath.
-    pub fn validFilepath(filepath: []const u8) bool {
+    pub fn validFilepath(filepath: []const u8, alloc: mem.Allocator) bool {
+        _ = alloc;
         const test_file = fs.cwd().openFile(filepath, .{}) catch {
             log.err("The file '{s}' could not be found.", .{ filepath });
             return false;
@@ -619,7 +675,8 @@ pub const ValidationFns = struct {
         return true;
     } 
     /// Check if the provided argument token (`num_str`) is a valid Ordinal Number.
-    pub fn ordinalNum(num_str: []const u8) bool {
+    pub fn ordinalNum(num_str: []const u8, alloc: mem.Allocator) bool {
+        _ = alloc;
         const ordinals = enum {
             first,
             second,

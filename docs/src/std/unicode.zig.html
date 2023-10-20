@@ -324,7 +324,7 @@
 <span class="line" id="L200"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">utf8ValidateSlice</span>(input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L201">    <span class="tok-kw">var</span> remaining = input;</span>
 <span class="line" id="L202"></span>
-<span class="line" id="L203">    <span class="tok-kw">const</span> V_len = <span class="tok-kw">comptime</span> std.simd.suggestVectorSize(<span class="tok-type">usize</span>) <span class="tok-kw">orelse</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L203">    <span class="tok-kw">const</span> V_len = std.simd.suggestVectorSize(<span class="tok-type">usize</span>) <span class="tok-kw">orelse</span> <span class="tok-number">1</span>;</span>
 <span class="line" id="L204">    <span class="tok-kw">const</span> V = <span class="tok-builtin">@Vector</span>(V_len, <span class="tok-type">usize</span>);</span>
 <span class="line" id="L205">    <span class="tok-kw">const</span> u8s_in_vector = <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>) * V_len;</span>
 <span class="line" id="L206"></span>

@@ -21,7 +21,8 @@ pub const CommandT = Command.Custom(.{
     .vals_mandatory = false,
     .opt_config = .{
         .help_fn = struct{
-            fn help(self: anytype, writer: anytype) !void {
+            fn help(self: anytype, writer: anytype, alloc: mem.Allocator) !void {
+                _ = alloc;
                 const indent_fmt = "    ";
                 try self.usage(writer);
                 try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
@@ -173,6 +174,7 @@ pub const setup_cmd: CommandT = .{
                 .default_val = "A string value.",
                 .set_behavior = .Multi,
                 .max_args = 4,
+                .parse_fn = Value.ParsingFns.toUpper,
             }),
             .description = "A string option. (Can be given up to 4 times.)",
         },
@@ -183,7 +185,7 @@ pub const setup_cmd: CommandT = .{
             .val = ValueT.ofType(i16, .{
                 .name = "int_val",
                 .description = "An integer value.",
-                .valid_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn,
+                .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int < 666; } }.valFn,
                 .set_behavior = .Multi,
                 .max_args = 10,
             }),
@@ -266,7 +268,7 @@ pub const setup_cmd: CommandT = .{
                 .name = "verbosity_level",
                 .description = "The verbosity level from 0 (err) to 3 (debug).",
                 .default_val = 3,
-                .valid_fn = struct{ fn valFn(val: u4) bool { return val >= 0 and val <= 3; } }.valFn,
+                .valid_fn = struct{ fn valFn(val: u4, alloc: mem.Allocator) bool { _ = alloc; return val >= 0 and val <= 3; } }.valFn,
             }),
             .description = "Set the CovaDemo verbosity level. (WIP)",
         },
@@ -288,7 +290,7 @@ pub const setup_cmd: CommandT = .{
             .default_val = 654321,
             .set_behavior = .Multi,
             .max_args = 3,
-            .parse_fn = struct{ fn parseFn(arg: []const u8) !u128 { return (try fmt.parseInt(u128, arg, 0)) * 100; } }.parseFn, 
+            .parse_fn = struct{ fn parseFn(arg: []const u8, alloc: mem.Allocator) !u128 { _ = alloc; return (try fmt.parseInt(u128, arg, 0)) * 100; } }.parseFn, 
             .valid_fn = Value.ValidationFns.Builder.inRange(u128, 123456, 9999999999, true),
         }),
     }

@@ -50,12 +50,14 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
-    help_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+    help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()`.
     ///
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
+    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
     usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
 
     /// Indent string used for Usage/Help formatting.
@@ -330,7 +332,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Command and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (help_fn) |helpFn| return helpFn(self, writer);
+            if (help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 
             try writer.print("{s}\n", .{ self.help_prefix });
             try self.usage(writer);
@@ -372,7 +374,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Usage message for this Command and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (usage_fn) |usageFn| return usageFn(self, writer);
+            if (usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 
             try writer.print(usage_header_fmt, .{ self.name });
             if (self.opts != null) {
@@ -1106,10 +1108,11 @@ pub fn Custom(comptime config: Config) type {
                     else try alloc.dupe(@This(), help_sub_cmds[0..]);
             }
 
-            if (init_config.init_subcmds and self.sub_cmds != null) {
+            if (init_config.init_subcmds) addSubCmds: {
+                const sub_cmds = if (self.sub_cmds) |s_cmds| s_cmds else break :addSubCmds;
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
-                inline for (self.sub_cmds.?, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config);
+                inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config);
                 if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
@@ -1117,9 +1120,16 @@ pub fn Custom(comptime config: Config) type {
                 init_cmd.sub_cmds = init_subcmds;
             }
 
+            if (self.opts) |opts| {
+                var init_opts = try alloc.alloc(@This().OptionT, opts.len);
+                inline for (opts, 0..) |opt, idx| init_opts[idx] = opt.init(alloc);
+                init_cmd.opts = init_opts;
+            }
+
             if (init_config.add_help_opts) {
                 const help_opts = &[2]OptionT{
                     .{
+                        ._alloc = alloc,
                         .name = "usage",
                         .short_name = 'u',
                         .long_name = "usage",
@@ -1127,6 +1137,7 @@ pub fn Custom(comptime config: Config) type {
                         .val = ValueT.ofType(bool, .{ .name = "usage_flag" }),
                     },
                     .{
+                        ._alloc = alloc,
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
@@ -1134,10 +1145,17 @@ pub fn Custom(comptime config: Config) type {
                         .val = ValueT.ofType(bool, .{ .name = "help_flag" }),
                     },
                 };
+                for (help_opts) |*opt| _ = opt.init(alloc);
 
                 init_cmd.opts = 
-                    if (init_cmd.opts != null) try mem.concat(alloc, @This().OptionT, &.{ init_cmd.opts.?, help_opts[0..] })
+                    if (init_cmd.opts) |init_opts| try mem.concat(alloc, @This().OptionT, &.{ init_opts, help_opts[0..] })
                     else try alloc.dupe(OptionT, help_opts[0..]);
+            }
+
+            if (self.vals) |vals| {
+                var init_vals = try alloc.alloc(@This().ValueT, vals.len);
+                inline for (vals, 0..) |val, idx| init_vals[idx] = val.init(alloc);
+                init_cmd.vals = init_vals;
             }
 
             init_cmd._is_init = true;

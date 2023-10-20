@@ -382,7 +382,7 @@
 <span class="line" id="L260">                            <span class="tok-comment">// Handle Argument provided to this Option with '=' instead of ' '.</span>
 </span>
 <span class="line" id="L261">                            <span class="tok-kw">if</span> (mem.indexOfScalar(<span class="tok-type">u8</span>, CommandT.OptionT.opt_val_seps, short_opts[short_idx + <span class="tok-number">1</span>]) != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L262">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L262">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn()) {</span>
 <span class="line" id="L263">                                    log.err(<span class="tok-str">&quot;The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
 <span class="line" id="L264">                                        short_pf, </span>
 <span class="line" id="L265">                                        opt.short_name, </span>
@@ -474,7 +474,7 @@
 <span class="line" id="L347">                            (OptionT.allow_abbreviated_long_opts <span class="tok-kw">and</span> mem.indexOf(<span class="tok-type">u8</span>, long_name, long_opt) != <span class="tok-null">null</span> <span class="tok-kw">and</span> long_name[<span class="tok-number">0</span>] == long_opt[<span class="tok-number">0</span>])</span>
 <span class="line" id="L348">                        ) {</span>
 <span class="line" id="L349">                            <span class="tok-kw">if</span> (sep_flag) {</span>
-<span class="line" id="L350">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L350">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn()) {</span>
 <span class="line" id="L351">                                    log.err(<span class="tok-str">&quot;The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
 <span class="line" id="L352">                                        long_pf, </span>
 <span class="line" id="L353">                                        long_name, </span>
@@ -685,7 +685,7 @@
 <span class="line" id="L548">            .val = TestValue.ofType(<span class="tok-type">i16</span>, .{</span>
 <span class="line" id="L549">                .name = <span class="tok-str">&quot;int_opt_val&quot;</span>,</span>
 <span class="line" id="L550">                .description = <span class="tok-str">&quot;A test integer opt value.&quot;</span>,</span>
-<span class="line" id="L551">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(int: <span class="tok-type">i16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> int &lt;= <span class="tok-number">666</span>; } }.valFn,</span>
+<span class="line" id="L551">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(int: <span class="tok-type">i16</span>, alloc: mem.Allocator) <span class="tok-type">bool</span> { _ = alloc; <span class="tok-kw">return</span> int &lt;= <span class="tok-number">666</span>; } }.valFn,</span>
 <span class="line" id="L552">                .set_behavior = .Multi,</span>
 <span class="line" id="L553">                .max_args = <span class="tok-number">6</span>,</span>
 <span class="line" id="L554">            }),</span>
@@ -698,7 +698,7 @@
 <span class="line" id="L561">            .val = TestValue.ofType(<span class="tok-type">f16</span>, .{</span>
 <span class="line" id="L562">                .name = <span class="tok-str">&quot;float_opt_val&quot;</span>,</span>
 <span class="line" id="L563">                .description = <span class="tok-str">&quot;An float opt value.&quot;</span>,</span>
-<span class="line" id="L564">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(float: <span class="tok-type">f16</span>) <span class="tok-type">bool</span> { <span class="tok-kw">return</span> float &lt; <span class="tok-number">30000</span>; } }.valFn,</span>
+<span class="line" id="L564">                .valid_fn = <span class="tok-kw">struct</span>{ <span class="tok-kw">fn</span> <span class="tok-fn">valFn</span>(float: <span class="tok-type">f16</span>, alloc: mem.Allocator) <span class="tok-type">bool</span> { _ = alloc; <span class="tok-kw">return</span> float &lt; <span class="tok-number">30000</span>; } }.valFn,</span>
 <span class="line" id="L565">                .set_behavior = .Multi,</span>
 <span class="line" id="L566">                .max_args = <span class="tok-number">6</span>,</span>
 <span class="line" id="L567">            }),</span>
