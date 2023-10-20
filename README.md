@@ -297,4 +297,5 @@ pub fn main() !void {
 - [yazap](https://github.com/PrajwalCH/yazap)
 - [zig-args](https://github.com/MasterQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
+- [zig-cli](https://github.com/sam701/zig-cli)
 - [zig-parse-args](https://github.com/winksaville/zig-parse-args)
