@@ -30,7 +30,8 @@ pub const CommandT = Command.Custom(.{
         }.help
     },
     .usage_fn = struct{ 
-        fn usage(self: anytype, writer: anytype) !void { 
+        fn usage(self: anytype, writer: anytype, alloc: mem.Allocator) !void { 
+            _ = alloc;
             // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
             _ = self; 
             try writer.print("This is an overriding usage message!\n\n", .{}); 
@@ -191,6 +192,18 @@ pub const setup_cmd: CommandT = .{
             }),
             .description = "An integer option. (Can be given up to 10 times.)",
         },
+        //.{
+        //    .name = "uint_opt",
+        //    .short_name = 'u',
+        //    .long_name = "uint",
+        //    .val = ValueT.ofType(u1024, .{
+        //        .name = "uint_val",
+        //        .description = "An unsigned integer value.",
+        //        .set_behavior = .Multi,
+        //        .max_args = 10,
+        //    }),
+        //    .description = "An unsigned integer option. (Can be given up to 10 times.)",
+        //},
         .{
             .name = "float_opt",
             .short_name = 'f',

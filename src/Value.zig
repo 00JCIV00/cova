@@ -35,9 +35,10 @@ pub const Config = struct {
     /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
     arg_delims: []const u8 = ",;",
 
-    /// Custom types for this project's Values.
+    /// Custom Types for this project's Values. If these Types are `Value.Typed` they'll be passed in directly.
+    /// Otherwise, each Type will be wrapped into a `Value.Typed`
     /// This is useful for adding additional types that aren't covered by the base `Value.Generic` union.
-    /// Note, any non-numeric (Int, UInt, Float) types will require their own Parse Function to be implemented on the `Value.Typed.parse_fn` field.
+    /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function to be implemented on the `Value.Typed.parse_fn` field.
     custom_types: []const type = &.{},
 
     /// Use Custom Bit Width Range for Ints and UInts.
@@ -353,10 +354,16 @@ pub fn Generic(comptime config: Config) type {
         }
 
         for (config.custom_types) |T| {
+            const AddT = addT: {
+                for (@typeInfo(T).Struct.fields, @typeInfo(Typed(bool, config){}).Struct.fields) |a_field, b_field| {
+                    if (!mem.eql(u8, a_field.name, b_field.name)) break :addT Typed(T, config);
+                }
+                else break :addT T;
+            };
             union_info.fields = union_info.fields ++ .{ UnionField {
-               .name = @typeName(T), 
-               .type = Typed(T, config),
-               .alignment = @alignOf(Typed(T, config)),
+               .name = @typeName(AddT.ChildT), 
+               .type = AddT,
+               .alignment = @alignOf(AddT),
             } };
             tag_info.fields = tag_info.fields ++ .{ .{
                 .name = @typeName(T),

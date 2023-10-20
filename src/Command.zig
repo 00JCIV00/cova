@@ -58,7 +58,7 @@ pub const Config = struct {
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    usage_fn: ?*const fn(anytype, anytype)anyerror!void = null,
+    usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
