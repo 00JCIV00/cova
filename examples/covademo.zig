@@ -29,6 +29,23 @@ pub const CommandT = Command.Custom(.{
             }
         }.help
     },
+    .val_config = .{
+        .custom_types = &.{ u1024 },
+        .custom_parse_fns = &.{
+            .{
+                .FnT = bool,
+                .parse_fn = Value.ParsingFns.Builder.altBool(
+                    &.{ "true", "t", "yes", "y", "1", "ok" },
+                    &.{ "false", "f", "no", "n", "0" },
+                    .Error
+                )
+            },
+            .{
+                .FnT = u1024,
+                .parse_fn = struct{ fn testFn(arg: []const u8, alloc: mem.Allocator) !u1024 { _ = arg; _ = alloc; return 69696969696969; } }.testFn,
+            },
+        },
+    },
     .usage_fn = struct{ 
         fn usage(self: anytype, writer: anytype, alloc: mem.Allocator) !void { 
             _ = alloc;
@@ -192,18 +209,18 @@ pub const setup_cmd: CommandT = .{
             }),
             .description = "An integer option. (Can be given up to 10 times.)",
         },
-        //.{
-        //    .name = "uint_opt",
-        //    .short_name = 'u',
-        //    .long_name = "uint",
-        //    .val = ValueT.ofType(u1024, .{
-        //        .name = "uint_val",
-        //        .description = "An unsigned integer value.",
-        //        .set_behavior = .Multi,
-        //        .max_args = 10,
-        //    }),
-        //    .description = "An unsigned integer option. (Can be given up to 10 times.)",
-        //},
+        .{
+            .name = "uint_opt",
+            .short_name = 'U',
+            .long_name = "uint",
+            .val = ValueT.ofType(u1024, .{
+                .name = "uint_val",
+                .description = "An unsigned integer value.",
+                .set_behavior = .Multi,
+                .max_args = 10,
+            }),
+            .description = "An unsigned integer option. (Can be given up to 10 times.)",
+        },
         .{
             .name = "float_opt",
             .short_name = 'f',
@@ -269,7 +286,7 @@ pub const setup_cmd: CommandT = .{
             .val = ValueT.ofType(bool, .{
                 .name = "bool_val",
                 .description = "A toggle/boolean value.",
-                .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "true", "t", "yes", "y" }),
+                //.parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y", "1" }, &.{}, .False),
             }),
             .description = "A toggle/boolean option.",
         },
@@ -295,7 +312,7 @@ pub const setup_cmd: CommandT = .{
         ValueT.ofType(bool, .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
-            .parse_fn = Value.ParsingFns.Builder.altTrue(&.{ "true", "t", "yes", "y" }),
+            .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y" }, &.{ "false", "f", "no", "n", "0" }, .Error),
         }),
         ValueT.ofType(u128, .{
             .name = "cmd_u128",

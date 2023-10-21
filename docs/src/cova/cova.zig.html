@@ -607,7 +607,7 @@
 <span class="line" id="L471">    <span class="tok-kw">const</span> peek_arg = args.peek();</span>
 <span class="line" id="L472">    <span class="tok-kw">const</span> set_arg = </span>
 <span class="line" id="L473">        <span class="tok-kw">if</span> (peek_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peek_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>
-<span class="line" id="L474">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L474">            <span class="tok-kw">if</span> (!(mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn())) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
 <span class="line" id="L475">            _ = args.next();</span>
 <span class="line" id="L476">            <span class="tok-kw">break</span> :setArg <span class="tok-str">&quot;true&quot;</span>;</span>
 <span class="line" id="L477">        }</span>

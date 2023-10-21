@@ -471,7 +471,7 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
     const peek_arg = args.peek();
     const set_arg = 
         if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
-            if (!mem.eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
+            if (!(mem.eql(u8, opt.val.valType(), "bool") and !opt.val.hasCustomParseFn())) return error.EmptyArgumentProvidedToOption;
             _ = args.next();
             break :setArg "true";
         }

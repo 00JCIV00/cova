@@ -24,9 +24,9 @@ const toUpper = ascii.upperString;
 const parseInt = fmt.parseInt;
 const parseFloat = fmt.parseFloat;
 const Type = builtin.Type;
-const UnionField = Type.UnionField;
 
-/// Config for custom Value types.
+/// Config for custom Value types. 
+/// This Config is shared across Typed, Generic, and Custom.
 pub const Config = struct {
     /// Default Set Behavior for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.set_behavior` field.
@@ -35,11 +35,21 @@ pub const Config = struct {
     /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
     arg_delims: []const u8 = ",;",
 
-    /// Custom Types for this project's Values. If these Types are `Value.Typed` they'll be passed in directly.
-    /// Otherwise, each Type will be wrapped into a `Value.Typed`
+    /// Custom Types for this project's Custom Values. 
+    /// If these Types are `Value.Typed` they'll be coerced to match the parent `Value.Config` (not preferred).
+    /// Otherwise, each Type will be wrapped into a `Value.Typed` (preferred).
     /// This is useful for adding additional types that aren't covered by the base `Value.Generic` union.
-    /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function to be implemented on the `Value.Typed.parse_fn` field.
+    /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function.
+    /// This function is implemented on the `Value.Typed.parse_fn` field.
     custom_types: []const type = &.{},
+    /// Custom Parsing Functions to be used in place of the normal `parse()` for Argument Parsing for all instances of a `Value.Typed` Type.
+    /// These functions will be used SECOND, after an instance's `self.parse_fn` but before the normal `parse()` functions are tried.
+    /// This can be used to overwrited the `parse()` implementation for an existing Type that's already in `Value.Generic`.
+    /// Note that any error caught from these function will be returned as `error.CannotParseArgToValue`.
+    custom_parse_fns: ?[]const struct{ 
+        FnT: type,
+        parse_fn: *const anyopaque, 
+    } = null,
 
     /// Use Custom Bit Width Range for Ints and UInts.
     /// This is useful for specifying a wide range of Int and UInt types for a project.
@@ -101,6 +111,15 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The child Type of this Value.
         pub const ChildT = SetT;
 
+        /// Custom parsing function for this Value Type.
+        /// Check `Value.Config` for details.
+        pub const type_parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeParseFn: {
+            for (config.custom_parse_fns orelse break :typeParseFn null) |elm| {
+                if (elm.FnT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @ptrCast(elm.parse_fn));
+            }
+            else break :typeParseFn null;
+        };
+
         /// The Allocator for this Value's parent Command.
         /// This is set during the `init()` call of this Value's parent Command.
         ///
@@ -134,7 +153,8 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// *This should be Read-Only for library users.*
         is_set: bool = false,
 
-        /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing.
+        /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing for this specific Value.
+        /// This will be used FIRST, before `type_parse_fn` then the normal `parse()` functions are tried.
         /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
         parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = null,
         /// A Validation Function to be used for Argument Validation in `set()` following Argument Parsing with `parse()`.
@@ -150,11 +170,12 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
             if (self.parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
+            if (type_parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
             var san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(ChildT)) {
                 .Bool => isTrue: {
-                    const true_words = [_][]const u8{ "true", "t", "yes", "y" };
+                    const true_words = [_][]const u8{ "true", "t", "yes", "y", "1" };
                     for (true_words[0..]) |word| { if (mem.eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
                 },
                 .Pointer => arg,
@@ -294,7 +315,7 @@ pub fn Generic(comptime config: Config) type {
             inline for (config.min_int_bit_width..config.max_int_bit_width) |bit_width| {
                 const uint_name = @typeName(meta.Int(.unsigned, bit_width));
                 const uint_type = Typed(meta.Int(.unsigned, bit_width), config);
-                union_info.fields = union_info.fields ++ .{ UnionField {
+                union_info.fields = union_info.fields ++ .{ .{
                    .name = uint_name, 
                    .type = uint_type,
                    .alignment = @alignOf(uint_type),
@@ -306,7 +327,7 @@ pub fn Generic(comptime config: Config) type {
 
                 const int_name = @typeName(meta.Int(.signed, bit_width));
                 const int_type = Typed(meta.Int(.signed, bit_width), config);
-                union_info.fields = union_info.fields ++ .{ UnionField {
+                union_info.fields = union_info.fields ++ .{ .{
                    .name = int_name,
                    .type = int_type, 
                    .alignment = @alignOf(int_type),
@@ -353,27 +374,55 @@ pub fn Generic(comptime config: Config) type {
             }
         }
 
+        var adds: u16 = 0;
         for (config.custom_types) |T| {
             const AddT = addT: {
-                for (@typeInfo(T).Struct.fields, @typeInfo(Typed(bool, config){}).Struct.fields) |a_field, b_field| {
-                    if (!mem.eql(u8, a_field.name, b_field.name)) break :addT Typed(T, config);
+                const add_info = @typeInfo(T);
+                switch (add_info) {
+                    .Struct => {
+                        // Check for `Value.Typed`
+                        for (add_info.Struct.fields, @typeInfo(@TypeOf(Typed(bool, config){})).Struct.fields) |a_field, b_field| {
+                            if (!mem.eql(u8, a_field.name, b_field.name)) break :addT Typed(T, config);
+                        }
+                        break :addT Typed(T.ChildT, config);
+                    },
+                    inline else => break :addT Typed(T, config),
                 }
-                else break :addT T;
             };
-            union_info.fields = union_info.fields ++ .{ UnionField {
+            const union_field = Type.UnionField{
                .name = @typeName(AddT.ChildT), 
                .type = AddT,
                .alignment = @alignOf(AddT),
-            } };
-            tag_info.fields = tag_info.fields ++ .{ .{
-                .name = @typeName(T),
-                .value = tag_info.fields.len,
-            } };
+            };
+            const union_tag = Type.EnumField{
+                .name = @typeName(AddT.ChildT),
+                .value = tag_info.fields.len + adds,
+            };
+            for (union_info.fields, 0..) |field, idx| {
+                if (!mem.eql(u8, field.name, union_field.name)) continue;
+                adds += 1;
+                union_info.fields = rebuildFields: {
+                    var rebuild: [union_info.fields.len]Type.UnionField = undefined;
+                    for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx|
+                       r_fld.* = if (r_idx == idx) union_field else o_fld;
+                    break :rebuildFields rebuild[0..]; // Scope lifetime issue??
+                };    
+                tag_info.fields = rebuildFields: {
+                    var rebuild: [tag_info.fields.len]Type.EnumField = undefined;
+                    for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx|
+                       r_fld.* = if (r_idx == idx) union_tag else o_fld;
+                    break :rebuildFields rebuild[0..]; // Scope lifetime issue??
+                };    
+                break;
+            }
+            else {
+                union_info.fields = union_info.fields ++ .{ union_field };
+                tag_info.fields = tag_info.fields ++ .{ union_tag };
+            }
             
         }
 
         union_info.tag_type = @Type(.{ .Enum = tag_info }); 
-
         break :customUnion @Type(.{ .Union = union_info });
     };
 }
@@ -477,7 +526,10 @@ pub fn Custom(comptime config: Config) type {
         /// Check if the inner Typed Value's has a custom `parse_fn`.
         pub fn hasCustomParseFn(self: *const @This()) bool {
             return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).parse_fn != null,
+                inline else => |tag| hasFn: {
+                    const val = @field(self.*.generic, @tagName(tag));
+                    break :hasFn val.parse_fn != null or @TypeOf(val).type_parse_fn != null;
+                }
             };
         }
         /// Check if the inner Typed Value's has a custom `valid_fn`.
@@ -489,7 +541,7 @@ pub fn Custom(comptime config: Config) type {
         /// Check if the inner Typed Value's has a custom `parse_fn` or `valid_fn`.
         pub fn hasCustomFn(self: *const @This()) bool {
             return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).parse_fn != null or @field(self.*.generic, @tagName(tag)).valid_fn != null,
+                inline else => |tag| self.hasCustomParseFn or @field(self.*.generic, @tagName(tag)).valid_fn != null,
             };
         }
 
@@ -590,14 +642,30 @@ pub fn Custom(comptime config: Config) type {
 pub const ParsingFns = struct {
     /// Builder Functions for common Parsing Functions.
     pub const Builder = struct {
-        /// Check for Alternate True Words (`true_words`) when parsing the provided Argument (`arg`) to a Boolean.
-        pub fn altTrue(comptime true_words: []const []const u8) fn([]const u8, mem.Allocator) anyerror!bool {
+        pub const BoolNoMatch = enum{
+            True,
+            False,
+            Error,
+        };
+        /// Check for Alternate True Words (`true_words`) and False Words (`false_words`) when parsing the provided Argument (`arg`) to a Boolean.
+        /// In the event of no match, This function will return based on (`no_match`).
+        pub fn altBool(
+            comptime true_words: []const []const u8,
+            comptime false_words: []const []const u8,
+            comptime no_match: BoolNoMatch
+        ) fn([]const u8, mem.Allocator) anyerror!bool {
             return struct {
-                fn isTrue(arg: []const u8, alloc: mem.Allocator) !bool {
+                fn boolCheck(arg: []const u8, alloc: mem.Allocator) !bool {
                     _ = alloc;
-                    for (true_words[0..]) |word| { if (mem.eql(u8, word, arg)) return true; } else return false;
+                    for (true_words[0..]) |word| { if (mem.eql(u8, word, arg)) return true; } 
+                    else for (false_words[0..]) |word| { if (mem.eql(u8, word, arg)) return false; } 
+                    else return switch (no_match) {
+                        .True => true,
+                        .False => false,
+                        .Error => error.UnrecognizedBooleanValue,
+                    };
                 }
-            }.isTrue;
+            }.boolCheck;
         }
 
         /// Parse the given Integer (`arg`) as Base (`base`). Base options:
