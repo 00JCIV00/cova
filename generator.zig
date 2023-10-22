@@ -1,20 +1,20 @@
 //! Auxiliary Doc Generation for Cova-based programs
 //! This is meant to be built and run as a step in `build.zig`. 
 
-/// The Cova library is needed for the `aux_docs` module.
+/// The Cova library is needed for the `generate` module.
 const cova = @import("cova");
 /// This is a reference module for the program being built. Typically this is the main `.zig` file
 /// in a project that has both the `main()` function and `setup_cmd` Command. 
 const program = @import("program");
 // This is a reference to the Build Options passed in from `build.zig`.
-const aux_opts = @import("aux_opts");
+const gen_opts = @import("gen_opts");
 
 pub fn main() !void {
     // Generate Manpages
-    if (!aux_opts.no_manpages) {
-        try cova.aux_docs.createManpage(
-            @field(program, aux_opts.cmd_type_field_name), 
-            @field(program, aux_opts.setup_cmd_field_name), 
+    if (!gen_opts.no_manpages) {
+        try cova.generate.createManpage(
+            @field(program, gen_opts.cmd_type_field_name), 
+            @field(program, gen_opts.setup_cmd_field_name), 
             .{
                 .local_filepath = "aux",
                 .version = "0.9.0",
@@ -26,11 +26,11 @@ pub fn main() !void {
         );
     }
     // Generate Tab Completion
-    switch (aux_opts.tab_completion_kind) {
+    switch (gen_opts.tab_completion_kind) {
         .bash => {
-            try cova.aux_docs.createTabCompletion(
-                @field(program, aux_opts.cmd_type_field_name), 
-                @field(program, aux_opts.setup_cmd_field_name), 
+            try cova.generate.createTabCompletion(
+                @field(program, gen_opts.cmd_type_field_name), 
+                @field(program, gen_opts.setup_cmd_field_name), 
                 .{
                     .local_filepath = "aux",
                     .include_opts = true,

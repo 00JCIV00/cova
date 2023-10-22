@@ -10,7 +10,7 @@ const mem = std.mem;
 const utils = @import("utils.zig");
 
 /// A Config for creating manpages with `createManpage`.
-/// Leaving any field blank will remove it from the created manpage.
+/// Leaving any field `null` will remove it from the created manpage.
 pub const ManpageConfig = struct{
     /// Manpage Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`.`section`".
@@ -23,13 +23,13 @@ pub const ManpageConfig = struct{
     section: u8 = '1',
     /// Version of the program
     /// This is shown in the Bottom Left.
-    version: ?[]const u8 = "",
+    version: ?[]const u8 = null,
     /// Date of the program version.
     /// This is shown in the Bottm Center.
-    ver_date: ?[]const u8 = "",
+    ver_date: ?[]const u8 = null,
     /// Name of the manpage group.
     /// This is shown in the Upper Center.
-    man_name: ?[]const u8 = "",
+    man_name: ?[]const u8 = null,
     /// Name of the program.
     /// Note, if this is left null, the provided CommandT's name will be used.
     name: ?[]const u8 = null,

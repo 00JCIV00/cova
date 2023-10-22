@@ -66,10 +66,10 @@ pub fn build(b: *std.Build) void {
     build_basic_app_step.dependOn(&build_basic_app.step);
 
 
-    // Build Options for Aux Docs
+    // Build Options for Gen Docs
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_manpages", 
-        b.option(bool, "no-manpages", "Don't generate manpages (only applies to 'aux-doc' builds)") orelse false
+        b.option(bool, "no-manpages", "Don't generate manpages (only applies to 'gen-doc' builds)") orelse false
     );
     const TabCompletionKind = enum {
         bash,
@@ -81,18 +81,18 @@ pub fn build(b: *std.Build) void {
         b.option(TabCompletionKind, "tab-completion-kind", "Generate tab completion scripts of the given kind (only applies to exe builds)") orelse .bash
     );
     build_options.addOption([]const u8, "cmd_type_field_name",
-        b.option([]const u8, "cmd-type-field-name", "The name of the Command Type field being used to generate the Auxiliary Docs (default: \"CommandT\")") 
+        b.option([]const u8, "cmd-type-field-name", "The name of the Command Type field being used to generate the Gen Docs (default: \"CommandT\")") 
         orelse "CommandT"
     );
     build_options.addOption([]const u8, "setup_cmd_field_name",
-        b.option([]const u8, "setup-cmd-field-name", "The name of the command field being used to generate the Auxiliary Docs (default: \"setup_cmd\")") 
+        b.option([]const u8, "setup-cmd-field-name", "The name of the command field being used to generate the Gen Docs (default: \"setup_cmd\")") 
         orelse "setup_cmd"
     );
 
-    // Cova Demo Aux Docs
+    // Cova Demo Gen Docs
     const cova_demo_aux = b.addExecutable(.{
         .name = "covademo-aux",
-        .root_source_file = .{ .path = "aux_doc_gen.zig" },
+        .root_source_file = .{ .path = "generator.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -103,16 +103,16 @@ pub fn build(b: *std.Build) void {
     cova_demo_mod.dependencies.put("cova", cova_mod) catch @panic("OOM");
     cova_demo_aux.addModule("program", cova_demo_mod);
     // - Add Build Options
-    cova_demo_aux.addOptions("aux_opts", build_options);
-    // - Run Exe and Build Aux Docs
+    cova_demo_aux.addOptions("gen_opts", build_options);
+    // - Run Exe and Build Gen Docs
     const build_cova_demo_aux = b.addRunArtifact(cova_demo_aux);
     const build_cova_demo_aux_step = b.step("cova-demo-aux-docs", "Build the Manpages and Tab Completion scripts for the 'covademo' example");
     build_cova_demo_aux_step.dependOn(&build_cova_demo_aux.step);
 
-    // Basic App Aux Docs
+    // Basic App Gen Docs
     const basic_app_aux = b.addExecutable(.{
         .name = "basic-app-aux",
-        .root_source_file = .{ .path = "aux_doc_gen.zig" },
+        .root_source_file = .{ .path = "generator.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -123,8 +123,8 @@ pub fn build(b: *std.Build) void {
     basic_app_mod.dependencies.put("cova", cova_mod) catch @panic("OOM");
     basic_app_aux.addModule("program", basic_app_mod);
     // - Add Build Options
-    basic_app_aux.addOptions("aux_opts", build_options);
-    // - Run Exe and Build Aux Docs
+    basic_app_aux.addOptions("gen_opts", build_options);
+    // - Run Exe and Build Gen Docs
     const build_basic_app_aux = b.addRunArtifact(basic_app_aux);
     const build_basic_app_aux_step = b.step("basic-app-aux-docs", "Build the Manpages and Tab Completion scripts for the 'basic-app' example");
     build_basic_app_aux_step.dependOn(&build_basic_app_aux.step);
