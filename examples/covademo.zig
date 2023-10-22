@@ -165,6 +165,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "basic",
+            .alias_names = &.{ "basic-cmd" },
             .description = "The most basic Command.",
             .cmd_group = "RAW",
         },

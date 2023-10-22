@@ -598,8 +598,10 @@ pub fn Custom(comptime config: Config) type {
             attempt_short_opts: bool = true,
 
             /// A Name for the Command.
-            /// A blank value will default to the type name of the Struct.
-            cmd_name: []const u8 = "",
+            /// A null value will default to the type name of the Struct.
+            cmd_name: ?[]const u8 = null,
+            /// A list of Alias Names for this Command.
+            cmd_alias_names: ?[]const []const u8 = null,
             /// A Description for the Command.
             cmd_description: []const u8 = "",
             /// A Help Prefix for the Command.
@@ -801,7 +803,7 @@ pub fn Custom(comptime config: Config) type {
             }
 
             var cmd_name_buf: [@typeName(FromT).len]u8 = undefined;
-            const cmd_name = if (from_config.cmd_name.len > 0) from_config.cmd_name else cmdName: {
+            const cmd_name = if (from_config.cmd_name) |c_name| c_name else cmdName: {
                 if (!from_config.convert_syntax) break :cmdName @typeName(FromT) else {
                     _ = mem.replace(u8, @typeName(FromT), "_", "-", cmd_name_buf[0..]);
                     break :cmdName cmd_name_buf[0..];
@@ -809,6 +811,7 @@ pub fn Custom(comptime config: Config) type {
             };
             return @This(){
                 .name = cmd_name,
+                .alias_names = from_config.cmd_alias_names,
                 .description = from_config.cmd_description,
                 .help_prefix = from_config.cmd_help_prefix,
                 .cmd_groups = from_config.cmd_groups,
@@ -889,7 +892,8 @@ pub fn Custom(comptime config: Config) type {
             }
 
             return @This(){
-                .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(FromFn),
+                .name = if (from_config.cmd_name) |c_name| c_name else @typeName(FromFn),
+                .alias_names = from_config.cmd_alias_names,
                 .description = from_config.cmd_description,
                 .cmd_groups = from_config.cmd_groups,
                 .cmd_group = from_config.cmd_group,
@@ -1114,6 +1118,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Create Sub Commands Enum.
         /// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
+        /// Prefer to use `checkSubCmd`() and `matchSubCmd`() with conditional `if` statements.
         pub fn SubCommandsEnum(comptime self: *const @This()) ?type {
             if (self.sub_cmds == null) return null; //@compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
             var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
@@ -1137,51 +1142,26 @@ pub fn Custom(comptime config: Config) type {
         pub const ValidateConfig = struct {
             // Check Argument Groups to ensure they exist.
             check_arg_groups: bool = true,
+            // Check Command Alias Names to ensure they're distinct.
+            check_cmd_aliases: bool = true,
             // Check for Usage/Help Commands
-            check_help_cmds: bool = false,
+            check_help_cmds: bool = true,
             // Check for Usage/Help Options
-            check_help_opts: bool = false,
+            check_help_opts: bool = true,
         };
 
-        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values, as well as Argument Groups, 
-        /// using the provided ValidateConfig (`valid_config`). 
+        /// Validate this Command during Comptime using the provided ValidateConfig (`valid_config`).
+        /// This will check for:
+        ///  - Distinct Sub Commands, Options, and Values
+        ///  - Existing Argument Groups
+        ///  - Distinct Command Alias Names.
         pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
             comptime {
-                // Check for existing Argument Groups.
-                // - Command Groups.
-                if (self.sub_cmds) |cmds| cmdGroups: {
-                    const groups = self.cmd_groups orelse break :cmdGroups;
-                    checkCmds: for (cmds) |cmd| {
-                        if (utils.indexOfEql([]const u8, groups, cmd.cmd_group orelse continue :checkCmds) == null)
-                            @compileError("The Command '" ++ cmd.name ++ "' has non-existent Group '" ++ cmd.cmd_group.? ++ "'.\n" ++ 
-                                          "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`");
-                    }
-                }
-                // - Option Groups.
-                if (self.opts) |opts| optGroups: {
-                    const groups = self.opt_groups orelse break :optGroups;
-                    checkCmds: for (opts) |opt| {
-                        if (utils.indexOfEql([]const u8, groups, opt.opt_group orelse continue :checkCmds) == null)
-                            @compileError("The Option '" ++ opt.name ++ "' has non-existent Group '" ++ opt.opt_group.? ++ "'.\n" ++
-                                          "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`");
-                    }
-                }
-                // - Value Groups.
-                if (self.vals) |vals| valGroups: {
-                    const groups = self.val_groups orelse break :valGroups;
-                    checkCmds: for (vals) |val| {
-                        if (utils.indexOfEql([]const u8, groups, val.valGroup() orelse continue :checkCmds) == null)
-                            @compileError("The Value '" ++ val.name() ++ "' has non-existent Group '" ++ val.valGroup.? ++ "'.\n" ++
-                                          "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`");
-                    }
-                }
-
                 @setEvalBranchQuota(100_000);
                 const usage_help_strs = .{ "usage", "help" } ++ (.{ "" } ** (max_args - 2));
                 // Check for distinct Sub Commands and Validate them.
-                if (self.sub_cmds != null) {
+                if (self.sub_cmds) |cmds| {
                     const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
-                    const cmds = self.sub_cmds.?;
                     var distinct_cmd: [max_args][]const u8 =
                         if (!valid_config.check_help_cmds) .{ "" } ** max_args
                         else usage_help_strs; 
@@ -1194,9 +1174,8 @@ pub fn Custom(comptime config: Config) type {
                 }
 
                 // Check for distinct Options.
-                if (self.opts != null) {
+                if (self.opts) |opts| {
                     const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
-                    const opts = self.opts.?;
                     var distinct_name: [max_args][]const u8 = 
                         if (!valid_config.check_help_opts) .{ "" } ** max_args
                         else usage_help_strs; 
@@ -1220,13 +1199,67 @@ pub fn Custom(comptime config: Config) type {
                 }
 
                 // Check for distinct Values.
-                if (self.vals != null) {
-                    const vals = self.vals.?;
+                if (self.vals) |vals| {
                     var distinct_val: [max_args][]const u8 = .{ "" } ** max_args;
                     for (vals, 0..) |val, idx| {
                         if (indexOfEql([]const u8, distinct_val[0..], val.name()) != null) 
                             @compileError("The Value '" ++ val.name ++ "' is set more than once.");
                         distinct_val[idx] = val.name();
+                    }
+                }
+
+                // Check for existing Argument Groups.
+                if (valid_config.check_arg_groups) {
+                    // - Command Groups.
+                    if (self.sub_cmds) |cmds| cmdGroups: {
+                        const groups = self.cmd_groups orelse break :cmdGroups;
+                        checkCmds: for (cmds) |cmd| {
+                            if (utils.indexOfEql([]const u8, groups, cmd.cmd_group orelse continue :checkCmds) == null)
+                                @compileError("The Command '" ++ cmd.name ++ "' has non-existent Group '" ++ cmd.cmd_group.? ++ "'.\n" ++ 
+                                    "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`.");
+                        }
+                    }
+                    // - Option Groups.
+                    if (self.opts) |opts| optGroups: {
+                        const groups = self.opt_groups orelse break :optGroups;
+                        checkCmds: for (opts) |opt| {
+                            if (utils.indexOfEql([]const u8, groups, opt.opt_group orelse continue :checkCmds) == null)
+                                @compileError("The Option '" ++ opt.name ++ "' has non-existent Group '" ++ opt.opt_group.? ++ "'.\n" ++
+                                    "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`.");
+                        }
+                    }
+                    // - Value Groups.
+                    if (self.vals) |vals| valGroups: {
+                        const groups = self.val_groups orelse break :valGroups;
+                        checkCmds: for (vals) |val| {
+                            if (utils.indexOfEql([]const u8, groups, val.valGroup() orelse continue :checkCmds) == null)
+                                @compileError("The Value '" ++ val.name() ++ "' has non-existent Group '" ++ val.valGroup.? ++ "'.\n" ++
+                                    "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`.");
+                        }
+                    }
+                }
+
+                // Check for Distinct Command Alias Names.
+                if (valid_config.check_cmd_aliases) distinctAliases: {
+                    const cmds = self.sub_cmds orelse break :distinctAliases;
+                    checkCmds1: for (cmds, 0..) |cmd_1, idx| {
+                        checkCmds2: for (cmds[idx..]) |cmd_2| {
+                            if (mem.eql(u8, cmd_1.name, cmd_2.name)) continue :checkCmds2;
+                            checkAliases: for (cmd_1.alias_names orelse continue :checkCmds1) |alias| {
+                                if (mem.eql(u8, cmd_2.name, alias))
+                                    @compileError(
+                                        "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Command '" ++ 
+                                        cmd_2.name ++ "'.\n" ++ 
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`."
+                                    );
+                                if (utils.indexOfEql([]const u8, cmd_2.alias_names orelse continue :checkAliases, alias) != null)
+                                    @compileError(
+                                        "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Command '" ++ 
+                                        cmd_2.name ++ "'.\n" ++ 
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`."
+                                    );
+                            }
+                        }
                     }
                 }
             }
@@ -1236,6 +1269,8 @@ pub fn Custom(comptime config: Config) type {
         pub const InitConfig = struct {
             /// Validate this Command.
             validate_cmd: bool = true,
+            /// Validation Config
+            valid_config: ValidateConfig = .{},
             /// Add Usage/Help message Commands to this Command.
             add_help_cmds: bool = true,
             /// Add Usage/Help message Options to this Command.
@@ -1247,10 +1282,12 @@ pub fn Custom(comptime config: Config) type {
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
         /// This should be used after this Command has been created in Comptime. 
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
-            if (init_config.validate_cmd) self.validate(.{ 
-                .check_help_cmds = init_config.add_help_cmds,
-                .check_help_opts = init_config.add_help_opts,    
-            });
+            if (init_config.validate_cmd) {
+                comptime var valid_config = init_config.valid_config;
+                valid_config.check_help_cmds = init_config.add_help_cmds;
+                valid_config.check_help_opts = init_config.add_help_opts;    
+                self.validate(valid_config);
+            }
 
             var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
