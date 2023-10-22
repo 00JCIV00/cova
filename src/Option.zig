@@ -126,6 +126,10 @@ pub fn Custom(comptime config: Config) type {
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
 
+        /// Option Group of this Option.
+        /// This must line up with one of the Option Groups in the `opt_groups` of the parent Command or it will be ignored.
+        opt_group: ?[]const u8 = null,
+
         /// This Option's Short Name (ex: `-s`).
         short_name: ?u8 = null,
         /// This Option's Long Name (ex: `--intOpt`).
@@ -161,7 +165,7 @@ pub fn Custom(comptime config: Config) type {
                 long_prefix orelse "",
                 if (long_prefix != null) self.long_name else "",
                 self.val.name(),
-                self.val.valType(),
+                self.val.childType(),
             });
         }
 

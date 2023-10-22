@@ -172,7 +172,7 @@ pub fn createManpage(comptime CommandT: type, comptime cmd: CommandT, comptime m
                     CommandT.OptionT.long_prefix orelse 0,
                     if (CommandT.OptionT.long_prefix != null) opt.long_name else "",
                     opt.val.name(),
-                    opt.val.valType(),
+                    opt.val.childType(),
                     opt.description,
                 });
         }
@@ -181,7 +181,7 @@ pub fn createManpage(comptime CommandT: type, comptime cmd: CommandT, comptime m
             for (vals) |val| 
                 try mp_writer.print(mp_config.vals_fmt, .{ 
                     val.name(), 
-                    val.valType(),
+                    val.childType(),
                     val.description() 
                 });
         }

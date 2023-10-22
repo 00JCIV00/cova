@@ -259,7 +259,7 @@ pub fn parseArgs(
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             // Handle Argument provided to this Option with '=' instead of ' '.
                             if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
-                                if (mem.eql(u8, opt.val.valType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
                                     log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
                                         short_pf, 
                                         opt.short_name, 
@@ -286,7 +286,7 @@ pub fn parseArgs(
                             }
                             // Handle final Option in a chain of Short Options
                             else if (short_idx == short_opts.len - 1) { 
-                                if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
+                                if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, OptionT, opt) catch {
                                         log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
@@ -303,7 +303,7 @@ pub fn parseArgs(
                                 continue :parseArg;
                             }
                             // Handle a boolean Option before the final Short Option in a chain.
-                            else if (mem.eql(u8, opt.val.valType(), "bool")) {
+                            else if (mem.eql(u8, opt.val.childType(), "bool")) {
                                 try @constCast(opt).val.set("true");
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :shortOpts;
@@ -347,7 +347,7 @@ pub fn parseArgs(
                             (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
                         ) {
                             if (sep_flag) {
-                                if (mem.eql(u8, opt.val.valType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
                                     log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
                                         long_pf, 
                                         long_name, 
@@ -375,7 +375,7 @@ pub fn parseArgs(
                             // Handle normally provided Value to Option
 
                             // Handle Boolean/Toggle Option.
-                            if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
+                            if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
                                 // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, OptionT, opt) catch {
@@ -471,7 +471,7 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
     const peek_arg = args.peek();
     const set_arg = 
         if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
-            if (!(mem.eql(u8, opt.val.valType(), "bool") and !opt.val.hasCustomParseFn())) return error.EmptyArgumentProvidedToOption;
+            if (!(mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn())) return error.EmptyArgumentProvidedToOption;
             _ = args.next();
             break :setArg "true";
         }

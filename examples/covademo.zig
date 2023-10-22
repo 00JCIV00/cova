@@ -20,6 +20,7 @@ pub const CommandT = Command.Custom(.{
     .global_help_prefix = "CovaDemo",
     .vals_mandatory = false,
     .opt_config = .{
+        .usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
         .help_fn = struct{
             fn help(self: anytype, writer: anytype, alloc: mem.Allocator) !void {
                 _ = alloc;
@@ -108,11 +109,15 @@ pub fn demoFn(int: i32, string: []const u8) void {
 pub const setup_cmd: CommandT = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
+    .cmd_groups = &.{ "RAW", "STRUCT-BASED", "FN-BASED" },
+    .opt_groups = &.{ "INT", "BOOL", "STRING" },
+    .val_groups = &.{ "INT", "BOOL", "STRING" },
     .sub_cmds_mandatory = false,
     .sub_cmds = &.{
         .{
             .name = "sub-cmd",
             .description = "A demo sub command.",
+            .cmd_group = "RAW",
             .opts = &.{
                 .{
                     .name = "nested_int_opt",
@@ -148,10 +153,12 @@ pub const setup_cmd: CommandT = .{
         .{
             .name = "basic",
             .description = "The most basic Command.",
+            .cmd_group = "RAW",
         },
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
+            .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,
             .sub_descriptions = &.{
                 .{ "inner_cmd", "An inner/nested command for struct-cmd" },
@@ -161,6 +168,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(DemoUnion, .{
             .cmd_name = "union-cmd",
             .cmd_description = "A demo sub command made from a union.",
+            .cmd_group = "STRUCT-BASED",
             .sub_descriptions = &.{
                 .{ "int", "The first Integer Value for the union-cmd." },
                 .{ "str", "The first String Value for the union-cmd." },
@@ -169,6 +177,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(@TypeOf(demoFn), .{
             .cmd_name = "fn-cmd",
             .cmd_description = "A demo sub command made from a function.",
+            .cmd_group = "FN-BASED",
             .sub_descriptions = &.{
                 .{ "inner_config", "An inner/nested command for fn-cmd" },
                 .{ "int", "The first Integer Value for the fn-cmd." },
@@ -178,12 +187,14 @@ pub const setup_cmd: CommandT = .{
         }),
         CommandT.from(ex_structs.add_user, .{
             .cmd_name = "add-user",
+            .cmd_group = "STRUCT-BASED",
             .cmd_description = "A demo sub command for adding a user.",
         }),
     },
     .opts = &.{
         .{ 
             .name = "string_opt",
+            .opt_group = "STRING",
             .short_name = 's',
             .long_name = "string",
             .val = ValueT.ofType([]const u8, .{
@@ -198,6 +209,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "int_opt",
+            .opt_group = "INT",
             .short_name = 'i',
             .long_name = "int",
             .val = ValueT.ofType(i16, .{
@@ -211,6 +223,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "uint_opt",
+            .opt_group = "INT",
             .short_name = 'U',
             .long_name = "uint",
             .val = ValueT.ofType(u1024, .{
@@ -223,6 +236,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "float_opt",
+            //.opt_group = "INT",
             .short_name = 'f',
             .long_name = "float",
             .val = ValueT.ofType(f16, .{
@@ -236,6 +250,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "file_opt",
+            .opt_group = "STRING",
             .short_name = 'F',
             .long_name = "file",
             .val = ValueT.ofType([]const u8, .{
@@ -247,6 +262,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "ordinal_opt",
+            .opt_group = "STRING",
             .short_name = 'o',
             .long_name = "ordinal",
             .val = ValueT.ofType([]const u8, .{
@@ -258,6 +274,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "cardinal_opt",
+            .opt_group = "INT",
             .short_name = 'c',
             .long_name = "cardinal",
             .val = ValueT.ofType(u8, .{
@@ -271,6 +288,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "toggle_opt",
+            .opt_group = "BOOL",
             .short_name = 't',
             .long_name = "toggle",
             .val = ValueT.ofType(bool, .{
@@ -281,6 +299,7 @@ pub const setup_cmd: CommandT = .{
         },
         .{
             .name = "bool_opt",
+            .opt_group = "BOOL",
             .short_name = 'b',
             .long_name = "bool",
             .val = ValueT.ofType(bool, .{
@@ -306,6 +325,7 @@ pub const setup_cmd: CommandT = .{
     .vals = &.{
         ValueT.ofType([]const u8, .{
             .name = "cmd_str",
+            .val_group = "STRING",
             .description = "A string value for the command.",
             .parse_fn = Value.ParsingFns.trimWhitespace,
         }),
@@ -363,7 +383,7 @@ pub fn main() !void {
         \\ - AND: {}
         \\ -  OR: {}
         \\ - XOR: {}
-        \\\n
+        \\
         , .{
             opts_check_names,
             and_opts_check,

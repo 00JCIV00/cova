@@ -126,6 +126,10 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
 
+        /// Value Group of this Value.
+        /// This must line up with one of the Value Groups in the `val_groups` of the parent Command or it will be ignored.
+        val_group: ?[]const u8 = null,
+
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
         /// **Internal Use.**
@@ -479,10 +483,17 @@ pub fn Custom(comptime config: Config) type {
             }
         }
 
-        /// Get this Value's Allocator.
+        /// Get the inner Typed Value's Allocator.
         pub fn allocator(self: *const @This()) ?mem.Allocator {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| @field(self.*.generic, @tagName(tag))._alloc,
+            };
+        }
+
+        /// Get the inner Typed Value's Group.
+        pub fn valGroup(self: *const @This()) ?[]const u8 {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).val_group,
             };
         }
 
@@ -492,8 +503,8 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).name,
             };
         }
-        /// Get the inner Typed Value's Type Name.
-        pub fn valType(self: *const @This()) []const u8 {
+        /// Get the inner Typed Value's Child Type Name.
+        pub fn childType(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| @typeName(@TypeOf(@field(self.*.generic, @tagName(tag))).ChildT),
@@ -620,12 +631,12 @@ pub fn Custom(comptime config: Config) type {
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
             if (help_fn) |helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
-            try writer.print(vals_help_fmt, .{ self.name(), self.valType(), self.description() });
+            try writer.print(vals_help_fmt, .{ self.name(), self.childType(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             if (usage_fn) |usageFn| return usageFn(self, writer, self.allocator orelse return error.ValueNotInitialized);
-            try writer.print(vals_usage_fmt, .{ self.name(), self.valType() });
+            try writer.print(vals_usage_fmt, .{ self.name(), self.childType() });
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).

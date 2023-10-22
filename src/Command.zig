@@ -22,6 +22,7 @@ const fmt = std.fmt;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
+const sort = std.sort;
 const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 
@@ -64,6 +65,19 @@ pub const Config = struct {
     /// Note, this will be used as the default across all Argument Types,
     /// but it can be overriden in the Option and Value Configs.
     indent_fmt: []const u8 = "    ",
+    /// Group Title Format.
+    /// Used for all Argument Type Groups.
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    /// 2. String (Indent)
+    /// 3. String (Group Title)
+    group_title_fmt: []const u8 = " {s}|{s}|\n",
+    /// Group Separator string used for Help formatting.
+    /// Used for all Argument Type Groups.
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    /// 2. String (Indent)
+    group_sep_fmt: []const u8 = "{s}{s}\n",
     /// Help Format for the displayed Command
     /// Must support the following format types in this order:
     /// 1. String (Indent)
@@ -149,6 +163,12 @@ pub fn Custom(comptime config: Config) type {
         /// Check (`Command.Config`) for details.
         pub const usage_fn = config.usage_fn;
 
+        /// Group Title Format.
+        /// Check (`Command.Config`) for details.
+        pub const group_title_fmt = config.group_title_fmt;
+        /// Group Separator Format.
+        /// Check (`Command.Config`) for details.
+        pub const group_sep_fmt = config.group_sep_fmt;
         /// Indent Format.
         /// Check (`Command.Config`) for details.
         pub const indent_fmt = config.indent_fmt;
@@ -189,6 +209,19 @@ pub fn Custom(comptime config: Config) type {
         ///
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
+
+        /// Command Groups.
+        /// These groups are used for organizing sub-Commands in Help messages and other Generated docs.
+        cmd_groups: ?[]const []const u8 = null,
+        /// Command Group of this Command.
+        /// This must line up with one of the Command Groups in the `cmd_groups` of the parent Command or it will be ignored.
+        cmd_group: ?[]const u8 = null,
+        /// Option Groups.
+        /// These groups are used for organizing Options in Help messages and other Generated docs.
+        opt_groups: ?[]const []const u8 = null,
+        /// Value Groups.
+        /// These groups are used for organizing Values in Help messages and other Generated docs.
+        val_groups: ?[]const []const u8 = null,
 
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
@@ -334,18 +367,49 @@ pub fn Custom(comptime config: Config) type {
         pub fn help(self: *const @This(), writer: anytype) !void {
             if (help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
+            
             try writer.print("{s}\n", .{ self.help_prefix });
             try self.usage(writer);
             try writer.print(help_header_fmt, .{ 
                 indent_fmt, self.name, 
                 indent_fmt, self.description 
             });
-            
+
             if (self.sub_cmds) |sub_cmds| {
                 try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
-                for (sub_cmds) |cmd| {
+                var cmd_list = std.StringHashMap(@This()).init(alloc);
+                defer cmd_list.deinit();
+                for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
+                var remove_list = std.ArrayList([]const u8).init(alloc);
+                defer remove_list.deinit();
+                if (self.cmd_groups) |groups| {
+                    for (groups) |group| {
+                        var need_title = true;
+                        var cmd_iter = cmd_list.iterator();
+                        cmdGroup: while (cmd_iter.next()) |cmd_entry| {
+                            const cmd = cmd_entry.value_ptr;
+                            if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
+                                if (need_title) {
+                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                    need_title = false;
+                                }
+                                try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
+                                try writer.print("\n", .{});
+                                try remove_list.append(cmd.name);
+                            }
+                        }
+                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
+                    }
+                }
+                for (remove_list.items) |rem_name| _ = cmd_list.remove(rem_name);
+
+                var cmd_iter = cmd_list.iterator();
+                while (cmd_iter.next()) |cmd_entry| {
+                    const cmd = cmd_entry.value_ptr;
                     try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try writer.print(subcmds_help_fmt, .{cmd.name, cmd.description});
+                    try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
                     try writer.print("\n", .{});
                 }
             }
@@ -353,7 +417,36 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.opts) |opts| {
                 try writer.print(opts_help_title_fmt, .{ indent_fmt });
-                for (opts) |opt| {
+                var opt_list = std.StringHashMap(OptionT).init(alloc);
+                defer opt_list.deinit();
+                for (opts) |opt| try opt_list.put(opt.name, opt);
+                var remove_list = std.ArrayList([]const u8).init(alloc);
+                defer remove_list.deinit();
+                if (self.opt_groups) |groups| {
+                    for (groups) |group| {
+                        var need_title = true;
+                        var opt_iter = opt_list.iterator();
+                        optGroup: while (opt_iter.next()) |opt_entry| {
+                            const opt = opt_entry.value_ptr;
+                            if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
+                                if (need_title) {
+                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                    need_title = false;
+                                }
+                                try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                try opt.help(writer);
+                                try writer.print("\n", .{});
+                                try remove_list.append(opt.name);
+                            }
+                        }
+                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
+                    }
+                }
+                for (remove_list.items) |rem_name| _ = opt_list.remove(rem_name);
+
+                var opt_iter = opt_list.iterator();
+                while (opt_iter.next()) |opt_entry| {
+                    const opt = opt_entry.value_ptr;
                     try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try opt.help(writer);
                     try writer.print("\n", .{});
@@ -363,7 +456,36 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.vals) |vals| {
                 try writer.print(vals_help_title_fmt, .{ indent_fmt });
-                for (vals) |val| {
+                var val_list = std.StringHashMap(ValueT).init(alloc);
+                defer val_list.deinit();
+                for (vals) |val| try val_list.put(val.name(), val);
+                var remove_list = std.ArrayList([]const u8).init(alloc);
+                defer remove_list.deinit();
+                if (self.val_groups) |groups| {
+                    for (groups) |group| {
+                        var need_title = true;
+                        var val_iter = val_list.iterator();
+                        valGroup: while (val_iter.next()) |val_entry| {
+                            const val = val_entry.value_ptr;
+                            if (mem.eql(u8, val.valGroup() orelse continue :valGroup, group)) {
+                                if (need_title) {
+                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                    need_title = false;
+                                }
+                                try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                try val.help(writer);
+                                try writer.print("\n", .{});
+                                try remove_list.append(val.name());
+                            }
+                        }
+                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
+                    }
+                }
+                for (remove_list.items) |rem_name| _ = val_list.remove(rem_name);
+
+                var val_iter = val_list.iterator();
+                while (val_iter.next()) |val_entry| {
+                    const val = val_entry.value_ptr;
                     try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try val.help(writer);
                     try writer.print("\n", .{});
@@ -424,7 +546,7 @@ pub fn Custom(comptime config: Config) type {
                     if (self.opts != null) {
                         for (self.opts.?) |opt| {
                             if (mem.eql(u8, opt.name, flag_name) and 
-                                mem.eql(u8, opt.val.valType(), "bool") and 
+                                mem.eql(u8, opt.val.childType(), "bool") and 
                                 opt.val.getAs(bool) catch false)
                                     break :checkOpt true;
                         }
@@ -435,7 +557,7 @@ pub fn Custom(comptime config: Config) type {
                     if (self.vals != null) {
                         for (self.vals.?) |val| {
                             if (mem.eql(u8, val.name(), flag_name) and
-                                mem.eql(u8, val.valType(), "bool") and
+                                mem.eql(u8, val.childType(), "bool") and
                                 val.getAs(bool) catch false)
                                     break :checkVal true;
                         }
@@ -472,6 +594,10 @@ pub fn Custom(comptime config: Config) type {
             cmd_description: []const u8 = "",
             /// A Help Prefix for the Command.
             cmd_help_prefix: []const u8 = global_help_prefix,
+            /// Command Groups for this Command
+            cmd_groups: ?[]const []const u8 = null,
+            /// Command Group for this Command
+            cmd_group: ?[]const u8 = null,
 
             /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
             /// These Descriptions will be used across this Command and all of its Sub Commands.
@@ -675,6 +801,8 @@ pub fn Custom(comptime config: Config) type {
                 .name = cmd_name,
                 .description = from_config.cmd_description,
                 .help_prefix = from_config.cmd_help_prefix,
+                .cmd_groups = from_config.cmd_groups,
+                .cmd_group = from_config.cmd_group,
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
@@ -753,6 +881,8 @@ pub fn Custom(comptime config: Config) type {
             return @This(){
                 .name = if (from_config.cmd_name.len > 0) from_config.cmd_name else @typeName(FromFn),
                 .description = from_config.cmd_description,
+                .cmd_groups = from_config.cmd_groups,
+                .cmd_group = from_config.cmd_group,
                 .help_prefix = from_config.cmd_help_prefix,
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
