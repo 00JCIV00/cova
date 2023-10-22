@@ -382,7 +382,7 @@
 <span class="line" id="L260">                            <span class="tok-comment">// Handle Argument provided to this Option with '=' instead of ' '.</span>
 </span>
 <span class="line" id="L261">                            <span class="tok-kw">if</span> (mem.indexOfScalar(<span class="tok-type">u8</span>, CommandT.OptionT.opt_val_seps, short_opts[short_idx + <span class="tok-number">1</span>]) != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L262">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn()) {</span>
+<span class="line" id="L262">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.childType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn()) {</span>
 <span class="line" id="L263">                                    log.err(<span class="tok-str">&quot;The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
 <span class="line" id="L264">                                        short_pf, </span>
 <span class="line" id="L265">                                        opt.short_name, </span>
@@ -410,7 +410,7 @@
 <span class="line" id="L287">                            <span class="tok-comment">// Handle final Option in a chain of Short Options</span>
 </span>
 <span class="line" id="L288">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (short_idx == short_opts.len - <span class="tok-number">1</span>) { </span>
-<span class="line" id="L289">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
+<span class="line" id="L289">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.childType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
 <span class="line" id="L290">                                <span class="tok-kw">else</span> {</span>
 <span class="line" id="L291">                                    parseOpt(args, OptionT, opt) <span class="tok-kw">catch</span> {</span>
 <span class="line" id="L292">                                        log.err(<span class="tok-str">&quot;Could not parse Option '{c}{?c}: {s}'.&quot;</span>, .{ </span>
@@ -428,7 +428,7 @@
 <span class="line" id="L304">                            }</span>
 <span class="line" id="L305">                            <span class="tok-comment">// Handle a boolean Option before the final Short Option in a chain.</span>
 </span>
-<span class="line" id="L306">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
+<span class="line" id="L306">                            <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.childType(), <span class="tok-str">&quot;bool&quot;</span>)) {</span>
 <span class="line" id="L307">                                <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>);</span>
 <span class="line" id="L308">                                log.debug(<span class="tok-str">&quot;Parsed Option '{?c}'.&quot;</span>, .{ opt.short_name });</span>
 <span class="line" id="L309">                                <span class="tok-kw">continue</span> :shortOpts;</span>
@@ -474,7 +474,7 @@
 <span class="line" id="L347">                            (OptionT.allow_abbreviated_long_opts <span class="tok-kw">and</span> mem.indexOf(<span class="tok-type">u8</span>, long_name, long_opt) != <span class="tok-null">null</span> <span class="tok-kw">and</span> long_name[<span class="tok-number">0</span>] == long_opt[<span class="tok-number">0</span>])</span>
 <span class="line" id="L348">                        ) {</span>
 <span class="line" id="L349">                            <span class="tok-kw">if</span> (sep_flag) {</span>
-<span class="line" id="L350">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn()) {</span>
+<span class="line" id="L350">                                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.childType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn()) {</span>
 <span class="line" id="L351">                                    log.err(<span class="tok-str">&quot;The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.&quot;</span>, .{ </span>
 <span class="line" id="L352">                                        long_pf, </span>
 <span class="line" id="L353">                                        long_name, </span>
@@ -504,7 +504,7 @@
 <span class="line" id="L376"></span>
 <span class="line" id="L377">                            <span class="tok-comment">// Handle Boolean/Toggle Option.</span>
 </span>
-<span class="line" id="L378">                            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
+<span class="line" id="L378">                            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, opt.val.childType(), <span class="tok-str">&quot;bool&quot;</span>)) <span class="tok-kw">try</span> <span class="tok-builtin">@constCast</span>(opt).val.set(<span class="tok-str">&quot;true&quot;</span>)</span>
 <span class="line" id="L379">                                <span class="tok-comment">// Handle Option with normal Argument.</span>
 </span>
 <span class="line" id="L380">                            <span class="tok-kw">else</span> {</span>
@@ -607,7 +607,7 @@
 <span class="line" id="L471">    <span class="tok-kw">const</span> peek_arg = args.peek();</span>
 <span class="line" id="L472">    <span class="tok-kw">const</span> set_arg = </span>
 <span class="line" id="L473">        <span class="tok-kw">if</span> (peek_arg == <span class="tok-null">null</span> <span class="tok-kw">or</span> peek_arg.?[<span class="tok-number">0</span>] == <span class="tok-str">'-'</span>) setArg: {</span>
-<span class="line" id="L474">            <span class="tok-kw">if</span> (!(mem.eql(<span class="tok-type">u8</span>, opt.val.valType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn())) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
+<span class="line" id="L474">            <span class="tok-kw">if</span> (!(mem.eql(<span class="tok-type">u8</span>, opt.val.childType(), <span class="tok-str">&quot;bool&quot;</span>) <span class="tok-kw">and</span> !opt.val.hasCustomParseFn())) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EmptyArgumentProvidedToOption;</span>
 <span class="line" id="L475">            _ = args.next();</span>
 <span class="line" id="L476">            <span class="tok-kw">break</span> :setArg <span class="tok-str">&quot;true&quot;</span>;</span>
 <span class="line" id="L477">        }</span>

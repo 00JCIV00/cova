@@ -316,7 +316,7 @@
 <span class="line" id="L172">                    CommandT.OptionT.long_prefix <span class="tok-kw">orelse</span> <span class="tok-number">0</span>,</span>
 <span class="line" id="L173">                    <span class="tok-kw">if</span> (CommandT.OptionT.long_prefix != <span class="tok-null">null</span>) opt.long_name <span class="tok-kw">else</span> <span class="tok-str">&quot;&quot;</span>,</span>
 <span class="line" id="L174">                    opt.val.name(),</span>
-<span class="line" id="L175">                    opt.val.valType(),</span>
+<span class="line" id="L175">                    opt.val.childType(),</span>
 <span class="line" id="L176">                    opt.description,</span>
 <span class="line" id="L177">                });</span>
 <span class="line" id="L178">        }</span>
@@ -325,7 +325,7 @@
 <span class="line" id="L181">            <span class="tok-kw">for</span> (vals) |val| </span>
 <span class="line" id="L182">                <span class="tok-kw">try</span> mp_writer.print(mp_config.vals_fmt, .{ </span>
 <span class="line" id="L183">                    val.name(), </span>
-<span class="line" id="L184">                    val.valType(),</span>
+<span class="line" id="L184">                    val.childType(),</span>
 <span class="line" id="L185">                    val.description() </span>
 <span class="line" id="L186">                });</span>
 <span class="line" id="L187">        }</span>

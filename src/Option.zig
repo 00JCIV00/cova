@@ -128,6 +128,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Option Group of this Option.
         /// This must line up with one of the Option Groups in the `opt_groups` of the parent Command or it will be ignored.
+        /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.
         opt_group: ?[]const u8 = null,
 
         /// This Option's Short Name (ex: `-s`).

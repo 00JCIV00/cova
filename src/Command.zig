@@ -215,6 +215,7 @@ pub fn Custom(comptime config: Config) type {
         cmd_groups: ?[]const []const u8 = null,
         /// Command Group of this Command.
         /// This must line up with one of the Command Groups in the `cmd_groups` of the parent Command or it will be ignored.
+        /// This can be Validated using `ValidateConfig.check_arg_groups`.
         cmd_group: ?[]const u8 = null,
         /// Option Groups.
         /// These groups are used for organizing Options in Help messages and other Generated docs.
@@ -384,6 +385,7 @@ pub fn Custom(comptime config: Config) type {
                 var remove_list = std.ArrayList([]const u8).init(alloc);
                 defer remove_list.deinit();
                 if (self.cmd_groups) |groups| {
+                    var need_other_title = false;
                     for (groups) |group| {
                         var need_title = true;
                         var cmd_iter = cmd_list.iterator();
@@ -402,6 +404,7 @@ pub fn Custom(comptime config: Config) type {
                         }
                         if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                     }
+                    if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
                 for (remove_list.items) |rem_name| _ = cmd_list.remove(rem_name);
 
@@ -423,6 +426,7 @@ pub fn Custom(comptime config: Config) type {
                 var remove_list = std.ArrayList([]const u8).init(alloc);
                 defer remove_list.deinit();
                 if (self.opt_groups) |groups| {
+                    var need_other_title = false;
                     for (groups) |group| {
                         var need_title = true;
                         var opt_iter = opt_list.iterator();
@@ -432,6 +436,7 @@ pub fn Custom(comptime config: Config) type {
                                 if (need_title) {
                                     try writer.print(group_title_fmt, .{ indent_fmt, group });
                                     need_title = false;
+                                    need_other_title = true;
                                 }
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try opt.help(writer);
@@ -441,6 +446,7 @@ pub fn Custom(comptime config: Config) type {
                         }
                         if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                     }
+                    if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
                 for (remove_list.items) |rem_name| _ = opt_list.remove(rem_name);
 
@@ -462,6 +468,7 @@ pub fn Custom(comptime config: Config) type {
                 var remove_list = std.ArrayList([]const u8).init(alloc);
                 defer remove_list.deinit();
                 if (self.val_groups) |groups| {
+                    var need_other_title = false;
                     for (groups) |group| {
                         var need_title = true;
                         var val_iter = val_list.iterator();
@@ -480,6 +487,7 @@ pub fn Custom(comptime config: Config) type {
                         }
                         if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                     }
+                    if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
                 for (remove_list.items) |rem_name| _ = val_list.remove(rem_name);
 
@@ -1125,15 +1133,47 @@ pub fn Custom(comptime config: Config) type {
 
         /// Config for the Validation of this Command.
         pub const ValidateConfig = struct {
+            // Check Argument Groups to ensure they exist.
+            check_arg_groups: bool = true,
             // Check for Usage/Help Commands
             check_help_cmds: bool = false,
             // Check for Usage/Help Options
             check_help_opts: bool = false,
         };
 
-        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values using the provided ValidateConfig (`valid_config`). 
+        /// Validate this Command during Comptime for distinct Sub Commands, Options, and Values, as well as Argument Groups, 
+        /// using the provided ValidateConfig (`valid_config`). 
         pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
             comptime {
+                // Check for existing Argument Groups.
+                // - Command Groups.
+                if (self.sub_cmds) |cmds| cmdGroups: {
+                    const groups = self.cmd_groups orelse break :cmdGroups;
+                    checkCmds: for (cmds) |cmd| {
+                        if (utils.indexOfEql([]const u8, groups, cmd.cmd_group orelse continue :checkCmds) == null)
+                            @compileError("The Command '" ++ cmd.name ++ "' has non-existent Group '" ++ cmd.cmd_group.? ++ "'.\n" ++ 
+                                          "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`");
+                    }
+                }
+                // - Option Groups.
+                if (self.opts) |opts| optGroups: {
+                    const groups = self.opt_groups orelse break :optGroups;
+                    checkCmds: for (opts) |opt| {
+                        if (utils.indexOfEql([]const u8, groups, opt.opt_group orelse continue :checkCmds) == null)
+                            @compileError("The Option '" ++ opt.name ++ "' has non-existent Group '" ++ opt.opt_group.? ++ "'.\n" ++
+                                          "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`");
+                    }
+                }
+                // - Value Groups.
+                if (self.vals) |vals| valGroups: {
+                    const groups = self.val_groups orelse break :valGroups;
+                    checkCmds: for (vals) |val| {
+                        if (utils.indexOfEql([]const u8, groups, val.valGroup() orelse continue :checkCmds) == null)
+                            @compileError("The Value '" ++ val.name() ++ "' has non-existent Group '" ++ val.valGroup.? ++ "'.\n" ++
+                                          "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`");
+                    }
+                }
+
                 @setEvalBranchQuota(100_000);
                 const usage_help_strs = .{ "usage", "help" } ++ (.{ "" } ** (max_args - 2));
                 // Check for distinct Sub Commands and Validate them.

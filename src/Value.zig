@@ -128,6 +128,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// Value Group of this Value.
         /// This must line up with one of the Value Groups in the `val_groups` of the parent Command or it will be ignored.
+        /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.
         val_group: ?[]const u8 = null,
 
         /// The Parsed and Validated Argument(s) this Value has been set to.
