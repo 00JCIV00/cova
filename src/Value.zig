@@ -120,6 +120,10 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             else break :typeParseFn null;
         };
 
+        /// An Alias for the Child Type.
+        /// This is useful for changing the type hint shown in Usage/Help messages or other Generated Docs.
+        child_type_alias: ?[]const u8 = null,
+
         /// The Allocator for this Value's parent Command.
         /// This is set during the `init()` call of this Value's parent Command.
         ///
@@ -508,7 +512,12 @@ pub fn Custom(comptime config: Config) type {
         pub fn childType(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @typeName(@TypeOf(@field(self.*.generic, @tagName(tag))).ChildT),
+                inline else => |tag| typeName: {
+                    const val = @field(self.*.generic, @tagName(tag));
+                    break :typeName 
+                        if (val.child_type_alias) |alias| alias
+                        else @typeName(@TypeOf(val).ChildT);
+                }
             };
         }
         /// Get the inner Typed Value's Description.

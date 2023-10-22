@@ -21,10 +21,22 @@ pub const CommandT = Command.Custom(.{
     .vals_mandatory = false,
     .opt_config = .{
         .usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
+        //.usage_fn = struct{
+        //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
+        //        const short_prefix = @TypeOf(self.*).short_prefix;
+        //        const long_prefix = @TypeOf(self.*).long_prefix;
+        //        try writer.print("{?c}{?c}, {?s}{?s}", .{
+        //                short_prefix, 
+        //                self.short_name, 
+        //                long_prefix, 
+        //                self.long_name,
+        //            }
+        //        );
+        //    }
+        //}.usage,
         .help_fn = struct{
-            fn help(self: anytype, writer: anytype, alloc: mem.Allocator) !void {
-                _ = alloc;
-                const indent_fmt = "    ";
+            fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
+                const indent_fmt = @TypeOf(self.*).indent_fmt;
                 try self.usage(writer);
                 try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
             }
@@ -256,6 +268,7 @@ pub const setup_cmd: CommandT = .{
             .val = ValueT.ofType([]const u8, .{
                 .name = "filepath",
                 .description = "A filepath value.",
+                .child_type_alias = "filepath",
                 .valid_fn = Value.ValidationFns.validFilepath,
             }),
             .description = "A filepath option.",
