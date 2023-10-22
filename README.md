@@ -98,13 +98,13 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 ### Package Manager
 1. Get the package hash by running:
  ```shell
- zig fetch https://github.com/00JCIV00/cova/archive/master.tar.gz
+ zig fetch https://github.com/00JCIV00/cova/archive/main.tar.gz
  ```
 2. Add the dependency to `build.zig.zon`:
 ```zig 
 .dependencies = .{
     .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/master.tar.gz",
+        .url = "https://github.com/00JCIV00/cova/archive/main.tar.gz",
         .hash = "HASH FROM STEP 1 HERE",
     },
 },
@@ -295,7 +295,7 @@ pub fn main() !void {
 
 ## Alternatives
 - [yazap](https://github.com/PrajwalCH/yazap)
-- [zig-args](https://github.com/MasterQ32/zig-args)
+- [zig-args](https://github.com/mainQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
 - [zig-cli](https://github.com/sam701/zig-cli)
 - [zig-parse-args](https://github.com/winksaville/zig-parse-args)
