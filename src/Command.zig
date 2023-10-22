@@ -381,7 +381,7 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.sub_cmds) |sub_cmds| {
                 try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
-                var cmd_list = std.StringHashMap(@This()).init(alloc);
+                var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
                 defer cmd_list.deinit();
                 for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
                 var remove_list = std.ArrayList([]const u8).init(alloc);
@@ -408,7 +408,7 @@ pub fn Custom(comptime config: Config) type {
                     }
                     if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
-                for (remove_list.items) |rem_name| _ = cmd_list.remove(rem_name);
+                for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
 
                 var cmd_iter = cmd_list.iterator();
                 while (cmd_iter.next()) |cmd_entry| {
@@ -422,7 +422,7 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.opts) |opts| {
                 try writer.print(opts_help_title_fmt, .{ indent_fmt });
-                var opt_list = std.StringHashMap(OptionT).init(alloc);
+                var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
                 defer opt_list.deinit();
                 for (opts) |opt| try opt_list.put(opt.name, opt);
                 var remove_list = std.ArrayList([]const u8).init(alloc);
@@ -450,7 +450,7 @@ pub fn Custom(comptime config: Config) type {
                     }
                     if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
-                for (remove_list.items) |rem_name| _ = opt_list.remove(rem_name);
+                for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
 
                 var opt_iter = opt_list.iterator();
                 while (opt_iter.next()) |opt_entry| {
@@ -464,7 +464,7 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.vals) |vals| {
                 try writer.print(vals_help_title_fmt, .{ indent_fmt });
-                var val_list = std.StringHashMap(ValueT).init(alloc);
+                var val_list = std.StringArrayHashMap(ValueT).init(alloc);
                 defer val_list.deinit();
                 for (vals) |val| try val_list.put(val.name(), val);
                 var remove_list = std.ArrayList([]const u8).init(alloc);
@@ -491,7 +491,7 @@ pub fn Custom(comptime config: Config) type {
                     }
                     if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
-                for (remove_list.items) |rem_name| _ = val_list.remove(rem_name);
+                for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
 
                 var val_iter = val_list.iterator();
                 while (val_iter.next()) |val_entry| {
@@ -1275,8 +1275,26 @@ pub fn Custom(comptime config: Config) type {
             add_help_cmds: bool = true,
             /// Add Usage/Help message Options to this Command.
             add_help_opts: bool = true,
+            /// Add Help Argument Group for Usage/Help Commands.
+            /// Note, this will only take effect if `add_help_cmds` is `true`.
+            add_cmd_help_group: AddHelpGroup = .AddIfOthers,
+            /// Add Help Argument Group for Usage/Help Options.
+            /// Note, this will only take effect if `add_help_opts` is `true`.
+            add_opt_help_group: AddHelpGroup = .AddIfOthers,
+            /// Help Argument Group Name.
+            help_group_name: []const u8 = "HELP",
             /// Initialize this Command's Sub Commands.
             init_subcmds: bool = true,
+
+            /// Determine behavior for adding a Help Argument Group.
+            pub const AddHelpGroup = enum{
+                /// Add if there are other Argument Groups.
+                AddIfOthers,
+                /// Add regardless of other Argument Groups.
+                Add,
+                /// Do not add.
+                DoNotAdd,
+            };
         };
 
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
@@ -1295,9 +1313,27 @@ pub fn Custom(comptime config: Config) type {
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
             if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                const add_cmd_help_group = switch (init_config.add_cmd_help_group) {
+                    .AddIfOthers => ifOthers: {
+                        if (init_cmd.cmd_groups) |cmd_groups| {
+                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } });
+                            break :ifOthers true;
+                        }
+                        break :ifOthers false;
+                    },
+                    .Add => add: {
+                        init_cmd.cmd_groups = 
+                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } })
+                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                        break :add true;
+                    },
+                    .DoNotAdd => false,
+                };
+
                 const help_sub_cmds = &[2]@This(){
                     .{
                         .name = "usage",
+                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = usage_description,
                         ._is_init = true,
@@ -1305,6 +1341,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         .name = "help",
+                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = help_description,
                         ._is_init = true,
@@ -1336,9 +1373,26 @@ pub fn Custom(comptime config: Config) type {
             }
 
             if (init_config.add_help_opts) {
+                const add_opt_help_group = switch (init_config.add_opt_help_group) {
+                    .AddIfOthers => ifOthers: {
+                        if (init_cmd.opt_groups) |opt_groups| {
+                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } });
+                            break :ifOthers true;
+                        }
+                        break :ifOthers false;
+                    },
+                    .Add => add: {
+                        init_cmd.opt_groups = 
+                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } })
+                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                        break :add true;
+                    },
+                    .DoNotAdd => false,
+                };
                 const help_opts = &[2]OptionT{
                     .{
                         ._alloc = alloc,
+                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
                         .name = "usage",
                         .short_name = 'u',
                         .long_name = "usage",
@@ -1347,6 +1401,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         ._alloc = alloc,
+                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
