@@ -128,6 +128,7 @@ pub const setup_cmd: CommandT = .{
     .sub_cmds = &.{
         .{
             .name = "sub-cmd",
+            .alias_names = &.{ "alias-cmd", "test-alias" },
             .description = "A demo sub command.",
             .cmd_group = "RAW",
             .opts = &.{

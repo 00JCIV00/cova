@@ -238,6 +238,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// The Name of this Command for user identification and Usage/Help messages.
         name: []const u8,
+        /// A list of Alias Names for this Command that can be used in place of `name`.
+        alias_names: ?[]const []const u8 = null,
         /// The Prefix message used immediately before a Usage/Help message is displayed.
         help_prefix: []const u8 = global_help_prefix,
         /// The Description of this Command for Usage/Help messages.

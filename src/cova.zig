@@ -234,10 +234,15 @@ pub fn parseArgs(
         if (init_arg == null) break :parseArg;
         var unmatched = false;
         // Check for a Sub Command first...
-        if (cmd.sub_cmds != null) {
+        if (cmd.sub_cmds) |cmds| {
             log.debug("Attempting to Parse Commands...", .{});
-            for (cmd.sub_cmds.?) |*sub_cmd| {
-                if (mem.eql(u8, sub_cmd.name, arg)) {
+            checkCmds: for (cmds) |*sub_cmd| {
+                const parse_cmd = parseCmd: {
+                    if (mem.eql(u8, sub_cmd.name, arg)) break :parseCmd true
+                    else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :parseCmd true;
+                    break :parseCmd false;
+                };
+                if (parse_cmd) {
                     parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch |err| return err;
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
