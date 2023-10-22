@@ -92,6 +92,16 @@ pub const Config = struct {
         \\
         \\
     ,
+    /// Alias List Format for the displayed Command
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    /// 2. String (Aliases)
+    /// Note, there will be curly-brackets `{}` surrounding the list due to how Zig handles printing `[]const []const u8`.
+    cmd_alias_fmt: []const u8 = 
+        \\{s}ALIAS(ES): {s}
+        \\
+        \\
+    ,
     /// Usage Header Format
     /// Must support the following format types in this order:
     /// 1. String (Command)
@@ -116,7 +126,12 @@ pub const Config = struct {
     /// Sub Commands Usage Format.
     /// Must support the following format types in this order:
     /// 1. String (Command Name)
-    subcmds_usage_fmt: []const u8 ="'{s}'", 
+    subcmds_usage_fmt: []const u8 = "'{s}'", 
+    /// Sub Commands Alias List Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Aliases)
+    /// Note, there will be curly-brackets `{}` surrounding the list due to how Zig handles printing `[]const []const u8`.
+    subcmd_alias_fmt: []const u8 = "[alias(es): {s}]",
 
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used for both `init()` and `from()` but can be overwritten for the latter.
@@ -175,6 +190,9 @@ pub fn Custom(comptime config: Config) type {
         /// Help Header Format.
         /// Check (`Command.Config`) for details.
         pub const help_header_fmt = config.help_header_fmt;
+        /// Alias List Header Format.
+        /// Check (`Command.Config`) for details.
+        pub const cmd_alias_fmt = config.cmd_alias_fmt;
         /// Usage Header Format.
         /// Check (`Command.Config`) for details.
         pub const usage_header_fmt = config.usage_header_fmt;
@@ -193,6 +211,9 @@ pub fn Custom(comptime config: Config) type {
         /// Sub Commands Usage Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_usage_fmt = config.subcmds_usage_fmt;
+        /// Sub Commands Alias List Format.
+        /// Check (`Command.Config`) for details.
+        pub const subcmd_alias_fmt = config.subcmd_alias_fmt;
         /// Global Help Prefix.
         /// Check (`Command.Config`) for details.
         pub const global_help_prefix = config.global_help_prefix;
@@ -379,6 +400,8 @@ pub fn Custom(comptime config: Config) type {
                 indent_fmt, self.description 
             });
 
+            if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases });
+
             if (self.sub_cmds) |sub_cmds| {
                 try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
                 var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
@@ -400,6 +423,10 @@ pub fn Custom(comptime config: Config) type {
                                 }
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
+                                if (cmd.alias_names) |aliases| {
+                                    try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
+                                    try writer.print(subcmd_alias_fmt, .{ aliases });
+                                }
                                 try writer.print("\n", .{});
                                 try remove_list.append(cmd.name);
                             }
