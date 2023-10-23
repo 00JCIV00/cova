@@ -115,7 +115,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// Check `Value.Config` for details.
         pub const type_parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeParseFn: {
             for (config.custom_parse_fns orelse break :typeParseFn null) |elm| {
-                if (elm.FnT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @ptrCast(elm.parse_fn));
+                if (elm.FnT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.parse_fn)));
             }
             else break :typeParseFn null;
         };
