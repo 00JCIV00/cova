@@ -2,6 +2,7 @@
 
 // Standard
 const std = @import("std");
+const ascii = std.ascii;
 const mem = std.mem;
 const meta = std.meta;
 
@@ -70,7 +71,7 @@ fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: 
     }
 }
 
-/// Find the Index of a Scalar or Slice `needle` within a Slice `haystack`. (Why is this not in std.mem?!?!? Did I miss it?)
+/// Find the Index of any Type, Scalar or Slice, (`needle`) within a Slice of that Type (`haystack`). (Why is this not in std.mem?!?!? Did I miss it?)
 pub fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
     switch (@typeInfo(T)) {
         .Pointer => |ptr| {
@@ -81,3 +82,8 @@ pub fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
     }
 }
 
+/// Find the Index of a String (`needle`) within a Slice of Strings `haystack`. (Why is this not in std.mem?!?!? Did I miss it?)
+pub fn indexOfEqlIgnoreCase(haystack: []const []const u8, needle: []const u8) ?usize {
+    for (haystack, 0..) |hay, idx| if (ascii.eqlIgnoreCase(hay, needle)) return idx;
+    return null;
+}

@@ -102,6 +102,9 @@ pub const Config = struct {
     /// This is allowed per the POSIX standard, but may not be ideal in every use case.
     /// Note, this does not check for uniqueness and will simply match on the first Option matching the abbreviation.
     allow_abbreviated_long_opts: bool = true,
+    /// During parsing, mandate that Option instances of this Option Type must be used in a case-sensitive manner when called by their Long Name.
+    /// This will also affect Command Validation, but will NOT affect Tab-Completion.
+    global_case_sensitive: bool = true,
 };
 
 /// Create an Option type with the Base (default) configuration.
@@ -171,6 +174,10 @@ pub fn Custom(comptime config: Config) type {
         name: []const u8,
         /// The Description of this Option for Usage/Help messages.
         description: []const u8 = "",
+
+        /// During parsing, mandate that THIS Option must be used in a case-sensitive manner when called by its Long Name.
+        /// This will NOT affect Option Validation, nor will it carry over to Tab-Completions.
+        case_sensitive: bool = config.global_case_sensitive,
 
         // (WIP) TODO: Figure out if this is possible
         ///// A custom Help function to override the default `help()` function for this custom Option INSTANCE.

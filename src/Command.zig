@@ -32,7 +32,6 @@ const toUpper = ascii.toUpper;
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 const utils = @import("utils.zig");
-const indexOfEql = utils.indexOfEql;
 
 
 /// Config for custom Command types. 
@@ -142,11 +141,14 @@ pub const Config = struct {
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
     /// This will not include Usage/Help Commands.
     /// This can be overwritten on individual Commands using the `Command.Custom.sub_cmds_mandatory` field.
-    sub_cmds_mandatory: bool = true,
+    global_sub_cmds_mandatory: bool = true,
     /// During parsing, mandate that all Values for a Command must be filled, otherwise error out.
     /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
     /// This can be overwritten on individual Commands using the `Command.Custom.vals_mandatory` field.
-    vals_mandatory: bool = true,
+    global_vals_mandatory: bool = true,
+    /// During parsing, mandate that Command instances of this Command Type, and their aliases, must be used in a case-sensitive manner.
+    /// This will also affect Command Validation, but will NOT affect Tab-Completion.
+    global_case_sensitive: bool = true,
 };
 
 /// Create a Command type with the Base (default) configuration.
@@ -223,6 +225,7 @@ pub fn Custom(comptime config: Config) type {
         /// Check (`Command.Config`) for details.
         pub const max_args = config.max_args;
 
+
         /// Flag denoting if this Command has been initialized to memory using `init()`.
         ///
         /// **Internal Use.**
@@ -270,10 +273,13 @@ pub fn Custom(comptime config: Config) type {
 
         /// During parsing, mandate that a Sub Command be used with this Command if one is available.
         /// Note, this will not include Usage/Help Commands.
-        sub_cmds_mandatory: bool = config.sub_cmds_mandatory,
+        sub_cmds_mandatory: bool = config.global_sub_cmds_mandatory,
         /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
         /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
-        vals_mandatory: bool = config.vals_mandatory,
+        vals_mandatory: bool = config.global_vals_mandatory,
+        /// During parsing, mandate that THIS Command, and its aliases, must be used in a case-sensitive manner.
+        /// This will NOT affect Command Validation nor Tab-Completion.
+        case_sensitive: bool = config.global_case_sensitive,
 
 
         /// Sets the active Sub Command for this Command.
@@ -760,7 +766,7 @@ pub fn Custom(comptime config: Config) type {
                             for (arg_name) |char| {
                                 const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
                                 for (ul_chars) |ul| {
-                                    if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
+                                    if (short_idx > 0 and utils.indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
                                     short_names[short_idx] = ul;
                                     short_idx += 1;
                                     break :shortName ul;
@@ -797,7 +803,7 @@ pub fn Custom(comptime config: Config) type {
                                     for (arg_name) |char| {
                                         const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
                                         for (ul_chars) |ul| {
-                                            if (short_idx > 0 and indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
+                                            if (short_idx > 0 and utils.indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
                                             short_names[short_idx] = ul;
                                             short_idx += 1;
                                             break :shortName ul;
@@ -848,8 +854,8 @@ pub fn Custom(comptime config: Config) type {
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
-                .sub_cmds_mandatory = if (from_config.sub_cmds_mandatory) |config_sub_man| config_sub_man else config.sub_cmds_mandatory,
-                .vals_mandatory = if (from_config.vals_mandatory) |config_vals_man| config_vals_man else config.vals_mandatory,
+                .sub_cmds_mandatory = if (from_config.sub_cmds_mandatory) |config_sub_man| config_sub_man else config.global_sub_cmds_mandatory,
+                .vals_mandatory = if (from_config.vals_mandatory) |config_vals_man| config_vals_man else config.global_vals_mandatory,
             };
         }
 
@@ -1195,9 +1201,10 @@ pub fn Custom(comptime config: Config) type {
                         if (!valid_config.check_help_cmds) .{ "" } ** max_args
                         else usage_help_strs; 
                     for (cmds, 0..) |cmd, idx| {
-                        if (indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
+                        if (self.case_sensitive and utils.indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
                             @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
-                        //cmd.validate();
+                        if (!self.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_cmd[0..idx], cmd.name) != null) 
+                            @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
                         distinct_cmd[idx + idx_offset] = cmd.name;
                     }
                 }
@@ -1215,14 +1222,18 @@ pub fn Custom(comptime config: Config) type {
                         if (!valid_config.check_help_opts) .{ "" } ** max_args
                         else usage_help_strs; 
                     for (opts, 0..) |opt, idx| {
-                        if (indexOfEql([]const u8, distinct_name[0..], opt.name) != null) 
+                        if (utils.indexOfEql([]const u8, distinct_name[0..], opt.name) != null) 
                             @compileError("The Option '" ++ opt.name ++ "' is set more than once.");
                         distinct_name[idx + idx_offset] = opt.name;
-                        if (opt.short_name != null and indexOfEql(u8, distinct_short[0..], opt.short_name.?) != null) 
+                        if (opt.short_name != null and utils.indexOfEql(u8, distinct_short[0..], opt.short_name.?) != null) 
                             @compileError("The Option Short Name '" ++ .{ opt.short_name.? } ++ "' is set more than once.");
                         distinct_short[idx + idx_offset] = opt.short_name orelse ' ';
-                        if (opt.long_name != null and indexOfEql([]const u8, distinct_long[0..], opt.long_name.?) != null) 
-                            @compileError("The Option Long Name '" ++ opt.long_name.? ++ "' is set more than once.");
+                        if (opt.long_name) |long_name| {
+                            if (
+                                (opt.case_sensitive and utils.indexOfEql([]const u8, distinct_long[0..], long_name) != null) or
+                                (!opt.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_long[0..], long_name) != null)
+                            ) @compileError("The Option Long Name '" ++ long_name ++ "' is set more than once.");
+                        }
                         distinct_long[idx + idx_offset] = opt.long_name orelse "a!garbage@long#name$";
                     }
                 }
@@ -1231,7 +1242,7 @@ pub fn Custom(comptime config: Config) type {
                 if (self.vals) |vals| {
                     var distinct_val: [max_args][]const u8 = .{ "" } ** max_args;
                     for (vals, 0..) |val, idx| {
-                        if (indexOfEql([]const u8, distinct_val[0..], val.name()) != null) 
+                        if (utils.indexOfEql([]const u8, distinct_val[0..], val.name()) != null) 
                             @compileError("The Value '" ++ val.name ++ "' is set more than once.");
                         distinct_val[idx] = val.name();
                     }
@@ -1275,13 +1286,20 @@ pub fn Custom(comptime config: Config) type {
                         checkCmds2: for (cmds[idx..]) |cmd_2| {
                             if (mem.eql(u8, cmd_1.name, cmd_2.name)) continue :checkCmds2;
                             checkAliases: for (cmd_1.alias_names orelse continue :checkCmds1) |alias| {
-                                if (mem.eql(u8, cmd_2.name, alias))
+                                const case_sense = cmd_1.case_sensitive or cmd_2.case_sensitive; 
+                                if (
+                                    (case_sense and mem.eql(u8, cmd_2.name, alias)) or
+                                    (!case_sense and ascii.eqlIgnoreCase(cmd_2.name, alias))
+                                )
                                     @compileError(
                                         "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Command '" ++ 
                                         cmd_2.name ++ "'.\n" ++ 
                                         "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`."
                                     );
-                                if (utils.indexOfEql([]const u8, cmd_2.alias_names orelse continue :checkAliases, alias) != null)
+                                if (
+                                    (case_sense and utils.indexOfEql([]const u8, cmd_2.alias_names orelse continue :checkAliases, alias) != null) or
+                                    (!case_sense and utils.indexOfEqlIgnoreCase(cmd_2.alias_names orelse continue :checkAliases, alias) != null)
+                                )
                                     @compileError(
                                         "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Command '" ++ 
                                         cmd_2.name ++ "'.\n" ++ 
@@ -1341,7 +1359,7 @@ pub fn Custom(comptime config: Config) type {
             const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' usage display." });
             const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
 
-            if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+            if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                 const add_cmd_help_group = switch (init_config.add_cmd_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.cmd_groups) |cmd_groups| {
@@ -1388,7 +1406,7 @@ pub fn Custom(comptime config: Config) type {
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
                 inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config);
-                if (init_config.add_help_cmds and (indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
                 }

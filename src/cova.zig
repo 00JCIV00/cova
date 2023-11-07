@@ -17,6 +17,7 @@
 // Standard
 const builtin = @import("builtin");
 const std = @import("std");
+const ascii = std.ascii;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -238,8 +239,14 @@ pub fn parseArgs(
             log.debug("Attempting to Parse Commands...", .{});
             checkCmds: for (cmds) |*sub_cmd| {
                 const parse_cmd = parseCmd: {
-                    if (mem.eql(u8, sub_cmd.name, arg)) break :parseCmd true
-                    else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :parseCmd true;
+                    if (sub_cmd.case_sensitive) { 
+                        if (mem.eql(u8, sub_cmd.name, arg)) break :parseCmd true
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :parseCmd true;
+                    }
+                    else {
+                        if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) break :parseCmd true
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (ascii.eqlIgnoreCase(alias, arg)) break :parseCmd true;
+                    }
                     break :parseCmd false;
                 };
                 if (parse_cmd) {
@@ -347,10 +354,18 @@ pub fn parseArgs(
                 const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
                 for (cmd.opts.?) |*opt| {
                     if (opt.long_name) |long_name| {
-                        if (
-                            mem.eql(u8, long_opt, long_name) or
-                            (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
-                        ) {
+                        if (matchOpt: {
+                            break :matchOpt if (opt.case_sensitive)
+                                mem.eql(u8, long_opt, long_name) or
+                                (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
+                            else
+                                ascii.eqlIgnoreCase(long_opt, long_name) or
+                                (
+                                    OptionT.allow_abbreviated_long_opts and 
+                                    ascii.indexOfIgnoreCase(long_name, long_opt) != null and 
+                                    ascii.eqlIgnoreCase(long_name[0..1], long_opt[0..1])
+                                );
+                        }) {
                             if (sep_flag) {
                                 if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
                                     log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 

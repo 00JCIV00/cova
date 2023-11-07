@@ -18,9 +18,11 @@ const Value = cova.Value;
 const ex_structs = @import("example_structs.zig");
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
-    .vals_mandatory = false,
+    .global_vals_mandatory = false,
+    //.global_case_sensitive = false,
     .opt_config = .{
         .usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
+        //.global_case_sensitive = false,
         //.usage_fn = struct{
         //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
         //        const short_prefix = @TypeOf(self.*).short_prefix;
