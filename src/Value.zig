@@ -42,12 +42,14 @@ pub const Config = struct {
     /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function.
     /// This function is implemented on the `Value.Typed.parse_fn` field.
     custom_types: []const type = &.{},
-    /// Custom Parsing Functions to be used in place of the normal `parse()` for Argument Parsing for all instances of a `Value.Typed` Type.
+    /// Custom Parsing Functions to be used in place of the normal `parse()` for Argument Parsing for all instances of a `Value.Typed` Child Type.
     /// These functions will be used SECOND, after an instance's `self.parse_fn` but before the normal `parse()` functions are tried.
-    /// This can be used to overwrited the `parse()` implementation for an existing Type that's already in `Value.Generic`.
+    /// This can be used to overwrite the `parse()` implementation for an existing Child Type that's already in `Value.Generic`.
     /// Note that any error caught from these function will be returned as `error.CannotParseArgToValue`.
-    custom_parse_fns: ?[]const struct{ 
-        FnT: type,
+    child_type_parse_fns: ?[]const struct{ 
+        /// The Child Type this function applies to.
+        ChildT: type,
+        /// The custom Parse Function.
         parse_fn: *const anyopaque, 
     } = null,
 
@@ -62,20 +64,48 @@ pub const Config = struct {
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     max_int_bit_width: u16 = 256,
 
-    /// A custom Help function to override the default `help()`.
+    /// A custom Help function to override the default `help()` function globally for ALL Value instances of this custom Value Type.
+    /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
-    /// A custom Usage function to override the default `usage()`.
+    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// A custom Help function to override the default `usage()` function globally for ALL Value instances of this custom Value Type.
+    /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed.)
+    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// Custom Help functions to override the default `help()` function for all Value instances with a matching Child Type.
+    /// These functions are 1st in precedence.
+    child_type_help_fns: ?[]const struct{ 
+        /// The Child Type this function applies to.
+        ChildT: type,
+        /// The custom Help Function.
+        ///
+        /// Function parameters:
+        /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
+        /// 2. Writer (This is the Writer that will written to.)
+        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+        help_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+    } = null,
+    /// Custom Usage functions to override the default `usage()` function for all Value instances with a matching Child Type.
+    /// These functions are 1st in precedence.
+    child_type_usage_fns: ?[]const struct{ 
+        /// The Child Type this function applies to.
+        ChildT: type,
+        /// The custom Usage Function.
+        ///
+        /// Function parameters:
+        /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
+        /// 2. Writer (This is the Writer that will written to.)
+        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+        usage_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+    } = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, if this is left null, it will inherit from the Command Config. 
@@ -111,13 +141,30 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The child Type of this Value.
         pub const ChildT = SetT;
 
-        /// Custom parsing function for this Value Type.
+        /// Custom Parsing function for this Value Type.
         /// Check `Value.Config` for details.
-        pub const type_parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeParseFn: {
-            for (config.custom_parse_fns orelse break :typeParseFn null) |elm| {
-                if (elm.FnT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.parse_fn)));
+        pub const child_type_parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeParseFn: {
+            for (config.child_type_parse_fns orelse break :typeParseFn null) |elm| {
+                if (elm.ChildT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.parse_fn)));
             }
             else break :typeParseFn null;
+        };
+
+        /// Custom Help function for this Value Type.
+        /// Check `Value.Config` for details.
+        pub const child_type_help_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeHelpFn: {
+            for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
+                if (elm.ChildT == SetT) break :typeHelpFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.help_fn)));
+            }
+            else break :typeHelpFn null;
+        };
+        /// Custom Usage function for this Value Type.
+        /// Check `Value.Config` for details.
+        pub const child_type_usage_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeUsageFn: {
+            for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
+                if (elm.ChildT == SetT) break :typeUsageFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.usage_fn)));
+            }
+            else break :typeUsageFn null;
         };
 
         /// An Alias for the Child Type.
@@ -179,7 +226,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
             if (self.parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
-            if (type_parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
+            if (child_type_parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
             var san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(ChildT)) {
@@ -447,10 +494,10 @@ pub fn Custom(comptime config: Config) type {
 
         /// Custom Help Function.
         /// Check (`Command.Config`) for details.
-        pub const help_fn = config.help_fn;
+        pub const global_help_fn = config.global_help_fn;
         /// Custom Usage Function.
         /// Check (`Command.Config`) for details.
-        pub const usage_fn = config.usage_fn;
+        pub const global_usage_fn = config.global_usage_fn;
 
         /// Values Help Format.
         /// Check (`Command.Config`) for details.
@@ -549,7 +596,7 @@ pub fn Custom(comptime config: Config) type {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| hasFn: {
                     const val = @field(self.*.generic, @tagName(tag));
-                    break :hasFn val.parse_fn != null or @TypeOf(val).type_parse_fn != null;
+                    break :hasFn val.parse_fn != null or @TypeOf(val).child_type_parse_fn != null;
                 }
             };
         }
@@ -561,9 +608,7 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Check if the inner Typed Value's has a custom `parse_fn` or `valid_fn`.
         pub fn hasCustomFn(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| self.hasCustomParseFn or @field(self.*.generic, @tagName(tag)).valid_fn != null,
-            };
+            return self.hasCustomParseFn() or self.hasCustomValidFn();
         }
 
         /// Create a Custom Value with a specific Type (`T`).
@@ -640,12 +685,24 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (help_fn) |helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
+            switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| {
+                    const val = @field(self.*.generic, @tagName(tag));
+                    if (@TypeOf(val).child_type_help_fn)|helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
+                }
+            }
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
             try writer.print(vals_help_fmt, .{ self.name(), self.childType(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (usage_fn) |usageFn| return usageFn(self, writer, self.allocator orelse return error.ValueNotInitialized);
+            switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| {
+                    const val = @field(self.*.generic, @tagName(tag));
+                    if (@TypeOf(val).child_type_usage_fn)|usageFn| return usageFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
+                }
+            }
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator orelse return error.ValueNotInitialized);
             try writer.print(vals_usage_fmt, .{ self.name(), self.childType() });
         }
 

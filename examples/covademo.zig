@@ -34,7 +34,7 @@ pub const CommandT = Command.Custom(.{
         //        );
         //    }
         //}.usage,
-        .help_fn = struct{
+        .global_help_fn = struct{
             fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
                 const indent_fmt = @TypeOf(self.*).indent_fmt;
                 try self.usage(writer);
@@ -44,9 +44,9 @@ pub const CommandT = Command.Custom(.{
     },
     .val_config = .{
         .custom_types = &.{ u1024 },
-        .custom_parse_fns = &.{
+        .child_type_parse_fns = &.{
             .{
-                .FnT = bool,
+                .ChildT = bool,
                 .parse_fn = Value.ParsingFns.Builder.altBool(
                     &.{ "true", "t", "yes", "y", "1", "ok" },
                     &.{ "false", "f", "no", "n", "0" },
@@ -54,12 +54,12 @@ pub const CommandT = Command.Custom(.{
                 )
             },
             .{
-                .FnT = u1024,
+                .ChildT = u1024,
                 .parse_fn = struct{ fn testFn(arg: []const u8, alloc: mem.Allocator) !u1024 { _ = arg; _ = alloc; return 69696969696969; } }.testFn,
             },
         },
     },
-    .usage_fn = struct{ 
+    .global_usage_fn = struct{ 
         fn usage(self: anytype, writer: anytype, alloc: mem.Allocator) !void { 
             _ = alloc;
             // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
@@ -369,13 +369,13 @@ pub fn main() !void {
     const alloc = arena.allocator();
     const stdout = std.io.getStdOut().writer();
 
-    const main_cmd = &(try setup_cmd.init(alloc, .{})); 
+    const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit();
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
 
     // Parsing
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ 
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{ 
         //.auto_handle_usage_help = false,
     }) catch |err| switch (err) {
         error.UsageHelpCalled => {},
@@ -385,7 +385,7 @@ pub fn main() !void {
     // Analysis
     // - Debug Output of Commands after Parsing. 
     try stdout.print("\n", .{});
-    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});

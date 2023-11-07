@@ -21,30 +21,58 @@ const Value = @import("Value.zig");
 /// Config for custom Option types.
 pub const Config = struct {
     /// Value Config for this Option type.
-    /// This will default to the same Value.Config used by the overarching custom Command type of this custom Option type.
+    /// This will default to the same Value.Config used by the overarching custom Command Type of this custom Option Type.
     val_config: Value.Config = .{},
 
-    /// A custom Help function to override the default `help()`.
+    /// A custom Help function to override the default `help()` function globally for ALL Option instances of this custom Option Type.
+    /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
-    /// A custom Usage function to override the default `usage()`.
+    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// A custom Usage function to override the default `usage()` function globally for ALL Option instances of this custom Option Type.
+    /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// Custom Help functions to override the default `help()` function for all Option instances with a matching Value Child Type.
+    /// These functions are 1st in precedence.
+    child_type_help_fns: ?[]const struct{ 
+        /// The Child Type this function applies to.
+        ChildT: type,
+        /// The custom Help Function.
+        ///
+        /// Function parameters:
+        /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
+        /// 2. Writer (This is the Writer that will written to.)
+        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+        help_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+    } = null,
+    /// Custom Usage functions to override the default `usage()` function for all Option instances with a matching Value Child Type.
+    /// These functions are 1st in precedence.
+    child_type_usage_fns: ?[]const struct{ 
+        /// The Child Type this function applies to.
+        ChildT: type,
+        /// The custom Usage Function.
+        ///
+        /// Function parameters:
+        /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
+        /// 2. Writer (This is the Writer that will written to.)
+        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+        usage_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+    } = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, if this is left null, it will inherit from the Command Config. 
     indent_fmt: ?[]const u8 = null,
     /// Format for the Help message. 
     ///
-    /// Must support the following format types in this order:
+    // Must support the following format types in this order:
     /// 1. String (Name)
     /// 2. String (Description)
     help_fmt: ?[]const u8 = null,
@@ -86,12 +114,12 @@ pub fn Custom(comptime config: Config) type {
         /// The Custom Value type used by this Custom Option type.
         const ValueT = Value.Custom(config.val_config);
 
-        /// Custom Help Function.
+        /// Custom Global Help Function.
         /// Check (`Command.Config`) for details.
-        pub const help_fn = config.help_fn;
-        /// Custom Usage Function.
+        pub const global_help_fn = config.global_help_fn;
+        /// Custom Global Usage Function.
         /// Check (`Command.Config`) for details.
-        pub const usage_fn = config.usage_fn;
+        pub const global_usage_fn = config.global_usage_fn;
 
         /// Indent Format.
         /// Check (`Command.Config`) for details.
@@ -144,9 +172,45 @@ pub fn Custom(comptime config: Config) type {
         /// The Description of this Option for Usage/Help messages.
         description: []const u8 = "",
 
+        // (WIP) TODO: Figure out if this is possible
+        ///// A custom Help function to override the default `help()` function for this custom Option INSTANCE.
+        ///// This function is 1st in precedence.
+        /////
+        ///// Function signature:
+        ///// `fn(anytype, anytype, mem.Allocator)anyerror!void = null`
+        ///// Function parameters:
+        ///// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
+        ///// 2. Writer (This is the Writer that will written to.)
+        ///// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+        //help_fn: ?*anyopaque = null, 
+        ///// A custom Usage function to override the default `usage()` function for this custom Option INSTANCE.
+        ///// This function is 1st in precedence.
+        /////
+        ///// Function signature:
+        ///// `fn(anytype, anytype, mem.Allocator)anyerror!void = null`
+        ///// Function parameters:
+        ///// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
+        ///// 2. Writer (This is the Writer that will written to.)
+        ///// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
+        //usage_fn: ?*anyopaque = null,
+
         /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            // (WIP)
+            //if (self.help_fn) |help_fn_opaque| { 
+            //    const helpFn = @as(*const fn(anytype, anytype, mem.Allocator) anyerror!void, @alignCast(@ptrCast(help_fn_opaque)));
+            //    return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            //}
+            if (typeHelpFn: {
+                const val_child_type = self.val.childType();
+                for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
+                    if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                        break :typeHelpFn elm.help_fn;
+                }
+                else break :typeHelpFn null;
+            }) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
             upper_name[0] = toUpper(self.name[0]);
@@ -159,7 +223,21 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            // (WIP)
+            //if (self.usage_fn) |usage_fn_opaque| { 
+            //    const usageFn = @as(*const fn(anytype, anytype, mem.Allocator) anyerror!void, @alignCast(@ptrCast(usage_fn_opaque)));
+            //    return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            //}
+            if (typeUsageFn: {
+                const val_child_type = self.val.childType();
+                for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
+                    if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                        break :typeUsageFn elm.usage_fn;
+                }
+                else break :typeUsageFn null;
+            }) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+
             try writer.print(usage_fmt, .{ 
                 short_prefix orelse 0,
                 if (short_prefix != null) self.short_name else 0,
@@ -182,6 +260,13 @@ pub fn Custom(comptime config: Config) type {
             ignore_incompatible: bool = true,
             /// Description for the Option.
             opt_description: ?[]const u8 = null,
+            // (WIP)
+            ///// Custom Help function.
+            ///// Check `Option.Custom.help_fn` for details.
+            //help_fn: ?*anyopaque = null,
+            ///// Custom Usage function.
+            ///// Check `Option.Custom.usage_fn` for details.
+            //usage_fn: ?*anyopaque = null,
         };
 
         /// Create an Option from a Valid Optional StructField or UnionField (`field`) with the provided FromConfig (`from_config`).
@@ -199,6 +284,8 @@ pub fn Custom(comptime config: Config) type {
                 .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
                 .long_name = if (from_config.long_name) |long_name| long_name else field.name,
                 .short_name = from_config.short_name, 
+                //.help_fn = from_config.help_fn,
+                //.usage_fn = from_config.usage_fn,
                 .val = optVal: {
                     const child_info = @typeInfo(optl.child);
                     switch (child_info) {

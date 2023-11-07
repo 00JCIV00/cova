@@ -93,7 +93,7 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
 }
 
 /// A basic Raw Argument Iterator.
-/// This is intended for testing, but can also be used to process an externally sourced slice of utf8 argument tokens.
+/// This is intended for testing, but can also be used to process an externally sourced slice of utf-8 argument tokens.
 pub const RawArgIterator = struct {
     index: u16 = 0,
     args: []const [:0]const u8,
@@ -164,7 +164,7 @@ pub const ArgIteratorGeneric = union(enum) {
         return genIter: inline for (meta.fields(@This())) |field| {
             if (field.type == iter_type) break :genIter @unionInit(@This(), field.name, arg_iter);
         }
-        else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by ArgIteratorGeneric.");
+        else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by the ArgIteratorGeneric Interface.");
     }
 
     /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
