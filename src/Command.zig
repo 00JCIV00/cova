@@ -653,10 +653,13 @@ pub fn Custom(comptime config: Config) type {
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
             /// During parsing, mandate that a Sub Command be used with a Command if one is available.
             /// This will not include Usage/Help Commands.
-            sub_cmds_mandatory: ?bool = null,
+            sub_cmds_mandatory: bool = config.global_sub_cmds_mandatory,
             /// During parsing, mandate that all Values for a Command must be filled, otherwise error out.
             /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
-            vals_mandatory: ?bool = null,
+            vals_mandatory: bool = config.global_vals_mandatory,
+            /// During parsing, mandate that THIS Command, and its aliases, must be used in a case-sensitive manner.
+            /// This will NOT affect Command Validation nor Tab-Completion.
+            case_sensitive: bool = config.global_case_sensitive,
 
             /// Max number of Sub Commands.
             max_cmds: u8 = max_args,
@@ -854,8 +857,11 @@ pub fn Custom(comptime config: Config) type {
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
-                .sub_cmds_mandatory = if (from_config.sub_cmds_mandatory) |config_sub_man| config_sub_man else config.global_sub_cmds_mandatory,
-                .vals_mandatory = if (from_config.vals_mandatory) |config_vals_man| config_vals_man else config.global_vals_mandatory,
+                //.sub_cmds_mandatory = if (from_config.sub_cmds_mandatory) |config_sub_man| config_sub_man else config.global_sub_cmds_mandatory,
+                //.vals_mandatory = if (from_config.vals_mandatory) |config_vals_man| config_vals_man else config.global_vals_mandatory,
+                .sub_cmds_mandatory = from_config.sub_cmds_mandatory,
+                .vals_mandatory = from_config.vals_mandatory,
+                .case_sensitive = from_config.case_sensitive,
             };
         }
 
@@ -935,6 +941,9 @@ pub fn Custom(comptime config: Config) type {
                 .help_prefix = from_config.cmd_help_prefix,
                 .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
                 .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
+                .sub_cmds_mandatory = from_config.sub_cmds_mandatory,
+                .vals_mandatory = true,
+                .case_sensitive = from_config.case_sensitive,
             };
         }
 
