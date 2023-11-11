@@ -121,7 +121,7 @@
 <span class="line" id="L7"><span class="tok-kw">const</span> has_armaes = std.Target.aarch64.featureSetHas(builtin.cpu.features, .aes);</span>
 <span class="line" id="L8"><span class="tok-comment">// C backend doesn't currently support passing vectors to inline asm.</span>
 </span>
-<span class="line" id="L9"><span class="tok-kw">const</span> impl = <span class="tok-kw">if</span> (builtin.cpu.arch == .x86_64 <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c <span class="tok-kw">and</span> has_aesni <span class="tok-kw">and</span> has_avx) impl: {</span>
+<span class="line" id="L9"><span class="tok-kw">const</span> impl = <span class="tok-kw">if</span> (builtin.cpu.arch == .x86_64 <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c <span class="tok-kw">and</span> builtin.zig_backend != .stage2_x86_64 <span class="tok-kw">and</span> has_aesni <span class="tok-kw">and</span> has_avx) impl: {</span>
 <span class="line" id="L10">    <span class="tok-kw">break</span> :impl <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;aes/aesni.zig&quot;</span>);</span>
 <span class="line" id="L11">} <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.cpu.arch == .aarch64 <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c <span class="tok-kw">and</span> has_armaes)</span>
 <span class="line" id="L12">impl: {</span>
@@ -164,7 +164,7 @@
 <span class="line" id="L48"></span>
 <span class="line" id="L49">    <span class="tok-kw">var</span> out: [exp_out.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L50">    <span class="tok-kw">var</span> ctx = Aes128.initEnc(key);</span>
-<span class="line" id="L51">    ctr(AesEncryptCtx(Aes128), ctx, out[<span class="tok-number">0</span>..], in[<span class="tok-number">0</span>..], iv, std.builtin.Endian.Big);</span>
+<span class="line" id="L51">    ctr(AesEncryptCtx(Aes128), ctx, out[<span class="tok-number">0</span>..], in[<span class="tok-number">0</span>..], iv, std.builtin.Endian.big);</span>
 <span class="line" id="L52">    <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, exp_out[<span class="tok-number">0</span>..], out[<span class="tok-number">0</span>..]);</span>
 <span class="line" id="L53">}</span>
 <span class="line" id="L54"></span>

@@ -565,7 +565,7 @@
 <span class="line" id="L450"></span>
 <span class="line" id="L451">    <span class="tok-kw">var</span> ct: [ct_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L452">    <span class="tok-kw">for</span> (cdata, <span class="tok-number">0</span>..) |c, i| {</span>
-<span class="line" id="L453">        mem.writeIntBig(<span class="tok-type">u32</span>, ct[i * <span class="tok-number">4</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], c);</span>
+<span class="line" id="L453">        mem.writeInt(<span class="tok-type">u32</span>, ct[i * <span class="tok-number">4</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], c, .big);</span>
 <span class="line" id="L454">    }</span>
 <span class="line" id="L455">    <span class="tok-kw">return</span> ct[<span class="tok-number">0</span>..dk_length].*;</span>
 <span class="line" id="L456">}</span>
@@ -664,7 +664,7 @@
 </span>
 <span class="line" id="L547">        <span class="tok-kw">var</span> out: [<span class="tok-number">32</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L548">        <span class="tok-kw">for</span> (cdata, <span class="tok-number">0</span>..) |v, i| {</span>
-<span class="line" id="L549">            std.mem.writeIntLittle(<span class="tok-type">u32</span>, out[<span class="tok-number">4</span> * i ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], v);</span>
+<span class="line" id="L549">            std.mem.writeInt(<span class="tok-type">u32</span>, out[<span class="tok-number">4</span> * i ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], v, .little);</span>
 <span class="line" id="L550">        }</span>
 <span class="line" id="L551"></span>
 <span class="line" id="L552">        <span class="tok-comment">// zap</span>

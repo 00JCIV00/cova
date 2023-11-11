@@ -189,7 +189,7 @@
 <span class="line" id="L75"></span>
 <span class="line" id="L76">        <span class="tok-kw">fn</span> <span class="tok-fn">double</span>(l: Block) Block {</span>
 <span class="line" id="L77">            <span class="tok-kw">const</span> Int = std.meta.Int(.unsigned, block_length * <span class="tok-number">8</span>);</span>
-<span class="line" id="L78">            <span class="tok-kw">const</span> l_ = mem.readIntBig(Int, &amp;l);</span>
+<span class="line" id="L78">            <span class="tok-kw">const</span> l_ = mem.readInt(Int, &amp;l, .big);</span>
 <span class="line" id="L79">            <span class="tok-kw">const</span> l_2 = <span class="tok-kw">switch</span> (block_length) {</span>
 <span class="line" id="L80">                <span class="tok-number">8</span> =&gt; (l_ &lt;&lt; <span class="tok-number">1</span>) ^ (<span class="tok-number">0x1b</span> &amp; -%(l_ &gt;&gt; <span class="tok-number">63</span>)), <span class="tok-comment">// mod x^64 + x^4 + x^3 + x + 1</span>
 </span>
@@ -202,7 +202,7 @@
 <span class="line" id="L84">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported block length&quot;</span>),</span>
 <span class="line" id="L85">            };</span>
 <span class="line" id="L86">            <span class="tok-kw">var</span> l2: Block = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L87">            mem.writeIntBig(Int, &amp;l2, l_2);</span>
+<span class="line" id="L87">            mem.writeInt(Int, &amp;l2, l_2, .big);</span>
 <span class="line" id="L88">            <span class="tok-kw">return</span> l2;</span>
 <span class="line" id="L89">        }</span>
 <span class="line" id="L90">    };</span>

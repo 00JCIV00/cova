@@ -141,7 +141,7 @@
 <span class="line" id="L27">        }</span>
 <span class="line" id="L28"></span>
 <span class="line" id="L29">        <span class="tok-comment">/// Appends `node` to the queue.</span></span>
-<span class="line" id="L30">        <span class="tok-comment">/// The lifetime of `node` must be longer than lifetime of queue.</span></span>
+<span class="line" id="L30">        <span class="tok-comment">/// The lifetime of `node` must be longer than the lifetime of the queue.</span></span>
 <span class="line" id="L31">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">put</span>(self: *Self, node: *Node) <span class="tok-type">void</span> {</span>
 <span class="line" id="L32">            node.next = <span class="tok-null">null</span>;</span>
 <span class="line" id="L33"></span>

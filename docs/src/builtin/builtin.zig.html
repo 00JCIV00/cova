@@ -116,7 +116,7 @@
 <span class="line" id="L2"><span class="tok-comment">/// Zig version. When writing code that supports multiple versions of Zig, prefer</span></span>
 <span class="line" id="L3"><span class="tok-comment">/// feature detection (i.e. with `@hasDecl` or `@hasField`) over version checks.</span></span>
 <span class="line" id="L4"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version = std.SemanticVersion.parse(zig_version_string) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version_string = <span class="tok-str">&quot;0.12.0-dev.1127+32bc07767&quot;</span>;</span>
+<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_version_string = <span class="tok-str">&quot;0.12.0-dev.1486+234693bcb&quot;</span>;</span>
 <span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zig_backend = std.builtin.CompilerBackend.stage2_llvm;</span>
 <span class="line" id="L7"></span>
 <span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> output_mode = std.builtin.OutputMode.Exe;</span>
@@ -191,19 +191,19 @@
 <span class="line" id="L77">    .version_range = .{ .linux = .{</span>
 <span class="line" id="L78">        .range = .{</span>
 <span class="line" id="L79">            .min = .{</span>
-<span class="line" id="L80">                .major = <span class="tok-number">3</span>,</span>
-<span class="line" id="L81">                .minor = <span class="tok-number">16</span>,</span>
+<span class="line" id="L80">                .major = <span class="tok-number">4</span>,</span>
+<span class="line" id="L81">                .minor = <span class="tok-number">19</span>,</span>
 <span class="line" id="L82">                .patch = <span class="tok-number">0</span>,</span>
 <span class="line" id="L83">            },</span>
 <span class="line" id="L84">            .max = .{</span>
-<span class="line" id="L85">                .major = <span class="tok-number">5</span>,</span>
-<span class="line" id="L86">                .minor = <span class="tok-number">10</span>,</span>
-<span class="line" id="L87">                .patch = <span class="tok-number">81</span>,</span>
+<span class="line" id="L85">                .major = <span class="tok-number">6</span>,</span>
+<span class="line" id="L86">                .minor = <span class="tok-number">5</span>,</span>
+<span class="line" id="L87">                .patch = <span class="tok-number">7</span>,</span>
 <span class="line" id="L88">            },</span>
 <span class="line" id="L89">        },</span>
 <span class="line" id="L90">        .glibc = .{</span>
 <span class="line" id="L91">            .major = <span class="tok-number">2</span>,</span>
-<span class="line" id="L92">            .minor = <span class="tok-number">19</span>,</span>
+<span class="line" id="L92">            .minor = <span class="tok-number">31</span>,</span>
 <span class="line" id="L93">            .patch = <span class="tok-number">0</span>,</span>
 <span class="line" id="L94">        },</span>
 <span class="line" id="L95">    }},</span>

@@ -512,8 +512,8 @@ fn errReaction(reaction: ParseConfig.ParseErrorReaction, arg: anytype, writer: a
 
 // TESTING
 const TestCommand = Command.Custom(.{ 
-    .vals_mandatory = false,
-    .sub_cmds_mandatory = false,
+    .global_vals_mandatory = false,
+    .global_sub_cmds_mandatory = false,
 });
 const TestValue = TestCommand.ValueT;
 const test_setup_cmd: TestCommand = .{

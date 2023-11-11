@@ -161,7 +161,7 @@
 <span class="line" id="L46">                    <span class="tok-kw">extern</span> <span class="tok-str">&quot;c&quot;</span> <span class="tok-kw">fn</span> <span class="tok-fn">__tsan_release</span>(addr: *<span class="tok-type">anyopaque</span>) <span class="tok-type">void</span>;</span>
 <span class="line" id="L47">                };</span>
 <span class="line" id="L48"></span>
-<span class="line" id="L49">                <span class="tok-kw">const</span> addr = <span class="tok-builtin">@as</span>(*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrCast</span>(self));</span>
+<span class="line" id="L49">                <span class="tok-kw">const</span> addr: *<span class="tok-type">anyopaque</span> = self;</span>
 <span class="line" id="L50">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (ordering) {</span>
 <span class="line" id="L51">                    .Unordered, .Monotonic =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-builtin">@tagName</span>(ordering) ++ <span class="tok-str">&quot; only applies to atomic loads and stores&quot;</span>),</span>
 <span class="line" id="L52">                    .Acquire =&gt; tsan.__tsan_acquire(addr),</span>

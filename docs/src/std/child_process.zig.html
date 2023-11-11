@@ -382,7 +382,7 @@
 <span class="line" id="L262">        <span class="tok-kw">return</span> term;</span>
 <span class="line" id="L263">    }</span>
 <span class="line" id="L264"></span>
-<span class="line" id="L265">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ExecResult = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L265">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> RunResult = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L266">        term: Term,</span>
 <span class="line" id="L267">        stdout: []<span class="tok-type">u8</span>,</span>
 <span class="line" id="L268">        stderr: []<span class="tok-type">u8</span>,</span>
@@ -438,14 +438,14 @@
 <span class="line" id="L317">        stderr.* = fifoToOwnedArrayList(poller.fifo(.stderr));</span>
 <span class="line" id="L318">    }</span>
 <span class="line" id="L319"></span>
-<span class="line" id="L320">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ExecError = os.GetCwdError || os.ReadError || SpawnError || os.PollError || <span class="tok-kw">error</span>{</span>
+<span class="line" id="L320">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> RunError = os.GetCwdError || os.ReadError || SpawnError || os.PollError || <span class="tok-kw">error</span>{</span>
 <span class="line" id="L321">        StdoutStreamTooLong,</span>
 <span class="line" id="L322">        StderrStreamTooLong,</span>
 <span class="line" id="L323">    };</span>
 <span class="line" id="L324"></span>
 <span class="line" id="L325">    <span class="tok-comment">/// Spawns a child process, waits for it, collecting stdout and stderr, and then returns.</span></span>
 <span class="line" id="L326">    <span class="tok-comment">/// If it succeeds, the caller owns result.stdout and result.stderr memory.</span></span>
-<span class="line" id="L327">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">exec</span>(args: <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L327">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(args: <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L328">        allocator: mem.Allocator,</span>
 <span class="line" id="L329">        argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L330">        cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
@@ -453,7 +453,7 @@
 <span class="line" id="L332">        env_map: ?*<span class="tok-kw">const</span> EnvMap = <span class="tok-null">null</span>,</span>
 <span class="line" id="L333">        max_output_bytes: <span class="tok-type">usize</span> = <span class="tok-number">50</span> * <span class="tok-number">1024</span>,</span>
 <span class="line" id="L334">        expand_arg0: Arg0Expand = .no_expand,</span>
-<span class="line" id="L335">    }) ExecError!ExecResult {</span>
+<span class="line" id="L335">    }) RunError!RunResult {</span>
 <span class="line" id="L336">        <span class="tok-kw">var</span> child = ChildProcess.init(args.argv, args.allocator);</span>
 <span class="line" id="L337">        child.stdin_behavior = .Ignore;</span>
 <span class="line" id="L338">        child.stdout_behavior = .Pipe;</span>
@@ -473,7 +473,7 @@
 <span class="line" id="L352">        <span class="tok-kw">try</span> child.spawn();</span>
 <span class="line" id="L353">        <span class="tok-kw">try</span> child.collectOutput(&amp;stdout, &amp;stderr, args.max_output_bytes);</span>
 <span class="line" id="L354"></span>
-<span class="line" id="L355">        <span class="tok-kw">return</span> ExecResult{</span>
+<span class="line" id="L355">        <span class="tok-kw">return</span> RunResult{</span>
 <span class="line" id="L356">            .term = <span class="tok-kw">try</span> child.wait(),</span>
 <span class="line" id="L357">            .stdout = <span class="tok-kw">try</span> stdout.toOwnedSlice(),</span>
 <span class="line" id="L358">            .stderr = <span class="tok-kw">try</span> stderr.toOwnedSlice(),</span>
@@ -992,7 +992,7 @@
 <span class="line" id="L821">        <span class="tok-kw">const</span> cmd_line_w = <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, cmd_line);</span>
 <span class="line" id="L822">        <span class="tok-kw">defer</span> self.allocator.free(cmd_line_w);</span>
 <span class="line" id="L823"></span>
-<span class="line" id="L824">        exec: {</span>
+<span class="line" id="L824">        run: {</span>
 <span class="line" id="L825">            <span class="tok-kw">const</span> PATH: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> = std.os.getenvW(unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;PATH&quot;</span>)) <span class="tok-kw">orelse</span> &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{};</span>
 <span class="line" id="L826">            <span class="tok-kw">const</span> PATHEXT: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> = std.os.getenvW(unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;PATHEXT&quot;</span>)) <span class="tok-kw">orelse</span> &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{};</span>
 <span class="line" id="L827"></span>
@@ -1053,7 +1053,7 @@
 <span class="line" id="L873">                    dir_buf.shrinkRetainingCapacity(normalized_len);</span>
 <span class="line" id="L874"></span>
 <span class="line" id="L875">                    <span class="tok-kw">if</span> (windowsCreateProcessPathExt(self.allocator, &amp;dir_buf, &amp;app_buf, PATHEXT, cmd_line_w.ptr, envp_ptr, cwd_w_ptr, &amp;siStartInfo, &amp;piProcInfo)) {</span>
-<span class="line" id="L876">                        <span class="tok-kw">break</span> :exec;</span>
+<span class="line" id="L876">                        <span class="tok-kw">break</span> :run;</span>
 <span class="line" id="L877">                    } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L878">                        <span class="tok-kw">error</span>.FileNotFound, <span class="tok-kw">error</span>.AccessDenied, <span class="tok-kw">error</span>.InvalidExe =&gt; <span class="tok-kw">continue</span>,</span>
 <span class="line" id="L879">                        <span class="tok-kw">error</span>.UnrecoverableInvalidExe =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidExe,</span>
@@ -1635,7 +1635,7 @@
 <span class="line" id="L1376">        .capable_io_mode = .blocking,</span>
 <span class="line" id="L1377">        .intended_io_mode = .blocking,</span>
 <span class="line" id="L1378">    };</span>
-<span class="line" id="L1379">    file.writer().writeIntNative(<span class="tok-type">u64</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@intCast</span>(value))) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources;</span>
+<span class="line" id="L1379">    file.writer().writeInt(<span class="tok-type">u64</span>, <span class="tok-builtin">@intCast</span>(value), .little) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources;</span>
 <span class="line" id="L1380">}</span>
 <span class="line" id="L1381"></span>
 <span class="line" id="L1382"><span class="tok-kw">fn</span> <span class="tok-fn">readIntFd</span>(fd: <span class="tok-type">i32</span>) !ErrInt {</span>
@@ -1644,7 +1644,7 @@
 <span class="line" id="L1385">        .capable_io_mode = .blocking,</span>
 <span class="line" id="L1386">        .intended_io_mode = .blocking,</span>
 <span class="line" id="L1387">    };</span>
-<span class="line" id="L1388">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(ErrInt, <span class="tok-builtin">@intCast</span>(file.reader().readIntNative(<span class="tok-type">u64</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources));</span>
+<span class="line" id="L1388">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(ErrInt, <span class="tok-builtin">@intCast</span>(file.reader().readInt(<span class="tok-type">u64</span>, .little) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources));</span>
 <span class="line" id="L1389">}</span>
 <span class="line" id="L1390"></span>
 <span class="line" id="L1391"><span class="tok-comment">/// Caller must free result.</span></span>
