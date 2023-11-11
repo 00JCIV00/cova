@@ -45,7 +45,7 @@ pub const CommandT = Command.Custom(.{
         }.help
     },
     .val_config = .{
-        .custom_types = &.{ u1024 },
+        .custom_types = &.{ u1024, DemoStruct.InnerEnum },
         .child_type_parse_fns = &.{
             .{
                 .ChildT = bool,
@@ -62,10 +62,8 @@ pub const CommandT = Command.Custom(.{
         },
     },
     .global_usage_fn = struct{ 
-        fn usage(self: anytype, writer: anytype, alloc: mem.Allocator) !void { 
-            _ = alloc;
+        fn usage(_: anytype, writer: anytype, _: mem.Allocator) !void { 
             // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
-            _ = self; 
             try writer.print("This is an overriding usage message!\n\n", .{}); 
         } 
     }.usage,
@@ -78,6 +76,11 @@ pub const DemoStruct = struct {
     pub const InnerStruct = struct {
         in_bool: bool = false,
         in_float: f32 = 0,
+    };
+    pub const InnerEnum = enum(u2){
+        red,
+        blue,
+        green,
     };
     // Command
     inner_cmd: InnerStruct = .{
@@ -92,6 +95,7 @@ pub const DemoStruct = struct {
     int2: ?u16 = 0,
     multi_int: [3]?u8,
     multi_str: [5]?[]const u8,
+    rbg_enum: ?InnerEnum = .blue,
     // Values
     struct_bool: bool = false,
     struct_str: []const u8 = "Demo Struct string.",

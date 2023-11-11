@@ -296,7 +296,7 @@ pub fn Custom(comptime config: Config) type {
                 .val = optVal: {
                     const child_info = @typeInfo(optl.child);
                     switch (child_info) {
-                        .Bool, .Int, .Float, .Pointer => break :optVal ValueT.from(field, .{
+                        .Bool, .Int, .Float, .Pointer, .Enum => break :optVal ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_description = from_config.opt_description,
                         }) orelse return null,

@@ -522,8 +522,21 @@ pub fn Custom(comptime config: Config) type {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const typed_val = @field(self.*.generic, @tagName(tag));
-                    if (@TypeOf(typed_val).ChildT == T) return try typed_val.get()
-                    else return error.RequestedTypeMismatch;
+                    return 
+                        if (@TypeOf(typed_val).ChildT == T) try typed_val.get()
+                        else if (
+                            @typeInfo(T) == .Enum or (
+                                @typeInfo(T) == .Optional and
+                                @typeInfo(@typeInfo(T).Optional.child) == .Enum
+                            )
+                        ) {
+                            const val = try typed_val.get();
+                            switch (@typeInfo(@TypeOf(val))) {
+                                .Int => return @enumFromInt(val),
+                                inline else => return error.RequestedTypeMismatch,
+                            }
+                        }
+                        else error.RequestedTypeMismatch;
                 },
             };
         }
@@ -613,7 +626,10 @@ pub fn Custom(comptime config: Config) type {
 
         /// Create a Custom Value with a specific Type (`T`).
         pub fn ofType(comptime T: type, comptime typed_val: Typed(T, config)) @This() {
-            const active_tag = if (T == []const u8) "string" else @typeName(T);
+            const active_tag = 
+                if (T == []const u8) "string" 
+                //else if (@typeInfo(T) == .Enum) @typeName(@typeInfo(T).Enum.tag_type)
+                else @typeName(T);
             return @This(){ .generic = @unionInit(GenericT, active_tag, typed_val) };
         }
 
@@ -623,7 +639,7 @@ pub fn Custom(comptime config: Config) type {
             ignore_incompatible: bool = true,
             /// Name for the Value.
             /// If this is left blank, an attempt will be made to create a name based on the Component Type.
-            val_name: []const u8 = "",
+            val_name: ?[]const u8 = null,
             /// Description for the Value.
             val_description: ?[]const u8 = null,
         };
@@ -632,7 +648,7 @@ pub fn Custom(comptime config: Config) type {
         /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
         pub fn from(comptime from_comp: anytype, from_config: FromConfig) ?@This() {
             const comp_name = 
-                if (from_config.val_name.len > 0) from_config.val_name    
+                if (from_config.val_name) |val_name| val_name    
                 else switch (@TypeOf(from_comp)) {
                     std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
                     std.builtin.Type.Fn.Param => "",
@@ -652,13 +668,19 @@ pub fn Custom(comptime config: Config) type {
                     @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
                 else return null;
             }
-            const comp_type = switch (comp_info) {
-                .Optional => comp_info.Optional.child,
+            const CompT = switch (comp_info) {
+                .Optional => |optl| OptT: {
+                    break :OptT switch (@typeInfo(optl.child)) {
+                        .Enum => |enum_info| enum_info.tag_type,
+                        inline else => optl.child,
+                    };
+                },
                 .Array => aryType: {
                     const ary_info = @typeInfo(comp_info.Array.child);
                     if (ary_info == .Optional) break :aryType ary_info.Optional.child
                     else break :aryType comp_info.Array.child;
                 },
+                .Enum => |enum_info| enum_info.tag_type,
                 // TODO: Check if Pointer is a String.
                 .Bool, .Int, .Float, .Pointer => FromT,
                 else => { 
@@ -666,7 +688,8 @@ pub fn Custom(comptime config: Config) type {
                     else return null;
                 },
             };
-            return ofType(comp_type, .{
+            //const out_info = @typeInfo(CompT);
+            return ofType(CompT, .{
                 .name = comp_name,
                 .description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
                 .max_args = 
@@ -676,10 +699,34 @@ pub fn Custom(comptime config: Config) type {
                     if (comp_info == .Array) .Multi
                     else .Last,
                 // TODO: Handle default Array Elements.
-                .default_val = 
-                    if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null and comp_info != .Array) 
-                        @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
-                    else null,
+                .default_val = defVal: { 
+                    if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null) {
+                        switch (comp_info) {
+                            .Array => break :defVal null,
+                            .Optional => |optl| {
+                                break :defVal switch (@typeInfo(optl.child)) {
+                                    .Enum => break :defVal null,
+                                    inline else => break :defVal @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*,
+                                };
+                            },
+                            .Enum => break :defVal 0, 
+                            inline else => break :defVal @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
+                        }
+                    }
+                    else break :defVal null;
+                },
+                .parse_fn = pFn: {
+                    switch (comp_info) {
+                        .Optional => |optl| {
+                            break :pFn switch (@typeInfo(optl.child)) {
+                                .Enum => ParsingFns.Builder.asEnumType(optl.child),
+                                inline else => null,
+                            };
+                        },
+                        .Enum => break :pFn ParsingFns.Builder.asEnumType(FromT),
+                        inline else => break :pFn null,
+                    }
+                },
             });
         }
 

@@ -782,16 +782,16 @@ pub fn Custom(comptime config: Config) type {
                             .short_name = short_name, 
                             .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
-                            .opt_description = arg_description
+                            .opt_description = arg_description,
                         }) orelse continue);
                         opts_idx += 1;
                     },
                     // Values
-                    .Bool, .Int, .Float, .Pointer => {
+                    .Bool, .Int, .Float, .Pointer, .Enum => {
                         from_vals[vals_idx] = (ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_name = arg_name,
-                            .val_description = arg_description
+                            .val_description = arg_description,
                         }) orelse continue);
                         vals_idx += 1;
                     },
@@ -824,7 +824,7 @@ pub fn Custom(comptime config: Config) type {
                                 opts_idx += 1;
                             },
                             // Values
-                            .Bool, .Int, .Float, .Pointer => {
+                            .Bool, .Int, .Float, .Pointer, .Enum => {
                                 from_vals[vals_idx] = ValueT.from(field, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_name = arg_name,
@@ -904,11 +904,11 @@ pub fn Custom(comptime config: Config) type {
                         cmds_idx += 1;
                     },
                     // Values
-                    .Bool, .Int, .Float, .Optional, .Pointer => {
+                    .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_name = "val-" ++ .{ '0', (vals_idx + 48), },
-                            .val_description = arg_description
+                            .val_description = arg_description,
                         }) orelse continue);
                         vals_idx += 1;
                     },
@@ -917,7 +917,7 @@ pub fn Custom(comptime config: Config) type {
                         const ary_info = @typeInfo(ary.child);
                         switch (ary_info) {
                             // Values
-                            .Bool, .Int, .Float, .Optional, .Pointer => {
+                            .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                                 from_vals[vals_idx] = ValueT.from(param, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_description = arg_description
@@ -1030,7 +1030,7 @@ pub fn Custom(comptime config: Config) type {
                             }
                         }
                     },
-                    .Bool, .Int, .Float, .Pointer => if (self.vals != null) {
+                    .Bool, .Int, .Float, .Pointer, .Enum => if (self.vals != null) {
                         for (self.vals.?) |val| {
                             if (mem.eql(u8, val.name(), arg_name)) {
                                 if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
@@ -1069,8 +1069,7 @@ pub fn Custom(comptime config: Config) type {
                                         }
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
                                         var f_ary: field.type = undefined;
-                                        const f_ary_slice = f_ary[0..];
-                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
+                                        for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
                                         if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
@@ -1088,8 +1087,7 @@ pub fn Custom(comptime config: Config) type {
                                         }
                                         const val_tag = if (ary.child == []const u8) "string" else @typeName(ary.child);
                                         var f_ary: field.type = undefined;
-                                        const f_ary_slice = f_ary[0..];
-                                        for (f_ary_slice, 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx] orelse elmVal: {
+                                        for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx] orelse elmVal: {
                                             break :elmVal switch (ary_info) {
                                                 .Bool => false,
                                                 .Int, .Float, => @as(ary.child, 0),
