@@ -390,8 +390,8 @@ pub fn Custom(comptime config: Config) type {
         /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(ValueT) {
             if (self.vals == null) return error.NoValuesInCommand;
-            var map = StringHashMap(Value).init(alloc);
-            for (self.vals.?) |val| { try map.put(val.name, val); }
+            var map = StringHashMap(ValueT).init(alloc);
+            for (self.vals.?) |val| { try map.put(val.name(), val); }
             return map;
         }
 

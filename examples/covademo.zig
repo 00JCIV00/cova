@@ -395,6 +395,7 @@ pub fn main() !void {
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
+    _ = try main_cmd.getVals();
     const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt" };
     const and_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .AND });
     const or_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .OR });
