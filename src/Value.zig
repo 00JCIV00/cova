@@ -141,32 +141,6 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The child Type of this Value.
         pub const ChildT = SetT;
 
-        /// Custom Parsing function for this Value Type.
-        /// Check `Value.Config` for details.
-        pub const child_type_parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeParseFn: {
-            for (config.child_type_parse_fns orelse break :typeParseFn null) |elm| {
-                if (elm.ChildT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.parse_fn)));
-            }
-            else break :typeParseFn null;
-        };
-
-        /// Custom Help function for this Value Type.
-        /// Check `Value.Config` for details.
-        pub const child_type_help_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeHelpFn: {
-            for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
-                if (elm.ChildT == SetT) break :typeHelpFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.help_fn)));
-            }
-            else break :typeHelpFn null;
-        };
-        /// Custom Usage function for this Value Type.
-        /// Check `Value.Config` for details.
-        pub const child_type_usage_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeUsageFn: {
-            for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
-                if (elm.ChildT == SetT) break :typeUsageFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.usage_fn)));
-            }
-            else break :typeUsageFn null;
-        };
-
         /// An Alias for the Child Type.
         /// This is useful for changing the type hint shown in Usage/Help messages or other Generated Docs.
         child_type_alias: ?[]const u8 = null,
@@ -223,12 +197,38 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The Description of this Value for Usage/Help messages.
         description: []const u8 = "",
 
+        /// Custom Parsing function for this Value Type.
+        /// Check `Value.Config` for details.
+        pub const child_type_parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeParseFn: {
+            for (config.child_type_parse_fns orelse break :typeParseFn null) |elm| {
+                if (elm.ChildT == SetT) break :typeParseFn @as(*const fn([]const u8, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.parse_fn)));
+            }
+            else break :typeParseFn null;
+        };
+
+        /// Custom Help function for this Value Type.
+        /// Check `Value.Config` for details.
+        pub const child_type_help_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeHelpFn: {
+            for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
+                if (elm.ChildT == SetT) break :typeHelpFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.help_fn)));
+            }
+            else break :typeHelpFn null;
+        };
+        /// Custom Usage function for this Value Type.
+        /// Check `Value.Config` for details.
+        pub const child_type_usage_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeUsageFn: {
+            for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
+                if (elm.ChildT == SetT) break :typeUsageFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.usage_fn)));
+            }
+            else break :typeUsageFn null;
+        };
+
         /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
             if (self.parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             if (child_type_parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             var san_arg_buf: [512]u8 = undefined;
-            var san_arg = toLower(san_arg_buf[0..], arg);
+            const san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(ChildT)) {
                 .Bool => isTrue: {
                     const true_words = [_][]const u8{ "true", "t", "yes", "y", "1" };
@@ -352,7 +352,7 @@ pub fn Generic(comptime config: Config) type {
     }
     // Custom Implementation
     else customUnion: { 
-        var base_union = union(enum){
+        const base_union = union(enum){
             bool: Typed(bool, config),
             
             string: Typed([]const u8, config),
@@ -834,13 +834,13 @@ pub const ParsingFns = struct {
 
     /// Return the provided argument token (`arg`) in all uppercase.
     pub fn toUpper(arg: []const u8, alloc: mem.Allocator) anyerror![]const u8 {
-        var out_buf = try alloc.alloc(u8, arg.len);
+        const out_buf = try alloc.alloc(u8, arg.len);
         return ascii.upperString(out_buf, arg);
     }
 
     /// Return the provided argument token (`arg`) in all lowercase.
     pub fn toLower(arg: []const u8, alloc: mem.Allocator) anyerror![]const u8 {
-        var out_buf = try alloc.alloc(u8, arg.len);
+        const out_buf = try alloc.alloc(u8, arg.len);
         return ascii.lowerString(out_buf, arg);
     }
 };

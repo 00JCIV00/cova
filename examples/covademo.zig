@@ -19,6 +19,116 @@ const ex_structs = @import("example_structs.zig");
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
+    .global_usage_fn = struct{
+        fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
+            const CmdT = @TypeOf(self.*);
+            const OptT = CmdT.OptionT;
+            const indent_fmt = CmdT.indent_fmt;
+            var no_args = true;
+            var pre_sep: []const u8 = "";
+
+            try writer.print("USAGE\n", .{});
+            if (self.opts) |opts| {
+                no_args = false;
+                try writer.print("{s}{s} [", .{ 
+                    indent_fmt,
+                    self.name,
+                });
+                for (opts) |opt| {
+                    try writer.print("{s} {s}{s} ", .{ 
+                        pre_sep,
+                        OptT.long_prefix orelse opt.short_prefix,
+                        opt.long_name orelse &.{ opt.short_name orelse 0 },
+                    });
+                    pre_sep = "| ";
+                }
+                try writer.print("]\n", .{});
+            }
+            if (self.sub_cmds) |cmds| {
+                no_args = false;
+                try writer.print("{s}{s} [", .{ 
+                    indent_fmt,
+                    self.name,
+                });
+                pre_sep = "";
+                for (cmds) |cmd| {
+                    try writer.print("{s} {s} ", .{ 
+                        pre_sep,
+                        cmd.name,
+                    });
+                    pre_sep = "| ";
+                }
+                try writer.print("]\n", .{});
+            }
+            if (no_args) try writer.print("{s}{s}{s}", .{ 
+                indent_fmt, 
+                indent_fmt,
+                self.name,
+            });
+        }
+    }.usage,
+    .help_header_fmt = 
+        \\HELP
+        \\{s}COMMAND: {s}
+        \\
+        \\{s}DESCRIPTION: {s}
+        \\
+        \\
+    ,
+    .global_help_fn = struct{
+        fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
+            const CmdT = @TypeOf(self.*);
+            const OptT = CmdT.OptionT;
+            const indent_fmt = CmdT.indent_fmt;
+            
+            try writer.print("{s}\n", .{ self.help_prefix });
+            try self.usage(writer);
+            try writer.print("\n", .{});
+            try writer.print(CmdT.help_header_fmt, .{ 
+                indent_fmt, self.name, 
+                indent_fmt, self.description 
+            });
+
+            if (self.sub_cmds) |cmds| {
+                try writer.print("SUBCOMMANDS\n", .{});
+                for (cmds) |cmd| {
+                    try writer.print("{s}{s}: {s}\n", .{
+                        indent_fmt,
+                        cmd.name,
+                        cmd.description, 
+                    });
+                }
+                try writer.print("\n", .{});
+            }
+            if (self.opts) |opts| {
+                try writer.print("OPTIONS\n", .{});
+                for (opts) |opt| {
+                    try writer.print(
+                        \\{s}{s}{s} "{s} ({s})"
+                        \\{s}{s}{s}
+                        \\
+                        \\
+                        , .{
+                            indent_fmt, 
+                            OptT.long_prefix orelse OptT.short_prefix, opt.long_name orelse "", 
+                            opt.val.name(), opt.val.childType(),
+                            indent_fmt, indent_fmt,
+                            opt.description, 
+                        }
+                    );
+                }
+            }
+            if (self.vals) |vals| {
+                try writer.print("VALUES\n", .{});
+                for (vals) |val| {
+                    try writer.print("{s}", .{ indent_fmt });
+                    try val.usage(writer);
+                    try writer.print("\n", .{});
+                }
+                try writer.print("\n", .{});
+            }
+        }
+    }.help,
     //.global_case_sensitive = false,
     .opt_config = .{
         .usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
@@ -61,12 +171,12 @@ pub const CommandT = Command.Custom(.{
             },
         },
     },
-    .global_usage_fn = struct{ 
-        fn usage(_: anytype, writer: anytype, _: mem.Allocator) !void { 
-            // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
-            try writer.print("This is an overriding usage message!\n\n", .{}); 
-        } 
-    }.usage,
+    //.global_usage_fn = struct{ 
+    //    fn usage(_: anytype, writer: anytype, _: mem.Allocator) !void { 
+    //        // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
+    //        try writer.print("This is an overriding usage message!\n\n", .{}); 
+    //    } 
+    //}.usage,
 }); 
 pub const ValueT = CommandT.ValueT;
 
@@ -377,7 +487,7 @@ pub fn main() !void {
 
     const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit();
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    const args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
 
     // Parsing

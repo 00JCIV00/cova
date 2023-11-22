@@ -395,7 +395,7 @@ pub fn Custom(comptime config: Config) type {
             return map;
         }
 
-        /// Creates the Help message for this Command and Writes it to the provided Writer (`writer`).
+        /// Creates the Help message for this Command and writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
             if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 
@@ -428,6 +428,7 @@ pub fn Custom(comptime config: Config) type {
                                 if (need_title) {
                                     try writer.print(group_title_fmt, .{ indent_fmt, group });
                                     need_title = false;
+                                    need_other_title = true;
                                 }
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
@@ -515,6 +516,7 @@ pub fn Custom(comptime config: Config) type {
                                 if (need_title) {
                                     try writer.print(group_title_fmt, .{ indent_fmt, group });
                                     need_title = false;
+                                    need_other_title = true;
                                 }
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try val.help(writer);
@@ -539,7 +541,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
         }
 
-        /// Creates the Usage message for this Command and Writes it to the provided Writer (`writer`).
+        /// Creates the Usage message for this Command and writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 

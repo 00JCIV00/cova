@@ -100,15 +100,15 @@ pub const RawArgIterator = struct {
     args: []const [:0]const u8,
 
     /// Get the Next argument token and advance this Iterator.
-    pub fn next(self: *@This()) ?[:0]const u8 {
-        self.index += 1;
+    pub fn next(self: *const @This()) ?[:0]const u8 {
+        @constCast(self).index += 1;
         return if (self.index > self.args.len) null else self.args[self.index - 1];
     }
 
     /// Peek at the next argument token without advancing this Iterator.
-    pub fn peek(self: *@This()) ?[:0]const u8 {
+    pub fn peek(self: *const @This()) ?[:0]const u8 {
         const peek_arg = self.next();
-        self.index -= 1;
+        @constCast(self).index -= 1;
         return peek_arg;
     }
 };
@@ -119,14 +119,14 @@ pub const ArgIteratorGeneric = union(enum) {
     zig: proc.ArgIterator,
 
     /// Get the Next argument token and advance this Iterator.
-    pub fn next(self: *@This()) ?[:0]const u8 {
+    pub fn next(self: *const @This()) ?[:0]const u8 {
         return switch (meta.activeTag(self.*)) {
-            inline else => |tag| @field(self, @tagName(tag)).next(),
+            inline else => |tag| @field(@constCast(self), @tagName(tag)).next(),
         };
     }
 
     /// Peek at the next argument token without advancing this Iterator.
-    pub fn peek(self: *@This()) ?[:0]const u8 {
+    pub fn peek(self: *const @This()) ?[:0]const u8 {
         switch (meta.activeTag(self.*)) {
             .raw => return self.raw.peek(),
             inline else => |tag| {
@@ -152,7 +152,7 @@ pub const ArgIteratorGeneric = union(enum) {
     }
 
     /// Get the current Index of this Iterator.
-    pub fn index(self: *@This()) usize {
+    pub fn index(self: *const @This()) usize {
         return switch (meta.activeTag(self.*)) {
             .raw => self.raw.index,
             .zig => self.zig.inner.index,
@@ -174,8 +174,8 @@ pub const ArgIteratorGeneric = union(enum) {
     }
 
     /// De-initialize a copy of this Generic Interface made with `init()`.
-    pub fn deinit(self: *@This()) void {
-        if (meta.activeTag(self.*) == .zig) self.zig.deinit();
+    pub fn deinit(self: *const @This()) void {
+        if (meta.activeTag(self.*) == .zig) @constCast(self).zig.deinit();
         return;
     }
 };
@@ -209,7 +209,7 @@ var usage_help_flag: bool = false;
 /// Parse provided Argument tokens into Commands, Options, and Values.
 /// The parsed result is stored to the provided `CommandT` (`cmd`) for user analysis.
 pub fn parseArgs(
-    args: *ArgIteratorGeneric,
+    args: *const ArgIteratorGeneric,
     comptime CommandT: type, 
     cmd: *const CommandT, 
     writer: anytype,
@@ -487,7 +487,7 @@ pub fn parseArgs(
 }
 
 /// Parse the provided `OptionType` (`opt`).
-fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const OptionType) !void {
+fn parseOpt(args: *const ArgIteratorGeneric, comptime OptionType: type, opt: *const OptionType) !void {
     const peek_arg = args.peek();
     const set_arg = 
         if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
@@ -694,7 +694,7 @@ test "argument parsing" {
     for (test_args) |tokens_list| {
         const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
         defer test_cmd.deinit();
-        var raw_iter = RawArgIterator{ .args = tokens_list };
+        const raw_iter = RawArgIterator{ .args = tokens_list };
         var test_iter = ArgIteratorGeneric.from(raw_iter);
         try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
     }
@@ -711,7 +711,7 @@ test "argument analysis" {
     const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
     defer test_cmd.deinit();
     const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo=5.1", "-f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
-    var raw_iter = RawArgIterator{ .args = test_args };
+    const raw_iter = RawArgIterator{ .args = test_args };
     var test_iter = ArgIteratorGeneric.from(raw_iter);
     parseArgs(&test_iter, TestCommand, test_cmd, writer, .{}) catch |err| {
         switch (err) {
