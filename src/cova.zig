@@ -191,8 +191,12 @@ pub const ParseConfig = struct {
     auto_handle_usage_help: bool = true,
     /// Decide how to react to parsing errors.
     err_reaction: ParseErrorReaction = .Help,
-    /// Enable Option Termination using `--` per the POSIX standard (or whatever symbol is chosen for Option long names).
+    /// Enable Option Termination using the long prefix without an Option (default `--` per the POSIX standard).
+    /// Note, this will cause the remainder of the argument tokens to be read in as either Commands or Values.
     enable_opt_termination: bool = true,
+    /// Override the Optiion Termination Symbol.
+    /// Leaving this null will default to the long prefix of the associated Option Type.
+    set_opt_termination_symbol: ?[]const u8 = null,
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
@@ -261,6 +265,19 @@ pub fn parseArgs(
         // ...Then for any Options...
         if (cmd.opts != null and !opt_term) {
             log.debug("Attempting to Parse Options...", .{});
+            // - Check for Option Termination
+            opt_term = optTerm: {
+                const opt_term_sym = 
+                    parse_config.set_opt_termination_symbol orelse 
+                    OptionT.long_prefix orelse
+                    break :optTerm false;
+                if (mem.eql(u8, arg, opt_term_sym) and parse_config.enable_opt_termination) {
+                    log.debug("Terminated Option Parsing!", .{});
+                    break :optTerm true;
+                }
+                break :optTerm false;
+            };
+            if (opt_term) continue;
             // - Short Options
             if (OptionT.short_prefix) |short_pf| checkShortOpt: {
                 if (!(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
@@ -343,11 +360,6 @@ pub fn parseArgs(
             if (OptionT.long_prefix) |long_pf| checkLongOpt: {
                 if (!mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
                 log.debug("Parsing Long Option...", .{});
-                if (arg.len == long_pf.len and parse_config.enable_opt_termination) {
-                    opt_term = true;
-                    log.debug("Terminated Option Parsing!", .{});
-                    continue;
-                }
                 const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                 const long_opt = arg[long_pf.len..split_idx]; 
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
