@@ -25,6 +25,8 @@ const parseInt = fmt.parseInt;
 const parseFloat = fmt.parseFloat;
 const Type = builtin.Type;
 
+const utils = @import("utils.zig");
+
 /// Config for custom Value types. 
 /// This Config is shared across Typed, Generic, and Custom.
 pub const Config = struct {
@@ -700,7 +702,10 @@ pub fn Custom(comptime config: Config) type {
                     else .Last,
                 // TODO: Handle default Array Elements.
                 .default_val = defVal: { 
-                    if (meta.trait.hasFields(@TypeOf(from_comp), &.{ "default_value" }) and from_comp.default_value != null) {
+                    if (
+                        utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_val") != null and 
+                        from_comp.default_value != null
+                    ) {
                         switch (comp_info) {
                             .Array => break :defVal null,
                             .Optional => |optl| {
