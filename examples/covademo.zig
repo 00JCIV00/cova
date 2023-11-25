@@ -75,60 +75,60 @@ pub const CommandT = Command.Custom(.{
         \\
         \\
     ,
-    .global_help_fn = struct{
-        fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
-            const CmdT = @TypeOf(self.*);
-            const OptT = CmdT.OptionT;
-            const indent_fmt = CmdT.indent_fmt;
-            
-            try writer.print("{s}\n", .{ self.help_prefix });
-            try self.usage(writer);
-            try writer.print("\n", .{});
-            try writer.print(CmdT.help_header_fmt, .{ 
-                indent_fmt, self.name, 
-                indent_fmt, self.description 
-            });
+    //.global_help_fn = struct{
+    //    fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
+    //        const CmdT = @TypeOf(self.*);
+    //        const OptT = CmdT.OptionT;
+    //        const indent_fmt = CmdT.indent_fmt;
+    //        
+    //        try writer.print("{s}\n", .{ self.help_prefix });
+    //        try self.usage(writer);
+    //        try writer.print("\n", .{});
+    //        try writer.print(CmdT.help_header_fmt, .{ 
+    //            indent_fmt, self.name, 
+    //            indent_fmt, self.description 
+    //        });
 
-            if (self.sub_cmds) |cmds| {
-                try writer.print("SUBCOMMANDS\n", .{});
-                for (cmds) |cmd| {
-                    try writer.print("{s}{s}: {s}\n", .{
-                        indent_fmt,
-                        cmd.name,
-                        cmd.description, 
-                    });
-                }
-                try writer.print("\n", .{});
-            }
-            if (self.opts) |opts| {
-                try writer.print("OPTIONS\n", .{});
-                for (opts) |opt| {
-                    try writer.print(
-                        \\{s}{s}{s} "{s} ({s})"
-                        \\{s}{s}{s}
-                        \\
-                        \\
-                        , .{
-                            indent_fmt, 
-                            OptT.long_prefix orelse OptT.short_prefix, opt.long_name orelse "", 
-                            opt.val.name(), opt.val.childType(),
-                            indent_fmt, indent_fmt,
-                            opt.description, 
-                        }
-                    );
-                }
-            }
-            if (self.vals) |vals| {
-                try writer.print("VALUES\n", .{});
-                for (vals) |val| {
-                    try writer.print("{s}", .{ indent_fmt });
-                    try val.usage(writer);
-                    try writer.print("\n", .{});
-                }
-                try writer.print("\n", .{});
-            }
-        }
-    }.help,
+    //        if (self.sub_cmds) |cmds| {
+    //            try writer.print("SUBCOMMANDS\n", .{});
+    //            for (cmds) |cmd| {
+    //                try writer.print("{s}{s}: {s}\n", .{
+    //                    indent_fmt,
+    //                    cmd.name,
+    //                    cmd.description, 
+    //                });
+    //            }
+    //            try writer.print("\n", .{});
+    //        }
+    //        if (self.opts) |opts| {
+    //            try writer.print("OPTIONS\n", .{});
+    //            for (opts) |opt| {
+    //                try writer.print(
+    //                    \\{s}{s}{s} "{s} ({s})"
+    //                    \\{s}{s}{s}
+    //                    \\
+    //                    \\
+    //                    , .{
+    //                        indent_fmt, 
+    //                        OptT.long_prefix orelse OptT.short_prefix, opt.long_name orelse "", 
+    //                        opt.val.name(), opt.val.childType(),
+    //                        indent_fmt, indent_fmt,
+    //                        opt.description, 
+    //                    }
+    //                );
+    //            }
+    //        }
+    //        if (self.vals) |vals| {
+    //            try writer.print("VALUES\n", .{});
+    //            for (vals) |val| {
+    //                try writer.print("{s}", .{ indent_fmt });
+    //                try val.usage(writer);
+    //                try writer.print("\n", .{});
+    //            }
+    //            try writer.print("\n", .{});
+    //        }
+    //    }
+    //}.help,
     //.global_case_sensitive = false,
     .opt_config = .{
         .usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
@@ -155,7 +155,7 @@ pub const CommandT = Command.Custom(.{
         }.help
     },
     .val_config = .{
-        .custom_types = &.{ u1024, DemoStruct.InnerEnum },
+        //.custom_types = &.{ u1024, DemoStruct.InnerEnum },
         .child_type_parse_fns = &.{
             .{
                 .ChildT = bool,
@@ -290,6 +290,7 @@ pub const setup_cmd: CommandT = .{
             .cmd_description = "A demo sub command made from a struct.",
             .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,
+            .default_val_opts = true,
             .sub_descriptions = &.{
                 .{ "inner_cmd", "An inner/nested command for struct-cmd" },
                 .{ "int", "The first Integer Value for the struct-cmd." },
@@ -351,19 +352,19 @@ pub const setup_cmd: CommandT = .{
             }),
             .description = "An integer option. (Can be given up to 10 times.)",
         },
-        .{
-            .name = "uint_opt",
-            .opt_group = "INT",
-            .short_name = 'U',
-            .long_name = "uint",
-            .val = ValueT.ofType(u1024, .{
-                .name = "uint_val",
-                .description = "An unsigned integer value.",
-                .set_behavior = .Multi,
-                .max_args = 10,
-            }),
-            .description = "An unsigned integer option. (Can be given up to 10 times.)",
-        },
+        //.{
+        //    .name = "uint_opt",
+        //    .opt_group = "INT",
+        //    .short_name = 'U',
+        //    .long_name = "uint",
+        //    .val = ValueT.ofType(u1024, .{
+        //        .name = "uint_val",
+        //        .description = "An unsigned integer value.",
+        //        .set_behavior = .Multi,
+        //        .max_args = 10,
+        //    }),
+        //    .description = "An unsigned integer option. (Can be given up to 10 times.)",
+        //},
         .{
             .name = "float_opt",
             //.opt_group = "INT",
@@ -528,7 +529,7 @@ pub fn main() !void {
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
         log.info("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| {
-        const demo_struct = try struct_cmd.to(DemoStruct, .{});
+        const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
         log.info("-> Struct Cmd\n{any}", .{ demo_struct });
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
             log.info("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });

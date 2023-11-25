@@ -282,10 +282,20 @@ pub fn Custom(comptime config: Config) type {
             if (FieldT != std.builtin.Type.StructField and FieldT != std.builtin.Type.UnionField) 
                 @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(FieldT) ++ "' was provided.");
             const optl_info = @typeInfo(field.type);
-            const optl =
-                if (optl_info == .Optional) optl_info.Optional
-                else if (optl_info == .Array and @typeInfo(optl_info.Array.child) == .Optional) @typeInfo(optl_info.Array.child).Optional
-                else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
+            //const optl =
+            //    if (optl_info == .Optional) optl_info.Optional
+            //    else if (optl_info == .Array and @typeInfo(optl_info.Array.child) == .Optional) @typeInfo(optl_info.Array.child).Optional
+            //    else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
+            const child_info = switch(optl_info) {
+                .Optional => @typeInfo(optl_info.Optional.child),
+                .Array => |ary| aryInfo: {
+                    const ary_info = @typeInfo(ary.child);
+                    break :aryInfo
+                        if (ary_info == .Optional) @typeInfo(ary_info.Optional.child)
+                        else ary_info;
+                },
+                inline else => optl_info,
+            };
             return .{
                 .name = if (from_config.name) |name| name else field.name,
                 .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
@@ -294,14 +304,15 @@ pub fn Custom(comptime config: Config) type {
                 //.help_fn = from_config.help_fn,
                 //.usage_fn = from_config.usage_fn,
                 .val = optVal: {
-                    const child_info = @typeInfo(optl.child);
+                    //const child_info = @typeInfo(optl.child);
                     switch (child_info) {
                         .Bool, .Int, .Float, .Pointer, .Enum => break :optVal ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_description = from_config.opt_description,
                         }) orelse return null,
                         inline else => {
-                            if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
+                            if (!from_config.ignore_incompatible) 
+                                @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
                             else return null;
                         },
                     }
