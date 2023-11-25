@@ -36,6 +36,8 @@ pub const Config = struct {
     /// Default Argument Delimiters for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
     arg_delims: []const u8 = ",;",
+    /// Maximum instances of a Child Type that a Value can hold.
+    max_children: u8 = 10,
 
     /// Custom Types for this project's Custom Values. 
     /// If these Types are `Value.Typed` they'll be coerced to match the parent `Value.Config` (not preferred).
@@ -161,13 +163,13 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
         /// **Internal Use.**
-        _set_args: [100]?ChildT = .{ null } ** 100,
+        _set_args: [config.max_children]?ChildT = .{ null } ** config.max_children,
         /// The current Index of Raw Arguments for this Value.
         ///
         /// **Internal Use.**
         _arg_idx: u7 = 0,
         /// The Max number of Raw Arguments that can be provided.
-        /// This must be between 1 - 100.
+        /// This must be between 1 to the value of `config.max_children`.
         max_args: u7 = 1,
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         ///
