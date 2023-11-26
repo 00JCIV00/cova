@@ -46,6 +46,18 @@ pub const Config = struct {
     /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function.
     /// This function is implemented on the `Value.Typed.parse_fn` field.
     custom_types: []const type = &.{},
+    /// Use the slim base Union. This is automatically treated as true if there are any custom Types specified.
+    /// This toggle can be used to slim down the base `Value.Generic` Union to only `bool` and `[]const u8` (string).
+    /// In turn, this will help reduce the overall binary size.
+    /// Be sure to set `add_base_ints` and `add_base_floats` appropriately as well.
+    use_slim_base: bool = false,
+    /// Add Base Integers (signed and unsigned) when adding custom Types.
+    /// This includes `u1`-`u4` directly and `u8`-`u64` by powers of 2, along with their signed counterparts.
+    add_base_ints: bool = true,
+    /// Add Base Floats when adding custom Types.
+    /// This includes `f16`, `f32`, and `f64`.
+    add_base_floats: bool = true,
+
     /// Custom Parsing Functions to be used in place of the normal `parse()` for Argument Parsing for all instances of a `Value.Typed` Child Type.
     /// These functions will be used SECOND, after an instance's `self.parse_fn` but before the normal `parse()` functions are tried.
     /// This can be used to overwrite the `parse()` implementation for an existing Child Type that's already in `Value.Generic`.
@@ -319,10 +331,12 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
     };
 }
 
-/// Generic Value to handle a Value regardless of its inner type. This encompasses Typed Values with Boolean, String `[]const u8`, Floats, and the Config (`config`) specified range of Signed/Unsigned Integers.
+/// Generic Value to handle a Value regardless of its inner Child Type. 
+/// This encompasses Typed Values with Boolean, String `[]const u8`, Floats, and the Config (`config`) specified Types.
 pub fn Generic(comptime config: Config) type {
     // Base Implementation
-    return if (config.custom_types.len == 0 and !config.use_custom_bit_width_range) union(enum){
+    const slim_base = config.use_slim_base or config.custom_types.len > 0;
+    return if (!slim_base and !config.use_custom_bit_width_range) union(enum){
         bool: Typed(bool, config),
         
         string: Typed([]const u8, config),
@@ -335,8 +349,8 @@ pub fn Generic(comptime config: Config) type {
         u16: Typed(u16, config),
         u32: Typed(u32, config),
         u64: Typed(u64, config),
-        u128: Typed(u128, config),
-        u256: Typed(u256, config),
+        //u128: Typed(u128, config),
+        //u256: Typed(u256, config),
 
         i1: Typed(i1, config),
         i2: Typed(i2, config),
@@ -346,25 +360,19 @@ pub fn Generic(comptime config: Config) type {
         i16: Typed(i16, config),
         i32: Typed(i32, config),
         i64: Typed(i64, config),
-        i128: Typed(i128, config),
-        i256: Typed(i256, config),
+        //i128: Typed(i128, config),
+        //i256: Typed(i256, config),
 
         f16: Typed(f16, config),
         f32: Typed(f32, config),
         f64: Typed(f64, config),
-        f128: Typed(f128, config),
+        //f128: Typed(f128, config),
     }
     // Custom Implementation
     else customUnion: { 
         const base_union = union(enum){
             bool: Typed(bool, config),
-            
             string: Typed([]const u8, config),
-            
-            f16: Typed(f16, config),
-            f32: Typed(f32, config),
-            f64: Typed(f64, config),
-            f128: Typed(f128, config),
         };
         
         var union_info = @typeInfo(base_union).Union;
@@ -399,38 +407,58 @@ pub fn Generic(comptime config: Config) type {
             }
         }
         else {
-            const int_union = union(enum) {
-                u1: Typed(u1, config),
-                u2: Typed(u2, config),
-                u3: Typed(u3, config),
-                u4: Typed(u4, config),
-                u8: Typed(u8, config),
-                u16: Typed(u16, config),
-                u32: Typed(u32, config),
-                u64: Typed(u64, config),
-                u128: Typed(u128, config),
-                u256: Typed(u256, config),
+            if (config.add_base_ints) {
+                const int_union = union(enum) {
+                    u1: Typed(u1, config),
+                    u2: Typed(u2, config),
+                    u3: Typed(u3, config),
+                    u4: Typed(u4, config),
+                    u8: Typed(u8, config),
+                    u16: Typed(u16, config),
+                    u32: Typed(u32, config),
+                    u64: Typed(u64, config),
+                    //u128: Typed(u128, config),
+                    //u256: Typed(u256, config),
 
-                i1: Typed(i1, config),
-                i2: Typed(i2, config),
-                i3: Typed(i3, config),
-                i4: Typed(i4, config),
-                i8: Typed(i8, config),
-                i16: Typed(i16, config),
-                i32: Typed(i32, config),
-                i64: Typed(i64, config),
-                i128: Typed(i128, config),
-                i256: Typed(i256, config),
-            };
-            const int_info = @typeInfo(int_union).Union;
-            const int_tag_info = @typeInfo(int_info.tag_type.?).Enum;
+                    i1: Typed(i1, config),
+                    i2: Typed(i2, config),
+                    i3: Typed(i3, config),
+                    i4: Typed(i4, config),
+                    i8: Typed(i8, config),
+                    i16: Typed(i16, config),
+                    i32: Typed(i32, config),
+                    i64: Typed(i64, config),
+                    //i128: Typed(i128, config),
+                    //i256: Typed(i256, config),
+                };
+                const int_info = @typeInfo(int_union).Union;
+                const int_tag_info = @typeInfo(int_info.tag_type.?).Enum;
 
-            union_info.fields = union_info.fields ++ int_info.fields;
-            for (int_tag_info.fields) |tag| {
-                tag_info.fields = tag_info.fields ++ .{ .{
-                    .name = tag.name,
-                    .value = tag.value + 6,
-                } };
+                union_info.fields = union_info.fields ++ int_info.fields;
+                for (int_tag_info.fields) |tag| {
+                    tag_info.fields = tag_info.fields ++ .{ .{
+                        .name = tag.name,
+                        .value = tag.value + 6,
+                    } };
+                }
+            }
+            if (config.add_base_floats) {
+                const float_union = union(enum) {
+                    f16: Typed(f16, config),
+                    f32: Typed(f32, config),
+                    f64: Typed(f64, config),
+                    //f128: Typed(f128, config),
+                };
+                const float_info = @typeInfo(float_union).Union;
+                const float_tag_info = @typeInfo(float_info.tag_type.?).Enum;
+
+                union_info.fields = union_info.fields ++ float_info.fields;
+                for (float_tag_info.fields) |tag| {
+                    tag_info.fields = tag_info.fields ++ .{ .{
+                        .name = tag.name,
+                        .value = tag.value + 6,
+                    } };
+                }
             }
         }
 

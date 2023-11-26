@@ -3,6 +3,7 @@
 
 const std = @import("std");
 const fmt = std.fmt;
+const io = std.io;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -466,14 +467,14 @@ pub const setup_cmd: CommandT = .{
             .description = "A boolean value for the command.",
             .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y" }, &.{ "false", "f", "no", "n", "0" }, .Error),
         }),
-        ValueT.ofType(u128, .{
-            .name = "cmd_u128",
-            .description = "A u128 value for the command.",
+        ValueT.ofType(u64, .{
+            .name = "cmd_u64",
+            .description = "A u64 value for the command.",
             .default_val = 654321,
             .set_behavior = .Multi,
             .max_args = 3,
-            .parse_fn = struct{ fn parseFn(arg: []const u8, alloc: mem.Allocator) !u128 { _ = alloc; return (try fmt.parseInt(u128, arg, 0)) * 100; } }.parseFn, 
-            .valid_fn = Value.ValidationFns.Builder.inRange(u128, 123456, 9999999999, true),
+            .parse_fn = struct{ fn parseFn(arg: []const u8, alloc: mem.Allocator) !u64 { _ = alloc; return (try fmt.parseInt(u64, arg, 0)) * 100; } }.parseFn, 
+            .valid_fn = Value.ValidationFns.Builder.inRange(u64, 123456, 9999999999, true),
         }),
     }
 };
@@ -481,10 +482,15 @@ pub const setup_cmd: CommandT = .{
 
 pub fn main() !void {
     // Setup
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var alloc_buf: [100 << 10]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(alloc_buf[0..]);
+    //var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena = std.heap.ArenaAllocator.init(fba.allocator());
     defer arena.deinit();
     const alloc = arena.allocator();
-    const stdout = std.io.getStdOut().writer();
+    const stdout_raw = io.getStdOut().writer();
+    var stdout_bw = io.bufferedWriter(stdout_raw);
+    const stdout = stdout_bw.writer();
 
     const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit();
@@ -498,11 +504,14 @@ pub fn main() !void {
         error.UsageHelpCalled => {},
         else => return err,
     };
+    try stdout_bw.flush();
 
     // Analysis
     // - Debug Output of Commands after Parsing. 
     try stdout.print("\n", .{});
     try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
+    try stdout_bw.flush();
+
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});

@@ -232,7 +232,7 @@ pub fn main() !void {
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
     // Wrapping the `init()` call in a reference `&(...)` makes it easier to use.
-    const main_cmd = &(try setup_cmd.init(alloc, .{})); 
+    const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit();
 
     // Parsing
@@ -252,7 +252,7 @@ pub fn main() !void {
     // Command. It's important to note that, by default, if the user calls for `usage` or `help` it
     // will trigger an error. This allow's that specific case to be handled specially if needed. If
     // there's no need to handle it specially, the below example will simply bypass the error.
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch (err) {
         error.UsageHelpCalled,
         // Other common errors can also be handled in the same way. The errors below will call the
         // Command's Usage or Help prompt automatically when triggered.
@@ -273,7 +273,7 @@ pub fn main() !void {
     // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed 
     // Command. This is done recursively for any sub Argument Types within the Command and can be
     // used to debug said Command.
-    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
+    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, &stdout);
 
     // - App Vars
     var user_filename_buf: [100]u8 = .{ 0 } ** 100;
@@ -287,7 +287,7 @@ pub fn main() !void {
 
     var user_file: std.fs.File = try open(user_filename);
     defer user_file.close();
-    var user_file_buf: []const u8 = try user_file.readToEndAlloc(alloc, 8192);
+    const user_file_buf: []const u8 = try user_file.readToEndAlloc(alloc, 8192);
     var users = std.ArrayList(User).init(alloc);
     defer users.deinit();
     var users_mal = std.MultiArrayList(User){};
@@ -366,7 +366,7 @@ pub fn main() !void {
     // the provided string is the same Active Sub Command's name.
     if (main_cmd.checkSubCmd("view-lists")) {
         try stdout.print("Available Lists:\n", .{});
-        var dir_walker = try (try std.fs.cwd().openIterableDir(".", .{})).walk(alloc);
+        var dir_walker = try (try std.fs.cwd().openDir(".", .{ .iterate = true })).walk(alloc);
         var found_list = false;
         while (try dir_walker.next()) |entry| {
             const filename = entry.basename;
