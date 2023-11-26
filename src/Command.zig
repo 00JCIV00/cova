@@ -430,6 +430,10 @@ pub fn Custom(comptime config: Config) type {
                         var cmd_iter = cmd_list.iterator();
                         cmdGroup: while (cmd_iter.next()) |cmd_entry| {
                             const cmd = cmd_entry.value_ptr;
+                            if (cmd.hidden) {
+                                try remove_list.append(cmd.name);
+                                continue;
+                            }
                             if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
                                 if (need_title) {
                                     try writer.print(group_title_fmt, .{ indent_fmt, group });
@@ -455,6 +459,7 @@ pub fn Custom(comptime config: Config) type {
                 var cmd_iter = cmd_list.iterator();
                 while (cmd_iter.next()) |cmd_entry| {
                     const cmd = cmd_entry.value_ptr;
+                    if (cmd.hidden) continue;
                     try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
                     try writer.print("\n", .{});
@@ -476,6 +481,10 @@ pub fn Custom(comptime config: Config) type {
                         var opt_iter = opt_list.iterator();
                         optGroup: while (opt_iter.next()) |opt_entry| {
                             const opt = opt_entry.value_ptr;
+                            if (opt.hidden) {
+                                try remove_list.append(opt.name);
+                                continue;
+                            }
                             if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
                                 if (need_title) {
                                     try writer.print(group_title_fmt, .{ indent_fmt, group });
@@ -497,6 +506,7 @@ pub fn Custom(comptime config: Config) type {
                 var opt_iter = opt_list.iterator();
                 while (opt_iter.next()) |opt_entry| {
                     const opt = opt_entry.value_ptr;
+                    if (opt.hidden) continue;
                     try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                     try opt.help(writer);
                     try writer.print("\n", .{});
@@ -554,12 +564,17 @@ pub fn Custom(comptime config: Config) type {
             try writer.print(usage_header_fmt, .{ indent_fmt, self.name });
             if (self.opts) |opts| {
                 var post_sep: []const u8 = " | ";
+                var hidden_count: u8 = 0;
                 for (opts, 0..) |opt, idx| {
+                    if (opt.hidden) {
+                        hidden_count += 1;
+                        continue;
+                    }
                     try opt.usage(writer);
                     if (idx == opts.len - 1) post_sep = "";
                     try writer.print("{s}", .{ post_sep });
                 }
-                try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
+                if (hidden_count < opts.len) try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
             }
             if (self.vals) |vals| {
                 var post_sep: []const u8 = " | ";
@@ -573,6 +588,7 @@ pub fn Custom(comptime config: Config) type {
             if (self.sub_cmds) |cmds| {
                 var post_sep: []const u8 = " | ";
                 for (cmds, 0..) |cmd, idx| {
+                    if (cmd.hidden) continue;
                     try writer.print(subcmds_usage_fmt, .{ cmd.name });
                     if (idx == cmds.len - 1) post_sep = "";
                     try writer.print("{s}", .{ post_sep });
@@ -660,8 +676,10 @@ pub fn Custom(comptime config: Config) type {
             cmd_help_prefix: []const u8 = global_help_prefix,
             /// Command Groups for this Command
             cmd_groups: ?[]const []const u8 = null,
-            /// Command Group for this Command
+            /// Command Group for this Command.
             cmd_group: ?[]const u8 = null,
+            /// Hide this Command.
+            cmd_hidden: bool = false,
 
             /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
             /// These Descriptions will be used across this Command and all of its Sub Commands.
@@ -853,6 +871,7 @@ pub fn Custom(comptime config: Config) type {
                 .name = cmd_name,
                 .alias_names = from_config.cmd_alias_names,
                 .description = from_config.cmd_description,
+                .hidden = from_config.cmd_hidden,
                 .help_prefix = from_config.cmd_help_prefix,
                 .cmd_groups = from_config.cmd_groups,
                 .cmd_group = from_config.cmd_group,
@@ -951,6 +970,7 @@ pub fn Custom(comptime config: Config) type {
                 .name = if (from_config.cmd_name) |c_name| c_name else @typeName(FromFn),
                 .alias_names = from_config.cmd_alias_names,
                 .description = from_config.cmd_description,
+                .hidden = from_config.cmd_hidden,
                 .cmd_groups = from_config.cmd_groups,
                 .cmd_group = from_config.cmd_group,
                 .help_prefix = from_config.cmd_help_prefix,

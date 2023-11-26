@@ -20,62 +20,62 @@ const ex_structs = @import("example_structs.zig");
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
-    .global_usage_fn = struct{
-        fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
-            const CmdT = @TypeOf(self.*);
-            const OptT = CmdT.OptionT;
-            const indent_fmt = CmdT.indent_fmt;
-            var no_args = true;
-            var pre_sep: []const u8 = "";
+    //.global_usage_fn = struct{
+    //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
+    //        const CmdT = @TypeOf(self.*);
+    //        const OptT = CmdT.OptionT;
+    //        const indent_fmt = CmdT.indent_fmt;
+    //        var no_args = true;
+    //        var pre_sep: []const u8 = "";
 
-            try writer.print("USAGE\n", .{});
-            if (self.opts) |opts| {
-                no_args = false;
-                try writer.print("{s}{s} [", .{ 
-                    indent_fmt,
-                    self.name,
-                });
-                for (opts) |opt| {
-                    try writer.print("{s} {s}{s} ", .{ 
-                        pre_sep,
-                        OptT.long_prefix orelse opt.short_prefix,
-                        opt.long_name orelse &.{ opt.short_name orelse 0 },
-                    });
-                    pre_sep = "| ";
-                }
-                try writer.print("]\n", .{});
-            }
-            if (self.sub_cmds) |cmds| {
-                no_args = false;
-                try writer.print("{s}{s} [", .{ 
-                    indent_fmt,
-                    self.name,
-                });
-                pre_sep = "";
-                for (cmds) |cmd| {
-                    try writer.print("{s} {s} ", .{ 
-                        pre_sep,
-                        cmd.name,
-                    });
-                    pre_sep = "| ";
-                }
-                try writer.print("]\n", .{});
-            }
-            if (no_args) try writer.print("{s}{s}{s}", .{ 
-                indent_fmt, 
-                indent_fmt,
-                self.name,
-            });
-        }
-    }.usage,
-    .help_header_fmt = 
-        \\HELP
-        \\{s}COMMAND: {s}
-        \\
-        \\{s}DESCRIPTION: {s}
-        \\
-        \\
-    ,
+    //        try writer.print("USAGE\n", .{});
+    //        if (self.opts) |opts| {
+    //            no_args = false;
+    //            try writer.print("{s}{s} [", .{ 
+    //                indent_fmt,
+    //                self.name,
+    //            });
+    //            for (opts) |opt| {
+    //                try writer.print("{s} {s}{s} ", .{ 
+    //                    pre_sep,
+    //                    OptT.long_prefix orelse opt.short_prefix,
+    //                    opt.long_name orelse &.{ opt.short_name orelse 0 },
+    //                });
+    //                pre_sep = "| ";
+    //            }
+    //            try writer.print("]\n", .{});
+    //        }
+    //        if (self.sub_cmds) |cmds| {
+    //            no_args = false;
+    //            try writer.print("{s}{s} [", .{ 
+    //                indent_fmt,
+    //                self.name,
+    //            });
+    //            pre_sep = "";
+    //            for (cmds) |cmd| {
+    //                try writer.print("{s} {s} ", .{ 
+    //                    pre_sep,
+    //                    cmd.name,
+    //                });
+    //                pre_sep = "| ";
+    //            }
+    //            try writer.print("]\n", .{});
+    //        }
+    //        if (no_args) try writer.print("{s}{s}{s}", .{ 
+    //            indent_fmt, 
+    //            indent_fmt,
+    //            self.name,
+    //        });
+    //    }
+    //}.usage,
+    //.help_header_fmt = 
+    //    \\HELP
+    //    \\{s}COMMAND: {s}
+    //    \\
+    //    \\{s}DESCRIPTION: {s}
+    //    \\
+    //    \\
+    //,
     //.global_help_fn = struct{
     //    fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
     //        const CmdT = @TypeOf(self.*);
@@ -289,6 +289,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
+            .cmd_hidden = true,
             .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,
             .default_val_opts = true,
@@ -326,6 +327,8 @@ pub const setup_cmd: CommandT = .{
     .opts = &.{
         .{ 
             .name = "string_opt",
+            .description = "A string option. (Can be given up to 4 times.)",
+            .hidden = true,
             .opt_group = "STRING",
             .short_name = 's',
             .long_name = "string",
@@ -337,10 +340,10 @@ pub const setup_cmd: CommandT = .{
                 .max_args = 4,
                 .parse_fn = Value.ParsingFns.toUpper,
             }),
-            .description = "A string option. (Can be given up to 4 times.)",
         },
         .{
             .name = "int_opt",
+            .description = "An integer option. (Can be given up to 10 times.)",
             .opt_group = "INT",
             .short_name = 'i',
             .long_name = "int",
@@ -351,10 +354,10 @@ pub const setup_cmd: CommandT = .{
                 .set_behavior = .Multi,
                 .max_args = 10,
             }),
-            .description = "An integer option. (Can be given up to 10 times.)",
         },
         //.{
         //    .name = "uint_opt",
+        //    .description = "An unsigned integer option. (Can be given up to 10 times.)",
         //    .opt_group = "INT",
         //    .short_name = 'U',
         //    .long_name = "uint",
@@ -364,10 +367,10 @@ pub const setup_cmd: CommandT = .{
         //        .set_behavior = .Multi,
         //        .max_args = 10,
         //    }),
-        //    .description = "An unsigned integer option. (Can be given up to 10 times.)",
         //},
         .{
             .name = "float_opt",
+            .description = "An float option. (Can be given up to 10 times.)",
             //.opt_group = "INT",
             .short_name = 'f',
             .long_name = "float",
@@ -378,10 +381,10 @@ pub const setup_cmd: CommandT = .{
                 .set_behavior = .Multi,
                 .max_args = 10,
             }),
-            .description = "An float option. (Can be given up to 10 times.)",
         },
         .{
             .name = "file_opt",
+            .description = "A filepath option.",
             .opt_group = "STRING",
             .short_name = 'F',
             .long_name = "file",
@@ -391,10 +394,10 @@ pub const setup_cmd: CommandT = .{
                 .child_type_alias = "filepath",
                 .valid_fn = Value.ValidationFns.validFilepath,
             }),
-            .description = "A filepath option.",
         },
         .{
             .name = "ordinal_opt",
+            .description = "An ordinal number option.",
             .opt_group = "STRING",
             .short_name = 'o',
             .long_name = "ordinal",
@@ -403,10 +406,10 @@ pub const setup_cmd: CommandT = .{
                 .description = "An ordinal number value.",
                 .valid_fn = Value.ValidationFns.ordinalNum,
             }),
-            .description = "An ordinal number option.",
         },
         .{
             .name = "cardinal_opt",
+            .description = "A cardinal number option.",
             .opt_group = "INT",
             .short_name = 'c',
             .long_name = "cardinal",
@@ -417,10 +420,10 @@ pub const setup_cmd: CommandT = .{
                 .set_behavior = .Multi,
                 .max_args = 3,
             }),
-            .description = "A cardinal number option.",
         },
         .{
             .name = "toggle_opt",
+            .description = "A toggle/boolean option.",
             .opt_group = "BOOL",
             .short_name = 't',
             .long_name = "toggle",
@@ -428,10 +431,10 @@ pub const setup_cmd: CommandT = .{
                 .name = "toggle_val",
                 .description = "A toggle/boolean value.",
             }),
-            .description = "A toggle/boolean option.",
         },
         .{
             .name = "bool_opt",
+            .description = "A toggle/boolean option.",
             .opt_group = "BOOL",
             .short_name = 'b',
             .long_name = "bool",
@@ -440,10 +443,10 @@ pub const setup_cmd: CommandT = .{
                 .description = "A toggle/boolean value.",
                 //.parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y", "1" }, &.{}, .False),
             }),
-            .description = "A toggle/boolean option.",
         },
         .{
             .name = "verbosity_opt",
+            .description = "Set the CovaDemo verbosity level. (WIP)",
             .short_name = 'v',
             .long_name = "verbosity",
             .val = ValueT.ofType(u4, .{
@@ -452,7 +455,6 @@ pub const setup_cmd: CommandT = .{
                 .default_val = 3,
                 .valid_fn = struct{ fn valFn(val: u4, alloc: mem.Allocator) bool { _ = alloc; return val >= 0 and val <= 3; } }.valFn,
             }),
-            .description = "Set the CovaDemo verbosity level. (WIP)",
         },
     },
     .vals = &.{
