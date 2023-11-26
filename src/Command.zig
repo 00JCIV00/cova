@@ -442,7 +442,7 @@ pub fn Custom(comptime config: Config) type {
                         }
                         if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                     }
-                    if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                    if (need_other_title and remove_list.items.len < cmd_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
                 for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
 
@@ -484,7 +484,7 @@ pub fn Custom(comptime config: Config) type {
                         }
                         if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                     }
-                    if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                    if (need_other_title and remove_list.items.len < opt_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
                 for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
 
@@ -526,7 +526,7 @@ pub fn Custom(comptime config: Config) type {
                         }
                         if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                     }
-                    if (need_other_title) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                    if (need_other_title and remove_list.items.len < val_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                 }
                 for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
 
@@ -769,22 +769,8 @@ pub fn Custom(comptime config: Config) type {
                     // Options
                     // TODO - Handle Command types passed as Optionals?
                     .Optional => {
-                        //const short_name = shortName: {
-                        //    if (!from_config.attempt_short_opts) break :shortName null;
-                        //    for (arg_name) |char| {
-                        //        const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
-                        //        for (ul_chars) |ul| {
-                        //            if (short_idx > 0 and utils.indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
-                        //            short_names[short_idx] = ul;
-                        //            short_idx += 1;
-                        //            break :shortName ul;
-                        //        }
-                        //    }
-                        //    break :shortName null;
-                        //};
                         from_opts[opts_idx] = (OptionT.from(field, .{ 
                             .name = arg_name,
-                            //.short_name = short_name, 
                             .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
                             .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
@@ -797,7 +783,6 @@ pub fn Custom(comptime config: Config) type {
                         if (from_config.default_val_opts and field.default_value != null) {
                             from_opts[opts_idx] = (OptionT.from(field, .{ 
                                 .name = arg_name,
-                                //.short_name = short_name, 
                                 .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
                                 .long_name = arg_name,
                                 .ignore_incompatible = from_config.ignore_incompatible,
@@ -819,19 +804,6 @@ pub fn Custom(comptime config: Config) type {
                         switch (ary_info) {
                             // Options
                             .Optional => {
-                                //const short_name = shortName: {
-                                //    if (!from_config.attempt_short_opts) break :shortName null;
-                                //    for (arg_name) |char| {
-                                //        const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
-                                //        for (ul_chars) |ul| {
-                                //            if (short_idx > 0 and utils.indexOfEql(u8, short_names[0..short_idx], ul) != null) continue;
-                                //            short_names[short_idx] = ul;
-                                //            short_idx += 1;
-                                //            break :shortName ul;
-                                //        }
-                                //    }
-                                //    break :shortName null;
-                                //};
                                 from_opts[opts_idx] = OptionT.from(field, .{
                                     .name = arg_name,
                                     .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
