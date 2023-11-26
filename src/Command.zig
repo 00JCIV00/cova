@@ -105,8 +105,12 @@ pub const Config = struct {
     ,
     /// Usage Header Format
     /// Must support the following format types in this order:
-    /// 1. String (Command)
-    usage_header_fmt: []const u8 = "USAGE: {s} ",
+    /// 1. String (Indent)
+    /// 2. String (Command)
+    usage_header_fmt: []const u8 = 
+        \\USAGE:
+        \\{s}{s} 
+        ,
     /// Sub Commands Help Title Format
     /// Must support the following format types in this order:
     /// 1. String (Indent)
@@ -127,7 +131,7 @@ pub const Config = struct {
     /// Sub Commands Usage Format.
     /// Must support the following format types in this order:
     /// 1. String (Command Name)
-    subcmds_usage_fmt: []const u8 = "'{s}'", 
+    subcmds_usage_fmt: []const u8 = "{s}", 
     /// Sub Commands Alias List Format.
     /// Must support the following format types in this order:
     /// 1. String (Aliases)
@@ -270,6 +274,8 @@ pub fn Custom(comptime config: Config) type {
         help_prefix: []const u8 = global_help_prefix,
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
+        /// Hide thie Command from Usage/Help messages.
+        hidden: bool = false,
 
         /// During parsing, mandate that a Sub Command be used with this Command if one is available.
         /// Note, this will not include Usage/Help Commands.
@@ -545,25 +551,31 @@ pub fn Custom(comptime config: Config) type {
         pub fn usage(self: *const @This(), writer: anytype) !void {
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 
-            try writer.print(usage_header_fmt, .{ self.name });
-            if (self.opts != null) {
-                for (self.opts.?) |opt| {
+            try writer.print(usage_header_fmt, .{ indent_fmt, self.name });
+            if (self.opts) |opts| {
+                var post_sep: []const u8 = " | ";
+                for (opts, 0..) |opt, idx| {
                     try opt.usage(writer);
-                    try writer.print(" ", .{});
+                    if (idx == opts.len - 1) post_sep = "";
+                    try writer.print("{s}", .{ post_sep });
                 }
-                try writer.print("| ", .{});
+                try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
             }
-            if (self.vals != null) {
-                for (self.vals.?) |val| {
+            if (self.vals) |vals| {
+                var post_sep: []const u8 = " | ";
+                for (vals, 0..) |val, idx| {
                     try val.usage(writer);
-                    try writer.print(" ", .{});
+                    if (idx == vals.len - 1) post_sep = "";
+                    try writer.print("{s}", .{ post_sep });
                 }
-                try writer.print("| ", .{});
+                try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
             }
-            if (self.sub_cmds != null) {
-                for (self.sub_cmds.?) |cmd| {
+            if (self.sub_cmds) |cmds| {
+                var post_sep: []const u8 = " | ";
+                for (cmds, 0..) |cmd, idx| {
                     try writer.print(subcmds_usage_fmt, .{ cmd.name });
-                    try writer.print(" ", .{});
+                    if (idx == cmds.len - 1) post_sep = "";
+                    try writer.print("{s}", .{ post_sep });
                 }
             } 
 

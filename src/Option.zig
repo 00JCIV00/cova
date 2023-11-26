@@ -85,7 +85,7 @@ pub const Config = struct {
     /// 4. Optional String "{?s}" (Long Name)
     /// 5. String (Value Name)
     /// 6. String (Value Type)
-    usage_fmt: []const u8 = "[{c}{?c},{s}{?s} \"{s} ({s})\"]",
+    usage_fmt: []const u8 = "{c}{?c},{s}{?s} <{s} ({s})>",
 
     /// Prefix for Short Options.
     short_prefix: ?u8 = '-',
@@ -174,6 +174,8 @@ pub fn Custom(comptime config: Config) type {
         name: []const u8,
         /// The Description of this Option for Usage/Help messages.
         description: []const u8 = "",
+        /// Hide thie Command from Usage/Help messages.
+        hidden: bool = false,
 
         /// During parsing, mandate that THIS Option must be used in a case-sensitive manner when called by its Long Name.
         /// This will NOT affect Option Validation, nor will it carry over to Tab-Completions.
