@@ -309,15 +309,22 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         pub fn get(self: *const @This()) !ChildT {
             return 
                 if (self.is_set) self._set_args[0].?
-                else if (ChildT == bool) false
                 else if (self.default_val) |def_val| def_val
+                else if (ChildT == bool) false
                 else error.ValueNotSet;
         }
 
         /// Get All Parsed and Validated Arguments of this Value.
         /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
         pub fn getAll(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
-            if (!self.is_set) return error.ValueNotSet;
+            if (!self.is_set) {
+                if (self.default_val) |def_val| {
+                    var val = try alloc.alloc(ChildT, 1);
+                    val[0] = def_val;
+                    return val;
+                }
+                else return error.ValueNotSet;
+            }
             var vals = try alloc.alloc(ChildT, self._arg_idx);
             for (self._set_args[0..self._arg_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
@@ -734,7 +741,7 @@ pub fn Custom(comptime config: Config) type {
                 // TODO: Handle default Array Elements.
                 .default_val = defVal: { 
                     if (
-                        utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_val") != null and 
+                        utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_value") != null and 
                         from_comp.default_value != null
                     ) {
                         switch (comp_info) {
@@ -746,7 +753,7 @@ pub fn Custom(comptime config: Config) type {
                                 };
                             },
                             .Enum => break :defVal 0, 
-                            inline else => break :defVal @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value)))).*
+                            inline else => break :defVal @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value.?)))).*
                         }
                     }
                     else break :defVal null;

@@ -1055,8 +1055,12 @@ pub fn Custom(comptime config: Config) type {
                 };
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
-                    .Struct => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
-                        @field(out, field.name) = try self.sub_cmd.?.to(field.type, to_config);
+                    .Struct => {
+                        @field(out, field.name) = 
+                            if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name))
+                                try self.sub_cmd.?.to(field.type, to_config)
+                            else if (to_config.allow_unset) field.type{}
+                            else return error.ValueNotSet;
                     },
                     .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
                         return @unionInit(ToT, field.name, try self.sub_cmd.?.to(field.type, to_config));
@@ -1066,8 +1070,7 @@ pub fn Custom(comptime config: Config) type {
                             if (mem.eql(u8, opt.name, arg_name)) {
                                 if (!opt.val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
-                                    if (field.default_value) |def_val|
-                                        @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
+                                    @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
                                     break;
                                 }
                                 if (type_info == .Union) return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
@@ -1076,14 +1079,16 @@ pub fn Custom(comptime config: Config) type {
                         }
                     },
                     .Bool, .Int, .Float, .Pointer, .Enum => {
-
-
                         for (vals) |val| {
                             if (mem.eql(u8, val.name(), arg_name)) {
-                                if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
+                                //if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
+                                if (!val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
-                                    if (field.default_value) |def_val|
-                                        @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
+                                    const def_val = field.default_value orelse {
+                                        log.err("The Field '{s}' has no default value.", .{ field.name });
+                                        return error.NoDefaultValue;
+                                    };
+                                    @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
                                     break;
                                 }
                                 if (type_info == .Union) return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
@@ -1107,8 +1112,10 @@ pub fn Custom(comptime config: Config) type {
                                     if (mem.eql(u8, opt.name, arg_name)) {
                                         if (!opt.val.isSet() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
-                                            if (field.default_value) |def_val|
-                                                @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
+                                            @field(out, field.name) =
+                                                if (field.default_value) |def_val|
+                                                    @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
+                                                else .{ null } ** ary.len;
                                             break;
                                         }
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
@@ -1125,8 +1132,11 @@ pub fn Custom(comptime config: Config) type {
                                     if (mem.eql(u8, val.name(), arg_name)) {
                                         if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
-                                            if (field.default_value) |def_val|
-                                                @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
+                                            const def_val = field.default_value orelse {
+                                                log.err("The Field '{s}' has no default value.", .{ field.name });
+                                                return error.NoDefaultValue;
+                                            };
+                                            @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
                                             break;
                                         }
                                         const val_tag = if (ary.child == []const u8) "string" else @typeName(ary.child);

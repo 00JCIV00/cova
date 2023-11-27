@@ -310,6 +310,7 @@ pub fn Custom(comptime config: Config) type {
                     switch (child_info) {
                         .Bool, .Int, .Float, .Pointer, .Enum => break :optVal ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
+                            .val_name = from_config.name,
                             .val_description = from_config.opt_description,
                         }) orelse return null,
                         inline else => {

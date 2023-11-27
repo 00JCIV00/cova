@@ -208,9 +208,9 @@ pub const DemoStruct = struct {
     multi_str: [5]?[]const u8,
     rbg_enum: ?InnerEnum = .blue,
     // Values
-    struct_bool: bool = false,
+    struct_bool: bool = true,
     struct_str: []const u8 = "Demo Struct string.",
-    struct_int: i64,
+    struct_int: i64 = 8967,
     multi_int_val: [2]u16,
     _ignored_int: i8 = 15,
     // Cova Argument Types
@@ -289,7 +289,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
-            .cmd_hidden = true,
+            //.cmd_hidden = true,
             .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,
             .default_val_opts = true,
@@ -328,7 +328,7 @@ pub const setup_cmd: CommandT = .{
         .{ 
             .name = "string_opt",
             .description = "A string option. (Can be given up to 4 times.)",
-            .hidden = true,
+            //.hidden = true,
             .opt_group = "STRING",
             .short_name = 's',
             .long_name = "string",
