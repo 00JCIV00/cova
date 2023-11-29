@@ -3,6 +3,8 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const build_options = b.addOptions();
+    const bin_name = b.option([]const u8, "name", "A name for the binary being created.");
     b.exe_dir = "./bin";
 
     // Static Lib (Unused)
@@ -42,7 +44,7 @@ pub fn build(b: *std.Build) void {
 
     // Cova Demo Exe
     const cova_demo = b.addExecutable(.{
-        .name = "covademo",
+        .name = bin_name orelse "covademo",
         .root_source_file = .{ .path = "examples/covademo.zig" },
         .target = target,
         .optimize = optimize,
@@ -55,7 +57,7 @@ pub fn build(b: *std.Build) void {
 
     // Basic App Exe
     const basic_app = b.addExecutable(.{
-        .name = "basic-app",
+        .name = bin_name orelse "basic-app",
         .root_source_file = .{ .path = "examples/basic_app.zig" },
         .target = target,
         .optimize = optimize,
@@ -67,7 +69,6 @@ pub fn build(b: *std.Build) void {
 
 
     // Build Options for Gen Docs
-    const build_options = b.addOptions();
     build_options.addOption(bool, "no_manpages", 
         b.option(bool, "no-manpages", "Don't generate manpages (only applies to 'gen-doc' builds)") orelse false
     );
