@@ -156,20 +156,21 @@ pub const CommandT = Command.Custom(.{
         }.help
     },
     .val_config = .{
-        //.custom_types = &.{ u1024, DemoStruct.InnerEnum },
+        //.custom_types = &.{ DemoStruct.InnerEnum },
+        //.custom_types = &.{ SimpleEnum },
         .child_type_parse_fns = &.{
-            .{
-                .ChildT = bool,
-                .parse_fn = Value.ParsingFns.Builder.altBool(
-                    &.{ "true", "t", "yes", "y", "1", "ok" },
-                    &.{ "false", "f", "no", "n", "0" },
-                    .Error
-                )
-            },
-            .{
-                .ChildT = u1024,
-                .parse_fn = struct{ fn testFn(arg: []const u8, alloc: mem.Allocator) !u1024 { _ = arg; _ = alloc; return 69696969696969; } }.testFn,
-            },
+            //.{
+            //    .ChildT = bool,
+            //    .parse_fn = Value.ParsingFns.Builder.altBool(
+            //        &.{ "true", "t", "yes", "y", "1", "ok" },
+            //        &.{ "false", "f", "no", "n", "0" },
+            //        .Error
+            //    )
+            //},
+            //.{
+            //    .ChildT = u1024,
+            //    .parse_fn = struct{ fn testFn(arg: []const u8, alloc: mem.Allocator) !u1024 { _ = arg; _ = alloc; return 69696969696969; } }.testFn,
+            //},
         },
     },
     //.global_usage_fn = struct{ 
@@ -183,8 +184,13 @@ pub const ValueT = CommandT.ValueT;
 
 //pub const log_level: log.Level = .err;
 
-pub const DemoStruct = struct {
-    pub const InnerStruct = struct {
+pub const SimpleEnum = enum{
+    a,
+    b,
+};
+
+pub const DemoStruct = struct{
+    pub const InnerStruct = struct{
         in_bool: bool = false,
         in_float: f32 = 0,
     };
@@ -214,11 +220,11 @@ pub const DemoStruct = struct {
     multi_int_val: [2]u16,
     _ignored_int: i8 = 15,
     // Cova Argument Types
-    cova_val_int: ValueT = ValueT.ofType(i8, .{
-        .name = "cova_val_int",
-        .description = "A test cova Value within a struct.",
-        .default_val = 50,
-    }),
+    //cova_val_int: ValueT = ValueT.ofType(i8, .{
+    //    .name = "cova_val_int",
+    //    .description = "A test cova Value within a struct.",
+    //    .default_val = 50,
+    //}),
 };
 
 pub const DemoUnion = union(enum) {
@@ -518,7 +524,7 @@ pub fn main() !void {
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
     _ = try main_cmd.getVals();
-    const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt" };
+    const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt", "bool_opt" };
     const and_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .AND });
     const or_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .OR });
     const xor_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .XOR });

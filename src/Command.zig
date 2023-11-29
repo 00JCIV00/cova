@@ -341,9 +341,31 @@ pub fn Custom(comptime config: Config) type {
         };
         /// Check if certain Options (`opt_names`) of this Command have been set using the provided OptionsCheckConfig (`check_config`).
         pub fn checkOpts(self: *const @This(), opt_names: []const []const u8, check_config: OptionsCheckConfig) bool {
-            const match_opts = self.matchOpts(opt_names, check_config) catch return false;
-            defer self._alloc.?.free(match_opts);
-            return true;
+            const cmd_opts = self.opts orelse return false;
+            var logic_flag = false;
+            var opts_count: u8 = 0;
+            for (cmd_opts) |opt| {
+                _ = utils.indexOfEql([]const u8, opt_names, opt.name) orelse continue;
+                if (!opt.val.isSet()) continue;
+                opts_count += 1;
+                switch (check_config.logic) {
+                    .AND => {
+                        if (opts_count == opt_names.len) {
+                            logic_flag = true;
+                            break;   
+                        }    
+                    },
+                    .OR => logic_flag = true,
+                    .XOR => {
+                        if (opts_count > check_config.xor_max) {
+                            logic_flag = false;
+                            break;
+                        }
+                        logic_flag = true;
+                    },
+                }
+            }
+            return logic_flag;
         }
         /// Returns a slice of Options `[]OptionT` Matching the given Options list (`opt_names`) and rules provided in the OptionCheckConfig (`check_config`).
         pub fn matchOpts(self: *const @This(), opt_names: []const []const u8, check_config: OptionsCheckConfig) ![]OptionT {
