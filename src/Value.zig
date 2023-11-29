@@ -475,9 +475,11 @@ pub fn Generic(comptime config: Config) type {
             const AddT = addT: {
                 const add_info = @typeInfo(T);
                 switch (add_info) {
-                    .Struct => {
-                        // Check for `Value.Typed`
-                        for (add_info.Struct.fields, @typeInfo(@TypeOf(Typed(bool, config){})).Struct.fields) |a_field, b_field| {
+                    // Check for `Value.Typed`
+                    .Struct => |struct_info| {
+                        const base_fields = @typeInfo(@TypeOf(Typed(bool, config){})).Struct.fields;
+                        if (struct_info.fields.len != base_fields.len) break :addT Typed(T, config);
+                        for (struct_info.fields, base_fields) |a_field, b_field| {
                             if (!mem.eql(u8, a_field.name, b_field.name)) break :addT Typed(T, config);
                         }
                         break :addT Typed(T.ChildT, config);
@@ -773,6 +775,16 @@ pub fn Custom(comptime config: Config) type {
             });
         }
 
+        /// Format function for Values
+        pub fn format(self: @This(), _: []const u8, _: fmt.FormatOptions, writer: anytype) !void {
+            try writer.print("{s}", .{ @tagName(meta.activeTag(self.generic)) });
+            try writer.print("{s}:  Type: {s}, Set: {any}", .{
+                self.name(),
+                self.childType(),
+                self.isSet(),
+            });
+        }
+
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
             switch (meta.activeTag(self.*.generic)) {
@@ -861,7 +873,7 @@ pub const ParsingFns = struct {
             return struct { 
                 fn enumInt(arg: []const u8, alloc: mem.Allocator) !EnumTagT {
                     _ = alloc;
-                    const enum_tag = meta.stringToEnum(EnumT, arg) orelse return error.EnumTagDoesNotExist;
+                    const enum_tag = meta.stringToEnum(EnumT, mem.trim(u8, arg, &.{ 0, ' ', '\t' })) orelse return error.EnumTagDoesNotExist;
                     return @intFromEnum(enum_tag);
                 }
             }.enumInt;
