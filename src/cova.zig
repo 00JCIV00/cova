@@ -151,6 +151,22 @@ pub const ArgIteratorGeneric = union(enum) {
         }
     }
 
+    /// Reset this Argument Iterator.
+    pub fn reset(self: *@This()) void {
+        switch (meta.activeTag(self.*)) {
+            .raw => self.raw.index = 0,
+            inline else => |tag| {
+                var iter = &@field(self, @tagName(tag));
+                if (builtin.os.tag != .windows) iter.inner.index = 0
+                else {
+                    iter.inner.index = 0; 
+                    iter.inner.start = 0; 
+                    iter.inner.end = 0; 
+                } 
+            },
+        }
+    }
+
     /// Get the current Index of this Iterator.
     pub fn index(self: *@This()) usize {
         return switch (meta.activeTag(self.*)) {
