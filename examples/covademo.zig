@@ -248,6 +248,7 @@ pub const setup_cmd: CommandT = .{
     .opt_groups = &.{ "INT", "BOOL", "STRING" },
     .val_groups = &.{ "INT", "BOOL", "STRING" },
     .sub_cmds_mandatory = false,
+    .mandatory_opt_groups = &.{ "BOOL" },
     .sub_cmds = &.{
         .{
             .name = "sub-cmd",
@@ -444,6 +445,7 @@ pub const setup_cmd: CommandT = .{
             .opt_group = "BOOL",
             .short_name = 'b',
             .long_name = "bool",
+            .mandatory = true,
             .val = ValueT.ofType(bool, .{
                 .name = "bool_val",
                 .description = "A toggle/boolean value.",

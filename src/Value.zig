@@ -628,10 +628,16 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).description,
             };
         }
-        /// Check the inner Typed Value's is Set.
+        /// Check if the inner Typed Value is Set.
         pub fn isSet(self: *const @This()) bool {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).is_set,
+            };
+        }
+        /// Check if the inner Typed Value has a default value.
+        pub fn hasDefault(self: *const @This()) bool {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).default_val != null,
             };
         }
         /// Get the inner Typed Value's Argument Index.

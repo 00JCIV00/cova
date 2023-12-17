@@ -280,6 +280,9 @@ pub fn Custom(comptime config: Config) type {
         /// During parsing, mandate that a Sub Command be used with this Command if one is available.
         /// Note, this will not include Usage/Help Commands.
         sub_cmds_mandatory: bool = config.global_sub_cmds_mandatory,
+        /// During parsing, mandate that Options in the provided Option Groups be used.
+        /// This is a SUBSET of the `opt_groups`.
+        mandatory_opt_groups: ?[]const []const u8 = null,
         /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
         /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
         vals_mandatory: bool = config.global_vals_mandatory,
@@ -1352,6 +1355,16 @@ pub fn Custom(comptime config: Config) type {
                                 @compileError("The Option '" ++ opt.name ++ "' has non-existent Group '" ++ opt.opt_group.? ++ "'.\n" ++
                                     "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`.");
                         }
+                    }
+                    // - Mandatory Option Groups.
+                    if (self.mandatory_opt_groups) |man_groups| {
+                        if (self.opt_groups) |groups| {
+                            for (man_groups) |man_group| {
+                                if (utils.indexOfEql([]const u8, groups, man_group) == null)
+                                    @compileError(fmt.comptimePrint("The Mandatory Option Group {s} is not in the given Option Groups.", .{ man_group }));
+                            }
+                        }
+                        else @compileError("Mandatory Option Groups must be a subset of Option Groups but no Option Groups were given.");
                     }
                     // - Value Groups.
                     if (self.vals) |vals| valGroups: {

@@ -180,6 +180,9 @@ pub fn Custom(comptime config: Config) type {
         /// During parsing, mandate that THIS Option must be used in a case-sensitive manner when called by its Long Name.
         /// This will NOT affect Option Validation, nor will it carry over to Tab-Completions.
         case_sensitive: bool = config.global_case_sensitive,
+        /// During parsing, mandate that this Option is given.
+        /// This will do nothing if this Option's Value has a default value.
+        mandatory: bool = false,
 
         // (WIP) TODO: Figure out if this is possible
         ///// A custom Help function to override the default `help()` function for this custom Option INSTANCE.

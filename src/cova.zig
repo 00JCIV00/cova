@@ -495,6 +495,26 @@ pub fn parseArgs(
         try errReaction(parse_config.err_reaction, cmd, writer);
         return error.ExpectedSubCommand;
     }
+    // Check that all Mandatory Options have been set.
+    if (cmd.opts) |opts| manOpts: {
+        if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
+        if (usage_help_flag) break :manOpts;
+        for (opts) |opt| {
+            const group_man = groupMan: {
+                const man_groups = cmd.mandatory_opt_groups orelse break :groupMan false;
+                const group = opt.opt_group orelse break :groupMan false;
+                break :groupMan utils.indexOfEql([]const u8, man_groups, group) != null;
+            };
+            if (
+                (opt.mandatory or group_man) and 
+                !(opt.val.isSet() or opt.val.hasDefault())
+            ) {
+                log.err("Option '{s}' is mandatory.", .{ opt.name });
+                try errReaction(parse_config.err_reaction, cmd, writer);
+                return error.ExpectedOption;
+            }
+        }
+    }
     // Check for missing Values if they are Mandated for the current Command.
     if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
     if (cmd.vals_mandatory and 
