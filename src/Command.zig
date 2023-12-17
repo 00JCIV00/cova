@@ -1092,7 +1092,9 @@ pub fn Custom(comptime config: Config) type {
                             if (mem.eql(u8, opt.name, arg_name)) {
                                 if (!opt.val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
-                                    @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
+                                    @field(out, field.name) = 
+                                        if (field.default_value) |def_val| @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
+                                        else null;
                                     break;
                                 }
                                 if (type_info == .Union) return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
