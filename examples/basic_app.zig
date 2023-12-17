@@ -231,7 +231,6 @@ pub fn main() !void {
     const alloc = arena.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
-    // Wrapping the `init()` call in a reference `&(...)` makes it easier to use.
     const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit();
 
@@ -367,6 +366,7 @@ pub fn main() !void {
     if (main_cmd.checkSubCmd("view-lists")) {
         try stdout.print("Available Lists:\n", .{});
         var dir_walker = try (try std.fs.cwd().openDir(".", .{ .iterate = true })).walk(alloc);
+        defer dir_walker.deinit();
         var found_list = false;
         while (try dir_walker.next()) |entry| {
             const filename = entry.basename;
