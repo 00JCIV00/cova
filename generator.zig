@@ -38,6 +38,7 @@ pub fn main() !void {
                 }
             );
         },
+        .zsh => {},
         .ps1 => {},
         .all => {},
         .none => {},

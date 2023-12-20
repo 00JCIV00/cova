@@ -56,7 +56,7 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
     var args_list = std.ArrayList([]const u8).init(alloc);
 
     if (token_config.groupers_open.len != token_config.groupers_close.len) {
-        log.err("The length `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
+        log.err("The length of `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
         return error.UnbalancedGrouperPairs;
     }
 

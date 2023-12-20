@@ -74,6 +74,7 @@ pub fn build(b: *std.Build) void {
     );
     const TabCompletionKind = enum {
         bash,
+        zsh,
         ps1,
         all,
         none,
