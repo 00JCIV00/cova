@@ -34,9 +34,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - The most Basic Setup requires only Cova imports, a library user Struct, and a few function calls for parsing.
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
+  	- x86-linux
     - x86_64-linux
+	- arm-linux
     - aarch64-linux
     - x86_64-windows
+	- x86_64-macos
     - *Should support all POSIX compliant systems.*
   - Commands:
     - Contain sub-Commands, Options, and Values.
@@ -170,17 +173,17 @@ pub fn main() !void {
     const alloc = arena.allocator();
     const stdout = std.io.getStdOut().writer();
 
-    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
 
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch(err) {
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch(err) {
         error.UsageHelpCalled,
         else => return err,
     }
-    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }
 ``` 
 
@@ -207,18 +210,22 @@ pub const ProjectStruct = struct {
         // By default, Options will be given a long name and a short name based on the
         // field name. (i.e. int = `-i` or `--int`)
         sub_uint: ?u8 = 5,
+
         // Primitive type fields will be converted into Values.
         sub_string: []const u8,
     },
 
     // Struct fields will be converted into cova Commands.
     subcmd: SubStruct = .{},
+
     // The default values of Primitive type fields will be applied as the default value
     // of the converted Option or Value.
     int: ?i4 = 10,
+
     // Optional Booleans will become cova Options that don't take a Value and are set to
     // `true` simply by calling the Option's short or long name.
     flag: ?bool = false,
+
     // Arrays will be turned into Multi-Values or Multi-Options based on the array's
     // child type.
     strings: [3]const []const u8 = .{ "Three", "default", "strings." },
@@ -246,7 +253,7 @@ pub fn main() !void {
     // Argument Types for correctness and distinct names, then it will return a
     // memory allocated copy of the Command for argument token parsing and
     // follow on analysis.
-    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
     
     ...
@@ -276,11 +283,12 @@ pub fn main() !void {
 
     // The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`)
     // tokens into Argument Types within the provided Command (`main_cmd`).
-    try cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{});
+    try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{});
+
     // Once parsed, the provided Command will be available for analysis by the
     // project code. Using `utils.displayCmdInfo()` will create a neat display
     // of the parsed Command for debugging.
-    try utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }
 ```
 

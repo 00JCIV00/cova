@@ -1,6 +1,10 @@
 .{
     .name = "cova",
-    .paths = .{ "." },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
     .version = "0.9.0",
     .dependencies = .{},
 }

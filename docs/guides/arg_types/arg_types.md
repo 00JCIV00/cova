@@ -3,7 +3,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 
 ## Argument Types
 ### Command
-A Command is a container Argument for sub Commands, Options, and Values. It can contain any mix of those Arguments or none at all if it's to be used as a standalone command (for instance `covademo help`). A HashMap<Name, Value/Option> for Options or Values can be created using either the `getOpts()` or `getVals()` method. Usage and Help statements for a Command can also be generated using the `usage()` and `help()` methods respectively.
+A Command is a container Argument for sub Commands, Options, and Values. It can contain any mix of those Arguments or none at all if it's to be used as a standalone command (for instance `covademo help`). The [`checkCmd()`](`cova.Command.Custom.checkCmd`) A HashMap<Name, Value/Option> for Options or Values can be created using either the `getOpts()` or `getVals()` method. Usage and Help statements for a Command can also be generated using the `usage()` and `help()` methods respectively.
 #### Example:
 ```zig
 const cmd = try alloc.create(Command);

@@ -1,11 +1,11 @@
 # Option
-An Option is an Argument Type which wraps a Value and is ALWAYS optional. They should be used for Values that an end user is not always expected to provide. Additionally, unlike Values, they can be expected in any order since they are set by name.
+An Option (also known as a Flag) is an Argument Type which wraps a Value and is typically optional. They should be used for Values that an end user is not always expected to provide. Additionally, unlike Values, they can be expected in any order since they are set by name.
 
 ## Configuring an Option Type
 Similar to Commands, an Option Type should be configured before any Options are created. Fortunately, the process is virtually the same as with Command Types and both configurations are designed to be done simultaneously. The standard way to configure an Option Type is by configuring the `cova.Command.Config.opt_config` field during Command Type configuration. This field is a `cova.Option.Config` and works effectively the same way as its Command counterpart. If the field is not configured it will be set to the default configuration. Done this way, the Option Type will be a part of the Command Type and will have access to all of the respective functions and methods within `cova.Option.Custom`().
 
 ## Setting up an Option
-The most straight forward way to set up an Option is to simply use Zig's standard syntax for filling out a struct. More specifically, Options can bet set up within the `opts` field of a Command using Anonymous Struct (or Tuple) syntax. Similarly, an Option's internal Value can also be set up this way via the Option's `val` field.
+The most straightforward way to set up an Option is to simply use Zig's standard syntax for filling out a struct. More specifically, Options can bet set up within the `cova.Command.Custom.opts` field of a Command using Anonymous Struct (or Tuple) syntax. Similarly, an Option's internal Value can also be set up this way via the Option's `val` field.
 
 Alternatively, Options will be created automatically when using `cova.Command.Custom.from`().
 
