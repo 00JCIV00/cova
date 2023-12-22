@@ -32,10 +32,10 @@ const utils = @import("utils.zig");
 pub const Config = struct {
     /// Default Set Behavior for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.set_behavior` field.
-    set_behavior: SetBehavior = .Last,
+    global_set_behavior: SetBehavior = .Last,
     /// Default Argument Delimiters for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
-    arg_delims: []const u8 = ",;",
+    global_arg_delims: []const u8 = ",;",
     /// Maximum instances of a Child Type that a Value can hold.
     max_children: u8 = 10,
 
@@ -189,9 +189,9 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         is_maxed: bool = false,
         /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options.
         /// This is only applicable if `set_behavior = .Multi`.
-        arg_delims: []const u8 = config.arg_delims,
+        arg_delims: []const u8 = config.global_arg_delims,
         /// Set Behavior for this Value.
-        set_behavior: SetBehavior = config.set_behavior,
+        set_behavior: SetBehavior = config.global_set_behavior,
         /// An optional Default value for this Value.
         default_val: ?ChildT = null,
         /// Flag to determine if this Value has been Parsed and Validated.
