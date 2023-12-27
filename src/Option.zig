@@ -329,9 +329,10 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize this Option with the provided Allocator (`alloc`).
         pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
-            @constCast(self).*._alloc = alloc;
-            @constCast(self).*.val = self.*.val.init(alloc);
-            return self.*;
+            var opt = self.*;
+            opt._alloc = alloc;
+            opt.val = self.*.val.init(alloc);
+            return opt;
         }
     };
 } 

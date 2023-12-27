@@ -332,8 +332,9 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// Initialize this Value with the provided Allocator (`alloc`).
         pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
-            @constCast(self).*._alloc = alloc;
-            return self.*;
+            var val = self.*;
+            val._alloc = alloc;
+            return val;
         }
     };
 }

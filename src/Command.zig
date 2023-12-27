@@ -312,7 +312,7 @@ pub fn Custom(comptime config: Config) type {
             return if (self.checkSubCmd(cmd_name)) self.sub_cmd.? else null;
         }
 
-        /// Gets a StringHashMap of this Command's Options.
+        /// Gets a StringHashMap of this Command's Options using its initialization Allocator.
         pub fn getOpts(self: *const @This()) !StringHashMap(OptionT) {
             if (!self._is_init) return error.CommandNotInitialized;
             return self.getOptsAlloc(self._alloc.?);
@@ -371,6 +371,7 @@ pub fn Custom(comptime config: Config) type {
             return logic_flag;
         }
         /// Returns a slice of Options `[]OptionT` Matching the given Options list (`opt_names`) and rules provided in the OptionCheckConfig (`check_config`).
+        /// This implementation uses this Command's initialization Allocator to allocate the OptionT slice.
         pub fn matchOpts(self: *const @This(), opt_names: []const []const u8, check_config: OptionsCheckConfig) ![]OptionT {
             if (!self._is_init) return error.CommandNotInitialized;
             return self.matchOptsAlloc(opt_names, self._alloc.?, check_config);
@@ -405,15 +406,15 @@ pub fn Custom(comptime config: Config) type {
             }
             if (!logic_flag) {
                 return switch (check_config.logic) {
-                    .AND => error.CheckOptionLogicFailAND,
-                    .OR => error.CheckOptionLogicFailOR,
-                    .XOR => error.CheckOptionLogicFailXOR,
+                    .AND => error.MatchOptionLogicFailAND,
+                    .OR => error.MatchOptionLogicFailOR,
+                    .XOR => error.MatchOptionLogicFailXOR,
                 };
             }
             return try opts_list.toOwnedSlice();
         }
 
-        /// Gets a StringHashMap of this Command's Values.
+        /// Gets a StringHashMap of this Command's Values using its initialization Allocator.
         pub fn getVals(self: *const @This()) !StringHashMap(ValueT) {
             if (!self._is_init) return error.CommandNotInitialized;
             return self.getValsAlloc(self._alloc.?);
@@ -1454,8 +1455,8 @@ pub fn Custom(comptime config: Config) type {
 
             var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
 
-            const usage_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' usage display." });
-            const help_description = try mem.concat(alloc, u8, &.{ "Show the '", init_cmd.name, "' help display." });
+            const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
+            const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
 
             if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                 const add_cmd_help_group = switch (init_config.add_cmd_help_group) {
@@ -1475,7 +1476,7 @@ pub fn Custom(comptime config: Config) type {
                     .DoNotAdd => false,
                 };
 
-                const help_sub_cmds = &[2]@This(){
+                const help_sub_cmds = [2]@This(){
                     .{
                         .name = "usage",
                         .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
@@ -1534,7 +1535,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .DoNotAdd => false,
                 };
-                const help_opts = &[2]OptionT{
+                var help_opts = [2]OptionT{
                     .{
                         ._alloc = alloc,
                         .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
@@ -1554,7 +1555,7 @@ pub fn Custom(comptime config: Config) type {
                         .val = ValueT.ofType(bool, .{ .name = "help_flag" }),
                     },
                 };
-                for (help_opts) |*opt| _ = opt.init(alloc);
+                for (help_opts[0..]) |*opt| opt.* = opt.init(alloc);
 
                 init_cmd.opts = 
                     if (init_cmd.opts) |init_opts| try mem.concat(alloc, @This().OptionT, &.{ init_opts, help_opts[0..] })
@@ -1576,9 +1577,11 @@ pub fn Custom(comptime config: Config) type {
         /// De-initialize this Command with its original Allocator.
         /// If this Command has not yet been initialized, this does nothing.
         pub fn deinit(self: *const @This()) void {
-            if (!self._is_init) return;
-            if (self.sub_cmds != null)
-                for (self.sub_cmds.?) |*cmd| cmd.deinit();
+            const alloc = self._alloc orelse return;
+            if (self.opts) |opts| alloc.free(opts); 
+            if (self.vals) |vals| alloc.free(vals); 
+            if (self.sub_cmds) |sub_cmds|
+                for (sub_cmds) |*cmd| cmd.deinit();
             self._alloc.?.destroy(self);
         }
     };
