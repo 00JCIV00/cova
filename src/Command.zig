@@ -233,7 +233,6 @@ pub fn Custom(comptime config: Config) type {
         /// Flag denoting if this Command has been initialized to memory using `init()`.
         ///
         /// **Internal Use.**
-        _is_init: bool = false,
         /// The Allocator for this Command.
         /// This is set using `init()`.
         ///
@@ -314,8 +313,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Gets a StringHashMap of this Command's Options using its initialization Allocator.
         pub fn getOpts(self: *const @This()) !StringHashMap(OptionT) {
-            if (!self._is_init) return error.CommandNotInitialized;
-            return self.getOptsAlloc(self._alloc.?);
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
+            return self.getOptsAlloc(alloc);
         }
         /// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(OptionT) {
@@ -373,8 +372,8 @@ pub fn Custom(comptime config: Config) type {
         /// Returns a slice of Options `[]OptionT` Matching the given Options list (`opt_names`) and rules provided in the OptionCheckConfig (`check_config`).
         /// This implementation uses this Command's initialization Allocator to allocate the OptionT slice.
         pub fn matchOpts(self: *const @This(), opt_names: []const []const u8, check_config: OptionsCheckConfig) ![]OptionT {
-            if (!self._is_init) return error.CommandNotInitialized;
-            return self.matchOptsAlloc(opt_names, self._alloc.?, check_config);
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
+            return self.matchOptsAlloc(opt_names, alloc, check_config);
         }
         /// Returns a slice of Options `[]OptionT` Matching the given Options list (`opt_names`) and rules provided in the OptionCheckConfig (`check_config`).
         /// This implementation uses the provided Allocator (`alloc`) to allocate the OptionT slice.
@@ -416,8 +415,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Gets a StringHashMap of this Command's Values using its initialization Allocator.
         pub fn getVals(self: *const @This()) !StringHashMap(ValueT) {
-            if (!self._is_init) return error.CommandNotInitialized;
-            return self.getValsAlloc(self._alloc.?);
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
+            return self.getValsAlloc(alloc);
         }
         /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(ValueT) {
@@ -1035,7 +1034,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
         // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
         pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
-            if (!self._is_init) return error.CommandNotInitialized;
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
             const type_info = @typeInfo(ToT);
             if (type_info == .Union) { 
                 const vals_idx = if (self.vals) |vals| valsIdx: {
@@ -1060,7 +1059,6 @@ pub fn Custom(comptime config: Config) type {
                     return error.ExpectedOnlyOneValOrOpt;
                 }
             }
-            const alloc = self._alloc orelse return error.CommandNotInitialized;
             const vals = getVals: {
                 var valsList = std.ArrayList(ValueT).init(alloc);
                 try valsList.appendSlice(self.vals orelse &.{});
@@ -1482,7 +1480,6 @@ pub fn Custom(comptime config: Config) type {
                         .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = usage_description,
-                        ._is_init = true,
                         ._alloc = alloc,
                     },
                     .{
@@ -1490,7 +1487,6 @@ pub fn Custom(comptime config: Config) type {
                         .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = help_description,
-                        ._is_init = true,
                         ._alloc = alloc,
                     }
                 };
@@ -1568,7 +1564,6 @@ pub fn Custom(comptime config: Config) type {
                 init_cmd.vals = init_vals;
             }
 
-            init_cmd._is_init = true;
             init_cmd._alloc = alloc;
 
             return init_cmd; 

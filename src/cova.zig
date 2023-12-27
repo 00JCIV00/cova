@@ -2,6 +2,7 @@
 //!zig-autodoc-guide: ./../docs/guides/overview.md 
 //!zig-autodoc-guide: ./../docs/guides/getting_started/install.md 
 //!zig-autodoc-guide: ./../docs/guides/getting_started/quick_setup.md 
+//!zig-autodoc-guide: ./../docs/guides/getting_started/naming_conventions.md
 //!zig-autodoc-section: Argument Types
 //!zig-autodoc-guide: ./../docs/guides/arg_types/command.md 
 //!zig-autodoc-guide: ./../docs/guides/arg_types/option.md 
@@ -9,6 +10,9 @@
 //!zig-autodoc-section: Parsing & Analysis
 //!zig-autodoc-guide: ./../docs/guides/parsing_analysis/parsing.md 
 //!zig-autodoc-guide: ./../docs/guides/parsing_analysis/analysis.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/usage_help.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/arg_groups.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/aliases.md 
 
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
@@ -113,7 +117,7 @@ pub const RawArgIterator = struct {
     }
 };
 
-/// A Generic Interface for ArgumentIterators.
+/// A Generic Interface for Argument Iterators.
 pub const ArgIteratorGeneric = union(enum) {
     raw: RawArgIterator,
     zig: proc.ArgIterator,
@@ -235,7 +239,7 @@ pub fn parseArgs(
     writer: anytype,
     parse_config: ParseConfig,
 ) !void {
-    if (!cmd._is_init) return error.CommandNotInitialized;
+    if (cmd._alloc == null) return error.CommandNotInitialized;
 
     var val_idx: u8 = 0;
     var opt_term: bool = false;
