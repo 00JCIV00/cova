@@ -204,9 +204,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// Note that any error caught from this function will be returned as `error.CannotParseArgToValue`.
         parse_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = null,
         /// A Validation Function to be used for Argument Validation in `set()` following Argument Parsing with `parse()`.
-        valid_fn: ?*const fn(ChildT, mem.Allocator) bool = struct{ 
-            fn valFn(val: ChildT, alloc: mem.Allocator) bool { _ = alloc; return @TypeOf(val) == ChildT; } 
-        }.valFn,
+        valid_fn: ?*const fn(ChildT, mem.Allocator) bool = null, 
             
         /// The Name of this Value for user identification and Usage/Help messages.
         name: []const u8 = "",
