@@ -35,11 +35,13 @@ pub const ValueT = CommandT.ValueT;
 pub const setup_cmd: CommandT = .{
     .name = "basic-app",
     .description = "A basic user management application designed to highlight key features of the Cova library.",
+    .cmd_groups = &.{ "INTERACT", "VIEW" },
     .sub_cmds = &.{
         // A Command created from a Struct. (Details further down).
         CommandT.from(User, .{
             .cmd_name = "new",
             .cmd_description = "Add a new user.",
+            .cmd_group = "INTERACT",
             // Descriptions can be added for Options and Values of Struct or Union conversions as
             // seen here.
             .sub_descriptions = &.{
@@ -55,11 +57,13 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
+            .cmd_group = "INTERACT",
         }),
         // A "raw" Command, same as the parent `setup_cmd`.
         CommandT{
             .name = "list",
             .description = "List all current users.",
+            .cmd_group = "VIEW",
             .sub_cmds_mandatory = false,
             .sub_cmds = &.{
                 // A Command created from a Union. (Details further down).
@@ -73,6 +77,7 @@ pub const setup_cmd: CommandT = .{
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
+            .cmd_group = "INTERACT",
             .opts = &.{
                 OptionT{
                     .name = "clean_file",
@@ -94,6 +99,7 @@ pub const setup_cmd: CommandT = .{
         CommandT{
             .name = "view-lists",
             .description = "View all lists (csv files) in the current directory.",
+            .cmd_group = "VIEW",
         },
     },
 };

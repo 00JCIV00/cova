@@ -34,12 +34,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - The most Basic Setup requires only Cova imports, a library user Struct, and a few function calls for parsing.
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
-  	- x86-linux
+    - x86-linux
     - x86_64-linux
-	- arm-linux
+    - arm-linux
     - aarch64-linux
     - x86_64-windows
-	- x86_64-macos
+    - x86_64-macos
     - *Should support all POSIX compliant systems.*
   - Commands:
     - Contain sub-Commands, Options, and Values.
@@ -99,20 +99,36 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 
 ## Install
 ### Package Manager
-1. Get the package hash by running:
- ```shell
- zig fetch https://github.com/00JCIV00/cova/archive/main.tar.gz
- ```
-2. Add the dependency to `build.zig.zon`:
-```zig 
-.dependencies = .{
-    .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/main.tar.gz",
-        .hash = "HASH FROM STEP 1 HERE",
-    },
-},
+1. Find the latest `v#.#.#` commit [here](https://github.com/00JCIV00/cova/commits/main).
+2. Copy the full SHA for the commit.
+3. Add the dependency to `build.zig.zon`:
+```bash
+zig fetch --save "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz"
 ```
-3. Add the dependency and module to `build.zig`:
+4. Add the dependency and module to `build.zig`:
+```zig
+// Cova Dependency
+const cova_dep = b.dependency("cova", .{ .target = target });
+// Cova Module
+const cova_mod = cova_dep.module("cova");
+// Executable
+const exe = b.addExecutable(.{
+    .name = "cova_example",
+    .root_source_file = .{ .path = "src/main.zig" },
+    .target = target,
+    .optimize = optimize,
+});
+// Add the Cova Module to the Executable
+exe.addModule("cova", cova_mod);
+```
+
+### Package Manager - Alternative
+Note, this method makes Cova easier to update by simply re-running `zig fetch --save https://github.com/00JCIV00/cova/archive/main.tar.gz`. However, it can lead to non-reproducible builds because the url will always point to the newest commit of the provided branch. Details can be found in [this discussion](https://ziggit.dev/t/feature-or-bug-w-zig-fetch-save/2565).
+1. Add the dependency to `build.zig.zon`:
+ ```shell
+ zig fetch --save https://github.com/00JCIV00/cova/archive/main.tar.gz
+ ```
+2. Add the dependency and module to `build.zig`:
 ```zig
 // Cova Dependency
 const cova_dep = b.dependency("cova", .{ .target = target });
@@ -298,7 +314,7 @@ pub fn main() !void {
 
 ### Advanced Setup
 - [Advanced Demo](./examples/covademo.zig)
-- The `covademo` is a showcase of most of Cova's features. This demo also serves as a test bed for features that are in development, so it's not well-documented in several areas. That said, it can still be a useful reference for how certain features should be used.
+- The `covademo` is a showcase of most of Cova's features. This demo also serves as a test bed for features that are in development, so it's not well-documented in several areas. That said, it can still be a useful reference for how certain features can be used.
 
 
 ## Alternatives

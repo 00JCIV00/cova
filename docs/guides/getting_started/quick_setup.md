@@ -140,7 +140,7 @@ pub fn main() !void {
     try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{});
 
     // Once parsed, the provided Command will be available for analysis by the
-    // project code. Using `utils.displayCmdInfoi()` will create a neat display
+    // project code. Using `utils.displayCmdInfo()` will create a neat display
     // of the parsed Command for debugging.
     try utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }

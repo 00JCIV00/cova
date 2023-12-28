@@ -255,10 +255,12 @@ pub fn Custom(comptime config: Config) type {
 
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
+        //sub_cmds: if (@inComptime()) ?[]const @This() else ?[]@This() = null,
         /// The Sub Command assigned to this Command during Parsing, if any.
         ///
         /// *This should be Read-Only for library users.*
         sub_cmd: ?*const @This() = null,
+        //sub_cmd: ?*@This() = null,
 
         /// The list of Options this Command can take.
         opts: ?[]const OptionT = null,
@@ -294,6 +296,9 @@ pub fn Custom(comptime config: Config) type {
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
             @constCast(self).*.sub_cmd = set_cmd;
         }
+        //pub fn setSubCmd(self: *@This(), set_cmd: *@This()) void {
+        //    self.sub_cmd = set_cmd;
+        //}
         /// Gets a reference to the Sub Command of this Command that matches the provided Name (`cmd_name`).
         pub fn getSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
             if (self.sub_cmds == null) return null;

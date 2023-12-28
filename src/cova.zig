@@ -262,18 +262,18 @@ pub fn parseArgs(
         if (cmd.sub_cmds) |cmds| {
             log.debug("Attempting to Parse Commands...", .{});
             checkCmds: for (cmds) |*sub_cmd| {
-                const parse_cmd = parseCmd: {
+                const should_parse = shouldParse: {
                     if (sub_cmd.case_sensitive) { 
-                        if (mem.eql(u8, sub_cmd.name, arg)) break :parseCmd true
-                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :parseCmd true;
+                        if (mem.eql(u8, sub_cmd.name, arg)) break :shouldParse true
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :shouldParse true;
                     }
                     else {
-                        if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) break :parseCmd true
-                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (ascii.eqlIgnoreCase(alias, arg)) break :parseCmd true;
+                        if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) break :shouldParse true
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (ascii.eqlIgnoreCase(alias, arg)) break :shouldParse true;
                     }
-                    break :parseCmd false;
+                    break :shouldParse false;
                 };
-                if (parse_cmd) {
+                if (should_parse) {
                     parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch |err| return err;
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;

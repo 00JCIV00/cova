@@ -489,14 +489,15 @@
 <span class="line" id="L329"></span>
 <span class="line" id="L330">        <span class="tok-comment">/// Initialize this Option with the provided Allocator (`alloc`).</span></span>
 <span class="line" id="L331">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(self: *<span class="tok-kw">const</span> <span class="tok-builtin">@This</span>(), alloc: mem.Allocator) <span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L332">            <span class="tok-builtin">@constCast</span>(self).*._alloc = alloc;</span>
-<span class="line" id="L333">            <span class="tok-builtin">@constCast</span>(self).*.val = self.*.val.init(alloc);</span>
-<span class="line" id="L334">            <span class="tok-kw">return</span> self.*;</span>
-<span class="line" id="L335">        }</span>
-<span class="line" id="L336">    };</span>
-<span class="line" id="L337">} </span>
-<span class="line" id="L338"></span>
+<span class="line" id="L332">            <span class="tok-kw">var</span> opt = self.*;</span>
+<span class="line" id="L333">            opt._alloc = alloc;</span>
+<span class="line" id="L334">            opt.val = self.*.val.init(alloc);</span>
+<span class="line" id="L335">            <span class="tok-kw">return</span> opt;</span>
+<span class="line" id="L336">        }</span>
+<span class="line" id="L337">    };</span>
+<span class="line" id="L338">} </span>
 <span class="line" id="L339"></span>
 <span class="line" id="L340"></span>
+<span class="line" id="L341"></span>
 </code></pre></body>
 </html>

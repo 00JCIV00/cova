@@ -3,12 +3,8 @@
 1. Find the latest `v#.#.#` commit [here](https://github.com/00JCIV00/cova/commits/main).
 2. Copy the full SHA for the commit.
 3. Add the dependency to `build.zig.zon`:
-```zig 
-.dependencies = .{
-    .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-    },
-},
+```bash
+zig fetch --save "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz"
 ```
 4. Add the dependency and module to `build.zig`:
 ```zig
@@ -26,16 +22,15 @@ const exe = b.addExecutable(.{
 // Add the Cova Module to the Executable
 exe.addModule("cova", cova_mod);
 ```
-5. Run `zig build <PROJECT BUILD STEP IF APPLICABLE>` to get the hash.
-6. Insert the hash into `build.zig.zon`:
-```bash 
-.dependencies = .{
-    .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-        .hash = "HASH FROM STEP 5 HERE",
-    },
-},
-```
+
+## Package Manager - Alternative
+Note, this method makes Cova easier to update by simply re-running `zig fetch --save https://github.com/00JCIV00/cova/archive/main.tar.gz`. However, it can lead to non-reproducible builds because the url will always point to the newest commit of the provided branch. Details can be found in [this discussion](https://ziggit.dev/t/feature-or-bug-w-zig-fetch-save/2565).
+1. Add the dependency to `build.zig.zon`:
+ ```shell
+ zig fetch --save https://github.com/00JCIV00/cova/archive/main.tar.gz
+ ```
+2. Continue from Step 4 above.
+
 
 ## Build the Basic-App Demo from source
 1. Use Zig v0.12 for your system. Available [here](https://ziglang.org/download/).
