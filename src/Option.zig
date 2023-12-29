@@ -166,6 +166,9 @@ pub fn Custom(comptime config: Config) type {
         short_name: ?u8 = null,
         /// This Option's Long Name (ex: `--intOpt`).
         long_name: ?[]const u8 = null,
+        /// A list of Alias Names for this Option that can be used in place of `long_name`.
+        /// Note, each Option may have up to 16 aliases and these will NOT be Validated against any long name abbreviations.
+        alias_long_names: ?[]const []const u8 = null,
         /// This Option's wrapped Value.
         val: ValueT = ValueT.ofType(bool, .{}),
 

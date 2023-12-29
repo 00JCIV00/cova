@@ -153,6 +153,8 @@ pub const Config = struct {
     /// During parsing, mandate that Command instances of this Command Type, and their aliases, must be used in a case-sensitive manner.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
+
+    enable_verb_desc: bool = false,
 };
 
 /// Create a Command type with the Base (default) configuration.
@@ -275,6 +277,8 @@ pub fn Custom(comptime config: Config) type {
         help_prefix: []const u8 = global_help_prefix,
         /// The Description of this Command for Usage/Help messages.
         description: []const u8 = "",
+        /// An optional Verbose Description for this Command.
+        //verbose_description: ?[]const u8 = null,
         /// Hide thie Command from Usage/Help messages.
         hidden: bool = false,
 
@@ -1271,6 +1275,8 @@ pub fn Custom(comptime config: Config) type {
             check_arg_groups: bool = true,
             // Check Command Alias Names to ensure they're distinct.
             check_cmd_aliases: bool = true,
+            // Check Option Alias Names to ensure they're distinct.
+            check_opt_aliases: bool = true,
             // Check for Usage/Help Commands
             check_help_cmds: bool = true,
             // Check for Usage/Help Options
@@ -1281,7 +1287,7 @@ pub fn Custom(comptime config: Config) type {
         /// This will check for:
         ///  - Distinct Sub Commands, Options, and Values
         ///  - Existing Argument Groups
-        ///  - Distinct Command Alias Names.
+        ///  - Distinct Command & Option Alias Names.
         pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
             comptime {
                 @setEvalBranchQuota(100_000);
@@ -1384,8 +1390,8 @@ pub fn Custom(comptime config: Config) type {
                 // Check for Distinct Command Alias Names.
                 if (valid_config.check_cmd_aliases) distinctAliases: {
                     const cmds = self.sub_cmds orelse break :distinctAliases;
-                    checkCmds1: for (cmds, 0..) |cmd_1, idx| {
-                        checkCmds2: for (cmds[idx..]) |cmd_2| {
+                    checkCmds1: for (cmds) |cmd_1| {
+                        checkCmds2: for (cmds) |cmd_2| {
                             if (mem.eql(u8, cmd_1.name, cmd_2.name)) continue :checkCmds2;
                             checkAliases: for (cmd_1.alias_names orelse continue :checkCmds1) |alias| {
                                 const case_sense = cmd_1.case_sensitive or cmd_2.case_sensitive; 
@@ -1406,6 +1412,44 @@ pub fn Custom(comptime config: Config) type {
                                         "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Command '" ++ 
                                         cmd_2.name ++ "'.\n" ++ 
                                         "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`."
+                                    );
+                            }
+                        }
+                    }
+                }
+                // Check for Distinct Option Alias Long Names.
+                if (valid_config.check_opt_aliases) distinctAliases: {
+                    const opts = self.opts orelse break :distinctAliases;
+                    checkCmds1: for (opts) |opt_1| {
+                        const opt_1_ln = opt_1.long_name orelse {
+                            if (opt_1.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_1.name }));
+                            continue :checkCmds1;
+                        };
+                        checkCmds2: for (opts) |opt_2| {
+                            const opt_2_ln = opt_2.long_name orelse {
+                                if (opt_2.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_2.name }));
+                                continue :checkCmds2;
+                            };
+                            if (mem.eql(u8, opt_1_ln, opt_2_ln)) continue :checkCmds2;
+                            checkAliases: for (opt_1.alias_long_names orelse continue :checkCmds1) |alias| {
+                                const case_sense = opt_1.case_sensitive or opt_2.case_sensitive; 
+                                if (
+                                    (case_sense and mem.eql(u8, opt_2_ln, alias)) or
+                                    (!case_sense and ascii.eqlIgnoreCase(opt_2_ln, alias))
+                                )
+                                    @compileError(
+                                        "The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Option '" ++ 
+                                        opt_2_ln ++ "'.\n" ++ 
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`."
+                                    );
+                                if (
+                                    (case_sense and utils.indexOfEql([]const u8, opt_2.alias_long_names orelse continue :checkAliases, alias) != null) or
+                                    (!case_sense and utils.indexOfEqlIgnoreCase(opt_2.alias_long_names orelse continue :checkAliases, alias) != null)
+                                )
+                                    @compileError(
+                                        "The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Option '" ++ 
+                                        opt_2.name ++ "'.\n" ++ 
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`."
                                     );
                             }
                         }

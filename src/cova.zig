@@ -385,7 +385,15 @@ pub fn parseArgs(
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
                 const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
                 for (cmd.opts.?) |*opt| {
-                    if (opt.long_name) |long_name| {
+                    const opt_long_name = opt.long_name orelse continue;
+                    var long_names: [17][]const u8 = undefined;
+                    var long_names_len: usize = 1;
+                    long_names[0] = opt_long_name;
+                    if (opt.alias_long_names) |aliases| {
+                        long_names_len += aliases.len;
+                        for (aliases, 0..) |alias, idx| long_names[idx + 1] = alias;
+                    }
+                    for (long_names[0..long_names_len]) |long_name| {
                         if (matchOpt: {
                             break :matchOpt if (opt.case_sensitive)
                                 mem.eql(u8, long_opt, long_name) or
