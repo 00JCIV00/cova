@@ -69,6 +69,15 @@ pub const Config = struct {
         parse_fn: *const anyopaque, 
     } = null,
 
+    /// Custom Child Type Aliases to be used in place of a `Value.Typed`'s actual Child Type name for all instances of the specified Child Type.
+    /// These aliases will be used SECOND, after an instance's `self.alias_child_type` but before the normal Child Type name is returned.
+    child_type_aliases: ?[]const struct{
+        /// The Child Type this function applies to.
+        ChildT: type,
+        /// The custom Alias.
+        alias: []const u8,
+    } = null,
+
     /// Use Custom Bit Width Range for Ints and UInts.
     /// This is useful for specifying a wide range of Int and UInt types for a project.
     /// Note, this will slow down compilation speed!!! (It does not affect runtime speed).
@@ -610,6 +619,7 @@ pub fn Custom(comptime config: Config) type {
             };
         }
         /// Get the inner Typed Value's Child Type Name.
+        /// This is where aliasing happens via `Value.Typed.alias_child_type` or `Value.Config.child_type_aliases`.
         pub fn childType(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             return switch (meta.activeTag(self.*.generic)) {
@@ -617,6 +627,12 @@ pub fn Custom(comptime config: Config) type {
                     const val = @field(self.*.generic, @tagName(tag));
                     break :typeName 
                         if (val.alias_child_type) |alias| alias
+                        else if (config.child_type_aliases) |aliases| confAlias: {
+                            inline for (aliases) |alias| {
+                                if (@TypeOf(val).ChildT == alias.ChildT) break :confAlias alias.alias;
+                            }
+                            break :confAlias @typeName(@TypeOf(val).ChildT);
+                        }
                         else @typeName(@TypeOf(val).ChildT);
                 }
             };
