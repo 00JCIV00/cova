@@ -159,7 +159,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// An Alias for the Child Type.
         /// This is useful for changing the type hint shown in Usage/Help messages or other Generated Docs.
-        child_type_alias: ?[]const u8 = null,
+        alias_child_type: ?[]const u8 = null,
 
         /// The Allocator for this Value's parent Command.
         /// This is set during the `init()` call of this Value's parent Command.
@@ -616,7 +616,7 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| typeName: {
                     const val = @field(self.*.generic, @tagName(tag));
                     break :typeName 
-                        if (val.child_type_alias) |alias| alias
+                        if (val.alias_child_type) |alias| alias
                         else @typeName(@TypeOf(val).ChildT);
                 }
             };

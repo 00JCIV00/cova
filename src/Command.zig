@@ -320,16 +320,29 @@ pub fn Custom(comptime config: Config) type {
             return if (self.checkSubCmd(cmd_name)) self.sub_cmd.? else null;
         }
 
+        /// Config for Getting Options and Values.
+        pub const GetConfig = struct{
+            /// An optional Argument Group to filter the returned Options or Values.
+            arg_group: ?[]const u8 = null,
+        };
+
         /// Gets a StringHashMap of this Command's Options using its initialization Allocator.
-        pub fn getOpts(self: *const @This()) !StringHashMap(OptionT) {
+        pub fn getOpts(self: *const @This(), get_config: GetConfig) !StringHashMap(OptionT) {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
-            return self.getOptsAlloc(alloc);
+            return self.getOptsAlloc(alloc, get_config);
         }
         /// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).
-        pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(OptionT) {
+        pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(OptionT) {
             if (self.opts == null) return error.NoOptionsInCommand;
             var map = StringHashMap(OptionT).init(alloc);
-            for (self.opts.?) |opt| { try map.put(opt.name, opt); }
+            for (self.opts.?) |opt| { 
+                checkGroup: {
+                    const conf_group = get_config.arg_group orelse break :checkGroup;
+                    const opt_group = opt.opt_group orelse continue;
+                    if (!mem.eql(u8, conf_group, opt_group)) continue;
+                }
+                try map.put(opt.name, opt); 
+            }
             return map;
         }
         /// Config for Checking or Matching multiple Options from this Command.
@@ -339,6 +352,8 @@ pub fn Custom(comptime config: Config) type {
             /// The maximum number of Options allowed for XOR Logic.
             /// This technically breaks from actual XOR Logic, but allows a specific number of Options to be checked or matched.
             xor_max: u8 = 1,
+            /// An optional Option Group to filter Checks/Matches.
+            opt_group: ?[]const u8 = null,
 
             /// Boolean Logic types for checking/matching Options.
             pub const CheckLogic = enum{
@@ -356,6 +371,11 @@ pub fn Custom(comptime config: Config) type {
             var logic_flag = false;
             var opts_count: u8 = 0;
             for (cmd_opts) |opt| {
+                checkGroup: {
+                    const conf_group = check_config.opt_group orelse break :checkGroup;
+                    const opt_group = opt.opt_group orelse continue;
+                    if (!mem.eql(u8, conf_group, opt_group)) continue;
+                }
                 _ = utils.indexOfEql([]const u8, opt_names, opt.name) orelse continue;
                 if (!opt.val.isSet()) continue;
                 opts_count += 1;
@@ -392,6 +412,11 @@ pub fn Custom(comptime config: Config) type {
             errdefer opts_list.deinit();
             var logic_flag = false;
             for (cmd_opts) |opt| {
+                checkGroup: {
+                    const conf_group = check_config.opt_group orelse break :checkGroup;
+                    const opt_group = opt.opt_group orelse continue;
+                    if (!mem.eql(u8, conf_group, opt_group)) continue;
+                }
                 _ = utils.indexOfEql([]const u8, opt_names, opt.name) orelse continue;
                 if (!opt.val.isSet()) continue;
                 try opts_list.append(opt);
@@ -423,15 +448,22 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Gets a StringHashMap of this Command's Values using its initialization Allocator.
-        pub fn getVals(self: *const @This()) !StringHashMap(ValueT) {
+        pub fn getVals(self: *const @This(), get_config: GetConfig) !StringHashMap(ValueT) {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
-            return self.getValsAlloc(alloc);
+            return self.getValsAlloc(alloc, get_config);
         }
         /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
-        pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator) !StringHashMap(ValueT) {
+        pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(ValueT) {
             if (self.vals == null) return error.NoValuesInCommand;
             var map = StringHashMap(ValueT).init(alloc);
-            for (self.vals.?) |val| { try map.put(val.name(), val); }
+            for (self.vals.?) |val| { 
+                checkGroup: {
+                    const conf_group = get_config.arg_group orelse break :checkGroup;
+                    const val_group = val.valGroup() orelse continue;
+                    if (!mem.eql(u8, conf_group, val_group)) continue;
+                }
+                try map.put(val.name(), val); 
+            }
             return map;
         }
 
