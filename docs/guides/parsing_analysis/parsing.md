@@ -35,9 +35,9 @@ pub fn main() !void {
 
     // Parse Function
     cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch (err) {
-		error.UsageHelpCalled,
-		else => return err,
-	};
+        error.UsageHelpCalled,
+        else => return err,
+    };
 }
 ```
 
@@ -94,17 +94,17 @@ Values and, by extension, Options can be given custom functions for parsing from
 ```zig
 //Within a Command
 .vals = &.{
-	ValueT.ofType(bool, .{
-		.name = "pos_or_neg",
-		.description = "An example boolean that must be set as 'positive' or 'negative'.",
-		.parse_fn = struct{
-			pub fn parseBool(arg: []const u8, _: std.mem.Allocator) !bool {
-				if (std.ascii.eqlIgnoreCase(arg, "positive") return true;
-				if (std.ascii.eqlIgnoreCase(arg, "negative") return false;
-				else return error.BoolParseError;
-			}
-		}.parseBool,
-	}),
+    ValueT.ofType(bool, .{
+        .name = "pos_or_neg",
+        .description = "An example boolean that must be set as 'positive' or 'negative'.",
+        .parse_fn = struct{
+            pub fn parseBool(arg: []const u8, _: std.mem.Allocator) !bool {
+                if (std.ascii.eqlIgnoreCase(arg, "positive") return true;
+                if (std.ascii.eqlIgnoreCase(arg, "negative") return false;
+                else return error.BoolParseError;
+            }
+        }.parseBool,
+    }),
 },
 ```
 2. `Value.Config.child_type_parse_fn` is the field used to provide a parsing function to all Value's that have a specific Child Type. These functions rank second in priority, behind `Value.Typed.parse_fn` but ahead of the default parsing. An example can be seen [here](../arg_types/value.md#adding-custom-child-types).
@@ -115,18 +115,18 @@ Validation Functions are set up very similarly to Parsing Functions. They differ
 Example:
 ```zig
 // Within a Command
-	.opts = &.{
-        .{
-            .name = "verbosity_opt",
-            .description = "Set the CovaDemo verbosity level. (WIP)",
-            .short_name = 'v',
-            .long_name = "verbosity",
-            .val = ValueT.ofType(u4, .{
-                .name = "verbosity_level",
-                .description = "The verbosity level from 0 (err) to 3 (debug).",
-                .default_val = 3,
-                .valid_fn = struct{ fn valFn(val: u4, _: mem.Allocator) bool { return val >= 1 and val <= 3; } }.valFn,
-            }),
-        },
+.opts = &.{
+    .{
+        .name = "verbosity_opt",
+        .description = "Set the CovaDemo verbosity level. (WIP)",
+        .short_name = 'v',
+        .long_name = "verbosity",
+        .val = ValueT.ofType(u4, .{
+            .name = "verbosity_level",
+            .description = "The verbosity level from 0 (err) to 3 (debug).",
+            .default_val = 3,
+            .valid_fn = struct{ fn valFn(val: u4, _: mem.Allocator) bool { return val >= 1 and val <= 3; } }.valFn,
+        }),
     },
+},
 ```

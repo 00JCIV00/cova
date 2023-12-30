@@ -3,7 +3,7 @@ Commands, Options, Values, Arguments. A simple yet robust cross-platform command
 ___
 
 ## Overview
-Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
+Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These Types are assembled into a single Command struct which is then used to parse argument tokens.
 
 ## Table of Contents
 - [Demo](#demo)
@@ -71,12 +71,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Choose how errors should be reacted to with either a Usage/Help message or no reaction.
     - Decide if Option parsing should be terminated after a standalone long prefix such as `--`.
   - Commands:
-    - Configure Templates for auto-generated Command Help/Usage messages.
+    - Configure Templates or Callback Functions for generated Command Help/Usage messages.
     - Set Rules for converting From/To a Struct, Union, or Function.
     - Mandate that a Command takes a sub-Command if available.
     - Mandate all Values be filled.
   - Options:
-    - Configure Templates for Option Help/Usage messages.
+    - Configure Templates or Callback Functions for generated Option Help/Usage messages.
     - Customize Short and Long prefixes (i.e. `/s` or `__long-opt`).
     - Set the allowed Separator Character(s) between Options and their Values.
     - Allow/Disallow Abbreviated Long Options (i.e `--long-opt` can be `--long`).
@@ -85,13 +85,15 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Configure Values to be Individual or Multi, allowing multiple of the same type to be stored in a single Value.
     - Set the allowed Delimiter Characters between data elements provided to a single Value (i.e `my-cmd multi,string,value`).
     - Set the Rules for how Values are *set* through **custom Parsing and Validation Functions!**
+  - ___And much more!___
 
 ## Goals
 ### Pre Public Beta Release
 - [v0.7.0-beta](https://github.com/00JCIV00/cova/issues/9)
 ### Public Beta Release
 - [v0.8.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.8.0-beta)
-- [v0.9.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.9.0-beta+)
+- [v0.9.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.9.0-beta)
+- [v0.10.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.10.0-beta)
   
 ## Documentation
 - [API](https://00jciv00.github.io/cova/#A;cova)
@@ -123,27 +125,15 @@ exe.addModule("cova", cova_mod);
 ```
 
 ### Package Manager - Alternative
-Note, this method makes Cova easier to update by simply re-running `zig fetch --save https://github.com/00JCIV00/cova/archive/main.tar.gz`. However, it can lead to non-reproducible builds because the url will always point to the newest commit of the provided branch. Details can be found in [this discussion](https://ziggit.dev/t/feature-or-bug-w-zig-fetch-save/2565).
-1. Add the dependency to `build.zig.zon`:
+Note, this method makes Cova easier to update by simply re-running `zig fetch --save https://github.com/00JCIV00/cova/archive/[BRANCH].tar.gz`. However, it can lead to non-reproducible builds because the url will always point to the newest commit of the provided branch. Details can be found in [this discussion](https://ziggit.dev/t/feature-or-bug-w-zig-fetch-save/2565).
+1. Choose a branch to stay in sync with. 
+- `main` is the latest stable branch.
+- The highest `v#.#.#` is the development branch.
+2. Add the dependency to `build.zig.zon`:
  ```shell
- zig fetch --save https://github.com/00JCIV00/cova/archive/main.tar.gz
+ zig fetch --save https://github.com/00JCIV00/cova/archive/[BRANCH FROM STEP 1].tar.gz
  ```
-2. Add the dependency and module to `build.zig`:
-```zig
-// Cova Dependency
-const cova_dep = b.dependency("cova", .{ .target = target });
-// Cova Module
-const cova_mod = cova_dep.module("cova");
-// Executable
-const exe = b.addExecutable(.{
-    .name = "cova_example",
-    .root_source_file = .{ .path = "src/main.zig" },
-    .target = target,
-    .optimize = optimize,
-});
-// Add the Cova Module to the Executable
-exe.addModule("cova", cova_mod);
-```
+3. Continue from Step 4 above.
 
 ### Build the Basic-App Demo from source
 1. Use the latest Zig (v0.12) for your system. Available [here](https://ziglang.org/download/).

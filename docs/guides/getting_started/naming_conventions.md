@@ -1,10 +1,10 @@
 # Naming Conventions
-Cova follows Zig's naming conventions for the most part. This guide covers the few places it deviates and certain conventions that may be peculiar in the Library and/or Guide.
+Cova follows Zig's naming conventions for the most part. This guide covers the few places where it deviates and certain conventions that may be peculiar in the Library and/or Guide.
 
 ## Argument Type vs Argument
 The terms 'Argument Type' and 'Argument' are used throughout this guide. While the terms are related, they're not inter-changeable. 
 
-'Argument Type' refers to the Types `cova.Command.Custom`, `cova.Option.Custom`, and `cova.Value.Custom`. These are the base Types of Cova which can be configured to apply customizations to all of their respective instances. 
+'Argument Type' refers to the Types `cova.Command.Custom`, `cova.Option.Custom`, and `cova.Value.Custom`. These are the base Types of Cova which can be configured to apply customizations to all of their respective instances. For brevity, these are also referred to as `CommandT`, `OptionT`, and `ValueT`. 
 
 Conversely, `Argument` refers to any instance of those Types, which can also be referenced individualy as a Command, Option, or Value.
 
@@ -21,7 +21,7 @@ Some fields are shared between both the Argument Type Config Structs and their I
 3. `global_`: These will always be found within a Config Struct and have lowest precedence. They apply to all Arguments of the configured Type.
 
 ## Title Case
-Types and certain Key Concepts will be shown in Title Case for distinction.
+Types and certain Key Concepts will be shown in Title Case for distinction. For Types, this includes their descriptions, such as 'Command Type', and their Type Names like in 'CommandT'.
 
 ## Users
 This guide makes reference to both 'Library' and 'End' users. 'Library user' refers to the developer using the Cova library (probably you, the reader) and 'End user' refers to the user of an application or project built with the help of the Cova library.

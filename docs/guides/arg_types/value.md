@@ -29,7 +29,7 @@ const CommandT = cova.Command.Custom(cova.Command.Config{
                             iter.first(), 
                             try std.fmt.parseInt(u16, iter.next() orelse "-", 10), 
                         ) catch |err| {
-                            std.log.err("The provided destination address '{s}' in invalid.", .{ addr }); 
+                            std.log.err("The provided IP address '{s}' is invalid.", .{ addr }); 
                             return err;
                         };
                     }
@@ -41,7 +41,7 @@ const CommandT = cova.Command.Custom(cova.Command.Config{
                     pub fn parseFile(path: []const u8, _: std.mem.Allocator) !std.fs.File {
                         var cwd = std.fs.cwd();
                         return cwd.openFile(path, .{ .lock = .shared }) catch |err| {
-                            std.log.err("The provided path to the JSON File '{s}' in invalid.", .{ path }); 
+                            std.log.err("The provided path to the File '{s}' is invalid.", .{ path }); 
                             return err;
                         };
                     }
@@ -68,7 +68,7 @@ Example:
         .name = "str_val",
         .description = "A string value for the command.",
     }),
-	// Using Zig's union creation syntax
+    // Using Zig's union creation syntax
     .{ .generic = .{ .u128, .{
         .name = "cmd_u128",
         .description = "A u128 value for the command.",

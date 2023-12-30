@@ -13,17 +13,17 @@ The Config for each Argument Type provides Format fields with the `_fmt` suffix 
 Example:
 ```zig
 pub const CommandT = cova.Command.Custom(.{
-	.global_help_prefix="Cova Usage & Help Example",
-	.help_header_fmt = 
-		\\ {s}COMMAND: {s}
-		\\ 
-		\\ {s}DESCRIPTION: {s}
-		\\
-		\\
-	,
-	.opt_config = .{
-		usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
-	},
+    .global_help_prefix="Cova Usage & Help Example",
+    .help_header_fmt = 
+        \\ {s}COMMAND: {s}
+        \\ 
+        \\ {s}DESCRIPTION: {s}
+        \\
+        \\
+    ,
+    .opt_config = .{
+        usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
+    },
 });
 ```
 
@@ -33,9 +33,9 @@ For greater flexibiliy, custom Usage & Help callback functions can be provided f
 Example:
 ```zig
 pub const CommandT = cova.Command.Custom(.{
-	.global_help_prefix="Cova Usage & Help Example",
-	// Command Global Help Function
-	.global_help_fn = struct{
+    .global_help_prefix="Cova Usage & Help Example",
+    // Command Global Help Function
+    .global_help_fn = struct{
         fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
             const CmdT = @TypeOf(self.*);
             const OptT = CmdT.OptionT;
@@ -89,8 +89,8 @@ pub const CommandT = cova.Command.Custom(.{
             }
         }
     }.help,
-	.opt_config = .{
-		// Option Global Help Function
+    .opt_config = .{
+        // Option Global Help Function
        .global_help_fn = struct{
             fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
                 const indent_fmt = @TypeOf(self.*).indent_fmt;
@@ -98,6 +98,6 @@ pub const CommandT = cova.Command.Custom(.{
                 try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description }); 
             }
         }.help
-	},
+    },
 ```
 

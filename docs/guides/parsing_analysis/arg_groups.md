@@ -52,7 +52,7 @@ pub const setup_cmd: CommandT = .{
             .long_name = "string",
             .val = ValueT.ofType([]const u8, .{}),
         },
-		.{
+        .{
             .name = "int_opt",
             .description = "An integer option. (Can be given up to 10 times.)",
             .opt_group = "INT",
@@ -60,8 +60,8 @@ pub const setup_cmd: CommandT = .{
             .long_name = "int",
             .val = ValueT.ofType(i16, .{}),
         },
-	},
-	.vals = &.{
+    },
+    .vals = &.{
         ValueT.ofType([]const u8, .{
             .name = "cmd_str",
             .description = "A string value for the command.",
@@ -74,14 +74,13 @@ pub const setup_cmd: CommandT = .{
         }),
     }
 };
-
 ```
 
 ## Usage & Help Messages
 If these groups are used, they will be shown in Usage and Help Messages. Their are two Format fields, `cova.Command.Config.group_title_fmt` and `cova.Command.Config.group_sep_fmt`, that can be used to customize how the groups are displayed.
 
 ## Parsing
-Argument Groups can also be used to mandate certain groups of Options are used by setting the `cova.Command.Custom.mandatory_opt_groups` field.
+Argument Groups can be used to mandate certain groups of Options are used by setting the `cova.Command.Custom.mandatory_opt_groups` field.
 
 Example:
 ```zig
@@ -90,7 +89,7 @@ pub const setup_cmd: CommandT = .{
     .description = "A demo of the Cova command line argument parser.",
     .opt_groups = &.{ "INT", "BOOL", "STRING" },
     .mandatory_opt_groups = &.{ "BOOL" },
-	.opts = &.{
+    .opts = &.{
         .{
             .name = "cardinal_opt",
             .description = "A cardinal number option.",
@@ -113,7 +112,9 @@ pub const setup_cmd: CommandT = .{
             .short_name = 'b',
             .long_name = "bool",
         },
-	},
+    },
 };
-
 ```
+
+## Analysis
+They can also be used to Get, Check, or Match the Values and Options of a Command. For Options, an Option Group can be passed to `cova.Command.Custom.getOpts`(), `cova.Command.Custom.checkOpt`(), or `cova.Command.Custom.matchOpt`(). For Values, a Value Group can be passed to `cova.Command.Custom.getVals`().
