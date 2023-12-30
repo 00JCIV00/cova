@@ -110,7 +110,7 @@ pub const Config = struct {
     usage_header_fmt: []const u8 = 
         \\USAGE:
         \\{s}{s} 
-        ,
+    ,
     /// Sub Commands Help Title Format
     /// Must support the following format types in this order:
     /// 1. String (Indent)

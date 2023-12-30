@@ -172,6 +172,12 @@ pub const CommandT = Command.Custom(.{
             //    .parse_fn = struct{ fn testFn(arg: []const u8, alloc: mem.Allocator) !u1024 { _ = arg; _ = alloc; return 69696969696969; } }.testFn,
             //},
         },
+        .child_type_aliases = &.{
+            .{
+                .ChildT = []const u8,
+                .alias = "text",
+            },
+        }
     },
     //.global_usage_fn = struct{ 
     //    fn usage(_: anytype, writer: anytype, _: mem.Allocator) !void { 
@@ -339,10 +345,12 @@ pub const setup_cmd: CommandT = .{
             .opt_group = "STRING",
             .short_name = 's',
             .long_name = "string",
+            .alias_long_names = &.{ "text" },
             .val = ValueT.ofType([]const u8, .{
                 .name = "string_val",
                 .description = "A string value.",
-                .default_val = "A string value.",
+                .default_val = "Default string value.",
+                .alias_child_type = "string",
                 .set_behavior = .Multi,
                 .max_args = 4,
                 .parse_fn = Value.ParsingFns.toUpper,
@@ -398,7 +406,7 @@ pub const setup_cmd: CommandT = .{
             .val = ValueT.ofType([]const u8, .{
                 .name = "filepath",
                 .description = "A filepath value.",
-                .child_type_alias = "filepath",
+                .alias_child_type = "filepath",
                 .valid_fn = Value.ValidationFns.validFilepath,
             }),
         },
@@ -434,6 +442,7 @@ pub const setup_cmd: CommandT = .{
             .opt_group = "BOOL",
             .short_name = 't',
             .long_name = "toggle",
+            .alias_long_names = &.{ "switch" },
             .val = ValueT.ofType(bool, .{
                 .name = "toggle_val",
                 .description = "A toggle/boolean value.",
@@ -525,7 +534,12 @@ pub fn main() !void {
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
-    _ = try main_cmd.getVals();
+    // -- Get Values
+    const val_map = try main_cmd.getVals(.{ .arg_group = "STRING" });
+    var val_iter = val_map.valueIterator();
+    log.debug("Get String Values:", .{});
+    while (val_iter.next()) |str_val| log.debug("- {s}", .{ str_val.getAs([]const u8) catch "[value not set]" });
+    // -- Check Options
     const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt", "bool_opt" };
     const and_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .AND });
     const or_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .OR });

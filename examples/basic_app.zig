@@ -35,6 +35,8 @@ pub const ValueT = CommandT.ValueT;
 pub const setup_cmd: CommandT = .{
     .name = "basic-app",
     .description = "A basic user management application designed to highlight key features of the Cova library.",
+    // Argument Groups are an easy way to organize Arguments for Usage/Help, Parsing, and Analysis.
+    // They can be created for Command, Options, Values separately.
     .cmd_groups = &.{ "INTERACT", "VIEW" },
     .sub_cmds = &.{
         // A Command created from a Struct. (Details further down).
@@ -77,16 +79,23 @@ pub const setup_cmd: CommandT = .{
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
+            // Aliases can be created for Commands and Options to give end users alternative words 
+            // for using those Arguments.
+            .alias_names = &.{ "delete" },
             .cmd_group = "INTERACT",
             .opts = &.{
                 OptionT{
                     .name = "clean_file",
                     .description = "Specify a single file to be cleaned (deleted) instead of the defaults.",
+                    .alias_long_names = &.{ "delete_file" },
                     .short_name = 'f',
                     .long_name = "file",
                     .val = ValueT.ofType([]const u8, .{
                         .name = "clean_file",
                         .description = "The file to be cleaned.",
+                        // Aliases can also be created for Value Child Types to clarify what
+                        // kind of input is expected from end users.
+                        .alias_child_type = "filepath",
                         // Validation Functions are a powerful feature to ensure end user input
                         // matches what a project expects. Parsing Functions similarly allow a
                         // library user to customize how an argument token is parsed into a
@@ -232,7 +241,11 @@ pub fn delete(filename: []const u8) !void {
 pub fn main() !void {
     // While technicaally any Allocator can be used, Cova is designed to be used with an
     // Arena Allocator. That said, any backing allocator can be used for the Arena Allocator.
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const fba_size = 50 << 10;
+    var alloc_buf: [fba_size]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(alloc_buf[0..]);
+    var sfba = std.heap.stackFallback(fba_size, fba.allocator());
+    var arena = std.heap.ArenaAllocator.init(sfba.get());
     defer arena.deinit();
     const alloc = arena.allocator();
 
@@ -307,7 +320,7 @@ pub fn main() !void {
     // - Handle Parsed Commands
     // Commands have two primary methods for analysis.
     //
-    // `cova.Command.Custom.matchSubCmd()` will return the Active Sub Command of a Command if it's
+    // `cova.Command.Custom.matchSubCmd()` will return the Active Sub Command of a Command if its
     // name matches the provided string. Otherwise, it returns null. This fits nicely with Zig's 
     // syntax for handling optional/nullable returns as seen below.
     if (main_cmd.matchSubCmd("new")) |new_cmd| {
@@ -356,7 +369,7 @@ pub fn main() !void {
         // - `cova.Command.Custom.getOpts()`
         // - `cova.Command.Custom.getVals()`
         // These methods create StringHashMaps of the Argument Types using their `name`s as keys.
-        if ((try clean_cmd.getOpts()).get("clean_file")) |clean_opt| {
+        if ((try clean_cmd.getOpts(.{})).get("clean_file")) |clean_opt| {
             if (clean_opt.val.isSet()) {
                 const filename = try clean_opt.val.getAs([]const u8);
                 try delete(filename);
