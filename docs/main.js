@@ -750,6 +750,7 @@ Happy writing!
     domSectFnErrors.classList.add("hidden");
     domFnExamples.classList.add("hidden");
     domFnNoExamples.classList.add("hidden");
+    domFnSourceLink.classList.add("hidden");
     domDeclNoRef.classList.add("hidden");
     domFnErrorsAnyError.classList.add("hidden");
     domTableFnErrors.classList.add("hidden");
@@ -904,7 +905,7 @@ Happy writing!
     let typeObj = getType(value.expr.type);
 
     domFnProtoCode.innerHTML = renderTokens(ex(value.expr, { fnDecl: fnDecl }));
-
+    domFnSourceLink.classList.remove("hidden");
     domFnSourceLink.innerHTML = "[<a target=\"_blank\" href=\"" + sourceFileLink(fnDecl) + "\">src</a>]";
 
     let docsSource = null;
@@ -1572,7 +1573,8 @@ Happy writing!
         for (let i = 0; i < expr.struct.length; i++) {
           const fv = expr.struct[i];
           const field_name = fv.name;
-          const field_value = ex(fv.val.expr, opts);
+          const field_expr = zigAnalysis.exprs[fv.val.expr];
+          const field_value = ex(field_expr, opts);
           yield Tok.period;
           yield { src: field_name, tag: Tag.identifier };
           yield Tok.space;
@@ -1627,7 +1629,13 @@ Happy writing!
         } else {
           yield* ex(param, opts);
         }
+        return;
+      }
         
+      case "fieldVal": {
+        const fv = expr.fieldVal;
+        const field_name = fv.name;
+        yield { src: field_name, tag: Tag.identifier };
         return;
       }
 
@@ -3053,8 +3061,21 @@ Happy writing!
               if (typeIsErrSet(declValue.expr.type)) {
                 errSetsList.push(decl);
               } else if (typeIsStructWithNoFields(declValue.expr.type)) {
-                if (getAstNode(decl.src).docs) {
-                  namespacesWithDocsList.push(decl);
+              
+                let docs = getAstNode(decl.src).docs;
+                if (!docs) {
+                  // If this is a re-export, try to fetch docs from the actual definition
+                  const { value, seenDecls } = resolveValue(decl.value, true);  
+                  if (seenDecls.length > 0) {
+                    const definitionDecl = getDecl(seenDecls[seenDecls.length - 1]);
+                    docs = getAstNode(definitionDecl.src).docs;
+                  } else {
+                    docs = getAstNode(getType(value.expr.type).src).docs;
+                  }
+                }
+                
+                if (docs) {
+                  namespacesWithDocsList.push({decl, docs});
                 } else {
                   namespacesNoDocsList.push(decl);
                 }
@@ -3068,8 +3089,19 @@ Happy writing!
             if (typeIsErrSet(declValue.expr.type)) {
               errSetsList.push(decl);
             } else if (typeIsStructWithNoFields(declValue.expr.type)) {
-              if (getAstNode(decl.src).docs) {
-                namespacesWithDocsList.push(decl);
+              let docs = getAstNode(decl.src).docs;
+              if (!docs) {
+                // If this is a re-export, try to fetch docs from the actual definition
+                const { value, seenDecls } = resolveValue(decl.value, true);  
+                if (seenDecls.length > 0) {
+                  const definitionDecl = getDecl(seenDecls[seenDecls.length - 1]);
+                  docs = getAstNode(definitionDecl.src).docs;
+                } else {
+                  docs = getAstNode(getType(value.expr.type).src).docs;
+                }
+              }
+              if (docs) {
+                namespacesWithDocsList.push({decl, docs});
               } else {
                 namespacesNoDocsList.push(decl);
               }
@@ -3215,8 +3247,22 @@ Happy writing!
         
         let descDom = liDom.children[1];
         let docs = getAstNode(decl.src).docs;
+        if (!docs) {
+          // If this is a re-export, try to fetch docs from the actual definition
+            const { value, seenDecls } = resolveValue(decl.value, true);  
+            if (seenDecls.length > 0) {
+              const definitionDecl = getDecl(seenDecls[seenDecls.length - 1]);
+              docs = getAstNode(definitionDecl.src).docs;
+            } else {
+              const type = getType(value.expr.type);
+              if ("src" in type) {
+                docs = getAstNode(type.src).docs;
+              }
+            }
+        }
+        
         if (docs) {
-          descDom.innerHTML = markdown(shortDesc(getAstNode(decl.src).docs));
+          descDom.innerHTML = markdown(shortDesc(docs));
         } else {
           descDom.innerHTML = "<p class='understated'><i>No documentation provided.</i></p>";
         }
@@ -3241,16 +3287,17 @@ Happy writing!
       for (let i = 0; i < namespacesWithDocsList.length; i += 1) {
         let liDom = activeList.children[i - offset];
         let aDom = liDom.children[0];
-        let decl = namespacesWithDocsList[i];
+        let { decl, docs } = namespacesWithDocsList[i];
         aDom.textContent = decl.name;
         aDom.setAttribute("href", navLinkDecl(decl.name));
+
         
         let descDom = liDom.children[1];
-        descDom.innerHTML = markdown(shortDesc(getAstNode(decl.src).docs));
+        descDom.innerHTML = markdown(shortDesc(docs));
         if (i == splitPoint - 1) {
           activeList = domListNamespacesRight;
           offset = splitPoint;
-      }
+        }
       }
 
       domListNamespacesLeft.classList.remove("hidden");
@@ -3498,6 +3545,13 @@ Happy writing!
         }
       }
       domSectTests.classList.remove("hidden");
+    }
+
+    if (container.kind !== typeKinds.Struct || containerNode.fields.length > 0) {
+      domHdrName.innerHTML = "<pre class='inline'>" +
+        zigAnalysis.typeKinds[container.kind] +
+        "</pre>";
+      domHdrName.classList.remove("hidden");
     }
   }
 

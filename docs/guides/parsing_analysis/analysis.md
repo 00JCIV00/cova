@@ -58,6 +58,8 @@ pub fn main() !void {
 
 ```
 
+## Checking and Matching Options
+There are a few ways to analyze Options as well, which include the `cova.Command.Custom.checkOpts`() and `cova.Command.Custom.matchOpts`() methods. These work similarly to their sub-Command counterparts detailed above. Additionally, the `cova.Command.Custom.OptionsCheckConfig` can be passed to these methods to change the kind of boolean logic they use.
 
 ## Direct Access
 To directly access the sub-Argument of a Command the following fields and methods of `cova.Command.Custom` can be used: 

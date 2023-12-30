@@ -26,21 +26,22 @@ pub fn main() !void {
     const alloc = arena.allocator();
     const stdout = std.io.getStdOut().writer();
 
-    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
 
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch(err) {
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch(err) {
         error.UsageHelpCalled,
         else => return err,
     }
-    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }
 ``` 
 
 ## Breakdown
+This is a detailed explanation of the code above.
 - Imports
 ```zig
 ...
@@ -107,7 +108,7 @@ pub fn main() !void {
     // Argument Types for correctness and distinct names, then it will return a
     // memory allocated copy of the Command for argument token parsing and
     // follow on analysis.
-    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
     
     ...
@@ -137,11 +138,11 @@ pub fn main() !void {
 
     // The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`)
     // tokens into Argument Types within the provided Command (`main_cmd`).
-    try cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{});
+    try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{});
 
     // Once parsed, the provided Command will be available for analysis by the
-    // project code. Using `utils.displayCmdInfoi()` will create a neat display
+    // project code. Using `utils.displayCmdInfo()` will create a neat display
     // of the parsed Command for debugging.
-    try utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }
 ```

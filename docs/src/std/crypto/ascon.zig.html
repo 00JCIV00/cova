@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>crypto/ascon.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg==">
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTMgMTQwIj48ZyBmaWxsPSIjRjdBNDFEIj48Zz48cG9seWdvbiBwb2ludHM9IjQ2LDIyIDI4LDQ0IDE5LDMwIi8+PHBvbHlnb24gcG9pbnRzPSI0NiwyMiAzMywzMyAyOCw0NCAyMiw0NCAyMiw5NSAzMSw5NSAyMCwxMDAgMTIsMTE3IDAsMTE3IDAsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMzEsOTUgMTIsMTE3IDQsMTA2Ii8+PC9nPjxnPjxwb2x5Z29uIHBvaW50cz0iNTYsMjIgNjIsMzYgMzcsNDQiLz48cG9seWdvbiBwb2ludHM9IjU2LDIyIDExMSwyMiAxMTEsNDQgMzcsNDQgNTYsMzIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTE2LDk1IDk3LDExNyA5MCwxMDQiLz48cG9seWdvbiBwb2ludHM9IjExNiw5NSAxMDAsMTA0IDk3LDExNyA0MiwxMTcgNDIsOTUiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTUwLDAgNTIsMTE3IDMsMTQwIDEwMSwyMiIvPjwvZz48Zz48cG9seWdvbiBwb2ludHM9IjE0MSwyMiAxNDAsNDAgMTIyLDQ1Ii8+PHBvbHlnb24gcG9pbnRzPSIxNTMsMjIgMTUzLDExNyAxMDYsMTE3IDEyMCwxMDUgMTI1LDk1IDEzMSw5NSAxMzEsNDUgMTIyLDQ1IDEzMiwzNiAxNDEsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTI1LDk1IDEzMCwxMTAgMTA2LDExNyIvPjwvZz48L2c+PC9zdmc+">
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -121,41 +122,41 @@
 <span class="line" id="L8"><span class="tok-comment">//! It is not meant to be used directly, but as a building block for symmetric cryptography.</span></span>
 <span class="line" id="L9"></span>
 <span class="line" id="L10"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L11"><span class="tok-kw">const</span> builtin = std.builtin;</span>
+<span class="line" id="L11"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
 <span class="line" id="L12"><span class="tok-kw">const</span> debug = std.debug;</span>
 <span class="line" id="L13"><span class="tok-kw">const</span> mem = std.mem;</span>
 <span class="line" id="L14"><span class="tok-kw">const</span> testing = std.testing;</span>
 <span class="line" id="L15"><span class="tok-kw">const</span> rotr = std.math.rotr;</span>
-<span class="line" id="L16"></span>
-<span class="line" id="L17"><span class="tok-comment">/// An Ascon state.</span></span>
-<span class="line" id="L18"><span class="tok-comment">///</span></span>
-<span class="line" id="L19"><span class="tok-comment">/// The state is represented as 5 64-bit words.</span></span>
-<span class="line" id="L20"><span class="tok-comment">///</span></span>
-<span class="line" id="L21"><span class="tok-comment">/// The NIST submission (v1.2) serializes these words as big-endian,</span></span>
-<span class="line" id="L22"><span class="tok-comment">/// but software implementations are free to use native endianness.</span></span>
-<span class="line" id="L23"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">State</span>(<span class="tok-kw">comptime</span> endian: builtin.Endian) <span class="tok-type">type</span> {</span>
-<span class="line" id="L24">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L25">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L26"></span>
-<span class="line" id="L27">        <span class="tok-comment">/// Number of bytes in the state.</span></span>
-<span class="line" id="L28">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> block_bytes = <span class="tok-number">40</span>;</span>
-<span class="line" id="L29"></span>
-<span class="line" id="L30">        <span class="tok-kw">const</span> Block = [<span class="tok-number">5</span>]<span class="tok-type">u64</span>;</span>
-<span class="line" id="L31"></span>
-<span class="line" id="L32">        st: Block,</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">        <span class="tok-comment">/// Initialize the state from a slice of bytes.</span></span>
-<span class="line" id="L35">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(initial_state: [block_bytes]<span class="tok-type">u8</span>) Self {</span>
-<span class="line" id="L36">            <span class="tok-kw">var</span> state = Self{ .st = <span class="tok-null">undefined</span> };</span>
-<span class="line" id="L37">            <span class="tok-builtin">@memcpy</span>(state.asBytes(), &amp;initial_state);</span>
-<span class="line" id="L38">            state.endianSwap();</span>
-<span class="line" id="L39">            <span class="tok-kw">return</span> state;</span>
-<span class="line" id="L40">        }</span>
-<span class="line" id="L41"></span>
-<span class="line" id="L42">        <span class="tok-comment">/// Initialize the state from u64 words in native endianness.</span></span>
-<span class="line" id="L43">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initFromWords</span>(initial_state: [<span class="tok-number">5</span>]<span class="tok-type">u64</span>) Self {</span>
-<span class="line" id="L44">            <span class="tok-kw">var</span> state = Self{ .st = initial_state };</span>
-<span class="line" id="L45">            <span class="tok-kw">return</span> state;</span>
+<span class="line" id="L16"><span class="tok-kw">const</span> native_endian = builtin.cpu.arch.endian();</span>
+<span class="line" id="L17"></span>
+<span class="line" id="L18"><span class="tok-comment">/// An Ascon state.</span></span>
+<span class="line" id="L19"><span class="tok-comment">///</span></span>
+<span class="line" id="L20"><span class="tok-comment">/// The state is represented as 5 64-bit words.</span></span>
+<span class="line" id="L21"><span class="tok-comment">///</span></span>
+<span class="line" id="L22"><span class="tok-comment">/// The NIST submission (v1.2) serializes these words as big-endian,</span></span>
+<span class="line" id="L23"><span class="tok-comment">/// but software implementations are free to use native endianness.</span></span>
+<span class="line" id="L24"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">State</span>(<span class="tok-kw">comptime</span> endian: std.builtin.Endian) <span class="tok-type">type</span> {</span>
+<span class="line" id="L25">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L26">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L27"></span>
+<span class="line" id="L28">        <span class="tok-comment">/// Number of bytes in the state.</span></span>
+<span class="line" id="L29">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> block_bytes = <span class="tok-number">40</span>;</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31">        <span class="tok-kw">const</span> Block = [<span class="tok-number">5</span>]<span class="tok-type">u64</span>;</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33">        st: Block,</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35">        <span class="tok-comment">/// Initialize the state from a slice of bytes.</span></span>
+<span class="line" id="L36">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(initial_state: [block_bytes]<span class="tok-type">u8</span>) Self {</span>
+<span class="line" id="L37">            <span class="tok-kw">var</span> state = Self{ .st = <span class="tok-null">undefined</span> };</span>
+<span class="line" id="L38">            <span class="tok-builtin">@memcpy</span>(state.asBytes(), &amp;initial_state);</span>
+<span class="line" id="L39">            state.endianSwap();</span>
+<span class="line" id="L40">            <span class="tok-kw">return</span> state;</span>
+<span class="line" id="L41">        }</span>
+<span class="line" id="L42"></span>
+<span class="line" id="L43">        <span class="tok-comment">/// Initialize the state from u64 words in native endianness.</span></span>
+<span class="line" id="L44">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initFromWords</span>(initial_state: [<span class="tok-number">5</span>]<span class="tok-type">u64</span>) Self {</span>
+<span class="line" id="L45">            <span class="tok-kw">return</span> .{ .st = initial_state };</span>
 <span class="line" id="L46">        }</span>
 <span class="line" id="L47"></span>
 <span class="line" id="L48">        <span class="tok-comment">/// Initialize the state for Ascon XOF</span></span>
@@ -208,8 +209,8 @@
 <span class="line" id="L95">        <span class="tok-comment">/// XOR a byte into the state at a given offset.</span></span>
 <span class="line" id="L96">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addByte</span>(self: *Self, byte: <span class="tok-type">u8</span>, offset: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L97">            <span class="tok-kw">const</span> z = <span class="tok-kw">switch</span> (endian) {</span>
-<span class="line" id="L98">                .Big =&gt; <span class="tok-number">64</span> - <span class="tok-number">8</span> - <span class="tok-number">8</span> * <span class="tok-builtin">@as</span>(<span class="tok-type">u6</span>, <span class="tok-builtin">@truncate</span>(offset % <span class="tok-number">8</span>)),</span>
-<span class="line" id="L99">                .Little =&gt; <span class="tok-number">8</span> * <span class="tok-builtin">@as</span>(<span class="tok-type">u6</span>, <span class="tok-builtin">@truncate</span>(offset % <span class="tok-number">8</span>)),</span>
+<span class="line" id="L98">                .big =&gt; <span class="tok-number">64</span> - <span class="tok-number">8</span> - <span class="tok-number">8</span> * <span class="tok-builtin">@as</span>(<span class="tok-type">u6</span>, <span class="tok-builtin">@truncate</span>(offset % <span class="tok-number">8</span>)),</span>
+<span class="line" id="L99">                .little =&gt; <span class="tok-number">8</span> * <span class="tok-builtin">@as</span>(<span class="tok-type">u6</span>, <span class="tok-builtin">@truncate</span>(offset % <span class="tok-number">8</span>)),</span>
 <span class="line" id="L100">            };</span>
 <span class="line" id="L101">            self.st[offset / <span class="tok-number">8</span>] ^= <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, byte) &lt;&lt; z;</span>
 <span class="line" id="L102">        }</span>
@@ -246,14 +247,14 @@
 <span class="line" id="L133"></span>
 <span class="line" id="L134">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L135">            <span class="tok-kw">while</span> (i + <span class="tok-number">8</span> &lt;= in.len) : (i += <span class="tok-number">8</span>) {</span>
-<span class="line" id="L136">                <span class="tok-kw">const</span> x = mem.readIntNative(<span class="tok-type">u64</span>, in[i..][<span class="tok-number">0</span>..<span class="tok-number">8</span>]) ^ mem.nativeTo(<span class="tok-type">u64</span>, self.st[i / <span class="tok-number">8</span>], endian);</span>
-<span class="line" id="L137">                mem.writeIntNative(<span class="tok-type">u64</span>, out[i..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], x);</span>
+<span class="line" id="L136">                <span class="tok-kw">const</span> x = mem.readInt(<span class="tok-type">u64</span>, in[i..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], native_endian) ^ mem.nativeTo(<span class="tok-type">u64</span>, self.st[i / <span class="tok-number">8</span>], endian);</span>
+<span class="line" id="L137">                mem.writeInt(<span class="tok-type">u64</span>, out[i..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], x, native_endian);</span>
 <span class="line" id="L138">            }</span>
 <span class="line" id="L139">            <span class="tok-kw">if</span> (i &lt; in.len) {</span>
 <span class="line" id="L140">                <span class="tok-kw">var</span> padded = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">8</span>;</span>
 <span class="line" id="L141">                <span class="tok-builtin">@memcpy</span>(padded[<span class="tok-number">0</span> .. in.len - i], in[i..]);</span>
-<span class="line" id="L142">                <span class="tok-kw">const</span> x = mem.readIntNative(<span class="tok-type">u64</span>, &amp;padded) ^ mem.nativeTo(<span class="tok-type">u64</span>, self.st[i / <span class="tok-number">8</span>], endian);</span>
-<span class="line" id="L143">                mem.writeIntNative(<span class="tok-type">u64</span>, &amp;padded, x);</span>
+<span class="line" id="L142">                <span class="tok-kw">const</span> x = mem.readInt(<span class="tok-type">u64</span>, &amp;padded, native_endian) ^ mem.nativeTo(<span class="tok-type">u64</span>, self.st[i / <span class="tok-number">8</span>], endian);</span>
+<span class="line" id="L143">                mem.writeInt(<span class="tok-type">u64</span>, &amp;padded, x, native_endian);</span>
 <span class="line" id="L144">                <span class="tok-builtin">@memcpy</span>(out[i..], padded[<span class="tok-number">0</span> .. in.len - i]);</span>
 <span class="line" id="L145">            }</span>
 <span class="line" id="L146">        }</span>
@@ -329,7 +330,7 @@
 <span class="line" id="L214">}</span>
 <span class="line" id="L215"></span>
 <span class="line" id="L216"><span class="tok-kw">test</span> <span class="tok-str">&quot;ascon&quot;</span> {</span>
-<span class="line" id="L217">    <span class="tok-kw">const</span> Ascon = State(.Big);</span>
+<span class="line" id="L217">    <span class="tok-kw">const</span> Ascon = State(.big);</span>
 <span class="line" id="L218">    <span class="tok-kw">const</span> bytes = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x01</span>} ** Ascon.block_bytes;</span>
 <span class="line" id="L219">    <span class="tok-kw">var</span> st = Ascon.init(bytes);</span>
 <span class="line" id="L220">    <span class="tok-kw">var</span> out: [Ascon.block_bytes]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>

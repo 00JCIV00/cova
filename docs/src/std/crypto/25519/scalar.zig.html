@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>crypto/25519/scalar.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg==">
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTMgMTQwIj48ZyBmaWxsPSIjRjdBNDFEIj48Zz48cG9seWdvbiBwb2ludHM9IjQ2LDIyIDI4LDQ0IDE5LDMwIi8+PHBvbHlnb24gcG9pbnRzPSI0NiwyMiAzMywzMyAyOCw0NCAyMiw0NCAyMiw5NSAzMSw5NSAyMCwxMDAgMTIsMTE3IDAsMTE3IDAsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMzEsOTUgMTIsMTE3IDQsMTA2Ii8+PC9nPjxnPjxwb2x5Z29uIHBvaW50cz0iNTYsMjIgNjIsMzYgMzcsNDQiLz48cG9seWdvbiBwb2ludHM9IjU2LDIyIDExMSwyMiAxMTEsNDQgMzcsNDQgNTYsMzIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTE2LDk1IDk3LDExNyA5MCwxMDQiLz48cG9seWdvbiBwb2ludHM9IjExNiw5NSAxMDAsMTA0IDk3LDExNyA0MiwxMTcgNDIsOTUiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTUwLDAgNTIsMTE3IDMsMTQwIDEwMSwyMiIvPjwvZz48Zz48cG9seWdvbiBwb2ludHM9IjE0MSwyMiAxNDAsNDAgMTIyLDQ1Ii8+PHBvbHlnb24gcG9pbnRzPSIxNTMsMjIgMTUzLDExNyAxMDYsMTE3IDEyMCwxMDUgMTI1LDk1IDEzMSw5NSAxMzEsNDUgMTIyLDQ1IDEzMiwzNiAxNDEsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTI1LDk1IDEzMCwxMTAgMTA2LDExNyIvPjwvZz48L2c+PC9zdmc+">
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -128,7 +129,7 @@
 <span class="line" id="L15"></span>
 <span class="line" id="L16"><span class="tok-kw">const</span> field_order_s = s: {</span>
 <span class="line" id="L17">    <span class="tok-kw">var</span> s: [<span class="tok-number">32</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L18">    mem.writeIntLittle(<span class="tok-type">u256</span>, &amp;s, field_order);</span>
+<span class="line" id="L18">    mem.writeInt(<span class="tok-type">u256</span>, &amp;s, field_order, .little);</span>
 <span class="line" id="L19">    <span class="tok-kw">break</span> :s s;</span>
 <span class="line" id="L20">};</span>
 <span class="line" id="L21"></span>
@@ -240,9 +241,9 @@
 <span class="line" id="L127">        <span class="tok-kw">var</span> bytes: CompressedScalar = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L128">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L129">        <span class="tok-kw">while</span> (i &lt; <span class="tok-number">4</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L130">            mem.writeIntLittle(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], expanded.limbs[i]);</span>
+<span class="line" id="L130">            mem.writeInt(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], expanded.limbs[i], .little);</span>
 <span class="line" id="L131">        }</span>
-<span class="line" id="L132">        mem.writeIntLittle(<span class="tok-type">u32</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(expanded.limbs[i])));</span>
+<span class="line" id="L132">        mem.writeInt(<span class="tok-type">u32</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], <span class="tok-builtin">@intCast</span>(expanded.limbs[i]), .little);</span>
 <span class="line" id="L133">        <span class="tok-kw">return</span> bytes;</span>
 <span class="line" id="L134">    }</span>
 <span class="line" id="L135"></span>
@@ -693,7 +694,7 @@
 <span class="line" id="L580">        <span class="tok-kw">var</span> limbs: Limbs = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L581">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L582">        <span class="tok-kw">while</span> (i &lt; <span class="tok-number">9</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L583">            limbs[i] = mem.readIntLittle(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">8</span>]) &amp; <span class="tok-number">0xffffffffffffff</span>;</span>
+<span class="line" id="L583">            limbs[i] = mem.readInt(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], .little) &amp; <span class="tok-number">0xffffffffffffff</span>;</span>
 <span class="line" id="L584">        }</span>
 <span class="line" id="L585">        limbs[i] = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span>]);</span>
 <span class="line" id="L586">        <span class="tok-kw">return</span> ScalarDouble{ .limbs = limbs };</span>
@@ -703,9 +704,9 @@
 <span class="line" id="L590">        <span class="tok-kw">var</span> limbs: Limbs = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L591">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L592">        <span class="tok-kw">while</span> (i &lt; <span class="tok-number">4</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L593">            limbs[i] = mem.readIntLittle(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">8</span>]) &amp; <span class="tok-number">0xffffffffffffff</span>;</span>
+<span class="line" id="L593">            limbs[i] = mem.readInt(<span class="tok-type">u64</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], .little) &amp; <span class="tok-number">0xffffffffffffff</span>;</span>
 <span class="line" id="L594">        }</span>
-<span class="line" id="L595">        limbs[i] = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, mem.readIntLittle(<span class="tok-type">u32</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>]));</span>
+<span class="line" id="L595">        limbs[i] = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, mem.readInt(<span class="tok-type">u32</span>, bytes[i * <span class="tok-number">7</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], .little));</span>
 <span class="line" id="L596">        <span class="tok-builtin">@memset</span>(limbs[<span class="tok-number">5</span>..], <span class="tok-number">0</span>);</span>
 <span class="line" id="L597">        <span class="tok-kw">return</span> ScalarDouble{ .limbs = limbs };</span>
 <span class="line" id="L598">    }</span>

@@ -2,6 +2,7 @@
 //!zig-autodoc-guide: ./../docs/guides/overview.md 
 //!zig-autodoc-guide: ./../docs/guides/getting_started/install.md 
 //!zig-autodoc-guide: ./../docs/guides/getting_started/quick_setup.md 
+//!zig-autodoc-guide: ./../docs/guides/getting_started/naming_conventions.md
 //!zig-autodoc-section: Argument Types
 //!zig-autodoc-guide: ./../docs/guides/arg_types/command.md 
 //!zig-autodoc-guide: ./../docs/guides/arg_types/option.md 
@@ -9,6 +10,9 @@
 //!zig-autodoc-section: Parsing & Analysis
 //!zig-autodoc-guide: ./../docs/guides/parsing_analysis/parsing.md 
 //!zig-autodoc-guide: ./../docs/guides/parsing_analysis/analysis.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/usage_help.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/arg_groups.md 
+//!zig-autodoc-guide: ./../docs/guides/parsing_analysis/aliases.md 
 
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
@@ -17,6 +21,7 @@
 // Standard
 const builtin = @import("builtin");
 const std = @import("std");
+const ascii = std.ascii;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -27,6 +32,7 @@ const testing = std.testing;
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
+//pub const generate = @import("generate.zig");
 pub const utils = @import("utils.zig");
 
 
@@ -35,14 +41,18 @@ pub const TokenizeConfig = struct{
     /// Delimiter Characters
     delimiters: []const u8 = " ",
     /// Grouping Open Characters
-    /// Note, these Characters must line up with `groupers_close` in pairs.
+    /// Note, these Characters must line up with `groupers_close` in pairs. These pairs represent either side of a grouped argument.
+    /// For example, setting open to `'('` and closed to `')'` will group all tokens between parantheses into one argument as seen here:
+    ///
+    /// `my-cmd --str-opt (this whole string will be one argument.)`
     groupers_open: []const u8 = "\"'",
     /// Grouping Close Characters
+    /// Refer to `groupers_open` for more info.
     groupers_close: []const u8 = "\"'",
 };
 
 /// Tokenize an Argument String (`arg_str`) into a slice of Strings using the provided Allocator (`alloc`) and TokenizeConfig (`token_config`).
-/// This handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
+/// By default, this handles basic quoting using single or double quotes (`'` or `"`) with no support for escape sequences.
 pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: TokenizeConfig) ![]const []const u8 {
     var start: usize = 0;
     var end: usize = 0;
@@ -50,7 +60,7 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
     var args_list = std.ArrayList([]const u8).init(alloc);
 
     if (token_config.groupers_open.len != token_config.groupers_close.len) {
-        log.err("The length `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
+        log.err("The length of `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
         return error.UnbalancedGrouperPairs;
     }
 
@@ -88,7 +98,7 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
 }
 
 /// A basic Raw Argument Iterator.
-/// This is intended for testing, but can also be used to process an externally sourced slice of utf8 argument tokens.
+/// This is intended for testing, but can also be used to process an externally sourced slice of utf-8 argument tokens.
 pub const RawArgIterator = struct {
     index: u16 = 0,
     args: []const [:0]const u8,
@@ -107,7 +117,7 @@ pub const RawArgIterator = struct {
     }
 };
 
-/// A Generic Interface for ArgumentIterators.
+/// A Generic Interface for Argument Iterators.
 pub const ArgIteratorGeneric = union(enum) {
     raw: RawArgIterator,
     zig: proc.ArgIterator,
@@ -145,6 +155,22 @@ pub const ArgIteratorGeneric = union(enum) {
         }
     }
 
+    /// Reset this Argument Iterator.
+    pub fn reset(self: *@This()) void {
+        switch (meta.activeTag(self.*)) {
+            .raw => self.raw.index = 0,
+            inline else => |tag| {
+                var iter = &@field(self, @tagName(tag));
+                if (builtin.os.tag != .windows) iter.inner.index = 0
+                else {
+                    iter.inner.index = 0; 
+                    iter.inner.start = 0; 
+                    iter.inner.end = 0; 
+                } 
+            },
+        }
+    }
+
     /// Get the current Index of this Iterator.
     pub fn index(self: *@This()) usize {
         return switch (meta.activeTag(self.*)) {
@@ -159,7 +185,7 @@ pub const ArgIteratorGeneric = union(enum) {
         return genIter: inline for (meta.fields(@This())) |field| {
             if (field.type == iter_type) break :genIter @unionInit(@This(), field.name, arg_iter);
         }
-        else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by ArgIteratorGeneric.");
+        else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by the ArgIteratorGeneric Interface.");
     }
 
     /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
@@ -185,8 +211,12 @@ pub const ParseConfig = struct {
     auto_handle_usage_help: bool = true,
     /// Decide how to react to parsing errors.
     err_reaction: ParseErrorReaction = .Help,
-    /// Enable Option Termination using `--` per the POSIX standard (or whatever symbol is chosen for Option long names).
+    /// Enable Option Termination using the long prefix without an Option (default `--` per the POSIX standard).
+    /// Note, this will cause the remainder of the argument tokens to be read in as either Commands or Values.
     enable_opt_termination: bool = true,
+    /// Override the Optiion Termination Symbol.
+    /// Leaving this null will default to the long prefix of the associated Option Type.
+    set_opt_termination_symbol: ?[]const u8 = null,
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
@@ -209,7 +239,7 @@ pub fn parseArgs(
     writer: anytype,
     parse_config: ParseConfig,
 ) !void {
-    if (!cmd._is_init) return error.CommandNotInitialized;
+    if (cmd._alloc == null) return error.CommandNotInitialized;
 
     var val_idx: u8 = 0;
     var opt_term: bool = false;
@@ -229,10 +259,21 @@ pub fn parseArgs(
         if (init_arg == null) break :parseArg;
         var unmatched = false;
         // Check for a Sub Command first...
-        if (cmd.sub_cmds != null) {
+        if (cmd.sub_cmds) |cmds| {
             log.debug("Attempting to Parse Commands...", .{});
-            for (cmd.sub_cmds.?) |*sub_cmd| {
-                if (mem.eql(u8, sub_cmd.name, arg)) {
+            checkCmds: for (cmds) |*sub_cmd| {
+                const should_parse = shouldParse: {
+                    if (sub_cmd.case_sensitive) { 
+                        if (mem.eql(u8, sub_cmd.name, arg)) break :shouldParse true
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :shouldParse true;
+                    }
+                    else {
+                        if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) break :shouldParse true
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (ascii.eqlIgnoreCase(alias, arg)) break :shouldParse true;
+                    }
+                    break :shouldParse false;
+                };
+                if (should_parse) {
                     parseArgs(args, CommandT, sub_cmd, writer, parse_config) catch |err| return err;
                     cmd.setSubCmd(sub_cmd); 
                     continue :parseArg;
@@ -244,28 +285,59 @@ pub fn parseArgs(
         // ...Then for any Options...
         if (cmd.opts != null and !opt_term) {
             log.debug("Attempting to Parse Options...", .{});
+            // - Check for Option Termination
+            opt_term = optTerm: {
+                const opt_term_sym = 
+                    parse_config.set_opt_termination_symbol orelse 
+                    OptionT.long_prefix orelse
+                    break :optTerm false;
+                if (mem.eql(u8, arg, opt_term_sym) and parse_config.enable_opt_termination) {
+                    log.debug("Terminated Option Parsing!", .{});
+                    break :optTerm true;
+                }
+                break :optTerm false;
+            };
+            if (opt_term) continue;
             // - Short Options
-            if (OptionT.short_prefix) |short_pf| {
-                if (arg[0] == short_pf and arg[1] != short_pf) {
-                    const short_opts = arg[1..];
-                    shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
-                        for (cmd.opts.?) |*opt| {
-                            if (opt.short_name != null and short_opt == opt.short_name.?) {
-                                // Handle Argument provided to this Option with '=' instead of ' '.
-                                if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
-                                    if (mem.eql(u8, opt.val.valType(), "bool")) {
-                                        log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                            short_pf, 
-                                            opt.short_name, 
-                                            opt.name 
-                                        });
-                                        try errReaction(parse_config.err_reaction, opt, writer);
-                                        try writer.print("\n", .{});
-                                        return error.BoolCannotTakeArgument;
-                                    }
-                                    if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
-                                    const opt_arg = short_opts[(short_idx + 2)..];
-                                    opt.val.set(opt_arg) catch {
+            if (OptionT.short_prefix) |short_pf| checkShortOpt: {
+                if (!(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
+                log.debug("Parsing Short Option...", .{});
+                const short_opts = arg[1..];
+                shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
+                    for (cmd.opts.?) |*opt| {
+                        if (opt.short_name != null and short_opt == opt.short_name.?) {
+                            // Handle Argument provided to this Option with '=' instead of ' '.
+                            if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
+                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                    log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                        short_pf, 
+                                        opt.short_name, 
+                                        opt.name 
+                                    });
+                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try writer.print("\n", .{});
+                                    return error.BoolCannotTakeArgument;
+                                }
+                                if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
+                                const opt_arg = short_opts[(short_idx + 2)..];
+                                opt.val.set(opt_arg) catch {
+                                    log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
+                                        short_pf,
+                                        opt.short_name, 
+                                        opt.name 
+                                    });
+                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try writer.print("\n", .{});
+                                    return error.CouldNotParseOption;
+                                };
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                continue :parseArg;
+                            }
+                            // Handle final Option in a chain of Short Options
+                            else if (short_idx == short_opts.len - 1) { 
+                                if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
+                                else {
+                                    parseOpt(args, OptionT, opt) catch {
                                         log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
                                             short_pf,
                                             opt.short_name, 
@@ -275,123 +347,117 @@ pub fn parseArgs(
                                         try writer.print("\n", .{});
                                         return error.CouldNotParseOption;
                                     };
-                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                    continue :parseArg;
                                 }
-                                // Handle final Option in a chain of Short Options
-                                else if (short_idx == short_opts.len - 1) { 
-                                    if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
-                                    else {
-                                        parseOpt(args, OptionT, opt) catch {
-                                            log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
-                                                short_pf,
-                                                opt.short_name, 
-                                                opt.name 
-                                            });
-                                            try errReaction(parse_config.err_reaction, opt, writer);
-                                            try writer.print("\n", .{});
-                                            return error.CouldNotParseOption;
-                                        };
-                                    }
-                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                    continue :parseArg;
-                                }
-                                // Handle a boolean Option before the final Short Option in a chain.
-                                else if (mem.eql(u8, opt.val.valType(), "bool")) {
-                                    try @constCast(opt).val.set("true");
-                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                    continue :shortOpts;
-                                }
-                                // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
-                                else if (CommandT.OptionT.allow_opt_val_no_space) {
-                                    var short_names_buf: [CommandT.max_args]u8 = undefined;
-                                    const short_names = short_names_buf[0..];
-                                    for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
-                                    if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
-                                        try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
-                                        log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                        continue :parseArg;
-                                    }
-                                }
-                            }
-                        }
-                        log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
-                        try errReaction(parse_config.err_reaction, cmd, writer);
-                        try writer.print("\n", .{});
-                        return error.CouldNotParseOption;
-                    }
-                }
-            }
-            // - Long Options
-            else if (OptionT.long_prefix) |long_pf| {
-                if (mem.eql(u8, arg[0..long_pf.len], long_pf)) {
-                    if (arg.len == long_pf.len and parse_config.enable_opt_termination) {
-                        opt_term = true;
-                        continue;
-                    }
-                    const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
-                    const long_opt = arg[long_pf.len..split_idx]; 
-                    const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
-                    const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
-                    for (cmd.opts.?) |*opt| {
-                        if (opt.long_name) |long_name| {
-                            if (
-                                mem.eql(u8, long_opt, long_name) or
-                                (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
-                            ) {
-                                if (sep_flag) {
-                                    if (mem.eql(u8, opt.val.valType(), "bool")) {
-                                        log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                            long_pf, 
-                                            long_name, 
-                                            opt.name 
-                                        });
-                                        try errReaction(parse_config.err_reaction, opt, writer);
-                                        try writer.print("\n", .{});
-                                        return error.BoolCannotTakeArgument;
-                                    }
-                                    if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
-                                    opt.val.set(sep_arg) catch {
-                                        log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
-                                            long_pf,
-                                            long_name, 
-                                            opt.name 
-                                        });
-                                        try errReaction(parse_config.err_reaction, opt, writer);
-                                        try writer.print("\n", .{});
-                                        return error.CouldNotParseOption;
-                                    };
-                                    log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
-                                    continue :parseArg;
-                                }
-                            
-                                // Handle normally provided Value to Option
-
-                                // Handle Boolean/Toggle Option.
-                                if (mem.eql(u8, opt.val.valType(), "bool")) try @constCast(opt).val.set("true")
-                                // Handle Option with normal Argument.
-                                else {
-                                    parseOpt(args, OptionT, opt) catch {
-                                        log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
-                                            long_pf,
-                                            long_name, 
-                                            opt.name 
-                                        });
-                                        try errReaction(parse_config.err_reaction, opt, writer);
-                                        try writer.print("\n", .{});
-                                        return error.CouldNotParseOption;
-                                    };
-                                }
-                                log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
                             }
+                            // Handle a boolean Option before the final Short Option in a chain.
+                            else if (mem.eql(u8, opt.val.childType(), "bool")) {
+                                try @constCast(opt).val.set("true");
+                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                continue :shortOpts;
+                            }
+                            // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
+                            else if (CommandT.OptionT.allow_opt_val_no_space) {
+                                var short_names_buf: [CommandT.max_args]u8 = undefined;
+                                const short_names = short_names_buf[0..];
+                                for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
+                                if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
+                                    try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                    continue :parseArg;
+                                }
+                            }
                         }
                     }
-                    log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
+                    log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
                     try errReaction(parse_config.err_reaction, cmd, writer);
                     try writer.print("\n", .{});
                     return error.CouldNotParseOption;
                 }
+            }
+            // - Long Options
+            if (OptionT.long_prefix) |long_pf| checkLongOpt: {
+                if (!mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
+                log.debug("Parsing Long Option...", .{});
+                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
+                const long_opt = arg[long_pf.len..split_idx]; 
+                const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
+                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
+                for (cmd.opts.?) |*opt| {
+                    const opt_long_name = opt.long_name orelse continue;
+                    var long_names: [17][]const u8 = undefined;
+                    var long_names_len: usize = 1;
+                    long_names[0] = opt_long_name;
+                    if (opt.alias_long_names) |aliases| {
+                        long_names_len += aliases.len;
+                        for (aliases, 0..) |alias, idx| long_names[idx + 1] = alias;
+                    }
+                    for (long_names[0..long_names_len]) |long_name| {
+                        if (matchOpt: {
+                            break :matchOpt if (opt.case_sensitive)
+                                mem.eql(u8, long_opt, long_name) or
+                                (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
+                            else
+                                ascii.eqlIgnoreCase(long_opt, long_name) or
+                                (
+                                    OptionT.allow_abbreviated_long_opts and 
+                                    ascii.indexOfIgnoreCase(long_name, long_opt) != null and 
+                                    ascii.eqlIgnoreCase(long_name[0..1], long_opt[0..1])
+                                );
+                        }) {
+                            if (sep_flag) {
+                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                    log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                        long_pf, 
+                                        long_name, 
+                                        opt.name 
+                                    });
+                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try writer.print("\n", .{});
+                                    return error.BoolCannotTakeArgument;
+                                }
+                                if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
+                                opt.val.set(sep_arg) catch {
+                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
+                                        long_pf,
+                                        long_name, 
+                                        opt.name 
+                                    });
+                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try writer.print("\n", .{});
+                                    return error.CouldNotParseOption;
+                                };
+                                log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
+                                continue :parseArg;
+                            }
+
+                            // Handle normally provided Value to Option
+
+                            // Handle Boolean/Toggle Option.
+                            if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
+                                // Handle Option with normal Argument.
+                            else {
+                                parseOpt(args, OptionT, opt) catch {
+                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
+                                        long_pf,
+                                        long_name, 
+                                        opt.name 
+                                    });
+                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try writer.print("\n", .{});
+                                    return error.CouldNotParseOption;
+                                };
+                            }
+                            log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
+                            continue :parseArg;
+                        }
+                    }
+                }
+                log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
+                try errReaction(parse_config.err_reaction, cmd, writer);
+                try writer.print("\n", .{});
+                return error.CouldNotParseOption;
             }
             unmatched = true;
             log.debug("No Options Matched for Command '{s}'.", .{ cmd.name });
@@ -430,7 +496,7 @@ pub fn parseArgs(
             return error.UnexpectedArgument;
         }
     }
-    // Check if a Sub Command has been set if it in Mandated for the current Command.
+    // Check if a Sub Command has been set if it is Mandated for the current Command.
     if (cmd.sub_cmds_mandatory and cmd.sub_cmd == null and
         !(cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and 
             (mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or mem.eql(u8, cmd.sub_cmds.?[0].name, "help"))) and
@@ -440,6 +506,26 @@ pub fn parseArgs(
         log.err("Command '{s}' requires a Sub Command.", .{ cmd.name });
         try errReaction(parse_config.err_reaction, cmd, writer);
         return error.ExpectedSubCommand;
+    }
+    // Check that all Mandatory Options have been set.
+    if (cmd.opts) |opts| manOpts: {
+        if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
+        if (usage_help_flag) break :manOpts;
+        for (opts) |opt| {
+            const group_man = groupMan: {
+                const man_groups = cmd.mandatory_opt_groups orelse break :groupMan false;
+                const group = opt.opt_group orelse break :groupMan false;
+                break :groupMan utils.indexOfEql([]const u8, man_groups, group) != null;
+            };
+            if (
+                (opt.mandatory or group_man) and 
+                !(opt.val.isSet() or opt.val.hasDefault())
+            ) {
+                log.err("Option '{s}' is mandatory.", .{ opt.name });
+                try errReaction(parse_config.err_reaction, cmd, writer);
+                return error.ExpectedOption;
+            }
+        }
     }
     // Check for missing Values if they are Mandated for the current Command.
     if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
@@ -465,7 +551,7 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
     const peek_arg = args.peek();
     const set_arg = 
         if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
-            if (!mem.eql(u8, opt.val.valType(), "bool")) return error.EmptyArgumentProvidedToOption;
+            if (!(mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn())) return error.EmptyArgumentProvidedToOption;
             _ = args.next();
             break :setArg "true";
         }
@@ -486,8 +572,8 @@ fn errReaction(reaction: ParseConfig.ParseErrorReaction, arg: anytype, writer: a
 
 // TESTING
 const TestCommand = Command.Custom(.{ 
-    .vals_mandatory = false,
-    .sub_cmds_mandatory = false,
+    .global_vals_mandatory = false,
+    .global_sub_cmds_mandatory = false,
 });
 const TestValue = TestCommand.ValueT;
 const test_setup_cmd: TestCommand = .{
@@ -542,7 +628,7 @@ const test_setup_cmd: TestCommand = .{
             .val = TestValue.ofType(i16, .{
                 .name = "int_opt_val",
                 .description = "A test integer opt value.",
-                .valid_fn = struct{ fn valFn(int: i16) bool { return int <= 666; } }.valFn,
+                .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int <= 666; } }.valFn,
                 .set_behavior = .Multi,
                 .max_args = 6,
             }),
@@ -555,7 +641,7 @@ const test_setup_cmd: TestCommand = .{
             .val = TestValue.ofType(f16, .{
                 .name = "float_opt_val",
                 .description = "An float opt value.",
-                .valid_fn = struct{ fn valFn(float: f16) bool { return float < 30000; } }.valFn,
+                .valid_fn = struct{ fn valFn(float: f16, alloc: mem.Allocator) bool { _ = alloc; return float < 30000; } }.valFn,
                 .set_behavior = .Multi,
                 .max_args = 6,
             }),
@@ -668,7 +754,7 @@ test "argument parsing" {
     for (test_args) |tokens_list| {
         const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
         defer test_cmd.deinit();
-        var raw_iter = RawArgIterator{ .args = tokens_list };
+        const raw_iter = RawArgIterator{ .args = tokens_list };
         var test_iter = ArgIteratorGeneric.from(raw_iter);
         try parseArgs(&test_iter, TestCommand, test_cmd, writer, .{});
     }
@@ -685,7 +771,7 @@ test "argument analysis" {
     const test_cmd = &(try test_setup_cmd.init(alloc, .{}));
     defer test_cmd.deinit();
     const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo=5.1", "-f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
-    var raw_iter = RawArgIterator{ .args = test_args };
+    const raw_iter = RawArgIterator{ .args = test_args };
     var test_iter = ArgIteratorGeneric.from(raw_iter);
     parseArgs(&test_iter, TestCommand, test_cmd, writer, .{}) catch |err| {
         switch (err) {

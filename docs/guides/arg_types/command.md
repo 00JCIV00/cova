@@ -9,10 +9,10 @@ Commands are meant to be set up in Comptime and used in Runtime. This means that
 
 There are two ways to set up a Command. The first is to use Zig's standard syntax for creating a struct instance and fill in the fields of the previously configured Command Type. Alternatively, if the project has a Struct, Union, or Function Type that can be represented as a Command, the `cova.Command.Custom.from`() function can be used to create the Command.
 
-After they're set up, Commands should be Validated and Allocated to the heap for Runtime use. This is accomplished using `cova.Command.Custom.init()`. At this point, the data within the Command should be treated as read-only by the libary user, so the library is set up to handle initialized Commands as constants (`const`).
+After they're set up, Commands should be Validated and Allocated to the heap for Runtime use. This is accomplished using `cova.Command.Custom.init`(). At this point, the data within the Command should be treated as read-only by the libary user, so the library is set up to handle initialized Commands as constants (`const`).
 
 ## Additional Info
-For easy analysis, parsed Commands can be converted to valid Structs or Unions using the `cova.Command.Custom.to`() function, or called as Functions using the `cova.Command.Custom.callAs`() function. Other functions for analysis include creating a String HashMap<Name, Value/Option> for Options or Values using the respective `cova.Command.Custom.getOpts`() or `cova.Command.Custom.getVals`() methods, and using the `cova.Command.Custom.checkFlag`() method to simply check if a sub-Argument was set. Usage and Help statements for a Command can also be generated using the `cova.Command.Custom.usage`() and `cova.Command.Custom.help`() methods respectively.
+For easy analysis, parsed Commands can be converted to valid Structs or Unions using the `cova.Command.Custom.to`() function, or called as Functions using the `cova.Command.Custom.callAs`() function. Other functions for analysis include `cova.Command.Custom.checkCmd`() and `cova.Command.Custom.matchCmd`() to access specific sub-Commands, creating a String HashMap<Name, Value/Option> for Options or Values using the respective `cova.Command.Custom.getOpts`() or `cova.Command.Custom.getVals`() methods, and using the `cova.Command.Custom.checkFlag`() method to simply check if a sub-Argument was set. Usage and Help statements for a Command can also be generated using the `cova.Command.Custom.usage`() and `cova.Command.Custom.help`() methods respectively.
 
 ## Example:
 ```zig
@@ -33,8 +33,8 @@ const setup_cmd: CommandT = .{
         CommandT.from(SomeValidStructType),
     }
     .opts = { ... },
-    .vals = { ... }
-}
+    .vals = { ... },
+};
 
 pub fn main() !void {
     ...
@@ -42,7 +42,7 @@ pub fn main() !void {
     const main_cmd = try setup_cmd.init(alloc);
     defer main_cmd.deinit();
 
-    cova.parseArgs(..., main_cmd, ...);
-    utils.displayCmdInfo(CustomCommand, main_cmd, alloc, stdout);
+    cova.parseArgs(..., &main_cmd, ...);
+    utils.displayCmdInfo(CustomCommand, &main_cmd, alloc, stdout);
 }
 ```

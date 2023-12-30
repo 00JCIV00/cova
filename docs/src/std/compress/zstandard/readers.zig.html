@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>compress/zstandard/readers.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg==">
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTMgMTQwIj48ZyBmaWxsPSIjRjdBNDFEIj48Zz48cG9seWdvbiBwb2ludHM9IjQ2LDIyIDI4LDQ0IDE5LDMwIi8+PHBvbHlnb24gcG9pbnRzPSI0NiwyMiAzMywzMyAyOCw0NCAyMiw0NCAyMiw5NSAzMSw5NSAyMCwxMDAgMTIsMTE3IDAsMTE3IDAsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMzEsOTUgMTIsMTE3IDQsMTA2Ii8+PC9nPjxnPjxwb2x5Z29uIHBvaW50cz0iNTYsMjIgNjIsMzYgMzcsNDQiLz48cG9seWdvbiBwb2ludHM9IjU2LDIyIDExMSwyMiAxMTEsNDQgMzcsNDQgNTYsMzIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTE2LDk1IDk3LDExNyA5MCwxMDQiLz48cG9seWdvbiBwb2ludHM9IjExNiw5NSAxMDAsMTA0IDk3LDExNyA0MiwxMTcgNDIsOTUiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTUwLDAgNTIsMTE3IDMsMTQwIDEwMSwyMiIvPjwvZz48Zz48cG9seWdvbiBwb2ludHM9IjE0MSwyMiAxNDAsNDAgMTIyLDQ1Ii8+PHBvbHlnb24gcG9pbnRzPSIxNTMsMjIgMTUzLDExNyAxMDYsMTE3IDEyMCwxMDUgMTI1LDk1IDEzMSw5NSAxMzEsNDUgMTIyLDQ1IDEzMiwzNiAxNDEsMjIiIHNoYXBlLXJlbmRlcmluZz0iY3Jpc3BFZGdlcyIvPjxwb2x5Z29uIHBvaW50cz0iMTI1LDk1IDEzMCwxMTAgMTA2LDExNyIvPjwvZz48L2c+PC9zdmc+">
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -145,11 +146,11 @@
 <span class="line" id="L31"><span class="tok-comment">/// FSE compressed data.</span></span>
 <span class="line" id="L32"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReverseBitReader = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L33">    byte_reader: ReversedByteReader,</span>
-<span class="line" id="L34">    bit_reader: std.io.BitReader(.Big, ReversedByteReader.Reader),</span>
+<span class="line" id="L34">    bit_reader: std.io.BitReader(.big, ReversedByteReader.Reader),</span>
 <span class="line" id="L35"></span>
 <span class="line" id="L36">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(self: *ReverseBitReader, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{BitStreamHasNoStartBit}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L37">        self.byte_reader = ReversedByteReader.init(bytes);</span>
-<span class="line" id="L38">        self.bit_reader = std.io.bitReader(.Big, self.byte_reader.reader());</span>
+<span class="line" id="L38">        self.bit_reader = std.io.bitReader(.big, self.byte_reader.reader());</span>
 <span class="line" id="L39">        <span class="tok-kw">if</span> (bytes.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
 <span class="line" id="L40">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L41">        <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span> <span class="tok-kw">and</span> <span class="tok-number">0</span> == self.readBitsNoEof(<span class="tok-type">u1</span>, <span class="tok-number">1</span>) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>) : (i += <span class="tok-number">1</span>) {}</span>
@@ -175,7 +176,7 @@
 <span class="line" id="L61"></span>
 <span class="line" id="L62"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">BitReader</span>(<span class="tok-kw">comptime</span> Reader: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L63">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L64">        underlying: std.io.BitReader(.Little, Reader),</span>
+<span class="line" id="L64">        underlying: std.io.BitReader(.little, Reader),</span>
 <span class="line" id="L65"></span>
 <span class="line" id="L66">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readBitsNoEof</span>(self: *<span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> U: <span class="tok-type">type</span>, num_bits: <span class="tok-type">usize</span>) !U {</span>
 <span class="line" id="L67">            <span class="tok-kw">return</span> self.underlying.readBitsNoEof(U, num_bits);</span>
@@ -192,7 +193,7 @@
 <span class="line" id="L78">}</span>
 <span class="line" id="L79"></span>
 <span class="line" id="L80"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">bitReader</span>(reader: <span class="tok-kw">anytype</span>) BitReader(<span class="tok-builtin">@TypeOf</span>(reader)) {</span>
-<span class="line" id="L81">    <span class="tok-kw">return</span> .{ .underlying = std.io.bitReader(.Little, reader) };</span>
+<span class="line" id="L81">    <span class="tok-kw">return</span> .{ .underlying = std.io.bitReader(.little, reader) };</span>
 <span class="line" id="L82">}</span>
 <span class="line" id="L83"></span>
 </code></pre></body>

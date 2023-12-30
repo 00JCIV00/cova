@@ -3,7 +3,7 @@ Commands, Options, Values, Arguments. A simple yet robust cross-platform command
 ___
 
 ## Overview
-Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
+Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These Types are assembled into a single Command struct which is then used to parse argument tokens.
 
 ## Table of Contents
 - [Demo](#demo)
@@ -34,9 +34,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - The most Basic Setup requires only Cova imports, a library user Struct, and a few function calls for parsing.
   - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default.
   - Multiplatform. Tested across:
+    - x86-linux
     - x86_64-linux
+    - arm-linux
     - aarch64-linux
     - x86_64-windows
+    - x86_64-macos
     - *Should support all POSIX compliant systems.*
   - Commands:
     - Contain sub-Commands, Options, and Values.
@@ -68,12 +71,12 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Choose how errors should be reacted to with either a Usage/Help message or no reaction.
     - Decide if Option parsing should be terminated after a standalone long prefix such as `--`.
   - Commands:
-    - Configure Templates for auto-generated Command Help/Usage messages.
+    - Configure Templates or Callback Functions for generated Command Help/Usage messages.
     - Set Rules for converting From/To a Struct, Union, or Function.
     - Mandate that a Command takes a sub-Command if available.
     - Mandate all Values be filled.
   - Options:
-    - Configure Templates for Option Help/Usage messages.
+    - Configure Templates or Callback Functions for generated Option Help/Usage messages.
     - Customize Short and Long prefixes (i.e. `/s` or `__long-opt`).
     - Set the allowed Separator Character(s) between Options and their Values.
     - Allow/Disallow Abbreviated Long Options (i.e `--long-opt` can be `--long`).
@@ -82,13 +85,15 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
     - Configure Values to be Individual or Multi, allowing multiple of the same type to be stored in a single Value.
     - Set the allowed Delimiter Characters between data elements provided to a single Value (i.e `my-cmd multi,string,value`).
     - Set the Rules for how Values are *set* through **custom Parsing and Validation Functions!**
+  - ___And much more!___
 
 ## Goals
 ### Pre Public Beta Release
 - [v0.7.0-beta](https://github.com/00JCIV00/cova/issues/9)
 ### Public Beta Release
 - [v0.8.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.8.0-beta)
-- [v0.9.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.9.0-beta+)
+- [v0.9.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.9.0-beta)
+- [v0.10.0-beta](https://github.com/00JCIV00/cova/issues?q=milestone%3Av0.10.0-beta)
   
 ## Documentation
 - [API](https://00jciv00.github.io/cova/#A;cova)
@@ -99,12 +104,8 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 1. Find the latest `v#.#.#` commit [here](https://github.com/00JCIV00/cova/commits/main).
 2. Copy the full SHA for the commit.
 3. Add the dependency to `build.zig.zon`:
-```zig 
-.dependencies = .{
-    .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-    },
-},
+```bash
+zig fetch --save "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz"
 ```
 4. Add the dependency and module to `build.zig`:
 ```zig
@@ -122,16 +123,17 @@ const exe = b.addExecutable(.{
 // Add the Cova Module to the Executable
 exe.addModule("cova", cova_mod);
 ```
-5. Run `zig build <PROJECT BUILD STEP IF APPLICABLE>` to get the hash.
-6. Insert the hash into `build.zig.zon`:
-```zig 
-.dependencies = .{
-    .cova = .{
-        .url = "https://github.com/00JCIV00/cova/archive/<GIT COMMIT SHA FROM STEP 2 HERE>.tar.gz",
-        .hash = "HASH FROM STEP 5 HERE",
-    },
-},
-```
+
+### Package Manager - Alternative
+Note, this method makes Cova easier to update by simply re-running `zig fetch --save https://github.com/00JCIV00/cova/archive/[BRANCH].tar.gz`. However, it can lead to non-reproducible builds because the url will always point to the newest commit of the provided branch. Details can be found in [this discussion](https://ziggit.dev/t/feature-or-bug-w-zig-fetch-save/2565).
+1. Choose a branch to stay in sync with. 
+- `main` is the latest stable branch.
+- The highest `v#.#.#` is the development branch.
+2. Add the dependency to `build.zig.zon`:
+ ```shell
+ zig fetch --save https://github.com/00JCIV00/cova/archive/[BRANCH FROM STEP 1].tar.gz
+ ```
+3. Continue from Step 4 above.
 
 ### Build the Basic-App Demo from source
 1. Use the latest Zig (v0.12) for your system. Available [here](https://ziglang.org/download/).
@@ -177,17 +179,17 @@ pub fn main() !void {
     const alloc = arena.allocator();
     const stdout = std.io.getStdOut().writer();
 
-    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();
 
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch(err) {
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch(err) {
         error.UsageHelpCalled,
         else => return err,
     }
-    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }
 ``` 
 
@@ -214,18 +216,22 @@ pub const ProjectStruct = struct {
         // By default, Options will be given a long name and a short name based on the
         // field name. (i.e. int = `-i` or `--int`)
         sub_uint: ?u8 = 5,
+
         // Primitive type fields will be converted into Values.
         sub_string: []const u8,
     },
 
     // Struct fields will be converted into cova Commands.
     subcmd: SubStruct = .{},
+
     // The default values of Primitive type fields will be applied as the default value
     // of the converted Option or Value.
     int: ?i4 = 10,
+
     // Optional Booleans will become cova Options that don't take a Value and are set to
     // `true` simply by calling the Option's short or long name.
     flag: ?bool = false,
+
     // Arrays will be turned into Multi-Values or Multi-Options based on the array's
     // child type.
     strings: [3]const []const u8 = .{ "Three", "default", "strings." },
@@ -253,7 +259,7 @@ pub fn main() !void {
     // Argument Types for correctness and distinct names, then it will return a
     // memory allocated copy of the Command for argument token parsing and
     // follow on analysis.
-    const main_cmd = &(try setup_cmd.init(alloc, .{}));
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
     
     ...
@@ -283,11 +289,12 @@ pub fn main() !void {
 
     // The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`)
     // tokens into Argument Types within the provided Command (`main_cmd`).
-    try cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{});
+    try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{});
+
     // Once parsed, the provided Command will be available for analysis by the
-    // project code. Using `utils.displayCmdInfoi()` will create a neat display
+    // project code. Using `utils.displayCmdInfo()` will create a neat display
     // of the parsed Command for debugging.
-    try utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
 }
 ```
 
@@ -297,11 +304,12 @@ pub fn main() !void {
 
 ### Advanced Setup
 - [Advanced Demo](./examples/covademo.zig)
-- The `covademo` is a showcase of most of Cova's features. This demo also serves as a test bed for features that are in development, so it's not well-documented in several areas. That said, it can still be a useful reference for how certain features should be used.
+- The `covademo` is a showcase of most of Cova's features. This demo also serves as a test bed for features that are in development, so it's not well-documented in several areas. That said, it can still be a useful reference for how certain features can be used.
 
 
 ## Alternatives
 - [yazap](https://github.com/PrajwalCH/yazap)
-- [zig-args](https://github.com/MasterQ32/zig-args)
+- [zig-args](https://github.com/mainQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
+- [zig-cli](https://github.com/sam701/zig-cli)
 - [zig-parse-args](https://github.com/winksaville/zig-parse-args)
