@@ -32,7 +32,7 @@ const testing = std.testing;
 pub const Command = @import("Command.zig");
 pub const Option = @import("Option.zig");
 pub const Value = @import("Value.zig");
-pub const generate = @import("generate.zig");
+//pub const generate = @import("generate.zig");
 pub const utils = @import("utils.zig");
 
 

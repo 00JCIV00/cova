@@ -163,7 +163,7 @@ pub const SetBehavior = enum {
 /// Create a Value with a specific Type (`SetT`).
 pub fn Typed(comptime SetT: type, comptime config: Config) type {
     return struct {
-        /// The child Type of this Value.
+        /// The Child Type of this Value.
         pub const ChildT = SetT;
 
         /// An Alias for the Child Type.
