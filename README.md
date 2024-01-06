@@ -1,4 +1,7 @@
 # cova
+
+![cova_icon_v2 1](https://github.com/00JCIV00/cova/assets/68087632/0b485f6b-ddf4-4772-96eb-899d4606f9cc)
+
 Commands, Options, Values, Arguments. A simple yet robust cross-platform command line argument parsing library for Zig.
 
 ![Static Badge](https://img.shields.io/badge/v0.12_(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&link=https%3A%2F%2Fziglang.org%2Fdownload%2F) ![Static Badge](https://img.shields.io/badge/v0.9.0b-blue?logo=GitHub&label=Release&link=https%3A%2F%2Fgithub.com%2F00JCIV00%2Fcova%2Freleases%2Ftag%2Fv0.9.0-beta)
