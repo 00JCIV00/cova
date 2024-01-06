@@ -39,7 +39,7 @@ pub fn build(b: *std.Build) void {
 
     // Lib Module
     const cova_mod = b.addModule("cova", .{
-        .source_file = std.Build.FileSource.relative("src/cova.zig"),
+        .root_source_file = .{ .path = "src/cova.zig" },
     });
 
     // Cova Demo Exe
@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    cova_demo.addModule("cova", cova_mod);
+    cova_demo.root_module.addImport("cova", cova_mod);
     // - Build Exe
     const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
     const build_cova_demo_step = b.step("cova-demo", "Build the 'covademo' example (default: Debug)");
@@ -62,7 +62,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    basic_app.addModule("cova", cova_mod);
+    basic_app.root_module.addImport("cova", cova_mod);
     const build_basic_app = b.addInstallArtifact(basic_app, .{});
     const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
     build_basic_app_step.dependOn(&build_basic_app.step);
