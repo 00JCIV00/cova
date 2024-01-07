@@ -20,7 +20,7 @@ const exe = b.addExecutable(.{
     .optimize = optimize,
 });
 // Add the Cova Module to the Executable
-exe.addModule("cova", cova_mod);
+exe.root_module.addImport("cova", cova_mod);
 ```
 
 ## Package Manager - Alternative
