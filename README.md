@@ -5,13 +5,13 @@ A simple yet robust cross-platform command line argument parsing library for Zig
 
 [![Static Badge](https://img.shields.io/badge/v0.12(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
  [![Static Badge](https://img.shields.io/badge/v0.9.1b-blue?logo=GitHub&label=Release)](https://github.com/00JCIV00/cova/releases/tag/v0.9.1-beta)
-[![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/w/00JCIV00/cova?logo=Github&label=Commits)](https://github.com/00JCIV00/cova/commits/main/) 
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/00JCIV00/cova?logo=GitHub&label=Commits&color=blue)](https://github.com/00JCIV00/cova/commits/main/) 
 [![Static Badge](https://img.shields.io/badge/MIT-silver?label=License)](https://github.com/00JCIV00/cova/blob/main/LICENSE)
 
 ___
 
 ## Overview
-Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These Types are assembled into a single Command struct which is then used to parse argument tokens. Whether you're looking for simple argument parsing or want to create something as complex as the [`ip`](https://www.man7.org/linux/man-pages/man8/ip.8.html) command, Cova makes it easy.
+Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These Types are assembled into a single Command struct which is then used to parse argument tokens. Whether you're looking for simple argument parsing or want to create something as complex as the [`ip`](https://www.man7.org/linux/man-pages/man8/ip.8.html) or [`git`](https://www.man7.org/linux/man-pages/man1/git.1.html) commands, Cova makes it easy.
 
 ## Table of Contents
 - [Features](#features)
@@ -34,10 +34,10 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - All argument tokens are parsed to Argument Types: Commands, Options, or Values.
     - Options = _Flags_ and Values = _Positional Arguments_
   - These Argument Types can be *created from* or *converted to* your Structs, Unions, and Functions along with their corresponding Fields and Parameters.
-- Multiplatform. Tested across common architectures of Linux, Mac, and Windows.
+- **Multiplatform.** Tested across common architectures of Linux, Mac, and Windows.
 - **Granular, Robust Customization:**
-  - POSIX Compliant (as defined [here](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)) by default, with plenty of ways to configure to whatever standard you'd like.
-    - Ex: `command --option "option value" "standalone value" subcmd -i 42`
+  - [POSIX Compliant](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html) by default, with plenty of ways to configure to whatever standard you'd like.
+    - Ex: `command --option option_string "standalone value" subcmd -i 42 --bool`
   - Cova offers deep customization through the Argument Types and several Config Structs. These Types and Structs all provide simple and predictable defaults, allowing library users to only configure what they need.
 - [***And much more!***](./docs/README_extended.md#features)
 
@@ -140,6 +140,7 @@ pub fn main() !void {
     
     // Glossing over some project variables here.
 
+    // Convert a Command back into a Struct.
     if (main_cmd.matchSubCmd("new")) |new_cmd| {
         var new_user = try new_cmd.to(User, .{});
         new_user._id = getNextID();
@@ -149,9 +150,11 @@ pub fn main() !void {
         try user_file.writer().print("{s}\n", .{ try new_user.to(user_buf[0..]) });
         try stdout.print("Added:\n{s}\n", .{ new_user });
     }
+    // Convert a Command back into a Function and call it.
     if (main_cmd.matchSubCmd("open")) |open_cmd| {
         user_file = try open_cmd.callAs(open, null, std.fs.File);
     }
+    // Get the provided sub Command and check an Option from that sub Command.
     if (main_cmd.matchSubCmd("clean")) |clean_cmd| cleanCmd: {
         if ((try clean_cmd.getOpts(.{})).get("clean_file")) |clean_opt| {
             if (clean_opt.val.isSet()) {
