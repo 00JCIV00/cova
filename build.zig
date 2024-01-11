@@ -75,6 +75,8 @@ pub fn build(b: *std.Build) void {
         bash,
         zsh,
         ps1,
+        json,
+        kdl,
         all,
         none,
     };
@@ -101,10 +103,10 @@ pub fn build(b: *std.Build) void {
     const cova_demo_mod = b.addModule("covademo", .{
         .root_source_file = .{ .path = "examples/covademo.zig" },
     });
-    cova_demo_mod.dependencies.put("cova", cova_mod) catch @panic("OOM");
-    cova_demo_aux.addModule("program", cova_demo_mod);
+    cova_demo_mod.import_table.put(b.allocator, "cova", cova_mod) catch @panic("OOM");
+    cova_demo_aux.root_module.addImport("program", cova_demo_mod);
     // - Add Build Options
-    cova_demo_aux.addOptions("gen_opts", build_options);
+    cova_demo_aux.root_module.addOptions("gen_opts", build_options);
     // - Run Exe and Build Gen Docs
     const build_cova_demo_aux = b.addRunArtifact(cova_demo_aux);
     const build_cova_demo_aux_step = b.step("cova-demo-aux-docs", "Build the Manpages and Tab Completion scripts for the 'covademo' example");
@@ -121,10 +123,10 @@ pub fn build(b: *std.Build) void {
     const basic_app_mod = b.addModule("basic-app", .{
         .root_source_file = .{ .path = "examples/basic_app.zig" },
     });
-    basic_app_mod.dependencies.put("cova", cova_mod) catch @panic("OOM");
-    basic_app_aux.addModule("program", basic_app_mod);
+    basic_app_mod.import_table.put(b.allocator, "cova", cova_mod) catch @panic("OOM");
+    basic_app_aux.root_module.addImport("program", basic_app_mod);
     // - Add Build Options
-    basic_app_aux.addOptions("gen_opts", build_options);
+    basic_app_aux.root_module.addOptions("gen_opts", build_options);
     // - Run Exe and Build Gen Docs
     const build_basic_app_aux = b.addRunArtifact(basic_app_aux);
     const build_basic_app_aux_step = b.step("basic-app-aux-docs", "Build the Manpages and Tab Completion scripts for the 'basic-app' example");
