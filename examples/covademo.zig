@@ -2,6 +2,7 @@
 //! Comptime Setup, Runtime Use.
 
 const std = @import("std");
+const builtin = @import("builtin");
 const fmt = std.fmt;
 const io = std.io;
 const log = std.log;
@@ -218,7 +219,7 @@ pub const DemoStruct = struct{
     int2: ?u16 = 0,
     multi_int: [3]?u8,
     multi_str: [5]?[]const u8,
-    rbg_enum: ?InnerEnum = .blue,
+    rgb_enum: ?InnerEnum = .blue,
     // Values
     struct_bool: bool = true,
     struct_str: []const u8 = "Demo Struct string.",
@@ -534,6 +535,7 @@ pub fn main() !void {
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.info("Main Cmd", .{});
+
     // -- Get Values
     const val_map = try main_cmd.getVals(.{ .arg_group = "STRING" });
     var val_iter = val_map.valueIterator();
@@ -562,6 +564,12 @@ pub fn main() !void {
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
         log.info("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| {
+        log.debug("Parent Cmd (struct-cmd): {s]}", .{ struct_cmd.parent_cmd.?.name });
+        log.debug("Parent Cmd (int-opt / int-val): {s} / {s}", optPar: {
+            const struct_cmd_opts = struct_cmd.getOpts(.{}) catch break: optPar .{ "[no opts]", "" };
+            const int_opt = struct_cmd_opts.get("int") orelse break: optPar .{ "[no int opt]", "" };
+            break :optPar .{ int_opt.parent_cmd.?.name, int_opt.val.parent_cmd.?.name };
+        });
         const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
         log.info("-> Struct Cmd\n{any}", .{ demo_struct });
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|

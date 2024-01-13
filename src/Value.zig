@@ -30,6 +30,13 @@ const utils = @import("utils.zig");
 /// Config for custom Value types. 
 /// This Config is shared across Typed, Generic, and Custom.
 pub const Config = struct {
+    /// Command Type.
+    /// This will be filled in automatically.
+    CommandT: ?type = null,
+    /// Option Type.
+    /// This will be filled in automatically.
+    OptionT: ?type = null,
+
     /// Default Set Behavior for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.set_behavior` field.
     global_set_behavior: SetBehavior = .Last,
@@ -536,8 +543,16 @@ pub fn Generic(comptime config: Config) type {
 /// Create a Custom Value type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct{
+        /// The Custom Command Type of the overall project.
+        const CommandT = config.CommandT.?;
+        /// The Custom Option Type of the overall project.
+        const OptionT = config.OptionT.?;
         /// Custom Generic Value type.
         pub const GenericT = Generic(config);
+
+        /// The Parent Command of this Value.
+        /// This will be filled in during Initialization.
+        parent_cmd: ?*const CommandT = null,
 
         /// Wrapped Generic Value union.
         generic: GenericT = .{ .bool = .{} },

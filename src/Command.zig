@@ -166,12 +166,14 @@ pub fn Custom(comptime config: Config) type {
         /// Value Config Setup
         const val_config = valConfig: {
             var setup_val_config = config.val_config;
+            setup_val_config.CommandT = @This();
             setup_val_config.indent_fmt = setup_val_config.indent_fmt orelse config.indent_fmt;
             break :valConfig setup_val_config;
         };
         /// Option Config Setup
         const opt_config = optConfig: {
             var setup_opt_config = config.opt_config;
+            setup_opt_config.CommandT = @This();
             setup_opt_config.val_config = val_config;
             setup_opt_config.indent_fmt = setup_opt_config.indent_fmt orelse config.indent_fmt;
             break :optConfig setup_opt_config;
@@ -263,6 +265,9 @@ pub fn Custom(comptime config: Config) type {
         /// *This should be Read-Only for library users.*
         sub_cmd: ?*const @This() = null,
         //sub_cmd: ?*@This() = null,
+        /// The Parent Command of this Command.
+        /// This will be filled in during Initialization.
+        parent_cmd: ?*const @This() = null,
 
         /// The list of Options this Command can take.
         opts: ?[]const OptionT = null,
@@ -1528,11 +1533,13 @@ pub fn Custom(comptime config: Config) type {
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = init_config.add_help_cmds;
-                valid_config.check_help_opts = init_config.add_help_opts;    
+                valid_config.check_help_opts = init_config.add_help_opts;
                 self.validate(valid_config);
             }
 
-            var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
+            //var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
+            var init_cmd = try alloc.create(@This());
+            init_cmd.* = self.*;
 
             const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
             const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
@@ -1561,6 +1568,7 @@ pub fn Custom(comptime config: Config) type {
                         .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = usage_description,
+                        .parent_cmd = init_cmd,
                         ._alloc = alloc,
                     },
                     .{
@@ -1568,6 +1576,7 @@ pub fn Custom(comptime config: Config) type {
                         .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = help_description,
+                        .parent_cmd = init_cmd,
                         ._alloc = alloc,
                     }
                 };
@@ -1581,7 +1590,10 @@ pub fn Custom(comptime config: Config) type {
                 const sub_cmds = if (self.sub_cmds) |s_cmds| s_cmds else break :addSubCmds;
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
-                inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.init(alloc, init_config);
+                inline for (sub_cmds, 0..) |cmd, idx| {
+                    init_subcmds[idx] = try cmd.init(alloc, init_config);
+                    init_subcmds[idx].parent_cmd = init_cmd;
+                }
                 if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
@@ -1591,7 +1603,11 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.opts) |opts| {
                 var init_opts = try alloc.alloc(@This().OptionT, opts.len);
-                inline for (opts, 0..) |opt, idx| init_opts[idx] = opt.init(alloc);
+                inline for (opts, init_opts[0..]) |opt, *i_opt| {
+                    i_opt.* = opt.init(alloc);
+                    i_opt.*.parent_cmd = init_cmd;
+                    i_opt.*.val.parent_cmd = init_cmd;
+                }
                 init_cmd.opts = init_opts;
             }
 
@@ -1620,6 +1636,7 @@ pub fn Custom(comptime config: Config) type {
                         .short_name = 'u',
                         .long_name = "usage",
                         .description = usage_description,
+                        .parent_cmd = init_cmd,
                         .val = ValueT.ofType(bool, .{ .name = "usage_flag" }),
                     },
                     .{
@@ -1629,6 +1646,7 @@ pub fn Custom(comptime config: Config) type {
                         .short_name = 'h',
                         .long_name = "help",
                         .description = help_description,
+                        .parent_cmd = init_cmd,
                         .val = ValueT.ofType(bool, .{ .name = "help_flag" }),
                     },
                 };
@@ -1641,13 +1659,16 @@ pub fn Custom(comptime config: Config) type {
 
             if (self.vals) |vals| {
                 var init_vals = try alloc.alloc(@This().ValueT, vals.len);
-                inline for (vals, 0..) |val, idx| init_vals[idx] = val.init(alloc);
+                inline for (vals, init_vals[0..]) |val, *i_val| {
+                    i_val.* = val.init(alloc);
+                    i_val.*.parent_cmd = init_cmd;
+                }
                 init_cmd.vals = init_vals;
             }
 
             init_cmd._alloc = alloc;
 
-            return init_cmd; 
+            return init_cmd.*; 
         }
 
         /// De-initialize this Command with its original Allocator.

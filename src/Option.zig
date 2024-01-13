@@ -20,6 +20,10 @@ const Value = @import("Value.zig");
 
 /// Config for custom Option types.
 pub const Config = struct {
+    /// Command Type.
+    /// This will be filled in automatically.
+    CommandT: ?type = null,
+
     /// Value Config for this Option type.
     /// This will default to the same Value.Config used by the overarching custom Command Type of this custom Option Type.
     val_config: Value.Config = .{},
@@ -114,7 +118,9 @@ pub fn Base() type { return Custom(.{}); }
 pub fn Custom(comptime config: Config) type {
     if (config.short_prefix == null and config.long_prefix == null) @compileError("Either a Short or Long prefix must be set for Option Types!");
     return struct {
-        /// The Custom Value type used by this Custom Option type.
+        /// The Custom Command Type of the overall project.
+        const CommandT = config.CommandT.?;
+        /// The Custom Value Type used by this Custom Option Type.
         const ValueT = Value.Custom(config.val_config);
 
         /// Custom Global Help Function.
@@ -129,10 +135,10 @@ pub fn Custom(comptime config: Config) type {
         pub const indent_fmt = config.indent_fmt;
         /// Help Format.
         /// Check `Options.Config` for details.
-        const help_fmt = config.help_fmt;
+        pub const help_fmt = config.help_fmt;
         /// Usage Format.
         /// Check `Options.Config` for details.
-        const usage_fmt = config.usage_fmt;
+        pub const usage_fmt = config.usage_fmt;
 
         /// Short Prefix.
         /// Check `Options.Config` for details.
@@ -156,6 +162,10 @@ pub fn Custom(comptime config: Config) type {
         ///
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
+
+        /// The Parent Command of this Option.
+        /// This will be filled in during Initialization.
+        parent_cmd: ?*const CommandT = null,
 
         /// Option Group of this Option.
         /// This must line up with one of the Option Groups in the `opt_groups` of the parent Command or it will be ignored.
