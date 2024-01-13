@@ -14,7 +14,7 @@ const utils = @import("utils.zig");
 pub const ManpageConfig = struct{
     /// Manpage Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`.`section`".
-    local_filepath: []const u8 = "aux",
+    local_filepath: []const u8 = "meta",
 
     // Manpage Info
     /// Section of the Linux Man Pages.
@@ -203,7 +203,7 @@ pub fn createManpage(comptime CommandT: type, comptime cmd: CommandT, comptime m
 pub const TabCompletionConfig = struct{
     /// Script Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`-completion.`shell_type`".
-    local_filepath: []const u8 = "aux",
+    local_filepath: []const u8 = "meta",
 
     /// Script Header
     /// If this is left null, a default value for the given Shell Kind will be used.
