@@ -71,7 +71,8 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
                 start += 1;
                 continue;
             }
-            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+            //try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+            try args_list.append(arg_str[start..end]);
             start = end + 1;
         }
         else if (quote_char == null and mem.indexOfScalar(u8, token_config.groupers_open, char) != null) {
@@ -83,14 +84,16 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
         else if (quote_char) |q_char| {
             if (char == q_char) {
                 end = idx;
-                try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+                //try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+                try args_list.append(arg_str[start..end]);
                 start = end + 1;
                 quote_char = null;
             }
         }
         else if (idx == arg_str.len - 1) {
             end = arg_str.len;
-            try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+            //try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
+            try args_list.append(arg_str[start..end]);
         }
     }
 

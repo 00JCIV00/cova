@@ -39,10 +39,17 @@ fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: 
 
     switch (meta.activeTag(val.generic)) {
         .string => {
+            const str_vals = val.generic.string.getAll(alloc) catch noVal: {
+                const no_val = alloc.dupe([]const u8, &.{ "" }) catch @panic("OOM");
+                break :noVal no_val;
+            };
+            defer alloc.free(str_vals);
+            const full_str = mem.join(alloc, "\" \"", str_vals) catch @panic("OOM");
+            defer alloc.free(full_str);
             try writer.print("    {s}: {?s}, Data: \"{s}\"\n", .{
                 prefix,
-                name, 
-                mem.join(alloc, "\" \"", val.generic.string.getAll(alloc) catch &.{ "" }) catch "",
+                name,
+                full_str,
             });
         },
         inline else => |tag| {
@@ -51,9 +58,14 @@ fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: 
                 const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
                     if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
                     const data: ?@TypeOf(tag_self).ChildT = tag_self.get() catch null;
-                    if (data != null) break :rawData &.{ data.? };
+                    if (data) |_data| {
+                        var data_slice = alloc.alloc(@TypeOf(tag_self).ChildT, 1) catch @panic("OOM");
+                        data_slice[0] = _data;
+                        break :rawData data_slice;
+                    }
                     break :rawData null;
                 };
+                defer if (raw_data) |raw| alloc.free(raw);
                 try writer.print("    {s}: {?s}, Data: {any}\n", .{ 
                     prefix,
                     name, 

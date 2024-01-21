@@ -19,6 +19,7 @@ const std = @import("std");
 const ascii = std.ascii;
 const builtin = std.builtin;
 const fmt = std.fmt;
+const heap = std.heap;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -234,9 +235,16 @@ pub fn Custom(comptime config: Config) type {
         pub const max_args = config.max_args;
 
 
-        /// Flag denoting if this Command has been initialized to memory using `init()`.
-        ///
+        /// The Root Allocator for this Command.
+        /// This is the Allocator provided to `init()`.
+        /// 
         /// **Internal Use.**
+        _root_alloc: ?mem.Allocator = null,
+        /// The Arena Allocator for this Command.
+        /// This is created by wrapping the Root Allocator provided to `init()`.
+        /// 
+        /// **Internal Use.**
+        _arena: ?heap.ArenaAllocator = null,
         /// The Allocator for this Command.
         /// This is set using `init()`.
         ///
@@ -1529,7 +1537,13 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
         /// This should be used after this Command has been created in Comptime. 
-        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !@This() {
+        pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !*@This() {
+            return self.initCtx(init_config, true, alloc);
+        }
+
+        /// Initialize Recursively with Context (`is_root_cmd`).
+        /// *INTERNAL USE*
+        fn initCtx(comptime self: *const @This(), comptime init_config: InitConfig, comptime is_root_cmd: bool, init_alloc: mem.Allocator) !if (is_root_cmd) *@This() else @This() {
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = init_config.add_help_cmds;
@@ -1537,9 +1551,18 @@ pub fn Custom(comptime config: Config) type {
                 self.validate(valid_config);
             }
 
-            //var init_cmd = (try alloc.dupe(@This(), &.{ self.* }))[0];
-            var init_cmd = try alloc.create(@This());
-            init_cmd.* = self.*;
+            var init_cmd, 
+            const alloc = setup: { 
+                var cmd = try init_alloc.create(@This());
+                cmd.* = self.*;
+                if (is_root_cmd) {
+                    cmd._root_alloc = init_alloc;
+                    cmd._arena = heap.ArenaAllocator.init(init_alloc);
+                    cmd._alloc = cmd._arena.?.allocator();
+                }
+                else cmd._alloc = init_alloc;
+                break :setup .{ cmd, cmd._alloc.? };
+            };
 
             const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
             const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
@@ -1591,7 +1614,7 @@ pub fn Custom(comptime config: Config) type {
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
                 inline for (sub_cmds, 0..) |cmd, idx| {
-                    init_subcmds[idx] = try cmd.init(alloc, init_config);
+                    init_subcmds[idx] = try cmd.initCtx(init_config, false, alloc);
                     init_subcmds[idx].parent_cmd = init_cmd;
                 }
                 if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
@@ -1666,20 +1689,14 @@ pub fn Custom(comptime config: Config) type {
                 init_cmd.vals = init_vals;
             }
 
-            init_cmd._alloc = alloc;
-
-            return init_cmd.*; 
+            return if (is_root_cmd) init_cmd else init_cmd.*;
         }
 
-        /// De-initialize this Command with its original Allocator.
-        /// If this Command has not yet been initialized, this does nothing.
+        /// De-initialize the Root Command with its Arena Allocator.
+        /// If this Command has not yet been initialized or is not the Root Command, this does nothing.
         pub fn deinit(self: *const @This()) void {
-            const alloc = self._alloc orelse return;
-            if (self.opts) |opts| alloc.free(opts); 
-            if (self.vals) |vals| alloc.free(vals); 
-            if (self.sub_cmds) |sub_cmds|
-                for (sub_cmds) |*cmd| cmd.deinit();
-            self._alloc.?.destroy(self);
+            if (self._arena) |arena| arena.deinit();
+            if (self._root_alloc) |root_alloc| root_alloc.destroy(self);
         }
     };
 }
