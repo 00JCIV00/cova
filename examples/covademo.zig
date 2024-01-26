@@ -300,6 +300,37 @@ pub const setup_cmd: CommandT = .{
             .description = "The most basic Command.",
             .cmd_group = "RAW",
         },
+        .{
+            .name = "nest-1",
+            .description = "Nested Level 1.",
+            .sub_cmds = &.{
+                .{
+                    .name = "nest-2",
+                    .description = "Nested Level 2.",
+                    .sub_cmds = &.{
+                        .{
+                            .name = "nest-3",
+                            .description = "Nested Level 3.",
+                            .sub_cmds = &.{
+                                .{
+                                    .name = "nest-4",
+                                    .description = "Nested Level 4.",
+                                }
+                            },
+                            .opts = &.{
+                                .{
+                                    .name = "inheritable",
+                                    .description = "Inheritable Option",
+                                    .inheritable = true,
+                                    .short_name = 'i',
+                                    .long_name = "inheritable",
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
@@ -343,6 +374,7 @@ pub const setup_cmd: CommandT = .{
             .name = "string_opt",
             .description = "A string option. (Can be given up to 4 times.)",
             //.hidden = true,
+            .inheritable = true,
             .opt_group = "STRING",
             .short_name = 's',
             .long_name = "string",
@@ -465,6 +497,7 @@ pub const setup_cmd: CommandT = .{
         .{
             .name = "verbosity_opt",
             .description = "Set the CovaDemo verbosity level. (WIP)",
+            .inheritable = true,
             .short_name = 'v',
             .long_name = "verbosity",
             .val = ValueT.ofType(u4, .{
@@ -502,12 +535,20 @@ pub const setup_cmd: CommandT = .{
 
 pub fn main() !void {
     // Setup
-    var alloc_buf: [100 << 10]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(alloc_buf[0..]);
     //var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    var arena = std.heap.ArenaAllocator.init(fba.allocator());
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    //var alloc_buf: [100 << 10]u8 = undefined;
+    //var fba = std.heap.FixedBufferAllocator.init(alloc_buf[0..]);
+    //var arena = std.heap.ArenaAllocator.init(fba.allocator());
+    //defer arena.deinit();
+    //const alloc = arena.allocator();
+    var gpa = std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }){};
+    const alloc = gpa.allocator();
+    defer {
+        if (gpa.deinit() != .ok) {
+            if (builtin.mode == .Debug and gpa.detectLeaks()) log.err("Memory leak detected!", .{});
+        }
+        else log.debug("Memory freed. No leaks detected.", .{});
+    }
     const stdout_raw = io.getStdOut().writer();
     var stdout_bw = io.bufferedWriter(stdout_raw);
     const stdout = stdout_bw.writer();
@@ -518,8 +559,9 @@ pub fn main() !void {
     defer args_iter.deinit();
 
     // Parsing
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{ 
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ 
         //.auto_handle_usage_help = false,
+        .allow_inheritable_opts = true,
     }) catch |err| switch (err) {
         error.UsageHelpCalled => {},
         else => return err,
@@ -529,7 +571,7 @@ pub fn main() !void {
     // Analysis
     // - Debug Output of Commands after Parsing. 
     try stdout.print("\n", .{});
-    try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
     try stdout_bw.flush();
 
 
@@ -568,7 +610,7 @@ pub fn main() !void {
         log.debug("Parent Cmd (int-opt / int-val): {s} / {s}", optPar: {
             const struct_cmd_opts = struct_cmd.getOpts(.{}) catch break: optPar .{ "[no opts]", "" };
             const int_opt = struct_cmd_opts.get("int") orelse break: optPar .{ "[no int opt]", "" };
-            break :optPar .{ int_opt.parent_cmd.?.name, int_opt.val.parent_cmd.?.name };
+            break :optPar .{ if (int_opt.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]", if (int_opt.val.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]" };
         });
         const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
         log.info("-> Struct Cmd\n{any}", .{ demo_struct });

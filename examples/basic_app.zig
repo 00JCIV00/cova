@@ -245,9 +245,7 @@ pub fn main() !void {
     var alloc_buf: [fba_size]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(alloc_buf[0..]);
     var sfba = std.heap.stackFallback(fba_size, fba.allocator());
-    var arena = std.heap.ArenaAllocator.init(sfba.get());
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    const alloc = sfba.get();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
     const main_cmd = try setup_cmd.init(alloc, .{}); 
@@ -270,7 +268,7 @@ pub fn main() !void {
     // Command. It's important to note that, by default, if the user calls for `usage` or `help` it
     // will trigger an error. This allow's that specific case to be handled specially if needed. If
     // there's no need to handle it specially, the below example will simply bypass the error.
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch (err) {
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
         error.UsageHelpCalled,
         // Other common errors can also be handled in the same way. The errors below will call the
         // Command's Usage or Help prompt automatically when triggered.
@@ -291,7 +289,7 @@ pub fn main() !void {
     // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed 
     // Command. This is done recursively for any sub Argument Types within the Command and can be
     // used to debug said Command.
-    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, &stdout);
+    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
 
     // - App Vars
     var user_filename_buf: [100]u8 = .{ 0 } ** 100;

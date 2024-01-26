@@ -15,17 +15,13 @@ const Value = @import("Value.zig");
 /// Display what is captured within a Command `display_cmd` after Cova parsing.
 pub fn displayCmdInfo(comptime CommandT: type, display_cmd: *const CommandT, alloc: mem.Allocator, writer: anytype) !void {
     var cur_cmd: ?*const CommandT = display_cmd;
-    while (cur_cmd != null) {
-        const cmd = cur_cmd.?;
-
-        //_ = try cmd.checkUsageHelp(writer);
-
+    while (cur_cmd) |cmd| {
         try writer.print("- Command: {s}\n", .{ cmd.name });
-        if (cmd.opts != null) {
-            for (cmd.opts.?) |opt| try displayValInfo(CommandT.ValueT, opt.val, opt.long_name, true, alloc, writer);
+        if (cmd.opts) |opts| {
+            for (opts) |opt| try displayValInfo(CommandT.ValueT, opt.val, opt.long_name, true, alloc, writer);
         }
-        if (cmd.vals != null) {
-            for (cmd.vals.?) |val| try displayValInfo(CommandT.ValueT, val, val.name(), false, alloc, writer);
+        if (cmd.vals) |vals| {
+            for (vals) |val| try displayValInfo(CommandT.ValueT, val, val.name(), false, alloc, writer);
         }
         try writer.print("\n", .{});
         cur_cmd = cmd.sub_cmd;

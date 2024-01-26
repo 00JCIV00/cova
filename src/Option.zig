@@ -167,6 +167,9 @@ pub fn Custom(comptime config: Config) type {
         /// This will be filled in during Initialization.
         parent_cmd: ?*const CommandT = null,
 
+        /// Allows this Option to be Inherited by sub-Arguments of this Option's Parent Command.
+        inheritable: bool = false,
+
         /// Option Group of this Option.
         /// This must line up with one of the Option Groups in the `opt_groups` of the parent Command or it will be ignored.
         /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.

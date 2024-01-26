@@ -220,6 +220,9 @@ pub const ParseConfig = struct {
     /// Override the Optiion Termination Symbol.
     /// Leaving this null will default to the long prefix of the associated Option Type.
     set_opt_termination_symbol: ?[]const u8 = null,
+    /// Allow Inheritable Options.
+    /// These are Options with the `inheritable` flag set that can be accessed from sub-Commands of their Parent Command.
+    allow_inheritable_opts: bool = false,
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
@@ -254,6 +257,7 @@ pub fn parseArgs(
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
 
+
     parseArg: while (args.next()) |arg| {
         // Check for Usage/Help flags and run their respective methods.
         if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return error.UsageHelpCalled; 
@@ -266,7 +270,7 @@ pub fn parseArgs(
             log.debug("Attempting to Parse Commands...", .{});
             checkCmds: for (cmds) |*sub_cmd| {
                 const should_parse = shouldParse: {
-                    if (sub_cmd.case_sensitive) { 
+                    if (sub_cmd.case_sensitive) {
                         if (mem.eql(u8, sub_cmd.name, arg)) break :shouldParse true
                         else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :shouldParse true;
                     }
@@ -286,61 +290,59 @@ pub fn parseArgs(
             log.debug("No Commands Matched for Command '{s}'.", .{ cmd.name });
         }
         // ...Then for any Options...
-        if (cmd.opts != null and !opt_term) {
-            log.debug("Attempting to Parse Options...", .{});
-            // - Check for Option Termination
-            opt_term = optTerm: {
-                const opt_term_sym = 
-                    parse_config.set_opt_termination_symbol orelse 
-                    OptionT.long_prefix orelse
+        var inherit_cmd: ?*const CommandT = cmd;
+        var inheriting = false;
+        inheritOpts: while (inherit_cmd) |opts_cmd| : ({
+            if (parse_config.allow_inheritable_opts) {
+                //inherit_cmd = opts_cmd.parent_cmd;
+                inherit_cmd = inherit_cmd.?.parent_cmd;
+                inheriting = true;
+                if (inherit_cmd) |i_cmd| log.debug("Attempting to Parse Inherited Options for '{s}'...", .{ i_cmd.name })
+                else log.debug("No higher parent Command to inherit from for '{s}'.", .{ opts_cmd.name });
+            }
+            else inherit_cmd = null;
+        }) {
+            if (opts_cmd.opts != null and !opt_term) {
+                log.debug("Attempting to Parse Options...", .{});
+                // - Check for Option Termination
+                opt_term = optTerm: {
+                    const opt_term_sym =
+                        parse_config.set_opt_termination_symbol orelse 
+                        OptionT.long_prefix orelse
+                        break :optTerm false;
+                    if (mem.eql(u8, arg, opt_term_sym) and parse_config.enable_opt_termination) {
+                        log.debug("Terminated Option Parsing!", .{});
+                        break :optTerm true;
+                    }
                     break :optTerm false;
-                if (mem.eql(u8, arg, opt_term_sym) and parse_config.enable_opt_termination) {
-                    log.debug("Terminated Option Parsing!", .{});
-                    break :optTerm true;
-                }
-                break :optTerm false;
-            };
-            if (opt_term) continue;
-            // - Short Options
-            if (OptionT.short_prefix) |short_pf| checkShortOpt: {
-                if (!(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
-                log.debug("Parsing Short Option...", .{});
-                const short_opts = arg[1..];
-                shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
-                    for (cmd.opts.?) |*opt| {
-                        if (opt.short_name != null and short_opt == opt.short_name.?) {
-                            // Handle Argument provided to this Option with '=' instead of ' '.
-                            if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
-                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
-                                    log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                        short_pf, 
-                                        opt.short_name, 
-                                        opt.name 
-                                    });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
-                                    try writer.print("\n", .{});
-                                    return error.BoolCannotTakeArgument;
-                                }
-                                if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
-                                const opt_arg = short_opts[(short_idx + 2)..];
-                                opt.val.set(opt_arg) catch {
-                                    log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
-                                        short_pf,
-                                        opt.short_name, 
-                                        opt.name 
-                                    });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
-                                    try writer.print("\n", .{});
-                                    return error.CouldNotParseOption;
-                                };
-                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                continue :parseArg;
-                            }
-                            // Handle final Option in a chain of Short Options
-                            else if (short_idx == short_opts.len - 1) { 
-                                if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
-                                else {
-                                    parseOpt(args, OptionT, opt) catch {
+                };
+                if (opt_term) continue :parseArg;
+                // - Short Options
+                if (OptionT.short_prefix) |short_pf| checkShortOpt: {
+                    if (!(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
+                    log.debug("Parsing Short Option...", .{});
+                    const short_opts = arg[1..];
+                    shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
+                        //for (cmd.opts.?) |*opt| {
+                        for (opts_cmd.opts.?) |*opt| {
+                            if (parse_config.allow_inheritable_opts and inheriting and !opt.inheritable) continue :shortOpts;
+                            if (opt.short_name != null and short_opt == opt.short_name.?) {
+                                // Handle Argument provided to this Option with the Option/Value Separator (like '=') instead of ' '.
+                                if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
+                                    if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                        log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                            short_pf, 
+                                            opt.short_name, 
+                                            opt.name 
+                                        });
+                                        try errReaction(parse_config.err_reaction, opt, writer);
+                                        try writer.print("\n", .{});
+                                        return error.BoolCannotTakeArgument;
+                                    }
+                                    if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
+                                    const opt_arg = short_opts[(short_idx + 2)..];
+                                    opt.val.set(opt_arg) catch {
+                                        if (parse_config.allow_inheritable_opts) continue :inheritOpts;
                                         log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
                                             short_pf,
                                             opt.short_name, 
@@ -350,120 +352,146 @@ pub fn parseArgs(
                                         try writer.print("\n", .{});
                                         return error.CouldNotParseOption;
                                     };
-                                }
-                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                continue :parseArg;
-                            }
-                            // Handle a boolean Option before the final Short Option in a chain.
-                            else if (mem.eql(u8, opt.val.childType(), "bool")) {
-                                try @constCast(opt).val.set("true");
-                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                continue :shortOpts;
-                            }
-                            // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
-                            else if (CommandT.OptionT.allow_opt_val_no_space) {
-                                var short_names_buf: [CommandT.max_args]u8 = undefined;
-                                const short_names = short_names_buf[0..];
-                                for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
-                                if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
-                                    try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
                                     log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                     continue :parseArg;
                                 }
+                                // Handle final Option in a chain of Short Options
+                                else if (short_idx == short_opts.len - 1) { 
+                                    if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
+                                    else {
+                                        parseOpt(args, OptionT, opt) catch {
+                                            if (parse_config.allow_inheritable_opts) continue :inheritOpts;
+                                            log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
+                                                short_pf,
+                                                opt.short_name, 
+                                                opt.name 
+                                            });
+                                            try errReaction(parse_config.err_reaction, opt, writer);
+                                            try writer.print("\n", .{});
+                                            return error.CouldNotParseOption;
+                                        };
+                                    }
+                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                    continue :parseArg;
+                                }
+                                // Handle a boolean Option before the final Short Option in a chain.
+                                else if (mem.eql(u8, opt.val.childType(), "bool")) {
+                                    try @constCast(opt).val.set("true");
+                                    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                    continue :shortOpts;
+                                }
+                                // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
+                                else if (CommandT.OptionT.allow_opt_val_no_space) {
+                                    var short_names_buf: [CommandT.max_args]u8 = undefined;
+                                    const short_names = short_names_buf[0..];
+                                    for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
+                                    if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
+                                        try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                                        log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                        continue :parseArg;
+                                    }
+                                }
+                            }
+                        }
+                        if (parse_config.allow_inheritable_opts) continue :inheritOpts;
+                        log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
+                        try errReaction(parse_config.err_reaction, cmd, writer);
+                        try writer.print("\n", .{});
+                        return error.CouldNotParseOption;
+                    }
+                }
+                // - Long Options
+                if (OptionT.long_prefix) |long_pf| checkLongOpt: {
+                    if (!mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
+                    log.debug("Parsing Long Option...", .{});
+                    const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
+                    const long_opt = arg[long_pf.len..split_idx]; 
+                    const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
+                    const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
+                    //for (cmd.opts.?) |*opt| {
+                    longOpts: for (opts_cmd.opts.?) |*opt| {
+                        if (parse_config.allow_inheritable_opts and inheriting and !opt.inheritable) continue :longOpts;
+                        const opt_long_name = opt.long_name orelse continue :longOpts;
+                        var long_names: [17][]const u8 = undefined;
+                        var long_names_len: usize = 1;
+                        long_names[0] = opt_long_name;
+                        if (opt.alias_long_names) |aliases| {
+                            long_names_len += aliases.len;
+                            for (aliases, 0..) |alias, idx| long_names[idx + 1] = alias;
+                        }
+                        for (long_names[0..long_names_len]) |long_name| {
+                            if (matchOpt: {
+                                break :matchOpt if (opt.case_sensitive)
+                                    mem.eql(u8, long_opt, long_name) or
+                                    (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
+                                else
+                                    ascii.eqlIgnoreCase(long_opt, long_name) or
+                                    (
+                                        OptionT.allow_abbreviated_long_opts and 
+                                        ascii.indexOfIgnoreCase(long_name, long_opt) != null and 
+                                        ascii.eqlIgnoreCase(long_name[0..1], long_opt[0..1])
+                                    );
+                            }) {
+                                if (sep_flag) {
+                                    if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                        log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                            long_pf, 
+                                            long_name, 
+                                            opt.name 
+                                        });
+                                        try errReaction(parse_config.err_reaction, opt, writer);
+                                        try writer.print("\n", .{});
+                                        return error.BoolCannotTakeArgument;
+                                    }
+                                    if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
+                                    opt.val.set(sep_arg) catch {
+                                        if (parse_config.allow_inheritable_opts) continue :inheritOpts;
+                                        log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
+                                            long_pf,
+                                            long_name, 
+                                            opt.name 
+                                        });
+                                        try errReaction(parse_config.err_reaction, opt, writer);
+                                        try writer.print("\n", .{});
+                                        return error.CouldNotParseOption;
+                                    };
+                                    log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
+                                    continue :parseArg;
+                                }
+
+                                // Handle normally provided Value to Option
+
+                                // Handle Boolean/Toggle Option.
+                                if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
+                                // Handle Option with normal Argument.
+                                else {
+                                    parseOpt(args, OptionT, opt) catch {
+                                        if (parse_config.allow_inheritable_opts) continue :inheritOpts;
+                                        log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
+                                            long_pf,
+                                            long_name, 
+                                            opt.name 
+                                        });
+                                        try errReaction(parse_config.err_reaction, opt, writer);
+                                        try writer.print("\n", .{});
+                                        return error.CouldNotParseOption;
+                                    };
+                                }
+                                log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
+                                continue :parseArg;
                             }
                         }
                     }
-                    log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
+                    if (parse_config.allow_inheritable_opts) continue :inheritOpts;
+                    log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
                     try errReaction(parse_config.err_reaction, cmd, writer);
                     try writer.print("\n", .{});
                     return error.CouldNotParseOption;
                 }
+                unmatched = true;
+                log.debug("No Options Matched for Command '{s}'.", .{ opts_cmd.name });
+                if (parse_config.allow_inheritable_opts) continue :inheritOpts;
             }
-            // - Long Options
-            if (OptionT.long_prefix) |long_pf| checkLongOpt: {
-                if (!mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
-                log.debug("Parsing Long Option...", .{});
-                const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
-                const long_opt = arg[long_pf.len..split_idx]; 
-                const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
-                const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
-                for (cmd.opts.?) |*opt| {
-                    const opt_long_name = opt.long_name orelse continue;
-                    var long_names: [17][]const u8 = undefined;
-                    var long_names_len: usize = 1;
-                    long_names[0] = opt_long_name;
-                    if (opt.alias_long_names) |aliases| {
-                        long_names_len += aliases.len;
-                        for (aliases, 0..) |alias, idx| long_names[idx + 1] = alias;
-                    }
-                    for (long_names[0..long_names_len]) |long_name| {
-                        if (matchOpt: {
-                            break :matchOpt if (opt.case_sensitive)
-                                mem.eql(u8, long_opt, long_name) or
-                                (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
-                            else
-                                ascii.eqlIgnoreCase(long_opt, long_name) or
-                                (
-                                    OptionT.allow_abbreviated_long_opts and 
-                                    ascii.indexOfIgnoreCase(long_name, long_opt) != null and 
-                                    ascii.eqlIgnoreCase(long_name[0..1], long_opt[0..1])
-                                );
-                        }) {
-                            if (sep_flag) {
-                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
-                                    log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                        long_pf, 
-                                        long_name, 
-                                        opt.name 
-                                    });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
-                                    try writer.print("\n", .{});
-                                    return error.BoolCannotTakeArgument;
-                                }
-                                if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
-                                opt.val.set(sep_arg) catch {
-                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
-                                        long_pf,
-                                        long_name, 
-                                        opt.name 
-                                    });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
-                                    try writer.print("\n", .{});
-                                    return error.CouldNotParseOption;
-                                };
-                                log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
-                                continue :parseArg;
-                            }
-
-                            // Handle normally provided Value to Option
-
-                            // Handle Boolean/Toggle Option.
-                            if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
-                                // Handle Option with normal Argument.
-                            else {
-                                parseOpt(args, OptionT, opt) catch {
-                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
-                                        long_pf,
-                                        long_name, 
-                                        opt.name 
-                                    });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
-                                    try writer.print("\n", .{});
-                                    return error.CouldNotParseOption;
-                                };
-                            }
-                            log.debug("Parsed Option '{?s}'.", .{ opt.long_name });
-                            continue :parseArg;
-                        }
-                    }
-                }
-                log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
-                try errReaction(parse_config.err_reaction, cmd, writer);
-                try writer.print("\n", .{});
-                return error.CouldNotParseOption;
-            }
-            unmatched = true;
-            log.debug("No Options Matched for Command '{s}'.", .{ cmd.name });
         }
         // ...Finally, for any Values.
         if (cmd.vals != null) {
@@ -512,6 +540,7 @@ pub fn parseArgs(
     }
     // Check that all Mandatory Options have been set.
     if (cmd.opts) |opts| manOpts: {
+    //if (cmd_opts) |opts| manOpts: {
         if (!usage_help_flag) usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
         if (usage_help_flag) break :manOpts;
         for (opts) |opt| {

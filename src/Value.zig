@@ -257,10 +257,10 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
             if (self.parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             if (child_type_parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
-            var san_arg_buf: [512]u8 = undefined;
-            const san_arg = toLower(san_arg_buf[0..], arg);
             return switch (@typeInfo(ChildT)) {
                 .Bool => isTrue: {
+                    var san_arg_buf: [512]u8 = undefined;
+                    const san_arg = toLower(san_arg_buf[0..], arg);
                     const true_words = [_][]const u8{ "true", "t", "yes", "y", "1" };
                     for (true_words[0..]) |word| { if (mem.eql(u8, word, san_arg)) break :isTrue true; } else break :isTrue false;
                 },

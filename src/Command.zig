@@ -154,8 +154,6 @@ pub const Config = struct {
     /// During parsing, mandate that Command instances of this Command Type, and their aliases, must be used in a case-sensitive manner.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
-
-    enable_verb_desc: bool = false,
 };
 
 /// Create a Command type with the Base (default) configuration.
@@ -437,8 +435,8 @@ pub fn Custom(comptime config: Config) type {
                     .AND => {
                         if (opts_list.items.len == opt_names.len) {
                             logic_flag = true;
-                            break;   
-                        }    
+                            break;
+                        }
                     },
                     .OR => logic_flag = true,
                     .XOR => {
@@ -458,6 +456,22 @@ pub fn Custom(comptime config: Config) type {
                 };
             }
             return try opts_list.toOwnedSlice();
+        }
+        /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands using the provided Allocator (`alloc`).
+        pub fn inheritableOptsAlloc(self: *const @This(), alloc: mem.Allocator) ![]OptionT {
+            var opts_list = std.ArrayList(OptionT).init(alloc);
+            if (self.opts) |opts| {
+                for (opts) |opt| {
+                    if (opt.inheritable) try opts_list.append(opt);
+                }
+            }
+            if (self.parent_cmd) |parent| try (opts_list.appendSlice(try parent.inheritableOptsAlloc(alloc)));
+            return try opts_list.toOwnedSlice();
+        }
+        /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands.
+        pub fn inheritableOpts(self: *const @This()) ![]OptionT {
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
+            return self.inheritableOptsAlloc(alloc);
         }
 
         /// Gets a StringHashMap of this Command's Values using its initialization Allocator.
@@ -1538,12 +1552,12 @@ pub fn Custom(comptime config: Config) type {
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
         /// This should be used after this Command has been created in Comptime. 
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !*@This() {
-            return self.initCtx(init_config, true, alloc);
+            return self.initCtx(init_config, true, null, alloc);
         }
 
         /// Initialize Recursively with Context (`is_root_cmd`).
         /// *INTERNAL USE*
-        fn initCtx(comptime self: *const @This(), comptime init_config: InitConfig, comptime is_root_cmd: bool, init_alloc: mem.Allocator) !if (is_root_cmd) *@This() else @This() {
+        fn initCtx(comptime self: *const @This(), comptime init_config: InitConfig, comptime is_root_cmd: bool, parent_cmd: ?*const @This(), init_alloc: mem.Allocator) !if (is_root_cmd) *@This() else @This() {
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = init_config.add_help_cmds;
@@ -1563,6 +1577,7 @@ pub fn Custom(comptime config: Config) type {
                 else cmd._alloc = init_alloc;
                 break :setup .{ cmd, cmd._alloc.? };
             };
+            init_cmd.parent_cmd = parent_cmd;
 
             const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
             const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
@@ -1613,10 +1628,7 @@ pub fn Custom(comptime config: Config) type {
                 const sub_cmds = if (self.sub_cmds) |s_cmds| s_cmds else break :addSubCmds;
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
-                inline for (sub_cmds, 0..) |cmd, idx| {
-                    init_subcmds[idx] = try cmd.initCtx(init_config, false, alloc);
-                    init_subcmds[idx].parent_cmd = init_cmd;
-                }
+                inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc); 
                 if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
