@@ -494,24 +494,32 @@ pub fn parseArgs(
             }
         }
         // ...Finally, for any Values.
-        if (cmd.vals != null) {
+        if (cmd.vals) |vals| {
             log.debug("Attempting to Parse Values...", .{});
-            if (val_idx >= cmd.vals.?.len) {
+            if (val_idx >= vals.len) {
                 log.err("Too many Values provided for Command '{s}'.", .{ cmd.name });
                 try errReaction(parse_config.err_reaction, cmd, writer);
                 return error.TooManyValues;
             }
-            const val = &cmd.vals.?[val_idx];
-            val.set(arg) catch {
-                log.err("Could not parse Argument '{s}' to Value '{s}'.", .{ arg, val.name() });
-                try errReaction(parse_config.err_reaction, cmd, writer);
-                log.err("", .{});
-            };
+            var cur_val: ?*const CommandT.ValueT = &vals[val_idx];
+            while (cur_val) |val| : (cur_val = &vals[val_idx]) {
+                val.set(arg) catch {
+                    log.debug("Could not parse Argument '{s}' to Value '{s}'.", .{ arg, val.name() });
+                    if (val_idx + 1 < vals.len) {
+                        val_idx += 1;
+                        continue;
+                    }
+                    log.err("Could not parse Argument '{s}' to any Value for Command '{s}'.", .{ arg, cmd.name });
+                    try errReaction(parse_config.err_reaction, cmd, writer);
+                    log.err("", .{});
+                    return error.CouldNotParseValue;
+                };
+                if (val.argIdx() == val.maxArgs()) val_idx += 1;
 
-            if (val.argIdx() == val.maxArgs()) val_idx += 1;
+                log.debug("Parsed Value '{?s}'.", .{ val.name() });
+                continue :parseArg;
+            }
 
-            log.debug("Parsed Value '{?s}'.", .{ val.name() });
-            continue :parseArg;
         }
 
         // Check if the Command expected an Argument but didn't get a match.
