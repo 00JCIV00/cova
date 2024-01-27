@@ -156,10 +156,10 @@ pub const Config = struct {
     global_case_sensitive: bool = true,
 };
 
-/// Create a Command type with the Base (default) configuration.
+/// Create a Command Type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
-/// Create a Custom Command type from the provided Config (`config`).
+/// Create a Custom Command Type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct {
         /// Value Config Setup
@@ -338,6 +338,7 @@ pub fn Custom(comptime config: Config) type {
         };
 
         /// Gets a StringHashMap of this Command's Options using its initialization Allocator.
+        /// Memory is owned by this Command's Allocator. Look at the `...Alloc()` version of this method to use a different Allocator.
         pub fn getOpts(self: *const @This(), get_config: GetConfig) !StringHashMap(OptionT) {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             return self.getOptsAlloc(alloc, get_config);
@@ -458,6 +459,12 @@ pub fn Custom(comptime config: Config) type {
             return try opts_list.toOwnedSlice();
         }
         /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands using the provided Allocator (`alloc`).
+        /// Memory is owned by this Command's Allocator. Look at the `...Alloc()` version of this method to use a different Allocator.
+        pub fn inheritableOpts(self: *const @This()) ![]OptionT {
+            const alloc = self._alloc orelse return error.CommandNotInitialized;
+            return self.inheritableOptsAlloc(alloc);
+        }
+        /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands.
         pub fn inheritableOptsAlloc(self: *const @This(), alloc: mem.Allocator) ![]OptionT {
             var opts_list = std.ArrayList(OptionT).init(alloc);
             if (self.opts) |opts| {
@@ -468,13 +475,9 @@ pub fn Custom(comptime config: Config) type {
             if (self.parent_cmd) |parent| try (opts_list.appendSlice(try parent.inheritableOptsAlloc(alloc)));
             return try opts_list.toOwnedSlice();
         }
-        /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands.
-        pub fn inheritableOpts(self: *const @This()) ![]OptionT {
-            const alloc = self._alloc orelse return error.CommandNotInitialized;
-            return self.inheritableOptsAlloc(alloc);
-        }
 
         /// Gets a StringHashMap of this Command's Values using its initialization Allocator.
+        /// Memory is owned by this Command's Allocator. Look at the `...Alloc()` version of this method to use a different Allocator.
         pub fn getVals(self: *const @This(), get_config: GetConfig) !StringHashMap(ValueT) {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             return self.getValsAlloc(alloc, get_config);
@@ -816,7 +819,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Valid Values = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
         /// - Valid Optionals = Single-Options (Valid Optionals are nullable versions of Valid Values.)
         /// - Arrays of Valid Values = Multi-Values
-        /// - Arrays of Valid Optionals = Multi-Options 
+        /// - Arrays of Valid Optionals = Multi-Options
         pub fn fromStructOrUnion(comptime FromT: type, comptime from_config: FromConfig) @This() {
             const from_info = @typeInfo(FromT);
             if (from_info != .Struct and from_info != .Union) @compileError("Provided Type is not a Struct or Union.");
@@ -1147,6 +1150,7 @@ pub fn Custom(comptime config: Config) type {
                 };
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
+                    // Commands
                     .Struct => {
                         @field(out, field.name) = 
                             if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name))
@@ -1157,6 +1161,7 @@ pub fn Custom(comptime config: Config) type {
                     .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
                         return @unionInit(ToT, field.name, try self.sub_cmd.?.to(field.type, to_config));
                     },
+                    // Options
                     .Optional => |f_opt| if (self.opts) |opts| {
                         for (opts) |opt| {
                             if (mem.eql(u8, opt.name, arg_name)) {
@@ -1172,6 +1177,7 @@ pub fn Custom(comptime config: Config) type {
                             }
                         }
                     },
+                    // Values
                     .Bool, .Int, .Float, .Pointer, .Enum => {
                         for (vals) |val| {
                             if (mem.eql(u8, val.name(), arg_name)) {
@@ -1198,9 +1204,11 @@ pub fn Custom(comptime config: Config) type {
                             }
                         } 
                     },
+                    // Multi
                     .Array => |ary| {
                         const ary_info = @typeInfo(ary.child);
                         switch (ary_info) {
+                            // - Options
                             .Optional => |a_opt| if (self.opts) |opts| {
                                 for (opts) |opt| {
                                     if (mem.eql(u8, opt.name, arg_name)) {
@@ -1221,6 +1229,7 @@ pub fn Custom(comptime config: Config) type {
                                     }
                                 }
                             },
+                            // - Values
                             .Bool, .Int, .Float, .Pointer => {
                                 for (vals) |val| {
                                     if (mem.eql(u8, val.name(), arg_name)) {
@@ -1565,8 +1574,8 @@ pub fn Custom(comptime config: Config) type {
                 self.validate(valid_config);
             }
 
-            var init_cmd, 
-            const alloc = setup: { 
+            var init_cmd,
+            const alloc = setup: {
                 var cmd = try init_alloc.create(@This());
                 cmd.* = self.*;
                 if (is_root_cmd) {
@@ -1578,6 +1587,26 @@ pub fn Custom(comptime config: Config) type {
                 break :setup .{ cmd, cmd._alloc.? };
             };
             init_cmd.parent_cmd = parent_cmd;
+
+            // This implementation doesn't support `parent_cmd` pointers.
+            //var init_cmd: if (is_root_cmd) *@This() else @This(),
+            //const alloc = setup: {
+            //    const cmd = if (is_root_cmd) rootCmd: {
+            //        const root_cmd = try init_alloc.create(@This());
+            //        root_cmd.* = self.*;
+            //        root_cmd._root_alloc = init_alloc;
+            //        root_cmd._arena = heap.ArenaAllocator.init(init_alloc);
+            //        root_cmd._alloc = root_cmd._arena.?.allocator();
+            //        break :rootCmd root_cmd;
+            //    }
+            //    else childCmd: {
+            //        var child_cmd = self.*;
+            //        child_cmd._alloc = init_alloc;
+            //        break :childCmd child_cmd;
+            //    };
+            //    break :setup .{ cmd, cmd._alloc.? };
+            //};
+            //init_cmd.parent_cmd = parent_cmd;
 
             const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
             const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });

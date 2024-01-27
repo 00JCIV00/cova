@@ -146,13 +146,13 @@ pub const Config = struct {
     /// Must support the following format types in this order:
     /// 1. String (Value Name)
     /// 2. String (Value Type)
-    vals_usage_fmt: []const u8 = "\"{s} ({s})\"",
+    usage_fmt: []const u8 = "\"{s} ({s})\"",
     /// Values Help Format.
     /// Must support the following format types in this order:
     /// 1. String (Value Name)
     /// 2. String (Value Type)
     /// 3. String (Value Description)
-    vals_help_fmt: []const u8 = "{s} ({s}): {s}",
+    help_fmt: []const u8 = "{s} ({s}): {s}",
     
 };
 
@@ -566,10 +566,10 @@ pub fn Custom(comptime config: Config) type {
 
         /// Values Help Format.
         /// Check (`Command.Config`) for details.
-        pub const vals_help_fmt = config.vals_help_fmt;
+        pub const vals_help_fmt = config.help_fmt;
         /// Values Usage Format.
         /// Check (`Command.Config`) for details.
-        pub const vals_usage_fmt = config.vals_usage_fmt;
+        pub const vals_usage_fmt = config.usage_fmt;
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
