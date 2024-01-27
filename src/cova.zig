@@ -505,7 +505,7 @@ pub fn parseArgs(
             while (cur_val) |val| : (cur_val = &vals[val_idx]) {
                 val.set(arg) catch {
                     log.debug("Could not parse Argument '{s}' to Value '{s}'.", .{ arg, val.name() });
-                    if (val_idx + 1 < vals.len) {
+                    if (val_idx + 1 < vals.len and !cmd.vals_mandatory) {
                         val_idx += 1;
                         continue;
                     }
