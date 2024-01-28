@@ -154,6 +154,18 @@ pub const Config = struct {
     /// During parsing, mandate that Command instances of this Command Type, and their aliases, must be used in a case-sensitive manner.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
+
+    /// Return an instance of this Config with all `_fmt` fields set to `""`.
+    /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
+    pub fn noFormats() @This() {
+        var config: @This() = .{};
+        config.opt_config = Option.Config.noFormats();
+        config.val_config = Value.Config.noFormats();
+        inline for (meta.fields(@This())) |field| {
+            if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+        }
+        return config;
+    }
 };
 
 /// Create a Command Type with the Base (default) configuration.
@@ -875,7 +887,7 @@ pub fn Custom(comptime config: Config) type {
                             continue;
                         }
                     },
-                    inline else => {},
+                    else => {},
                 }
 
                 const field_info = @typeInfo(field.type);

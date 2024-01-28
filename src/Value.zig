@@ -153,6 +153,16 @@ pub const Config = struct {
     /// 2. String (Value Type)
     /// 3. String (Value Description)
     help_fmt: []const u8 = "{s} ({s}): {s}",
+
+    /// Return an instance of this Config with all `_fmt` fields set to `""`.
+    /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
+    pub fn noFormats() @This() {
+        var config: @This() = .{};
+        inline for (meta.fields(@This())) |field| {
+            if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+        }
+        return config;
+    }
     
 };
 

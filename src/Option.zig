@@ -13,6 +13,7 @@
 const std = @import("std");
 const ascii = std.ascii;
 const mem = std.mem;
+const meta = std.meta;
 
 const toUpper = ascii.toUpper;
 
@@ -109,6 +110,17 @@ pub const Config = struct {
     /// During parsing, mandate that Option instances of this Option Type must be used in a case-sensitive manner when called by their Long Name.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
+
+    /// Return an instance of this Config with all `_fmt` fields set to `""`.
+    /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
+    pub fn noFormats() @This() {
+        var config: @This() = .{};
+        config.val_config = Value.Config.noFormats();
+        inline for (meta.fields(@This())) |field| {
+            if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+        }
+        return config;
+    }
 };
 
 /// Create an Option type with the Base (default) configuration.
@@ -167,7 +179,9 @@ pub fn Custom(comptime config: Config) type {
         /// This will be filled in during Initialization.
         parent_cmd: ?*const CommandT = null,
 
-        /// Allows this Option to be Inherited by sub-Arguments of this Option's Parent Command.
+        /// Allows this Option to be Inherited by sub-Commands of this Option's Parent Command.
+        /// An Option is only inherited if it doesn't exist in a sub-Command.
+        /// Note that `cova.ParseConfig.allow_inherited_opts` must be enabled for this behavior.
         inheritable: bool = false,
 
         /// Option Group of this Option.
