@@ -151,6 +151,9 @@ pub const Config = struct {
     /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
     /// This can be overwritten on individual Commands using the `Command.Custom.vals_mandatory` field.
     global_vals_mandatory: bool = true,
+    /// Allow Inheritable Options.
+    /// These are Options with the `inheritable` flag set that can be accessed from sub-Commands of their Parent Command.
+    global_allow_inheritable_opts: bool = true,
     /// During parsing, mandate that Command instances of this Command Type, and their aliases, must be used in a case-sensitive manner.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
@@ -314,6 +317,8 @@ pub fn Custom(comptime config: Config) type {
         /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
         /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
         vals_mandatory: bool = config.global_vals_mandatory,
+        /// Allows this Command to inherit Options 
+        allow_inheritable_opts: bool = config.global_allow_inheritable_opts,
         /// During parsing, mandate that THIS Command, and its aliases, must be used in a case-sensitive manner.
         /// This will NOT affect Command Validation nor Tab-Completion.
         case_sensitive: bool = config.global_case_sensitive,
