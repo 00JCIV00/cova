@@ -51,7 +51,7 @@ pub const Config = struct {
     ///
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
-    /// 2. Writer (This is the Writer that will written to.)
+    /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
     global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Command instances of this custom Command Type.
@@ -59,7 +59,7 @@ pub const Config = struct {
     ///
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
-    /// 2. Writer (This is the Writer that will written to.)
+    /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
     global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
 

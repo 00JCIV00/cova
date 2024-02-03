@@ -487,7 +487,7 @@ pub const setup_cmd: CommandT = .{
             .opt_group = "BOOL",
             .short_name = 'b',
             .long_name = "bool",
-            .mandatory = true,
+            //.mandatory = true,
             .val = ValueT.ofType(bool, .{
                 .name = "bool_val",
                 .description = "A toggle/boolean value.",
@@ -518,6 +518,8 @@ pub const setup_cmd: CommandT = .{
         ValueT.ofType(bool, .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
+            .set_behavior = .Multi,
+            .max_args = 10,
             .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y" }, &.{ "false", "f", "no", "n", "0" }, .Error),
         }),
         ValueT.ofType(u64, .{
@@ -561,7 +563,6 @@ pub fn main() !void {
     // Parsing
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ 
         //.auto_handle_usage_help = false,
-        .allow_inheritable_opts = true,
     }) catch |err| switch (err) {
         error.UsageHelpCalled => {},
         else => return err,

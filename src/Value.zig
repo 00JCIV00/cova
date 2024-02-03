@@ -101,7 +101,7 @@ pub const Config = struct {
     ///
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
-    /// 2. Writer (This is the Writer that will written to.)
+    /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
     global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
     /// A custom Help function to override the default `usage()` function globally for ALL Value instances of this custom Value Type.
@@ -109,7 +109,7 @@ pub const Config = struct {
     ///
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
-    /// 2. Writer (This is the Writer that will written to.)
+    /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed.)
     global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
     /// Custom Help functions to override the default `help()` function for all Value instances with a matching Child Type.
@@ -121,7 +121,7 @@ pub const Config = struct {
         ///
         /// Function parameters:
         /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
-        /// 2. Writer (This is the Writer that will written to.)
+        /// 2. Writer (This is the Writer that will be written to.)
         /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
         help_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
     } = null,
@@ -134,7 +134,7 @@ pub const Config = struct {
         ///
         /// Function parameters:
         /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
-        /// 2. Writer (This is the Writer that will written to.)
+        /// 2. Writer (This is the Writer that will be written to.)
         /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
         usage_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
     } = null,
