@@ -244,14 +244,13 @@ pub const TabCompletionConfig = struct{
     local_filepath: []const u8 = "meta",
 
     /// Script Header
-    /// If this is left null, a default value for the given Shell Kind will be used.
+    /// This is useful for setting the shebang of a shell and, optionally, header comments.
+    /// If this is left null, a default shebang or value for the given Shell Kind will be used.
     script_header: ?[]const u8 = null,
     /// Name of the program.
     /// Note, if this is left null, the provided CommandT's name will be used.
     name: ?[]const u8 = null,
 
-    ///// Shell Kind
-    //shell_kind: ShellKind = .bash,
     /// Include Commands for Tab Completion.
     include_cmds: bool = true,
     /// Include Options for Tab Completion.
@@ -373,7 +372,7 @@ fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writ
         , .{
             if (tc_ctx.idx == 1) tc_ctx.name
             else tc_ctx.parent_name ++ "_" ++ tc_ctx.name,
-        }      
+        }
     );
     var args_iter = mem.splitScalar(u8, args_list, ' ');
     while (args_iter.next()) |arg| {

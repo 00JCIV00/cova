@@ -1,16 +1,17 @@
 //! Meta Doc Generation for Cova-based programs
 //! This is meant to be built and run as a step in `build.zig`.
 
-/// Standard library
+// Standard library
 const std = @import("std");
 const heap = std.heap;
 const json = std.json;
 const log = std.log;
 const mem = std.mem;
 const Build = std.Build;
-/// The Cova library is needed for the `generate` module.
+// The Cova library is needed for the `generate` module.
 const cova = @import("cova");
-const generate = cova.generate; //@import("generate");
+const generate = cova.generate; 
+
 /// This is a reference module for the program being built. Typically this is the main `.zig` file
 /// in a project that has both the `main()` function and `setup_cmd` Command. 
 const program = @import("program");
@@ -38,22 +39,6 @@ const tab_complete_config: ?generate.TabCompletionConfig = tcConfig: {
     }
     break :tcConfig tc_conf;
 };
-
-//const config: generate.MetaDocConfig = configSetup: {
-//    var fba_buf: [100_000]u8 = undefined;
-//    var fba = heap.FixedBufferAllocator.init(fba_buf[0..]);
-//    const alloc = fba.allocator();
-//
-//    const config_parsed = json.parseFromSliceLeaky(
-//        generate.MetaDocConfig,
-//        alloc,
-//        md_config.config_json,
-//        .{},
-//    ) catch @panic("There was an issue with the Meta Doc Config");
-//    //defer config_parsed.deinit();
-//    //break :configSetup config_parsed.value;
-//    break :configSetup config_parsed;
-//};
 
 pub fn main() !void {
     var gpa = heap.GeneralPurposeAllocator(.{}){};
@@ -111,40 +96,3 @@ pub fn main() !void {
     }
     log.info("Finished Meta Doc Generation!", .{});
 }
-
-///// A Build Step for Generating Manpages, Tab Completion Scripts, and other Meta Documents.
-//pub fn GeneratorStep(comptime CommandT: type, comptime setup_cmd: CommandT) type {
-//    return struct{
-//        md_config: MetaDocConfig = .{},
-//        step: Build.Step,
-//
-//        pub fn init(b: *Build, md_config: MetaDocConfig) *@This() {
-//            const self = b.allocator.create(@This()) catch @panic("OOM");
-//            self.* = .{
-//                .md_config = md_config,
-//                .step = Build.Step.init(.{
-//                    .id = .install_file,
-//                    .name = "GenMetaDocs",
-//                    .owner = b,
-//                    .makeFn = make,
-//                }),
-//            };
-//            return self;
-//        }
-//
-//        fn make(step: *Build.Step, _: *std.Progress.Node) !void {
-//            const b = step.owner;
-//            const self = @fieldParentPtr(@This(), "step", step);
-//
-//            const project_main_mod = b.addModule("project_main_mod", .{
-//                .root_source_file = .{ .path = self.md_config.project_main_source_file },
-//            });
-//            _ = project_main_mod;
-//            
-//            //const project_main = @import("project_main_mod");
-//            //const CommandT = @field(project_main, self.md_config.cmd_type_name);
-//            //const setup_cmd = @field(project_main, self.md_config.setup_cmd_name);
-//            @panic("Command Type: " ++ @typeName(CommandT) ++ ", Setup Command: " ++ setup_cmd.name);
-//        }
-//    };
-//}
