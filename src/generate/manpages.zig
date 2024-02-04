@@ -7,12 +7,23 @@ const fs = std.fs;
 const log = std.log;
 const mem = std.mem;
 
+// Cova
+const utils = @import("../utils.zig");
+
 /// A Config for creating manpages with `createManpage`.
 /// Leaving any field `null` will remove it from the created manpage.
 pub const ManpageConfig = struct{
     /// Manpage Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`.`section`".
     local_filepath: []const u8 = "meta",
+    /// Recursively generate Manpages for sub-Commands.
+    /// Generated Manpages for sub-Commands will be titled with `parent-child` syntax. (Ex: `git log` becomes `git-log`).
+    recursive_gen: bool = true,
+    /// Max-depth for recursive generation.
+    recursive_max_depth: u8 = 3,
+    /// Blocklist for recursive generation sub-Commands.
+    /// This is useful to avoid generating Manpages for Commands like `usage` and `help`.
+    recursive_blocklist: []const []const u8 = &.{ "usage", "help" },
 
     // Manpage Info
     /// Section of the Linux Man Pages.
@@ -71,8 +82,22 @@ pub const ManpageConfig = struct{
 /// Create a manpage for this program based on the provided `CommandT` (`cmd`) and ManpageConfig (`mp_config`).
 /// Note this is intended for use on Unix systems (where man pages are typically found).
 pub fn createManpage(comptime CommandT: type, comptime cmd: CommandT, comptime mp_config: ManpageConfig) !void {
-    log.info("Generating Manpages for '{s}'...", .{ cmd.name });
-    const mp_name = mp_config.name orelse cmd.name;
+    try createManpageCtx(CommandT, cmd, mp_config, .{
+        .name = mp_config.name orelse cmd.name,
+        .cur_depth = 0,
+    });
+}
+/// Manpage Context for recursive calls of `createManpageCtx()`.
+const ManpageContext = struct {
+    /// Name of the Manpage. 
+    name: []const u8,
+    /// Current recursion depth.
+    cur_depth: u8 = 0,
+};
+/// Create a manpage with Context (`mp_ctx`).
+fn createManpageCtx(comptime CommandT: type, comptime cmd: CommandT, comptime mp_config: ManpageConfig, comptime mp_ctx: ManpageContext) !void {
+    //log.info("Generating Manpages for '{s}'...", .{ cmd.name });
+    const mp_name = mp_ctx.name;
     const mp_description = mp_config.description orelse cmd.description;
     const title = fmt.comptimePrint(
         \\.TH {s} {c} {s}{s}{s}
@@ -196,5 +221,15 @@ pub fn createManpage(comptime CommandT: type, comptime cmd: CommandT, comptime m
             copyright,
         }
     );
-    log.info("Generated Manpages for '{s}' into '{s}/'.", .{ cmd.name, mp_config.local_filepath });
+    log.info("Generated Manpages for '{s}' into '{s}'.", .{ cmd.name, filepath });
+
+    // Recursive sub-Command generation
+    if (!mp_config.recursive_gen or (mp_ctx.cur_depth + 1 >= mp_config.recursive_max_depth)) return;
+    inline for (cmd.sub_cmds orelse return) |sub_cmd| {
+        comptime if (utils.indexOfEql([]const u8, mp_config.recursive_blocklist, sub_cmd.name) != null) continue;
+        comptime var new_ctx = mp_ctx;
+        new_ctx.cur_depth += 1;
+        new_ctx.name = new_ctx.name ++ "-" ++ sub_cmd.name;
+        try createManpageCtx(CommandT, sub_cmd, mp_config, new_ctx);
+    }
 }

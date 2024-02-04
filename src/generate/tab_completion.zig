@@ -42,7 +42,7 @@ pub const TabCompletionConfig = struct{
 };
 /// Create a Tab Completion script for the provided CommandT (`cmd`) configured by the given TabCompletionConfig (`tc_config`).
 pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comptime tc_config: TabCompletionConfig, comptime shell_kind: TabCompletionConfig.ShellKind) !void {
-    log.info("Generating '{s}' Tab Completion for '{s}'...", .{ @tagName(shell_kind), cmd.name });
+    //log.info("Generating '{s}' Tab Completion for '{s}'...", .{ @tagName(shell_kind), cmd.name });
     const tc_name = tc_config.name orelse cmd.name;
     const script_header = tc_config.script_header orelse switch (shell_kind) {
         .bash => "#! /usr/bin/env bash",
@@ -89,7 +89,7 @@ pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comp
         .zsh => {},
         .ps1 => {},
     }
-    log.info("Generated '{s}' Tab Completion for '{s}' into '{s}/'", .{ @tagName(shell_kind), cmd.name, tc_config.local_filepath });
+    log.info("Generated '{s}' Tab Completion for '{s}' into '{s}'.", .{ @tagName(shell_kind), cmd.name, filepath });
 }
 
 /// Context used to track info through recursive calls of `cmdTabCompletion...()` functions.
