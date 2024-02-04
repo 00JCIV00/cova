@@ -10,7 +10,7 @@ const mem = std.mem;
 const Build = std.Build;
 // The Cova library is needed for the `generate` module.
 const cova = @import("cova");
-const generate = cova.generate; 
+const generate = cova.generate;
 
 /// This is a reference module for the program being built. Typically this is the main `.zig` file
 /// in a project that has both the `main()` function and `setup_cmd` Command. 
@@ -18,27 +18,21 @@ const program = @import("program");
 /// This is a reference to the Build Options passed in from `build.zig`.
 const md_config = @import("md_config_opts");
 /// Manpages Config
-const manpages_config: ?generate.ManpageConfig = mpConfig: {
-    const mp_conf_opts = @import("manpages_config");
-    if (!mp_conf_opts.provided) break :mpConfig null;
-    var mp_conf = generate.ManpageConfig{};
-    for (@typeInfo(generate.ManpageConfig).Struct.fields) |field| {
-        if (std.mem.eql(u8, field.name, "provided")) continue;
-        @field(mp_conf, field.name) = @field(mp_conf_opts, field.name);
-    }
-    break :mpConfig mp_conf;
-};
+const manpages_config = optsToConf(generate.ManpageConfig, @import("manpages_config"));
 /// Tab Completion Config
-const tab_complete_config: ?generate.TabCompletionConfig = tcConfig: {
-    const tc_conf_opts = @import("tab_complete_config");
-    if (!tc_conf_opts.provided) break :tcConfig null;
-    var tc_conf = generate.TabCompletionConfig{};
-    for (@typeInfo(generate.TabCompletionConfig).Struct.fields) |field| {
+const tab_complete_config = optsToConf(generate.TabCompletionConfig, @import("tab_complete_config"));
+
+/// Translate Build Options to Meta Doc Generation Configs.
+///TODO Refactor this once Build Options support Types.
+fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
+    if (!conf_opts.provided) return null;
+    var conf = ConfigT{};
+    for (@typeInfo(ConfigT).Struct.fields) |field| {
         if (std.mem.eql(u8, field.name, "provided")) continue;
-        @field(tc_conf, field.name) = @field(tc_conf_opts, field.name);
+        @field(conf, field.name) = @field(conf_opts, field.name);
     }
-    break :tcConfig tc_conf;
-};
+    return conf;
+}
 
 pub fn main() !void {
     var gpa = heap.GeneralPurposeAllocator(.{}){};
@@ -57,14 +51,18 @@ pub fn main() !void {
         inline for (mdk_info.Enum.fields[1..]) |kind| kinds_list.append(@enumFromInt(kind.value)) catch @panic("OOM");
         break :docKinds kinds_list.toOwnedSlice() catch @panic("OOM");
     };
+    
+    const cmd_type_name = @field(program, md_config.cmd_type_name);
+    const setup_cmd_name = @field(program, md_config.setup_cmd_name);
+
     log.info("\nStarting Meta Doc Generation...", .{});
     for (doc_kinds[0..]) |kind| {
         switch (kind) {
             .manpages => {
                 if (manpages_config) |mp_config| {
                     try generate.createManpage(
-                        @field(program, md_config.cmd_type_name),
-                        @field(program, md_config.setup_cmd_name),
+                        cmd_type_name,
+                        setup_cmd_name,
                         mp_config,
                     );
                 }
@@ -75,12 +73,12 @@ pub fn main() !void {
             },
             .bash => {
                 if (tab_complete_config) |tc_config| {
-                try generate.createTabCompletion(
-                    @field(program, md_config.cmd_type_name),
-                    @field(program, md_config.setup_cmd_name),
-                    tc_config,
-                    .bash,
-                );
+                    try generate.createTabCompletion(
+                        cmd_type_name,
+                        setup_cmd_name,
+                        tc_config,
+                        .bash,
+                    );
                 }
                 else {
                     log.warn("Missing Tab Completion Configuration! Skipping.", .{});
