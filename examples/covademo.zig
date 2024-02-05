@@ -18,6 +18,7 @@ const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
 const ex_structs = @import("example_structs.zig");
+const conf_no_fmt = Command.Config.noFormat();
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,

@@ -16,7 +16,6 @@ pub fn build(b: *std.Build) void {
     //    .optimize = optimize,
     //});
     //b.installArtifact(lib);
-    
 
     // Tests 
     const cova_tests = b.addTest(.{
@@ -64,6 +63,30 @@ pub fn build(b: *std.Build) void {
     const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
     const build_cova_demo_step = b.step("cova-demo", "Build the 'covademo' example (default: Debug)");
     build_cova_demo_step.dependOn(&build_cova_demo.step);
+    // - Cova Demo Meta Docs
+    const cova_demo_gen = createDocGenStep(
+        b,
+        cova_gen_exe,
+        cova_mod,
+        &cova_demo.root_module,
+        .{
+            .kinds = &.{ .manpages, .bash },
+            .manpages_config = .{
+                .local_filepath = "meta/manpages",
+                .version = "0.10.0",
+                .ver_date = "05 FEB 2024",
+                .man_name = "User's Manual",
+                .author = "00JCIV00",
+                .copyright = "Copyright info here",
+            },
+            .tab_complete_config = .{
+                .local_filepath = "meta",
+                .include_opts = true,
+            },
+        },
+    );
+    const cova_demo_gen_step = b.step("cova-demo-gen", "Generate Meta Docs for the 'covademo'");
+    cova_demo_gen_step.dependOn(&cova_demo_gen.step);
 
     // - Basic App Exe
     const basic_app = b.addExecutable(.{
@@ -76,6 +99,30 @@ pub fn build(b: *std.Build) void {
     const build_basic_app = b.addInstallArtifact(basic_app, .{});
     const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
     build_basic_app_step.dependOn(&build_basic_app.step);
+    // - Basic App Meta Docs
+    const basic_app_gen = createDocGenStep(
+        b,
+        cova_gen_exe,
+        cova_mod,
+        &basic_app.root_module,
+        .{
+            .kinds = &.{ .manpages, .bash },
+            .manpages_config = .{
+                .local_filepath = "meta/manpages",
+                .version = "0.10.0",
+                .ver_date = "05 FEB 2024",
+                .man_name = "User's Manual",
+                .author = "00JCIV00",
+                .copyright = "Copyright info here",
+            },
+            .tab_complete_config = .{
+                .local_filepath = "meta",
+                .include_opts = true,
+            },
+        },
+    );
+    const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
+    basic_app_gen_step.dependOn(&basic_app_gen.step);
 }
 
 
@@ -89,8 +136,26 @@ pub fn addCovaDocGenStep(
     /// The Config for Meta Doc Generation.
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
-    const cova_gen_exe = cova_dep.artifact("cova_generator");
-    cova_gen_exe.root_module.addImport("cova", cova_dep.module("cova"));
+    return createDocGenStep(
+        b,
+        cova_dep.artifact("cova_generator"),
+        cova_dep.module("cova"),
+        program_mod,
+        doc_gen_config,
+    );
+}
+
+/// Create the Meta Doc Generation Step.
+fn createDocGenStep(
+    b: *std.Build,
+    cova_gen_exe: *std.Build.Step.Compile,
+    cova_mod: *std.Build.Module,
+    program_mod: *std.Build.Module,
+    doc_gen_config: generate.MetaDocConfig,
+) *std.Build.Step.Run {
+    //const cova_gen_exe = cova_dep.artifact("cova_generator");
+    //cova_gen_exe.root_module.addImport("cova", cova_dep.module("cova"));
+    cova_gen_exe.root_module.addImport("cova", cova_mod);
     cova_gen_exe.root_module.addImport("program", program_mod);
 
     const md_conf_opts = b.addOptions();
