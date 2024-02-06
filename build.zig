@@ -106,7 +106,7 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &basic_app.root_module,
         .{
-            .kinds = &.{ .manpages, .bash },
+            .kinds = &.{ .ps1 },
             .manpages_config = .{
                 .local_filepath = "meta/manpages",
                 .version = "0.10.0",

@@ -46,7 +46,7 @@ pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comp
     const tc_name = tc_config.name orelse cmd.name;
     const script_header = tc_config.script_header orelse switch (shell_kind) {
         .bash => "#! /usr/bin/env bash",
-        .zsh => "",
+        .zsh => "#! /usr/bin/env zsh",
         .ps1 => "",
     };
 
@@ -87,7 +87,7 @@ pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comp
     switch (shell_kind) {
         .bash => try cmdTabCompletionBash(CommandT, cmd, tc_writer, tc_ctx),
         .zsh => {},
-        .ps1 => {},
+        .ps1 => try cmdTabCompletionPowerShell(CommandT, cmd, tc_writer, tc_ctx),
     }
     log.info("Generated '{s}' Tab Completion for '{s}' into '{s}'.", .{ @tagName(shell_kind), cmd.name, filepath });
 }
@@ -107,7 +107,8 @@ const TabCompletionContext = struct{
     /// Include Usage/Help for Tab Completion.
     include_usage_help: bool = true,
 };
-/// Writes a Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
+
+/// Writes a Bash Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
 /// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
 fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
     // Get Sub Commands and Options
@@ -196,5 +197,87 @@ fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writ
             tc_ctx.name,
             tc_ctx.name,
         });
+    }
+}
+
+/// Writes a PowerShell Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
+/// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
+fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
+    // Get Sub Commands and Options
+    const long_pf = CommandT.OptionT.long_prefix orelse "";
+    const suggestions: []const u8 = comptime genSuggestions: {
+        var args: []const u8 = "@(";
+        if (tc_ctx.include_cmds) {
+            if (cmd.sub_cmds) |sub_cmds| {
+                for (sub_cmds) |sub_cmd| args = args ++ "'" ++ sub_cmd.name ++ "', ";
+            }
+            if (tc_ctx.include_usage_help) args = args ++ "'help', 'usage', ";
+        }
+        if (tc_ctx.include_opts) {
+            if (cmd.opts) |opts| {
+                for (opts) |opt| {
+                    if (opt.long_name) |long_name| args = args ++ "'" ++ long_pf ++ long_name ++ "', ";
+                }
+            }
+            if (tc_ctx.include_usage_help) args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
+        }
+        args = args ++ ")";
+        break :genSuggestions args;
+    };
+    if (suggestions.len == 0) return;
+
+    // Tab Completion Script Snippet Write
+    // TODO Handle Commands with no Arguments
+    try tc_writer.print(
+        \\function {s}() {{
+        \\    param($wordToComplete, $commandAst)
+        \\    $suggestions = {s}
+        \\    return $suggestions | Where-Object {{ $_ -like "$wordToComplete*" }}
+        \\}}
+        \\
+        \\
+        , .{
+            if (tc_ctx.idx == 1) tc_ctx.name
+            else tc_ctx.parent_name ++ "-" ++ tc_ctx.name,
+            suggestions,
+        }
+    );
+
+    // Iterate through sub-Commands
+    if (cmd.sub_cmds) |sub_cmds| {
+        comptime var next_ctx = tc_ctx;
+        next_ctx.parent_name = (if (tc_ctx.parent_name.len == 0) "" else tc_ctx.parent_name ++ "_") ++ tc_ctx.name;
+        next_ctx.idx += 1;
+        inline for (sub_cmds) |sub_cmd| {
+            next_ctx.name = sub_cmd.name;
+            try cmdTabCompletionPowerShell(CommandT, sub_cmd, tc_writer, next_ctx);
+        }
+    }
+
+    if (tc_ctx.idx == 1) {
+        try tc_writer.print(
+            \\Register-ArgumentCompleter -CommandName '{s}' -ScriptBlock {{
+            \\    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+            \\
+            \\    # Extract the command path from commandAst
+            \\    $commandPath = $commandAst.CommandElements | Where-Object {{
+            \\        $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -or
+            \\        $_ -is [System.Management.Automation.Language.CommandParameterAst]
+            \\    }} | ForEach-Object Value
+            \\
+            \\    $functionName = $commandPath -join '-'
+            \\
+            \\    # Check if the function exists and invoke it
+            \\    if (Get-Command -Name $functionName -ErrorAction SilentlyContinue) {{
+            \\        & $functionName $wordToComplete $commandAst
+            \\    }} else {{
+            \\        # Fallback logic to show files in the current directory
+            \\        Get-ChildItem -Path '.' -File | Where-Object Name -like "*$wordToComplete*" | ForEach-Object {{
+            \\            [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', $_.Name)
+            \\        }}
+            \\    }}
+            \\}}
+            , .{ tc_ctx.name }
+        );
     }
 }
