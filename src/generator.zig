@@ -7,6 +7,7 @@ const heap = std.heap;
 const json = std.json;
 const log = std.log;
 const mem = std.mem;
+const meta = std.meta;
 const Build = std.Build;
 // The Cova library is needed for the `generate` module.
 const cova = @import("cova");
@@ -35,28 +36,21 @@ fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
 }
 
 pub fn main() !void {
-    var gpa = heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    var arena = heap.ArenaAllocator.init(gpa.allocator());
-    defer arena.deinit();
-    const alloc = arena.allocator();
-
-    const doc_kinds: []generate.MetaDocConfig.MetaDocKind = docKinds: {
+    const doc_kinds: []generate.MetaDocConfig.MetaDocKind = comptime docKinds: {
         var kinds: [md_config.kinds.len]generate.MetaDocConfig.MetaDocKind = undefined;
         for (md_config.kinds, kinds[0..]) |md_kind, *kind| kind.* = @enumFromInt(md_kind);
-        if (kinds[0] != .all) break :docKinds alloc.dupe(generate.MetaDocConfig.MetaDocKind, kinds[0..]) catch @panic("OOM");
+        if (kinds[0] != .all) break :docKinds kinds[0..];
         const mdk_info = @typeInfo(generate.MetaDocConfig.MetaDocKind);
-        var kinds_list = std.ArrayList(generate.MetaDocConfig.MetaDocKind).init(alloc);
-        errdefer kinds_list.deinit();
-        inline for (mdk_info.Enum.fields[1..]) |kind| kinds_list.append(@enumFromInt(kind.value)) catch @panic("OOM");
-        break :docKinds kinds_list.toOwnedSlice() catch @panic("OOM");
+        var kinds_list: [mdk_info.Enum.fields[1..].len]generate.MetaDocConfig.MetaDocKind = undefined;
+        for (mdk_info.Enum.fields[1..], kinds_list[0..]) |field, *kind| kind.* = @enumFromInt(field.value);
+        break :docKinds kinds_list[0..];
     };
     
     const cmd_type_name = @field(program, md_config.cmd_type_name);
     const setup_cmd_name = @field(program, md_config.setup_cmd_name);
 
     log.info("\nStarting Meta Doc Generation...", .{});
-    for (doc_kinds[0..]) |kind| {
+    inline for (doc_kinds[0..]) |kind| {
         switch (kind) {
             .manpages => {
                 if (manpages_config) |mp_config| {
@@ -71,13 +65,13 @@ pub fn main() !void {
                     continue;
                 }
             },
-            .bash => {
+            .bash, .zsh, .ps1 => |shell| {
                 if (tab_complete_config) |tc_config| {
                     try generate.createTabCompletion(
                         cmd_type_name,
                         setup_cmd_name,
                         tc_config,
-                        .bash,
+                        meta.stringToEnum(generate.TabCompletionConfig.ShellKind, @tagName(shell)).?,
                     );
                 }
                 else {
@@ -85,8 +79,6 @@ pub fn main() !void {
                     continue;
                 }
             },
-            .zsh => {},
-            .ps1 => {},
             .json => {},
             .kdl => {},
             .all => {},
