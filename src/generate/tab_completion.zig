@@ -47,7 +47,7 @@ pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comp
     const script_header = tc_config.script_header orelse switch (shell_kind) {
         .bash => "#! /usr/bin/env bash",
         .zsh => "#! /usr/bin/env zsh",
-        .ps1 => "",
+        .ps1 => "# Requires PowerShell v5.1+",
     };
 
     const filepath = genFilepath: {
@@ -206,22 +206,23 @@ fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, t
     // Get Sub Commands and Options
     const long_pf = CommandT.OptionT.long_prefix orelse "";
     const suggestions: []const u8 = comptime genSuggestions: {
-        var args: []const u8 = "@(";
+        var args: []const u8 = "@(\n";
         if (tc_ctx.include_cmds) {
             if (cmd.sub_cmds) |sub_cmds| {
-                for (sub_cmds) |sub_cmd| args = args ++ "'" ++ sub_cmd.name ++ "', ";
+                for (sub_cmds) |sub_cmd| args = args ++ "\t\t'" ++ sub_cmd.name ++ "',\n";
             }
-            if (tc_ctx.include_usage_help) args = args ++ "'help', 'usage', ";
+            if (tc_ctx.include_usage_help) args = args ++ "\t\t'help',\n\t\t'usage',\n";
         }
         if (tc_ctx.include_opts) {
             if (cmd.opts) |opts| {
                 for (opts) |opt| {
-                    if (opt.long_name) |long_name| args = args ++ "'" ++ long_pf ++ long_name ++ "', ";
+                    if (opt.long_name) |long_name| args = args ++ "\t\t'" ++ long_pf ++ long_name ++ "',\n";
                 }
             }
-            if (tc_ctx.include_usage_help) args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
+            if (tc_ctx.include_usage_help) args = args ++ "\t\t'" ++ long_pf ++ "help',\n\t\t'" ++ long_pf ++ "usage',\n";
         }
-        args = args ++ ")";
+        if (args[args.len - 2] == ',') args = args[0..args.len - 2] ++ "\n";
+        args = args ++ "\t)";
         break :genSuggestions args;
     };
     if (suggestions.len == 0) return;
@@ -229,7 +230,7 @@ fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, t
     // Tab Completion Script Snippet Write
     // TODO Handle Commands with no Arguments
     try tc_writer.print(
-        \\function {s}() {{
+        \\function _{s} {{
         \\    param($wordToComplete, $commandAst)
         \\    $suggestions = {s}
         \\    return $suggestions | Where-Object {{ $_ -like "$wordToComplete*" }}
@@ -246,7 +247,7 @@ fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, t
     // Iterate through sub-Commands
     if (cmd.sub_cmds) |sub_cmds| {
         comptime var next_ctx = tc_ctx;
-        next_ctx.parent_name = (if (tc_ctx.parent_name.len == 0) "" else tc_ctx.parent_name ++ "_") ++ tc_ctx.name;
+        next_ctx.parent_name = (if (tc_ctx.parent_name.len == 0) "" else tc_ctx.parent_name ++ "-") ++ tc_ctx.name;
         next_ctx.idx += 1;
         inline for (sub_cmds) |sub_cmd| {
             next_ctx.name = sub_cmd.name;
@@ -257,15 +258,12 @@ fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, t
     if (tc_ctx.idx == 1) {
         try tc_writer.print(
             \\Register-ArgumentCompleter -CommandName '{s}' -ScriptBlock {{
-            \\    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+            \\    param($wordToComplete, $commandAst, $cursorPos)
             \\
-            \\    # Extract the command path from commandAst
-            \\    $commandPath = $commandAst.CommandElements | Where-Object {{
-            \\        $_ -is [System.Management.Automation.Language.StringConstantExpressionAst] -or
-            \\        $_ -is [System.Management.Automation.Language.CommandParameterAst]
-            \\    }} | ForEach-Object Value
-            \\
-            \\    $functionName = $commandPath -join '-'
+            \\    $functionName = "_" + $($commandAst.Extent.Text.replace(' ', '-').replace(".exe", ""))
+            \\    if ($wordToComplete) {{
+            \\        $functionName = $functionName.replace("-$wordToComplete", "")
+            \\    }}
             \\
             \\    # Check if the function exists and invoke it
             \\    if (Get-Command -Name $functionName -ErrorAction SilentlyContinue) {{
@@ -277,7 +275,8 @@ fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, t
             \\        }}
             \\    }}
             \\}}
-            , .{ tc_ctx.name }
+            // TODO Make this dependent on the name given by the build
+            , .{ tc_ctx.name ++ ".exe" }
         );
     }
 }
