@@ -387,6 +387,7 @@ pub fn main() !void {
         var found_list = false;
         while (try dir_walker.next()) |entry| {
             const filename = entry.basename;
+            if (filename.len <= 4) continue;
             if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) {
                 found_list = true;
                 try stdout.print("- {s}\n", .{ filename });
