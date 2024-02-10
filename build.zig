@@ -106,7 +106,7 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &basic_app.root_module,
         .{
-            .kinds = &.{ .ps1 },
+            .kinds = &.{ .json },
             .manpages_config = .{
                 .local_filepath = "meta/manpages",
                 .version = "0.10.0",
@@ -118,6 +118,9 @@ pub fn build(b: *std.Build) void {
             .tab_complete_config = .{
                 .local_filepath = "meta",
                 .include_opts = true,
+            },
+            .arg_template_config = .{
+                .local_filepath = "meta/arg_templates",
             },
         },
     );
@@ -162,6 +165,7 @@ fn createDocGenStep(
     var sub_conf_map = std.StringHashMap(?*std.Build.Step.Options).init(b.allocator);
     sub_conf_map.put("manpages_config", null) catch @panic("OOM");
     sub_conf_map.put("tab_complete_config", null) catch @panic("OOM");
+    sub_conf_map.put("arg_template_config", null) catch @panic("OOM");
 
     inline for (@typeInfo(generate.MetaDocConfig).Struct.fields) |field| {
         switch(@typeInfo(field.type)) {

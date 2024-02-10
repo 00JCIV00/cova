@@ -41,7 +41,12 @@ pub const TabCompletionConfig = struct{
     };
 };
 /// Create a Tab Completion script for the provided CommandT (`cmd`) configured by the given TabCompletionConfig (`tc_config`).
-pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comptime tc_config: TabCompletionConfig, comptime shell_kind: TabCompletionConfig.ShellKind) !void {
+pub fn createTabCompletion(
+    comptime CommandT: type,
+    comptime cmd: CommandT,
+    comptime tc_config: TabCompletionConfig,
+    comptime shell_kind: TabCompletionConfig.ShellKind,
+) !void {
     //log.info("Generating '{s}' Tab Completion for '{s}'...", .{ @tagName(shell_kind), cmd.name });
     const tc_name = tc_config.name orelse cmd.name;
     const script_header = tc_config.script_header orelse switch (shell_kind) {
@@ -86,10 +91,10 @@ pub fn createTabCompletion(comptime CommandT: type, comptime cmd: CommandT, comp
        
     switch (shell_kind) {
         .bash => try cmdTabCompletionBash(CommandT, cmd, tc_writer, tc_ctx),
-        .zsh => {},
+        .zsh => try cmdTabCompletionZsh(CommandT, cmd, tc_writer, tc_ctx),
         .ps1 => try cmdTabCompletionPowerShell(CommandT, cmd, tc_writer, tc_ctx),
     }
-    log.info("Generated '{s}' Tab Completion for '{s}' into '{s}'.", .{ @tagName(shell_kind), cmd.name, filepath });
+    log.info("Generated '{s}' Tab Completion script for '{s}' into '{s}'.", .{ @tagName(shell_kind), cmd.name, filepath });
 }
 
 /// Context used to track info through recursive calls of `cmdTabCompletion...()` functions.
@@ -197,6 +202,90 @@ fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writ
             tc_ctx.name,
             tc_ctx.name,
         });
+    }
+}
+
+/// Writes a Zsh Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
+/// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
+fn cmdTabCompletionZsh(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
+    // Get Sub Commands and Options
+    const long_pf = CommandT.OptionT.long_prefix orelse "";
+    const args_list: []const u8 = comptime genArgList: {
+        var args: []const u8 = "";
+        if (tc_ctx.include_cmds) {
+            if (cmd.sub_cmds) |sub_cmds| {
+                for (sub_cmds) |sub_cmd| args = args ++ sub_cmd.name ++ " ";
+            }
+            if (tc_ctx.include_usage_help) args = args ++ "help usage ";
+        }
+        if (tc_ctx.include_opts) {
+            if (cmd.opts) |opts| {
+                for (opts) |opt| {
+                    if (opt.long_name) |long_name| args = args ++ long_pf ++ long_name ++ " ";
+                }
+            }
+            if (tc_ctx.include_usage_help) args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
+        }
+        break :genArgList args;
+    };
+    if (args_list.len == 0) return;
+
+    // Set up Arguments Array
+    if (tc_ctx.idx == 1) try tc_writer.print(
+        \\# Associative array to hold Commands, Options, and their descriptions with arbitrary depth
+        \\typeset -A cmd_args
+        \\cmd_args=(
+        \\
+        , .{}
+    );
+
+    try tc_writer.print("    \"{s}\" \"{s}\"\n",
+        .{
+            if (tc_ctx.idx == 1) cmd.name else tc_ctx.parent_name ++ "_" ++ cmd.name,
+            args_list,
+        }
+    );
+
+    // Iterate through sub-Commands
+    if (tc_ctx.include_cmds) addSubCmds: {
+        const sub_cmds = cmd.sub_cmds orelse break :addSubCmds;
+        comptime var next_ctx = tc_ctx;
+        next_ctx.parent_name = (if (tc_ctx.parent_name.len == 0) "" else tc_ctx.parent_name ++ "_") ++ tc_ctx.name;
+        next_ctx.idx += 1;
+        inline for (sub_cmds) |sub_cmd| {
+            next_ctx.name = sub_cmd.name;
+            try cmdTabCompletionZsh(CommandT, sub_cmd, tc_writer, next_ctx);
+        }
+    }
+
+    // Add Recursive Completion Function
+    if (tc_ctx.idx == 1) {
+        try tc_writer.print(
+            \\)
+            \\# Generic function for command completions
+            \\_{s}_completions() {{
+            \\    local -a completions
+
+            \\    # Determine the current command context
+            \\    local context="basic-app"
+            \\    for word in "${{words[@]:1:$CURRENT-1}}"; do
+            \\        if [[ -n $cmd_args[${{context}}_${{word}}] ]]; then
+            \\            context="${{context}}_${{word}}"
+            \\        fi
+            \\    done
+
+            \\    # Generate completions for the current context
+            \\    completions=(${{(s: :)cmd_args[$context]}})
+
+            \\    if [[ -n $completions ]]; then
+            \\        _describe -t commands "{s}" completions && return 0
+            \\    fi
+            \\}}
+
+            \\# Register the completion function for {s}
+            \\compdef _{s}_completions {s}
+            , .{ tc_ctx.name } ** 5
+        );
     }
 }
 
