@@ -22,6 +22,8 @@ const md_config = @import("md_config_opts");
 const manpages_config = optsToConf(generate.ManpageConfig, @import("manpages_config"));
 /// Tab Completion Config
 const tab_complete_config = optsToConf(generate.TabCompletionConfig, @import("tab_complete_config"));
+/// Argument Template Config
+const arg_template_config = optsToConf(generate.ArgTemplateConfig, @import("arg_template_config"));
 
 /// Translate Build Options to Meta Doc Generation Configs.
 ///TODO Refactor this once Build Options support Types.
@@ -79,8 +81,20 @@ pub fn main() !void {
                     continue;
                 }
             },
-            .json => {},
-            .kdl => {},
+            .json, .kdl => |template| {
+                if (arg_template_config) |at_config| {
+                    try generate.createArgTemplate(
+                        cmd_type_name,
+                        setup_cmd_name,
+                        at_config,
+                        meta.stringToEnum(generate.ArgTemplateConfig.TemplateKind, @tagName(template)).?,
+                    );
+                }
+                else {
+                    log.warn("Missing Argument Template Configuration! Skipping.", .{});
+                    continue;
+                }
+            },
             .all => {},
         }
     }

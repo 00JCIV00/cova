@@ -20,6 +20,7 @@ const ascii = std.ascii;
 const builtin = std.builtin;
 const fmt = std.fmt;
 const heap = std.heap;
+const json = std.json;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
@@ -1755,6 +1756,13 @@ pub fn Custom(comptime config: Config) type {
         pub fn deinit(self: *const @This()) void {
             if (self._arena) |arena| arena.deinit();
             if (self._root_alloc) |root_alloc| root_alloc.destroy(self);
+        }
+
+        /// Custom JSON encoding for this IPv4 Address.
+        pub fn jsonStringify(self: *const @This(), writer: anytype) !void {
+            var out_buf: [20]u8 = undefined;
+            var fba = heap.FixedBufferAllocator.init(out_buf[0..]);
+            try writer.print("\"{s}\"", .{ try self.toStr(fba.allocator()) });
         }
     };
 }

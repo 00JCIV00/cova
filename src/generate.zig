@@ -15,6 +15,9 @@ pub const createManpage = manpages.createManpage;
 pub const tab_completion = @import("generate/tab_completion.zig");
 pub const TabCompletionConfig = tab_completion.TabCompletionConfig;
 pub const createTabCompletion = tab_completion.createTabCompletion;
+pub const arg_template = @import("generate/arg_template.zig");
+pub const ArgTemplateConfig = arg_template.ArgTemplateConfig;
+pub const createArgTemplate = arg_template.createArgTemplate;
 
 /// A Config for setting up all Meta Docs
 pub const MetaDocConfig = struct{
@@ -24,6 +27,8 @@ pub const MetaDocConfig = struct{
     manpages_config: ?ManpageConfig = null,
     /// Tab Completion Config
     tab_complete_config: ?TabCompletionConfig = null,
+    /// Argument Template Config
+    arg_template_config: ?ArgTemplateConfig = null,
     /// Command Type Name.
     /// This is the name of the Command Type declaration in the main source file.
     cmd_type_name: []const u8 = "CommandT",
