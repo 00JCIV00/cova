@@ -13,7 +13,7 @@ const utils = @import("../utils.zig");
 /// A Config for creating tab completion scripts with `createTabCompletion()`.
 pub const TabCompletionConfig = struct{
     /// Script Local Filepath
-    /// This is the local path the file will be placed in. The file name will be "`name`-completion.`shell_type`".
+    /// This is the local path the file will be placed in. The file name will be "`name`-completion.`shell_kind`".
     local_filepath: []const u8 = "meta",
 
     /// Script Header
@@ -267,7 +267,7 @@ fn cmdTabCompletionZsh(comptime CommandT: type, comptime cmd: CommandT, tc_write
             \\    local -a completions
 
             \\    # Determine the current command context
-            \\    local context="basic-app"
+            \\    local context="{s}"
             \\    for word in "${{words[@]:1:$CURRENT-1}}"; do
             \\        if [[ -n $cmd_args[${{context}}_${{word}}] ]]; then
             \\            context="${{context}}_${{word}}"
@@ -284,7 +284,7 @@ fn cmdTabCompletionZsh(comptime CommandT: type, comptime cmd: CommandT, tc_write
 
             \\# Register the completion function for {s}
             \\compdef _{s}_completions {s}
-            , .{ tc_ctx.name } ** 5
+            , .{ tc_ctx.name } ** 6
         );
     }
 }

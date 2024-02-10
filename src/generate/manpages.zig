@@ -34,7 +34,7 @@ pub const ManpageConfig = struct{
     /// This is shown in the Bottom Left.
     version: ?[]const u8 = null,
     /// Date of the program version.
-    /// This is shown in the Bottm Center.
+    /// This is shown in the Bottom Center.
     ver_date: ?[]const u8 = null,
     /// Name of the manpage group.
     /// This is shown in the Upper Center.
@@ -47,7 +47,7 @@ pub const ManpageConfig = struct{
     description: ?[]const u8 = null,
     /// Author of the program.
     author: ?[]const u8 = null,
-    /// Copyright message.
+    /// Copyright info.
     copyright: ?[]const u8 = null,
     /// A quick example of how the program is commonly used.
     synopsis: ?[]const u8 = null,

@@ -12,6 +12,7 @@ const Build = std.Build;
 // The Cova library is needed for the `generate` module.
 const cova = @import("cova");
 const generate = cova.generate;
+const utils = cova.utils;
 
 /// This is a reference module for the program being built. Typically this is the main `.zig` file
 /// in a project that has both the `main()` function and `setup_cmd` Command. 
@@ -25,6 +26,14 @@ const tab_complete_config = optsToConf(generate.TabCompletionConfig, @import("ta
 /// Argument Template Config
 const arg_template_config = optsToConf(generate.ArgTemplateConfig, @import("arg_template_config"));
 
+const meta_info: []const []const u8 = &.{
+    "version",
+    "ver_data",
+    "name",
+    "description",
+    "author",
+    "copyright",
+};
 /// Translate Build Options to Meta Doc Generation Configs.
 ///TODO Refactor this once Build Options support Types.
 fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
@@ -33,6 +42,14 @@ fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
     for (@typeInfo(ConfigT).Struct.fields) |field| {
         if (std.mem.eql(u8, field.name, "provided")) continue;
         @field(conf, field.name) = @field(conf_opts, field.name);
+        if (
+            (
+                @typeInfo(@TypeOf(@field(conf, field.name))) == .Optional and 
+                @field(conf, field.name) != null
+            ) or
+            utils.indexOfEql([]const u8, meta_info, field.name) == null
+        ) continue;
+        @field(conf, field.name) = @field(md_config, field.name);
     }
     return conf;
 }

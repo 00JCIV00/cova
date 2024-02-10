@@ -106,14 +106,14 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &basic_app.root_module,
         .{
-            .kinds = &.{ .json },
+            .kinds = &.{ .manpages, .json },
+            .version = "0.10.0",
+            .ver_date = "10 FEB 2024",
+            .author = "00JCIV00",
+            .copyright = "Copyright info here",
             .manpages_config = .{
                 .local_filepath = "meta/manpages",
-                .version = "0.10.0",
-                .ver_date = "05 FEB 2024",
                 .man_name = "User's Manual",
-                .author = "00JCIV00",
-                .copyright = "Copyright info here",
             },
             .tab_complete_config = .{
                 .local_filepath = "meta",
@@ -121,6 +121,7 @@ pub fn build(b: *std.Build) void {
             },
             .arg_template_config = .{
                 .local_filepath = "meta/arg_templates",
+                .include_opts = true
             },
         },
     );

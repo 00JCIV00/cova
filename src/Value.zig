@@ -692,6 +692,12 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).max_args,
             };
         }
+        /// Get the inner Typed Value's Set Behavior.
+        pub fn setBehavior(self: *const @This()) SetBehavior {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).set_behavior,
+            };
+        }
         /// Check if the inner Typed Value's has a custom `parse_fn`.
         pub fn hasCustomParseFn(self: *const @This()) bool {
             return switch (meta.activeTag(self.*.generic)) {

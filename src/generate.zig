@@ -24,17 +24,32 @@ pub const MetaDocConfig = struct{
     /// Specify which kinds of Meta Docs should be generated.
     kinds: []const MetaDocKind = &.{ .manpages, .bash },
     /// Manpages Config
-    manpages_config: ?ManpageConfig = null,
+    manpages_config: ?ManpageConfig = .{},
     /// Tab Completion Config
-    tab_complete_config: ?TabCompletionConfig = null,
+    tab_complete_config: ?TabCompletionConfig = .{},
     /// Argument Template Config
-    arg_template_config: ?ArgTemplateConfig = null,
+    arg_template_config: ?ArgTemplateConfig = .{},
     /// Command Type Name.
     /// This is the name of the Command Type declaration in the main source file.
     cmd_type_name: []const u8 = "CommandT",
     /// Setup Command Name.
     /// This is the name of the comptime Setup Command in the main source file.
     setup_cmd_name: []const u8 = "setup_cmd",
+    
+    /// Name of the program.
+    /// Note, if this is left null, the provided CommandT's name will be used.
+    name: ?[]const u8 = null,
+    /// Description of the program.
+    /// Note, if this is left null, the provided CommandT's description will be used.
+    description: ?[]const u8 = null,
+    /// Version of the program.
+    version: ?[]const u8 = null,
+    /// Date of the program version.
+    ver_date: ?[]const u8 = null,
+    /// Author of the program.
+    author: ?[]const u8 = null,
+    /// Copyright info.
+    copyright: ?[]const u8 = null,
 
     /// Different Kinds of Meta Documents (Manpages, Tab Completions, etc) available.
     pub const MetaDocKind = enum {
