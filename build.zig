@@ -106,7 +106,7 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &basic_app.root_module,
         .{
-            .kinds = &.{ .manpages, .json },
+            .kinds = &.{ .all },
             .version = "0.10.0",
             .ver_date = "10 FEB 2024",
             .author = "00JCIV00",
