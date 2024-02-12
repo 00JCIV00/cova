@@ -75,6 +75,10 @@ pub fn OptionTemplate(OptionT: type) type {
 
         /// Option Name
         name: []const u8,
+        /// Option Long Name
+        long_name: ?[]const u8,
+        /// Option Short Name 
+        short_name: ?u8,
         /// Option Description
         description: []const u8,
         /// Option Aliases
@@ -93,6 +97,8 @@ pub fn OptionTemplate(OptionT: type) type {
         pub fn from(comptime opt: OptionT) @This() {
             return .{
                 .name = opt.name,
+                .long_name = opt.long_name,
+                .short_name = opt.short_name,
                 .description = opt.description,
                 .aliases = opt.alias_long_names,
                 .group = opt.opt_group,
@@ -215,9 +221,15 @@ pub fn createArgTemplate(
     };
     const cmd_template = CommandTemplate(CommandT).from(cmd, at_config);
 
+    const at_ctx = ArgTemplateContext{
+        .include_cmds = at_config.include_cmds,
+        .include_opts = at_config.include_opts,
+        .include_vals = at_config.include_vals,
+    };
+
     switch (at_kind) {
         .json => {
-            const json_opts_config = json.StringifyOptions{ 
+            const json_opts_config = json.StringifyOptions{
                 .whitespace = .indent_4,
                 .emit_null_optional_fields = false,
             };
@@ -231,12 +243,132 @@ pub fn createArgTemplate(
             try json.stringify(
                 cmd_template,
                 json_opts_config,
-                at_writer
+                at_writer,
             );
         },
         .kdl => {
-            try at_writer.print("The KDL format generator is not yet available. When it is, it will be formatted to match the `usage` tool: https://sr.ht/~jdx/usage/", .{});
+            try at_writer.print("# This KDL template is formatted to match the `usage` tool as detailed here: https://sr.ht/~jdx/usage/\n\n", .{});
+            try at_writer.print(
+                \\name "{s}"
+                \\bin "{s}"
+                \\about "{s}"
+                \\
+                , .{
+                    at_name,
+                    at_name,
+                    at_description,
+                }
+            );
+            if (at_config.version) |ver| try at_writer.print("version \"{s}\"\n", .{ ver });
+            if (at_config.author) |author| try at_writer.print("author \"{s}\"\n", .{ author });
+            try at_writer.print("\n", .{});
+            try argTemplateKDL(
+                CommandT,
+                cmd,
+                at_writer,
+                at_ctx,
+            );
         },
     }
-    log.info("Generated '{s}' Argument Template for '{s}' into '{s}'.", .{ @tagName(at_kind), cmd.name, filepath });
+    log.info("Generated '{s}' Argument Template for '{s}' into '{s}'.", .{
+        @tagName(at_kind),
+        cmd.name,
+        filepath,
+    });
+}
+
+pub const ArgTemplateContext = struct{
+    /// Argument Index
+    idx: u8 = 0,
+    /// Add a spacer line
+    add_line: bool = false,
+
+    /// Include Commands for Argument Templates.
+    include_cmds: bool = true,
+    /// Include Options for Argument Templates.
+    include_opts: bool = true,
+    /// Include Values for Argument Templates.
+    include_vals: bool = true,
+};
+
+/// Writes a Argument Template in the KDL for the provided CommandT (`cmd`) to the given Writer (`at_writer`).
+/// This function passes the provided ArgumentTemplateContext (`at_ctx`) to track info through recursive calls.
+fn argTemplateKDL(
+    comptime CommandT: type,
+    comptime cmd: CommandT,
+    at_writer: anytype,
+    comptime at_ctx: ArgTemplateContext,
+) !void {
+    const sub_args: bool = (
+        (at_ctx.include_cmds and cmd.sub_cmds != null) or
+        (at_ctx.include_opts and cmd.opts != null) or
+        (at_ctx.include_vals and cmd.vals != null) or
+        cmd.alias_names != null
+    );
+    // if (sub_args and at_ctx.add_line) try at_writer.print("\n", .{});
+    if (at_ctx.add_line) try at_writer.print("\n", .{});
+    const indent = if (at_ctx.idx > 1) "    " ** (at_ctx.idx - 1) else "";
+    const sub_indent = if (at_ctx.idx > 0) "    " ** (at_ctx.idx) else "";
+    if (at_ctx.idx > 0) {
+        try at_writer.print("{s}cmd \"{s}\" help=\"{s}\"{s}\n", .{
+            indent,
+            cmd.name,
+            cmd.description,
+            if (sub_args) " {" else "",
+        });
+    }
+
+    var add_line = false;
+
+    if (cmd.alias_names) |aliases| addAliases: {
+        if (at_ctx.idx == 0) break :addAliases;
+        inline for (aliases) |alias| try at_writer.print("{s}alias \"{s}\"\n", .{ sub_indent, alias });
+        add_line = true;
+    }
+
+    if (at_ctx.include_opts) addOpts: {
+        const opts = cmd.opts orelse { 
+            add_line = false;
+            break :addOpts;
+        };
+        if (add_line) try at_writer.print("\n", .{});
+        // TODO Better handling of prefixes. Check if the usage tool supports alternate prefixes.
+        inline for (opts) |opt| try at_writer.print("{s}flag \"{s}{s}\" help=\"{s}\"\n", .{
+            sub_indent,
+            if (opt.short_name) |short| fmt.comptimePrint("-{c},", .{ short }) else "",
+            if (opt.long_name) |long| fmt.comptimePrint("--{s}", .{ long }) else "",
+            opt.description,
+        });
+        add_line = true;
+    }
+
+    if (at_ctx.include_vals) addVals: {
+        const vals = cmd.vals orelse {
+            add_line = false;
+            break :addVals;
+        };
+        if (add_line) try at_writer.print("\n", .{});
+        inline for (vals) |val| try at_writer.print("{s}arg \"{s}\" help=\"{s}\"\n", .{
+            sub_indent,
+            val.name(),
+            val.description(),
+        });
+        add_line = true;
+    }
+
+    if (at_ctx.include_cmds) addCmds: {
+        const sub_cmds = cmd.sub_cmds orelse {
+            add_line = false;
+            break :addCmds;
+        };
+        if (add_line) try at_writer.print("\n", .{});
+        inline for (sub_cmds, 0..) |sub_cmd, idx| {
+            comptime var sub_ctx = at_ctx;
+            sub_ctx.idx += 1;
+            sub_ctx.add_line = idx > 0;
+            try argTemplateKDL(CommandT, sub_cmd, at_writer, sub_ctx);
+        }
+    }
+
+    if (at_ctx.idx > 0 and sub_args) try at_writer.print("{s}}}\n", .{ indent });
 }

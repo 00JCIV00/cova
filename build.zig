@@ -70,7 +70,7 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &cova_demo.root_module,
         .{
-            .kinds = &.{ .manpages, .bash },
+            .kinds = &.{ .all },
             .manpages_config = .{
                 .local_filepath = "meta/manpages",
                 .version = "0.10.0",

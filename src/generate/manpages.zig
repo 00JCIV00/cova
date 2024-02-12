@@ -95,7 +95,12 @@ const ManpageContext = struct {
     cur_depth: u8 = 0,
 };
 /// Create a manpage with Context (`mp_ctx`).
-fn createManpageCtx(comptime CommandT: type, comptime cmd: CommandT, comptime mp_config: ManpageConfig, comptime mp_ctx: ManpageContext) !void {
+fn createManpageCtx(
+    comptime CommandT: type,
+    comptime cmd: CommandT,
+    comptime mp_config: ManpageConfig,
+    comptime mp_ctx: ManpageContext
+) !void {
     //log.info("Generating Manpages for '{s}'...", .{ cmd.name });
     const mp_name = mp_ctx.name;
     const mp_description = mp_config.description orelse cmd.description;

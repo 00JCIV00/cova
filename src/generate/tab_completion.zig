@@ -200,7 +200,12 @@ const TabCompletionContext = struct{
 
 /// Writes a Bash Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
 /// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
-fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
+fn cmdTabCompletionBash(
+    comptime CommandT: type,
+    comptime cmd: CommandT,
+    tc_writer: anytype,
+    comptime tc_ctx: TabCompletionContext,
+) !void {
     // Get Sub Commands and Options
     const long_pf = CommandT.OptionT.long_prefix orelse "";
     const args_list: []const u8 = comptime genArgList: {
@@ -292,7 +297,12 @@ fn cmdTabCompletionBash(comptime CommandT: type, comptime cmd: CommandT, tc_writ
 
 /// Writes a Zsh Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
 /// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
-fn cmdTabCompletionZsh(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
+fn cmdTabCompletionZsh(
+    comptime CommandT: type,
+    comptime cmd: CommandT,
+    tc_writer: anytype,
+    comptime tc_ctx: TabCompletionContext,
+) !void {
     // Get Sub Commands and Options
     const long_pf = CommandT.OptionT.long_prefix orelse "";
     const args_list: []const u8 = comptime genArgList: {
@@ -376,7 +386,12 @@ fn cmdTabCompletionZsh(comptime CommandT: type, comptime cmd: CommandT, tc_write
 
 /// Writes a PowerShell Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
 /// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
-fn cmdTabCompletionPowerShell(comptime CommandT: type, comptime cmd: CommandT, tc_writer: anytype, comptime tc_ctx: TabCompletionContext) !void {
+fn cmdTabCompletionPowerShell(
+    comptime CommandT: type,
+    comptime cmd: CommandT,
+    tc_writer: anytype,
+    comptime tc_ctx: TabCompletionContext
+) !void {
     // Get Sub Commands and Options
     const long_pf = CommandT.OptionT.long_prefix orelse "";
     const suggestions: []const u8 = comptime genSuggestions: {

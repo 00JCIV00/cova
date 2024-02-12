@@ -28,7 +28,7 @@ const arg_template_config = optsToConf(generate.ArgTemplateConfig, @import("arg_
 
 const meta_info: []const []const u8 = &.{
     "version",
-    "ver_data",
+    "ver_date",
     "name",
     "description",
     "author",
