@@ -189,6 +189,11 @@ pub fn Custom(comptime config: Config) type {
         /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.
         opt_group: ?[]const u8 = null,
 
+        /// The Argument Indeces of this Option which are determined during parsing.
+        ///
+        /// *This should be Read-Only for library users.*
+        arg_idx: ?[]u8 = null,
+
         /// This Option's Short Name (ex: `-s`).
         short_name: ?u8 = null,
         /// This Option's Long Name (ex: `--intOpt`).
@@ -235,6 +240,24 @@ pub fn Custom(comptime config: Config) type {
         ///// 2. Writer (This is the Writer that will be written to.)
         ///// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
         //usage_fn: ?*anyopaque = null,
+
+        /// Set a new Argument Index for this Option.
+        pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
+            const alloc = self._alloc orelse return error.OptionNotInitialized;
+            if (self.arg_idx == null) {
+                @constCast(self).*.arg_idx = try alloc.alloc(u8, 1);
+                @constCast(self).*.arg_idx.?[0] = arg_idx;
+                return;
+            }
+            switch (self.val.setBehavior()) {
+                .First, .Last => @constCast(self).*.arg_idx.?[0] = arg_idx,
+                .Multi => {
+                    var idx_list = std.ArrayList(u8).fromOwnedSlice(alloc, @constCast(self).arg_idx.?);
+                    try idx_list.append(arg_idx);
+                    @constCast(self).*.arg_idx = try idx_list.toOwnedSlice();
+                },
+            }
+        }
 
         /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {

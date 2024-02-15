@@ -142,7 +142,7 @@ pub const Config = struct {
 
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used for both `init()` and `from()` but can be overwritten for the latter.
-    max_args: u8 = 25, 
+    max_args: u8 = 25,
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
     /// This will not include Usage/Help Commands.
@@ -279,6 +279,11 @@ pub fn Custom(comptime config: Config) type {
         /// These groups are used for organizing Values in Help messages and other Generated docs.
         val_groups: ?[]const []const u8 = null,
 
+        /// The Argument Index of this Command which is determined during parsing.
+        ///
+        /// *This should be Read-Only for library users.*
+        arg_idx: ?u8 = null,
+
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
         //sub_cmds: if (@inComptime()) ?[]const @This() else ?[]@This() = null,
@@ -324,15 +329,19 @@ pub fn Custom(comptime config: Config) type {
         /// This will NOT affect Command Validation nor Tab-Completion.
         case_sensitive: bool = config.global_case_sensitive,
 
+        /// Set the Argument Index of this Command.
+        pub fn setArgIdx(self: *const @This(), arg_idx: u8) void {
+            @constCast(self).*.arg_idx = arg_idx;
+        }
 
-        /// Sets the active Sub Command for this Command.
+        /// Set the active Sub Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
             @constCast(self).*.sub_cmd = set_cmd;
         }
         //pub fn setSubCmd(self: *@This(), set_cmd: *@This()) void {
         //    self.sub_cmd = set_cmd;
         //}
-        /// Gets a reference to the Sub Command of this Command that matches the provided Name (`cmd_name`).
+        /// Get a reference to the Sub Command of this Command that matches the provided Name (`cmd_name`).
         pub fn getSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
             if (self.sub_cmds == null) return null;
             for (self.sub_cmds.?[0..]) |*cmd| if (mem.eql(u8, cmd.name, cmd_name)) return cmd;
@@ -1577,14 +1586,20 @@ pub fn Custom(comptime config: Config) type {
         };
 
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
-        /// This should be used after this Command has been created in Comptime. 
+        /// This should be used after this Command has been created in Comptime.
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !*@This() {
             return self.initCtx(init_config, true, null, alloc);
         }
 
         /// Initialize Recursively with Context (`is_root_cmd`).
         /// *INTERNAL USE*
-        fn initCtx(comptime self: *const @This(), comptime init_config: InitConfig, comptime is_root_cmd: bool, parent_cmd: ?*const @This(), init_alloc: mem.Allocator) !if (is_root_cmd) *@This() else @This() {
+        fn initCtx(
+            comptime self: *const @This(),
+            comptime init_config: InitConfig,
+            comptime is_root_cmd: bool,
+            parent_cmd: ?*const @This(),
+            init_alloc: mem.Allocator
+        ) !if (is_root_cmd) *@This() else @This() {
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = init_config.add_help_cmds;

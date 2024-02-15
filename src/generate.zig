@@ -22,7 +22,7 @@ pub const createArgTemplate = arg_template.createArgTemplate;
 /// A Config for setting up all Meta Docs
 pub const MetaDocConfig = struct{
     /// Specify which kinds of Meta Docs should be generated.
-    kinds: []const MetaDocKind = &.{ .manpages, .bash },
+    kinds: []const MetaDocKind = &.{ .all },
     /// Manpages Config
     manpages_config: ?ManpageConfig = .{},
     /// Tab Completion Config

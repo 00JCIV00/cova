@@ -198,6 +198,11 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.
         val_group: ?[]const u8 = null,
 
+        /// The Argument Indeces of this Value which are determined during parsing.
+        ///
+        /// *This should be Read-Only for library users.*
+        arg_idx: ?[]u8 = null,
+
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
         /// **Internal Use.**
@@ -620,6 +625,27 @@ pub fn Custom(comptime config: Config) type {
         pub fn set(self: *const @This(), arg: []const u8) !void { 
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| try @field(self.*.generic, @tagName(tag)).set(arg),
+            }
+        }
+
+        /// Set a new Argument Index for this Value.
+        pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
+            const alloc = self.allocator() orelse return error.ValueNotInitialized;
+            const self_idx = switch(meta.activeTag(self.*.generic)) {
+                inline else => |tag| &@field(@constCast(self).*.generic, @tagName(tag)).arg_idx,
+            };
+            if (self_idx.* == null) {
+                self_idx.* = try alloc.alloc(u8, 1);
+                self_idx.*.?[0] = arg_idx;
+                return;
+            }
+            switch (self.setBehavior()) {
+                .First, .Last => self_idx.*.?[0] = arg_idx,
+                .Multi => {
+                    var idx_list = std.ArrayList(u8).fromOwnedSlice(alloc, self_idx.*.?);
+                    try idx_list.append(arg_idx);
+                    self_idx.* = try idx_list.toOwnedSlice();
+                },
             }
         }
 

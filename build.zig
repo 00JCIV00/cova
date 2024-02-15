@@ -71,17 +71,21 @@ pub fn build(b: *std.Build) void {
         &cova_demo.root_module,
         .{
             .kinds = &.{ .all },
+            .version = "0.10.0",
+            .ver_date = "14 FEB 2024",
+            .author = "00JCIV00",
+            .copyright = "Copyright info here",
             .manpages_config = .{
                 .local_filepath = "meta/manpages",
-                .version = "0.10.0",
-                .ver_date = "05 FEB 2024",
                 .man_name = "User's Manual",
-                .author = "00JCIV00",
-                .copyright = "Copyright info here",
             },
             .tab_complete_config = .{
                 .local_filepath = "meta",
                 .include_opts = true,
+            },
+            .arg_template_config = .{
+                .local_filepath = "meta/arg_templates",
+                .include_opts = true
             },
         },
     );
@@ -100,33 +104,33 @@ pub fn build(b: *std.Build) void {
     const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
     build_basic_app_step.dependOn(&build_basic_app.step);
     // - Basic App Meta Docs
-    const basic_app_gen = createDocGenStep(
-        b,
-        cova_gen_exe,
-        cova_mod,
-        &basic_app.root_module,
-        .{
-            .kinds = &.{ .all },
-            .version = "0.10.0",
-            .ver_date = "10 FEB 2024",
-            .author = "00JCIV00",
-            .copyright = "Copyright info here",
-            .manpages_config = .{
-                .local_filepath = "meta/manpages",
-                .man_name = "User's Manual",
-            },
-            .tab_complete_config = .{
-                .local_filepath = "meta",
-                .include_opts = true,
-            },
-            .arg_template_config = .{
-                .local_filepath = "meta/arg_templates",
-                .include_opts = true
-            },
-        },
-    );
-    const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
-    basic_app_gen_step.dependOn(&basic_app_gen.step);
+    //const basic_app_gen = createDocGenStep(
+    //    b,
+    //    cova_gen_exe,
+    //    cova_mod,
+    //    &basic_app.root_module,
+    //    .{
+    //        .kinds = &.{ .all },
+    //        .version = "0.10.0",
+    //        .ver_date = "10 FEB 2024",
+    //        .author = "00JCIV00",
+    //        .copyright = "MIT License",
+    //        .manpages_config = .{
+    //            .local_filepath = "meta/manpages",
+    //            .man_name = "User's Manual",
+    //        },
+    //        .tab_complete_config = .{
+    //            .local_filepath = "meta",
+    //            .include_opts = true,
+    //        },
+    //        .arg_template_config = .{
+    //            .local_filepath = "meta/arg_templates",
+    //            .include_opts = true
+    //        },
+    //    },
+    //);
+    //const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
+    //basic_app_gen_step.dependOn(&basic_app_gen.step);
 }
 
 

@@ -64,7 +64,7 @@ pub fn main() !void {
         for (mdk_info.Enum.fields[1..], kinds_list[0..]) |field, *kind| kind.* = @enumFromInt(field.value);
         break :docKinds kinds_list[0..];
     };
-    
+
     const cmd_type_name = @field(program, md_config.cmd_type_name);
     const setup_cmd_name = @field(program, md_config.setup_cmd_name);
 

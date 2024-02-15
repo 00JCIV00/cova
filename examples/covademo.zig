@@ -603,11 +603,14 @@ pub fn main() !void {
             xor_opts_check,
         }
     );
+    if (main_cmd.opts) |main_opts| {
+        for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
+    }
     if (main_cmd.checkSubCmd("sub-cmd"))
         log.info("-> Sub Cmd", .{});
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
         log.info("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
-    if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| {
+    if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| structCmd: {
         log.debug("Parent Cmd (struct-cmd): {s]}", .{ struct_cmd.parent_cmd.?.name });
         log.debug("Parent Cmd (int-opt / int-val): {s} / {s}", optPar: {
             const struct_cmd_opts = struct_cmd.getOpts(.{}) catch break: optPar .{ "[no opts]", "" };
@@ -618,6 +621,7 @@ pub fn main() !void {
         log.info("-> Struct Cmd\n{any}", .{ demo_struct });
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
             log.info("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
+        for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
     }
     if (main_cmd.checkSubCmd("union-cmd"))
         log.info("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
