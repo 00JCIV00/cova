@@ -14,7 +14,7 @@ const utils = @import("../utils.zig");
 pub const TabCompletionConfig = struct{
     /// Script Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`-completion.`shell_kind`".
-    local_filepath: []const u8 = "meta",
+    local_filepath: []const u8 = "meta/tab_completions",
 
     /// Script Header
     /// This is useful for setting the shebang of a shell and, optionally, header comments.
@@ -36,6 +36,7 @@ pub const TabCompletionConfig = struct{
     /// Add Installation Instructions for the generated Tab Completion script.
     add_install_instructions: bool = true,
 
+    /// Available Kinds of Shells for Tab Completion scripts.
     pub const ShellKind = enum{
         bash,
         zsh,

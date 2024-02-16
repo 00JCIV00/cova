@@ -19,8 +19,8 @@ const utils = cova.utils;
 const program = @import("program");
 /// This is a reference to the Build Options passed in from `build.zig`.
 const md_config = @import("md_config_opts");
-/// Manpages Config
-const manpages_config = optsToConf(generate.ManpageConfig, @import("manpages_config"));
+/// Help Docs Config
+const help_docs_config = optsToConf(generate.HelpDocsConfig, @import("help_docs_config"));
 /// Tab Completion Config
 const tab_complete_config = optsToConf(generate.TabCompletionConfig, @import("tab_complete_config"));
 /// Argument Template Config
@@ -68,19 +68,20 @@ pub fn main() !void {
     const cmd_type_name = @field(program, md_config.cmd_type_name);
     const setup_cmd_name = @field(program, md_config.setup_cmd_name);
 
-    log.info("\nStarting Meta Doc Generation...", .{});
+    //log.info("\nStarting Meta Doc Generation...", .{});
     inline for (doc_kinds[0..]) |kind| {
         switch (kind) {
-            .manpages => {
-                if (manpages_config) |mp_config| {
-                    try generate.createManpage(
+            .manpages, .markdown => |help_doc| {
+                if (help_docs_config) |hd_config| {
+                    try generate.createHelpDoc(
                         cmd_type_name,
                         setup_cmd_name,
-                        mp_config,
+                        hd_config,
+                        meta.stringToEnum(generate.HelpDocsConfig.DocKind, @tagName(help_doc)).?,
                     );
                 }
                 else {
-                    log.warn("Missing Manpage Configuration! Skipping.", .{});
+                    log.warn("Missing Help Doc Configuration! Skipping.", .{});
                     continue;
                 }
             },

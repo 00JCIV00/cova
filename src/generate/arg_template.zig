@@ -163,7 +163,7 @@ pub const MetaInfoTemplate = struct{
 pub const ArgTemplateConfig = struct{
     /// Script Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`-template.`template_kind`".
-    local_filepath: []const u8 = "meta",
+    local_filepath: []const u8 = "meta/arg_templates",
 
     /// Name of the program.
     /// Note, if this is left null, the provided CommandT's name will be used.
@@ -187,6 +187,7 @@ pub const ArgTemplateConfig = struct{
     /// Include Values for Argument Templates.
     include_vals: bool = true,
 
+    /// Available Kinds of Argument Template formats.
     pub const TemplateKind = enum{
         json,
         kdl,

@@ -70,23 +70,23 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &cova_demo.root_module,
         .{
-            .kinds = &.{ .all },
+            .kinds = &.{ .markdown },
             .version = "0.10.0",
-            .ver_date = "14 FEB 2024",
+            .ver_date = "15 FEB 2024",
             .author = "00JCIV00",
-            .copyright = "Copyright info here",
-            .manpages_config = .{
-                .local_filepath = "meta/manpages",
-                .man_name = "User's Manual",
-            },
-            .tab_complete_config = .{
-                .local_filepath = "meta",
-                .include_opts = true,
-            },
-            .arg_template_config = .{
-                .local_filepath = "meta/arg_templates",
-                .include_opts = true
-            },
+            .copyright = "MIT License",
+            //.help_docs_config = .{
+            //    .local_filepath = "meta/manpages",
+            //    .man_name = "User's Manual",
+            //},
+            //.tab_complete_config = .{
+            //    .local_filepath = "meta",
+            //    .include_opts = true,
+            //},
+            //.arg_template_config = .{
+            //    .local_filepath = "meta/arg_templates",
+            //    .include_opts = true
+            //},
         },
     );
     const cova_demo_gen_step = b.step("cova-demo-gen", "Generate Meta Docs for the 'covademo'");
@@ -168,7 +168,7 @@ fn createDocGenStep(
 
     const md_conf_opts = b.addOptions();
     var sub_conf_map = std.StringHashMap(?*std.Build.Step.Options).init(b.allocator);
-    sub_conf_map.put("manpages_config", null) catch @panic("OOM");
+    sub_conf_map.put("help_docs_config", null) catch @panic("OOM");
     sub_conf_map.put("tab_complete_config", null) catch @panic("OOM");
     sub_conf_map.put("arg_template_config", null) catch @panic("OOM");
 

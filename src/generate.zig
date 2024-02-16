@@ -9,9 +9,9 @@ const mem = std.mem;
 
 // Cova
 const utils = @import("utils.zig");
-pub const manpages = @import("generate/manpages.zig");
-pub const ManpageConfig = manpages.ManpageConfig;
-pub const createManpage = manpages.createManpage;
+pub const help_docs = @import("generate/help_docs.zig");
+pub const HelpDocsConfig = help_docs.HelpDocsConfig;
+pub const createHelpDoc = help_docs.createHelpDoc;
 pub const tab_completion = @import("generate/tab_completion.zig");
 pub const TabCompletionConfig = tab_completion.TabCompletionConfig;
 pub const createTabCompletion = tab_completion.createTabCompletion;
@@ -23,8 +23,8 @@ pub const createArgTemplate = arg_template.createArgTemplate;
 pub const MetaDocConfig = struct{
     /// Specify which kinds of Meta Docs should be generated.
     kinds: []const MetaDocKind = &.{ .all },
-    /// Manpages Config
-    manpages_config: ?ManpageConfig = .{},
+    /// Help Docs Config
+    help_docs_config: ?HelpDocsConfig = .{},
     /// Tab Completion Config
     tab_complete_config: ?TabCompletionConfig = .{},
     /// Argument Template Config
@@ -57,6 +57,8 @@ pub const MetaDocConfig = struct{
         all,
         /// Generate Manpages.
         manpages,
+        /// Generate Markdown.
+        markdown,
         /// Generate a Bash Tab Completion Script.
         bash,
         /// Generate a Zsh Tab Completion Script. (WIP)
