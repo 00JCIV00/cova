@@ -335,13 +335,13 @@ fn createMarkdownCtx(
             try md_writer.print(" > __[{s}]({s})__", .{ pre_name, pre_path });
     }
     // - Description
-    try md_writer.print("{s}\n", .{ md_description });
+    try md_writer.print("{s}\n\n", .{ md_description });
     // - Meta Info
     if (md_ctx.cur_depth == 0) {
-        if (md_config.version) |ver| try md_writer.print("__Version:__ {s}\n", .{ ver });
-        if (md_config.ver_date) |date| try md_writer.print("__Date:__ {s}\n", .{ date });
-        if (md_config.author) |author| try md_writer.print("__Author:__ {s}\n", .{ author });
-        if (md_config.copyright) |copyright| try md_writer.print("__Copyright:__ {s}\n", .{ copyright });
+        if (md_config.version) |ver| try md_writer.print("__Version:__ {s}<br>\n", .{ ver });
+        if (md_config.ver_date) |date| try md_writer.print("__Date:__ {s}<br>\n", .{ date });
+        if (md_config.author) |author| try md_writer.print("__Author:__ {s}<br>\n", .{ author });
+        if (md_config.copyright) |copyright| try md_writer.print("__Copyright:__ {s}<br>\n", .{ copyright });
     }
     try md_writer.print("___\n\n", .{});
 
