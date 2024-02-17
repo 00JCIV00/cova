@@ -70,7 +70,7 @@ pub fn build(b: *std.Build) void {
         cova_mod,
         &cova_demo.root_module,
         .{
-            .kinds = &.{ .markdown },
+            .kinds = &.{ .all },
             .version = "0.10.0",
             .ver_date = "15 FEB 2024",
             .author = "00JCIV00",

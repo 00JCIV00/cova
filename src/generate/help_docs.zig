@@ -93,13 +93,14 @@ pub const HelpDocsConfig = struct{
     /// 2. Optional Character "{?c}" (Option Short Name)
     /// 3. String (Option Long Prefix)
     /// 4. Optional String "{?s}" (Option Long Name)
-    /// 5. String (Option Value Name)
-    /// 6. String (Option Value Type)
-    /// 7. String (Option Name)
-    /// 8. String (Option Description)
+    /// 5. String (Option Aliases)
+    /// 6. String (Option Value Name)
+    /// 7. String (Option Value Type)
+    /// 8. String (Option Name)
+    /// 9. String (Option Description)
     md_opts_fmt: []const u8 =
         \\- __{s}__:
-        \\    - `{c}{?c}, {s}{?s} <{s} ({s})>`
+        \\    - `{c}{?c}, {s}{?s}{s} <{s} ({s})>`
         \\    - {s}
         \\
     ,
@@ -150,14 +151,10 @@ const HelpDocContext = struct {
     name: []const u8,
     /// Current recursion depth.
     cur_depth: u8 = 0,
-    /// Name of the Parent Command.
-    parent_name: ?[]const u8 = null,
-    /// Filepath of the Parent Command.
-    parent_path: []const u8 = "",
-    /// Name of the Root Command.
-    root_name: ?[]const u8 = null,
-    /// Filepath of the Root Command.
-    root_path: []const u8 = "",
+    /// Names of Predecessor Commands.
+    pre_names: ?[]const []const u8 = null,
+    /// Filepaths of Predecessor Commands.
+    pre_paths: []const []const u8 = &.{ "" },
 };
 
 /// Create a manpage with Context (`mp_ctx`).
@@ -328,52 +325,38 @@ fn createMarkdownCtx(
     defer markdown.close();
 
     // Header
-    try md_writer.print(
-        \\# {s}
-        \\{s}
-        \\___
-        \\
-        \\
-        , .{
-            md_name,
-            md_description,
-        }
-    );
-
-    // Meta Info
-    try md_writer.print("## Meta Info\n", .{});
-    if (md_config.version) |ver| try md_writer.print("- __Version:__ {s}\n", .{ ver });
-    if (md_config.ver_date) |date| try md_writer.print("- __Date:__ {s}\n", .{ date });
-    if (md_config.author) |author| try md_writer.print("- __Author:__ {s}\n", .{ author });
-    if (md_config.copyright) |copyright| try md_writer.print("- __Copyright:__ {s}\n", .{ copyright });
-    try md_writer.print("\n", .{});
-
-    // Root
-    if (md_ctx.root_name) |root| {
-        try md_writer.print(
-            \\## Root Command
-            \\[{s}]({s})
-            \\
-            \\
-            , .{
-                root,
-                md_ctx.root_path,
-            }
-        );
+    try md_writer.print("# {s}\n", .{ cmd.name });
+    // - Predecessors
+    if (md_ctx.pre_names) |pres| preLinks: {
+        try md_writer.print("__[{s}]({s})__", .{ pres[0], md_ctx.pre_paths[0] });
+        defer md_writer.print(" > __{s}__\n\n", .{ cmd.name }) catch {};
+        if (pres.len == 1) { break :preLinks; }
+        for (pres[1..], md_ctx.pre_paths[1..]) |pre_name, pre_path| 
+            try md_writer.print(" > __[{s}]({s})__", .{ pre_name, pre_path });
     }
-    
-    // Parent
-    if (md_ctx.parent_name) |parent| {
-        try md_writer.print(
-            \\## Parent Command
-            \\[{s}]({s})
-            \\
-            \\
-            , .{
-                parent,
-                md_ctx.parent_path,
-            }
-        );
+    // - Description
+    try md_writer.print("{s}\n", .{ md_description });
+    // - Meta Info
+    if (md_ctx.cur_depth == 0) {
+        if (md_config.version) |ver| try md_writer.print("__Version:__ {s}\n", .{ ver });
+        if (md_config.ver_date) |date| try md_writer.print("__Date:__ {s}\n", .{ date });
+        if (md_config.author) |author| try md_writer.print("__Author:__ {s}\n", .{ author });
+        if (md_config.copyright) |copyright| try md_writer.print("__Copyright:__ {s}\n", .{ copyright });
+    }
+    try md_writer.print("___\n\n", .{});
+
+    // Usage
+    try md_writer.print("## Usage\n```shell\n", .{});
+    try cmd.usage(md_writer);
+    try md_writer.print("```\n\n", .{});
+
+    // Aliases
+    if (cmd.alias_names) |aliases| addAliases: {
+        try md_writer.print("## Alias(es)\n", .{});
+        try md_writer.print("- `{s}`", .{ aliases[0] });
+        defer md_writer.print("\n\n", .{}) catch {};
+        if (aliases.len == 1) { break :addAliases; }
+        for (aliases[1..]) |alias| try md_writer.print("\n- `{s}`", .{ alias });
     }
     
     // Argument Writes
@@ -391,13 +374,20 @@ fn createMarkdownCtx(
         }
         if (cmd.opts) |opts| {
             try md_writer.print("### Options\n", .{});
-            for (opts) |opt|
+            const opt_long_pf = CommandT.OptionT.long_prefix orelse "";
+            inline for (opts) |opt|
                 try md_writer.print(md_config.md_opts_fmt, .{
                     opt.name,
                     CommandT.OptionT.short_prefix orelse 0,
                     if (CommandT.OptionT.short_prefix != null) opt.short_name else 0,
-                    CommandT.OptionT.long_prefix orelse 0,
+                    opt_long_pf,
                     if (CommandT.OptionT.long_prefix != null) opt.long_name else "",
+                    if (opt.alias_long_names) |opt_aliases| optAliases: {
+                        comptime var alias_list: []const u8 = "";
+                        inline for (opt_aliases) |opt_alias| alias_list = alias_list ++ ", " ++ opt_long_pf ++ opt_alias;
+                        break :optAliases alias_list;
+                    }
+                    else "",
                     opt.val.name(),
                     opt.val.childType(),
                     opt.description,
@@ -427,12 +417,12 @@ fn createMarkdownCtx(
         comptime var new_ctx = md_ctx;
         new_ctx.cur_depth += 1;
         new_ctx.name = new_ctx.name ++ "-" ++ sub_cmd.name;
-        new_ctx.parent_name = md_ctx.name;
-        new_ctx.parent_path = filepath;
-        if (new_ctx.root_name == null) {
-            new_ctx.root_name = md_ctx.name;
-            new_ctx.root_path = new_ctx.parent_path;
-        }
+        new_ctx.pre_names = 
+            if (new_ctx.pre_names) |pre_names| pre_names ++ @as([]const []const u8, &.{ cmd.name })
+            else &.{ cmd.name };
+        new_ctx.pre_paths =
+            if (new_ctx.pre_paths[0].len > 0) new_ctx.pre_paths ++ @as([]const []const u8, &.{ filepath })
+            else &.{ filepath };
         try createMarkdownCtx(CommandT, sub_cmd, md_config, new_ctx);
     }
 }

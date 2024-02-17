@@ -68,7 +68,7 @@ pub fn main() !void {
     const cmd_type_name = @field(program, md_config.cmd_type_name);
     const setup_cmd_name = @field(program, md_config.setup_cmd_name);
 
-    //log.info("\nStarting Meta Doc Generation...", .{});
+    log.info("\nStarting Meta Doc Generation...", .{});
     inline for (doc_kinds[0..]) |kind| {
         switch (kind) {
             .manpages, .markdown => |help_doc| {
