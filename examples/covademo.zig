@@ -22,6 +22,7 @@ const conf_no_fmt = Command.Config.noFormat();
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
+    //.allow_arg_indices = false,
     //.global_usage_fn = struct{
     //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
     //        const CmdT = @TypeOf(self.*);
@@ -135,6 +136,7 @@ pub const CommandT = Command.Custom(.{
     //.global_case_sensitive = false,
     .opt_config = .{
         .usage_fmt = "{c}{?c}{s} {s}{?s} <{s} ({s})>",
+        //.allow_arg_indices = false,
         //.global_case_sensitive = false,
         //.usage_fn = struct{
         //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
@@ -158,6 +160,7 @@ pub const CommandT = Command.Custom(.{
         }.help
     },
     .val_config = .{
+        //.allow_arg_indices = false,
         //.custom_types = &.{ DemoStruct.InnerEnum },
         //.custom_types = &.{ SimpleEnum },
         .child_type_parse_fns = &.{
@@ -604,9 +607,9 @@ pub fn main() !void {
             xor_opts_check,
         }
     );
-    if (main_cmd.opts) |main_opts| {
-        for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
-    }
+    //if (main_cmd.opts) |main_opts| {
+    //    for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
+    //}
     if (main_cmd.checkSubCmd("sub-cmd"))
         log.info("-> Sub Cmd", .{});
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
@@ -622,7 +625,8 @@ pub fn main() !void {
         log.info("-> Struct Cmd\n{any}", .{ demo_struct });
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
             log.info("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
-        for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
+        //for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
+        break :structCmd;
     }
     if (main_cmd.checkSubCmd("union-cmd"))
         log.info("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });

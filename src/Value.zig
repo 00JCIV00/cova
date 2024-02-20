@@ -45,6 +45,8 @@ pub const Config = struct {
     global_arg_delims: []const u8 = ",;",
     /// Maximum instances of a Child Type that a Value can hold.
     max_children: u8 = 10,
+    /// Allow tracking of Argument Indices.
+    allow_arg_indices: bool = true,
 
     /// Custom Types for this project's Custom Values. 
     /// If these Types are `Value.Typed` they'll be coerced to match the parent `Value.Config` (not preferred).
@@ -201,7 +203,8 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// The Argument Indeces of this Value which are determined during parsing.
         ///
         /// *This should be Read-Only for library users.*
-        arg_idx: ?[]u8 = null,
+        //arg_idx: ?[]u8 = null,
+        arg_idx: if (config.allow_arg_indices) ?[]u8 else void = if (config.allow_arg_indices) null else {},
 
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
@@ -573,17 +576,20 @@ pub fn Custom(comptime config: Config) type {
         generic: GenericT = .{ .bool = .{} },
 
         /// Custom Help Function.
-        /// Check (`Command.Config`) for details.
+        /// Check (`Value.Config`) for details.
         pub const global_help_fn = config.global_help_fn;
         /// Custom Usage Function.
-        /// Check (`Command.Config`) for details.
+        /// Check (`Value.Config`) for details.
         pub const global_usage_fn = config.global_usage_fn;
+        /// Allow Argument Indices.
+        /// Check (`Value.Config`) for details.
+        pub const allow_arg_indices = config.allow_arg_indices;
 
         /// Values Help Format.
-        /// Check (`Command.Config`) for details.
+        /// Check (`Value.Config`) for details.
         pub const vals_help_fmt = config.help_fmt;
         /// Values Usage Format.
-        /// Check (`Command.Config`) for details.
+        /// Check (`Value.Config`) for details.
         pub const vals_usage_fmt = config.usage_fmt;
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
@@ -630,6 +636,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set a new Argument Index for this Value.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
+            if (!config.allow_arg_indices) return;
             const alloc = self.allocator() orelse return error.ValueNotInitialized;
             const self_idx = switch(meta.activeTag(self.*.generic)) {
                 inline else => |tag| &@field(@constCast(self).*.generic, @tagName(tag)).arg_idx,
@@ -876,6 +883,7 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
+            if (!allow_arg_indices) return;
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));

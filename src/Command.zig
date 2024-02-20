@@ -143,6 +143,8 @@ pub const Config = struct {
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used for both `init()` and `from()` but can be overwritten for the latter.
     max_args: u8 = 25,
+    /// Allow tracking of Argument Indices.
+    allow_arg_indices: bool = true,
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
     /// This will not include Usage/Help Commands.
@@ -247,6 +249,9 @@ pub fn Custom(comptime config: Config) type {
         /// Max Args.
         /// Check (`Command.Config`) for details.
         pub const max_args = config.max_args;
+        /// Allow Argument Indices.
+        /// Check (`Command.Config`) for details.
+        pub const allow_arg_indices = config.allow_arg_indices;
 
 
         /// The Root Allocator for this Command.
@@ -282,7 +287,7 @@ pub fn Custom(comptime config: Config) type {
         /// The Argument Index of this Command which is determined during parsing.
         ///
         /// *This should be Read-Only for library users.*
-        arg_idx: ?u8 = null,
+        arg_idx: if (allow_arg_indices) ?u8 else void = if (allow_arg_indices) null else {},
 
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
@@ -331,6 +336,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set the Argument Index of this Command.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) void {
+            if (!allow_arg_indices) return;
             @constCast(self).*.arg_idx = arg_idx;
         }
 
