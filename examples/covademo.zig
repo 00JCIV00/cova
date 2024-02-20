@@ -134,7 +134,7 @@ pub const CommandT = Command.Custom(.{
     //}.help,
     //.global_case_sensitive = false,
     .opt_config = .{
-        .usage_fmt = "{c}{?c}, {s}{?s} <{s} ({s})>",
+        .usage_fmt = "{c}{?c}{s} {s}{?s} <{s} ({s})>",
         //.global_case_sensitive = false,
         //.usage_fn = struct{
         //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
@@ -335,6 +335,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
+            .attempt_short_opts = false,
             //.cmd_hidden = true,
             .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,

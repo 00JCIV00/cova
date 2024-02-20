@@ -81,16 +81,21 @@ pub const Config = struct {
     /// 1. String (Name)
     /// 2. String (Description)
     help_fmt: ?[]const u8 = null,
+    /// Name Separator Format
+    name_sep_fmt: []const u8 = ",",
     /// Format for the Usage message.
     ///
     /// Must support the following format types in this order:
     /// 1. Character (Short Prefix) 
     /// 2. Optional Character "{?c}" (Short Name)
-    /// 3. String (Long Prefix)
-    /// 4. Optional String "{?s}" (Long Name)
-    /// 5. String (Value Name)
-    /// 6. String (Value Type)
-    usage_fmt: []const u8 = "{c}{?c},{s}{?s} <{s} ({s})>",
+    /// 3. String Name Separator
+    /// 4. String (Long Prefix)
+    /// 5. Optional String "{?s}" (Long Name)
+    /// 6. String (Value Name)
+    /// 7. String (Value Type)
+    ///
+    /// Note, a comma "," will automatically be placed between the short and long name if they both exist.
+    usage_fmt: []const u8 = "{c}{?c}{s}{s}{?s} <{s} ({s})>",
 
     /// Prefix for Short Options.
     short_prefix: ?u8 = '-',
@@ -145,6 +150,9 @@ pub fn Custom(comptime config: Config) type {
         /// Indent Format.
         /// Check (`Command.Config`) for details.
         pub const indent_fmt = config.indent_fmt;
+        /// Name Separator Format.
+        /// Check (`Command.Config`) for details.
+        pub const name_sep_fmt = config.name_sep_fmt;
         /// Help Format.
         /// Check `Options.Config` for details.
         pub const help_fmt = config.help_fmt;
@@ -304,10 +312,11 @@ pub fn Custom(comptime config: Config) type {
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
 
             try writer.print(usage_fmt, .{ 
-                short_prefix orelse 0,
-                if (short_prefix != null) self.short_name else 0,
-                long_prefix orelse "",
-                if (long_prefix != null) self.long_name else "",
+                if (short_prefix != null and self.short_name != null) short_prefix.? else 0,
+                if (short_prefix != null) self.short_name orelse 0 else 0,
+                if (self.short_name != null and self.long_name != null) name_sep_fmt else "",
+                if (long_prefix != null and self.long_name != null) long_prefix.? else "",
+                if (long_prefix != null) self.long_name orelse "" else "",
                 self.val.name(),
                 self.val.childType(),
             });
