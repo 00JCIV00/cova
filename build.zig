@@ -8,35 +8,6 @@ pub fn build(b: *std.Build) void {
     const bin_name = b.option([]const u8, "name", "A name for the binary being created.");
     b.exe_dir = "./bin";
 
-    // Static Lib (Unused)
-    //const lib = b.addStaticLibrary(.{
-    //    .name = "cova",
-    //    .root_source_file = .{ .path = "src/cova.zig" },
-    //    .target = target,
-    //    .optimize = optimize,
-    //});
-    //b.installArtifact(lib);
-
-    // Tests 
-    const cova_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/cova.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    const run_cova_tests = b.addRunArtifact(cova_tests);
-    const test_step = b.step("test", "Run cova library tests");
-    test_step.dependOn(&run_cova_tests.step);
-
-    // Docs
-    const cova_docs = cova_tests;
-    const build_docs = b.addInstallDirectory(.{
-        .source_dir = cova_docs.getEmittedDocs(),
-        .install_dir = .prefix,
-        .install_subdir = "../docs",
-    });
-    const build_docs_step = b.step("docs", "Build the cova library docs");
-    build_docs_step.dependOn(&build_docs.step);
-
     // Modules & Artifacts
     // - Lib Module
     const cova_mod = b.addModule("cova", .{
@@ -50,6 +21,35 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     b.installArtifact(cova_gen_exe);
+
+    // Static Lib (Used for Docs)
+    const cova_lib = b.addStaticLibrary(.{
+        .name = "cova",
+        .root_source_file = .{ .path = "src/cova.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    //b.installArtifact(cova_lib);
+
+    // Tests 
+    const cova_tests = b.addTest(.{
+        .root_source_file = .{ .path = "src/cova.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    const run_cova_tests = b.addRunArtifact(cova_tests);
+    const test_step = b.step("test", "Run cova library tests");
+    test_step.dependOn(&run_cova_tests.step);
+
+    // Docs
+    const cova_docs = cova_lib;
+    const build_docs = b.addInstallDirectory(.{
+        .source_dir = cova_docs.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "../docs",
+    });
+    const build_docs_step = b.step("docs", "Build the cova library docs");
+    build_docs_step.dependOn(&build_docs.step);
 
     // Examples
     // - Cova Demo Exe
