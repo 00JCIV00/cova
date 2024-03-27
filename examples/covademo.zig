@@ -560,7 +560,7 @@ pub fn main() !void {
     var stdout_bw = io.bufferedWriter(stdout_raw);
     const stdout = stdout_bw.writer();
 
-    var main_cmd = try setup_cmd.init(alloc, .{}); 
+    var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
     var args_iter = try cova.ArgIteratorGeneric.init(alloc);
     defer args_iter.deinit();

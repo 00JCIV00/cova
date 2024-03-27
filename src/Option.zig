@@ -126,7 +126,8 @@ pub const Config = struct {
         inline for (meta.fields(@This())) |field| {
             if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
         }
-        return config;
+        const conf = config;
+        return conf;
     }
 };
 

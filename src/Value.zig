@@ -163,9 +163,9 @@ pub const Config = struct {
         inline for (meta.fields(@This())) |field| {
             if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
         }
-        return config;
+        const conf = config;
+        return conf;
     }
-    
 };
 
 /// The Behavior for Setting Values with `set()`.
@@ -536,13 +536,15 @@ pub fn Generic(comptime config: Config) type {
                     var rebuild: [union_info.fields.len]Type.UnionField = undefined;
                     for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx|
                        r_fld.* = if (r_idx == idx) union_field else o_fld;
-                    break :rebuildFields rebuild[0..]; // Scope lifetime issue??
+                    const rebuild_out = rebuild;
+                    break :rebuildFields rebuild_out[0..]; 
                 };    
                 tag_info.fields = rebuildFields: {
                     var rebuild: [tag_info.fields.len]Type.EnumField = undefined;
                     for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx|
                        r_fld.* = if (r_idx == idx) union_tag else o_fld;
-                    break :rebuildFields rebuild[0..]; // Scope lifetime issue??
+                    const rebuild_out = rebuild;
+                    break :rebuildFields rebuild_out[0..]; 
                 };    
                 break;
             }
@@ -553,8 +555,11 @@ pub fn Generic(comptime config: Config) type {
             
         }
 
-        union_info.tag_type = @Type(.{ .Enum = tag_info }); 
-        break :customUnion @Type(.{ .Union = union_info });
+        const tag_info_out = tag_info;
+        const union_info_out = union_info;
+
+        union_info.tag_type = @Type(.{ .Enum = tag_info_out }); 
+        break :customUnion @Type(.{ .Union = union_info_out });
     };
 }
 
@@ -774,12 +779,12 @@ pub fn Custom(comptime config: Config) type {
         /// Create a Generic Value from a Valid Componenent Param, StructField, or UnionField (`from_comp`) using the provided FromConfig (`from_config`).
         /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
         pub fn from(comptime from_comp: anytype, from_config: FromConfig) ?@This() {
-            const comp_name = 
+            const comp_name: []const u8 = 
                 if (from_config.val_name) |val_name| val_name    
                 else switch (@TypeOf(from_comp)) {
                     std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
                     std.builtin.Type.Fn.Param => "",
-                    else => @compileError("The provided component must be a Function Parameter, Struct Field, or Union Field."), 
+                    else => @compileError("The provided component must be a Function Parameter, Struct Field, or Union Field."),
                 };
 
             const FromT = switch(@TypeOf(from_comp)) {
@@ -818,7 +823,8 @@ pub fn Custom(comptime config: Config) type {
             //const out_info = @typeInfo(CompT);
             return ofType(CompT, .{
                 .name = comp_name,
-                .description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
+                //.description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
+                .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of type '{s}'.", .{ comp_name, @typeName(FromT) }),
                 .max_args = 
                     if (comp_info == .Array) comp_info.Array.len
                     else 1,

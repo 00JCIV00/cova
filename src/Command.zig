@@ -170,7 +170,8 @@ pub const Config = struct {
         inline for (meta.fields(@This())) |field| {
             if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
         }
-        return config;
+        const conf = config;
+        return conf;
     }
 };
 
@@ -185,7 +186,8 @@ pub fn Custom(comptime config: Config) type {
             var setup_val_config = config.val_config;
             setup_val_config.CommandT = @This();
             setup_val_config.indent_fmt = setup_val_config.indent_fmt orelse config.indent_fmt;
-            break :valConfig setup_val_config;
+            const setup_val_config_out = setup_val_config;
+            break :valConfig setup_val_config_out;
         };
         /// Option Config Setup
         const opt_config = optConfig: {
@@ -193,7 +195,8 @@ pub fn Custom(comptime config: Config) type {
             setup_opt_config.CommandT = @This();
             setup_opt_config.val_config = val_config;
             setup_opt_config.indent_fmt = setup_opt_config.indent_fmt orelse config.indent_fmt;
-            break :optConfig setup_opt_config;
+            const setup_opt_config_out = setup_opt_config;
+            break :optConfig setup_opt_config_out;
         };
         /// The Custom Option type to be used by this Custom Command type.
         pub const OptionT = Option.Custom(opt_config);
@@ -882,7 +885,8 @@ pub fn Custom(comptime config: Config) type {
                 var arg_name_buf: [field.name.len]u8 = field.name[0..].*;
                 const arg_name = if (!from_config.convert_syntax) field.name else argName: {
                     _ = mem.replace(u8, field.name[1..], "_", "-", arg_name_buf[1..]);
-                    break :argName arg_name_buf[0..];
+                    const arg_name_out = arg_name_buf;
+                    break :argName arg_name_out[0..];
                 };
                 const arg_description = arg_descriptions.get(field.name);
                 // Handle Argument Types.
@@ -993,9 +997,14 @@ pub fn Custom(comptime config: Config) type {
             const cmd_name = if (from_config.cmd_name) |c_name| c_name else cmdName: {
                 if (!from_config.convert_syntax) break :cmdName @typeName(FromT) else {
                     _ = mem.replace(u8, @typeName(FromT), "_", "-", cmd_name_buf[0..]);
-                    break :cmdName cmd_name_buf[0..];
+                    const cmd_name_out = cmd_name_buf;
+                    break :cmdName cmd_name_out[0..];
                 }
             };
+            const from_cmds_out = from_cmds_buf;
+            const from_opts_out = from_opts_buf;
+            const from_vals_out = from_vals_buf;
+
             return @This(){
                 .name = cmd_name,
                 .alias_names = from_config.cmd_alias_names,
@@ -1004,9 +1013,9 @@ pub fn Custom(comptime config: Config) type {
                 .help_prefix = from_config.cmd_help_prefix,
                 .cmd_groups = from_config.cmd_groups,
                 .cmd_group = from_config.cmd_group,
-                .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
-                .opts = if (opts_idx > 0) from_opts[0..opts_idx] else null,
-                .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
+                .sub_cmds = if (cmds_idx > 0) from_cmds_out[0..cmds_idx] else null,
+                .opts = if (opts_idx > 0) from_opts_out[0..opts_idx] else null,
+                .vals = if (vals_idx > 0) from_vals_out[0..vals_idx] else null,
                 .sub_cmds_mandatory = from_config.sub_cmds_mandatory,
                 .vals_mandatory = from_config.vals_mandatory,
                 .case_sensitive = from_config.case_sensitive,
@@ -1095,6 +1104,9 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
 
+            const from_cmds_out = from_cmds_buf;
+            const from_vals_out = from_vals_buf;
+
             return @This(){
                 .name = if (from_config.cmd_name) |c_name| c_name else @typeName(FromFn),
                 .alias_names = from_config.cmd_alias_names,
@@ -1103,8 +1115,8 @@ pub fn Custom(comptime config: Config) type {
                 .cmd_groups = from_config.cmd_groups,
                 .cmd_group = from_config.cmd_group,
                 .help_prefix = from_config.cmd_help_prefix,
-                .sub_cmds = if (cmds_idx > 0) from_cmds[0..cmds_idx] else null,
-                .vals = if (vals_idx > 0) from_vals[0..vals_idx] else null,
+                .sub_cmds = if (cmds_idx > 0) from_cmds_out[0..cmds_idx] else null,
+                .vals = if (vals_idx > 0) from_vals_out[0..vals_idx] else null,
                 .sub_cmds_mandatory = from_config.sub_cmds_mandatory,
                 .vals_mandatory = true,
                 .case_sensitive = from_config.case_sensitive,
@@ -1610,7 +1622,8 @@ pub fn Custom(comptime config: Config) type {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = init_config.add_help_cmds;
                 valid_config.check_help_opts = init_config.add_help_opts;
-                self.validate(valid_config);
+                const val_conf = valid_config;
+                self.validate(val_conf);
             }
 
             var init_cmd,
