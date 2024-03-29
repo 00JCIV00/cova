@@ -63,7 +63,8 @@ pub fn createTabCompletion(
         comptime var path = if (tc_config.local_filepath.len >= 0) tc_config.local_filepath else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
         try fs.cwd().makePath(path);
-        break :genFilepath path ++ filename;
+        const path_out = path;
+        break :genFilepath path_out ++ filename;
     };
     var tab_completion = try fs.cwd().createFile(filepath, .{});
     var tc_writer = tab_completion.writer();

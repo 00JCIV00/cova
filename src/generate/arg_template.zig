@@ -54,14 +54,16 @@ pub fn CommandTemplate(CommandT: type) type {
                     const opts = cmd.opts orelse break :setOpts null;
                     var opt_tmplts: [opts.len]OptTemplateT = undefined;
                     for (opts, opt_tmplts[0..]) |opt, *tmplt| tmplt.* = OptTemplateT.from(opt);
-                    break :setOpts opt_tmplts[0..];
+                    const opt_tmplts_out = opt_tmplts;
+                    break :setOpts opt_tmplts_out[0..];
                 },
                 .vals = comptime setvals: {
                     if (!at_config.include_vals) break :setvals null;
                     const vals = cmd.vals orelse break :setvals null;
                     var val_tmplts: [vals.len]ValTemplateT = undefined;
                     for (vals, val_tmplts[0..]) |val, *tmplt| tmplt.* = ValTemplateT.from(val);
-                    break :setvals val_tmplts[0..];
+                    const val_tmplts_out = val_tmplts;
+                    break :setvals val_tmplts_out[0..];
                 },
             };
         }
