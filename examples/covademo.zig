@@ -22,6 +22,7 @@ const conf_no_fmt = Command.Config.noFormat();
 pub const CommandT = Command.Custom(.{ 
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
+    .include_examples = false,
     //.allow_arg_indices = false,
     //.global_usage_fn = struct{
     //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
@@ -255,6 +256,10 @@ pub fn demoFn(int: i32, string: []const u8) void {
 pub const setup_cmd: CommandT = .{
     .name = "covademo",
     .description = "A demo of the Cova command line argument parser.",
+    //.examples = &.{
+    //    "covademo -b --string \"Optional String\"",
+    //    "covademo sub-cmd 3.14"
+    //},
     .cmd_groups = &.{ "RAW", "STRUCT-BASED", "FN-BASED" },
     .opt_groups = &.{ "INT", "BOOL", "STRING" },
     .val_groups = &.{ "INT", "BOOL", "STRING" },

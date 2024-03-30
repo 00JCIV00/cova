@@ -47,7 +47,8 @@ pub fn CommandTemplate(CommandT: type) type {
                     const sub_cmds = cmd.sub_cmds orelse break :subCmds null;
                     var cmd_tmplts: [sub_cmds.len]@This() = undefined;
                     for (sub_cmds, cmd_tmplts[0..]) |sub_cmd, *tmplt| tmplt.* = from(sub_cmd, at_config);
-                    break :subCmds cmd_tmplts[0..];
+                    const cmd_tmplts_out = cmd_tmplts;
+                    break :subCmds cmd_tmplts_out[0..];
                 },
                 .opts = comptime setOpts: {
                     if (!at_config.include_opts) break :setOpts null;

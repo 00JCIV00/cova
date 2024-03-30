@@ -113,6 +113,10 @@ pub const Config = struct {
         \\USAGE:
         \\{s}{s} 
     ,
+    /// Examples Header Format
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    examples_header_fmt: []const u8 = "{s}EXAMPLES:\n",
     /// Sub Commands Help Title Format
     /// Must support the following format types in this order:
     /// 1. String (Indent)
@@ -139,12 +143,18 @@ pub const Config = struct {
     /// 1. String (Aliases)
     /// Note, there will be curly-brackets `{}` surrounding the list due to how Zig handles printing `[]const []const u8`.
     subcmd_alias_fmt: []const u8 = "[alias(es): {s}]",
+    /// Example Format
+    /// Must support the following format types in this order:
+    /// 1. String (Example)
+    example_fmt: []const u8 = "{s}",
 
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used for both `init()` and `from()` but can be overwritten for the latter.
     max_args: u8 = 25,
     /// Allow tracking of Argument Indices.
     allow_arg_indices: bool = true,
+    /// Include Examples in Help Messages.
+    include_examples: bool = true,
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
     /// This will not include Usage/Help Commands.
@@ -228,6 +238,9 @@ pub fn Custom(comptime config: Config) type {
         /// Usage Header Format.
         /// Check (`Command.Config`) for details.
         pub const usage_header_fmt = config.usage_header_fmt;
+        /// Examples Header Format.
+        /// Check (`Command.Config`) for details.
+        pub const examples_header_fmt = config.examples_header_fmt;
         /// Sub Commands Help Title Format.
         /// Check (`Command.Config`) for details.
         pub const subcmds_help_title_fmt = config.subcmds_help_title_fmt;
@@ -246,6 +259,9 @@ pub fn Custom(comptime config: Config) type {
         /// Sub Commands Alias List Format.
         /// Check (`Command.Config`) for details.
         pub const subcmd_alias_fmt = config.subcmd_alias_fmt;
+        /// Example List Format.
+        /// Check (`Command.Config`) for details.
+        pub const example_fmt = config.example_fmt;
         /// Global Help Prefix.
         /// Check (`Command.Config`) for details.
         pub const global_help_prefix = config.global_help_prefix;
@@ -255,6 +271,9 @@ pub fn Custom(comptime config: Config) type {
         /// Allow Argument Indices.
         /// Check (`Command.Config`) for details.
         pub const allow_arg_indices = config.allow_arg_indices;
+        /// Include Examples.
+        /// Check (`Command.Config`) for details.
+        pub const include_examples = config.include_examples;
 
 
         /// The Root Allocator for this Command.
@@ -321,6 +340,7 @@ pub fn Custom(comptime config: Config) type {
         //verbose_description: ?[]const u8 = null,
         /// Hide thie Command from Usage/Help messages.
         hidden: bool = false,
+        examples: if (include_examples) ?[]const []const u8 else void = if (include_examples) null else {},
 
         /// During parsing, mandate that a Sub Command be used with this Command if one is available.
         /// Note, this will not include Usage/Help Commands.
@@ -340,12 +360,12 @@ pub fn Custom(comptime config: Config) type {
         /// Set the Argument Index of this Command.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) void {
             if (!allow_arg_indices) return;
-            @constCast(self).*.arg_idx = arg_idx;
+            @constCast(self).arg_idx = arg_idx;
         }
 
         /// Set the active Sub Command for this Command.
         pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
-            @constCast(self).*.sub_cmd = set_cmd;
+            @constCast(self).sub_cmd = set_cmd;
         }
         //pub fn setSubCmd(self: *@This(), set_cmd: *@This()) void {
         //    self.sub_cmd = set_cmd;
@@ -547,6 +567,18 @@ pub fn Custom(comptime config: Config) type {
             });
 
             if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases });
+
+            showExamples: {
+                if (!include_examples) break :showExamples;
+                const examples = self.examples orelse break :showExamples;
+                try writer.print(examples_header_fmt, .{ indent_fmt });
+                for (examples) |example| {
+                    try writer.print("{s}{s}", .{ indent_fmt } ** 2);
+                    try writer.print(example_fmt, .{ example });
+                    try writer.print("\n", .{});
+                }
+                try writer.print("\n", .{});
+            }
 
             if (self.sub_cmds) |sub_cmds| {
                 try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
