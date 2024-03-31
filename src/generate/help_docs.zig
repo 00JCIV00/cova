@@ -80,6 +80,10 @@ pub const HelpDocsConfig = struct{
     /// 2. String (Value Type)
     /// 3. String (Value Description)
     mp_vals_fmt: []const u8 = ".B {s}:\n({s}): {s}\n\n",
+    /// Manpages Examples Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Example)
+    mp_examples_fmt: []const u8 = ".B {s}\n\n",
 
     // Markdown Structure
     /// Markdown Sub Commands Format.
@@ -114,6 +118,10 @@ pub const HelpDocsConfig = struct{
         \\    - {s}
         \\
     ,
+    /// Markdown Examples Format.
+    /// Must support the following format types in this order:
+    /// 1. String (Example)
+    md_examples_fmt: []const u8 = "- `{s}`\n",
 
     /// Available Kinds of Help Docs.
     pub const DocKind = enum{
@@ -204,6 +212,15 @@ fn createManpageCtx(
                 \\
                 , .{ examples }
             )
+        else if (CommandT.include_examples) cmdExamples: {
+            const examples = cmd.examples orelse break :cmdExamples "";
+            comptime var example_str: []const u8 = ".SH Examples\n\n";
+            inline for (examples) |example| 
+                example_str = example_str ++ fmt.comptimePrint(mp_config.mp_examples_fmt, .{ example });
+            example_str = example_str ++ "\n";
+            const example_str_out = example_str;
+            break :cmdExamples example_str_out;
+        }
         else "";
     const author =
         if (mp_config.author) |author|
@@ -359,6 +376,15 @@ fn createMarkdownCtx(
         for (aliases[1..]) |alias| try md_writer.print("\n- `{s}`", .{ alias });
     }
     
+    // Examples
+    if (md_config.examples) |examples| try md_writer.print("## Examples\n\n{s]}\n", .{ examples })
+    else if (CommandT.include_examples) cmdExamples: {
+        const examples = cmd.examples orelse break :cmdExamples;
+        try md_writer.print("## Examples\n\n", .{});
+        for (examples) |example| try md_writer.print(md_config.md_examples_fmt, .{ example });
+        try md_writer.print("\n", .{});
+    }
+
     // Argument Writes
     // TODO Solve custom formats for these
     if (cmd.sub_cmds != null or cmd.opts != null or cmd.vals != null) {
@@ -404,9 +430,6 @@ fn createMarkdownCtx(
         }
         try md_writer.print("\n", .{});
     }
-
-    // Examples
-    if (md_config.examples) |examples| try md_writer.print("## Examples\n\n{s]}\n", .{ examples });
 
     log.info("Generated Markdown for '{s}' into '{s}'.", .{ cmd.name, filepath });
 

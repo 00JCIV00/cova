@@ -72,7 +72,7 @@ pub fn build(b: *std.Build) void {
         .{
             .kinds = &.{ .all },
             .version = "0.10.0",
-            .ver_date = "15 FEB 2024",
+            .ver_date = "30 MAR 2024",
             .author = "00JCIV00",
             .copyright = "MIT License",
             //.help_docs_config = .{

@@ -95,6 +95,10 @@ pub const Config = struct {
         \\
         \\
     ,
+    /// Examples Header Format
+    /// Must support the following format types in this order:
+    /// 1. String (Indent)
+    examples_header_fmt: []const u8 = "{s}EXAMPLE(S):\n",
     /// Alias List Format for the displayed Command
     /// Must support the following format types in this order:
     /// 1. String (Indent)
@@ -113,10 +117,6 @@ pub const Config = struct {
         \\USAGE:
         \\{s}{s} 
     ,
-    /// Examples Header Format
-    /// Must support the following format types in this order:
-    /// 1. String (Indent)
-    examples_header_fmt: []const u8 = "{s}EXAMPLES:\n",
     /// Sub Commands Help Title Format
     /// Must support the following format types in this order:
     /// 1. String (Indent)
