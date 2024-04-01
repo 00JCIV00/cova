@@ -61,14 +61,14 @@ pub const MetaDocConfig = struct{
         markdown,
         /// Generate a Bash Tab Completion Script.
         bash,
-        /// Generate a Zsh Tab Completion Script. (WIP)
+        /// Generate a Zsh Tab Completion Script.
         zsh,
-        /// Generate a PowerShell Tab Completion Script. (WIP)
+        /// Generate a PowerShell Tab Completion Script.
         ps1,
-        /// Generate a JSON Representation. (WIP)
+        /// Generate a JSON Representation.
         /// This is useful for parsing the main Command using external tools.
         json,
-        /// Generate a KDL Representation for use with the [`usage`](https://sr.ht/~jdx/usage/) tool. (WIP)
+        /// Generate a KDL Representation for use with the [`usage`](https://sr.ht/~jdx/usage/) tool.
         kdl,
     };
 };

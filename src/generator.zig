@@ -55,14 +55,18 @@ fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
 }
 
 pub fn main() !void {
-    const doc_kinds: []generate.MetaDocConfig.MetaDocKind = comptime docKinds: {
+    const doc_kinds: []const generate.MetaDocConfig.MetaDocKind = comptime docKinds: {
         var kinds: [md_config.kinds.len]generate.MetaDocConfig.MetaDocKind = undefined;
         for (md_config.kinds, kinds[0..]) |md_kind, *kind| kind.* = @enumFromInt(md_kind);
-        if (kinds[0] != .all) break :docKinds kinds[0..];
+        if (kinds[0] != .all) {
+            const kinds_out = kinds;
+            break :docKinds kinds_out[0..];
+        }
         const mdk_info = @typeInfo(generate.MetaDocConfig.MetaDocKind);
         var kinds_list: [mdk_info.Enum.fields[1..].len]generate.MetaDocConfig.MetaDocKind = undefined;
         for (mdk_info.Enum.fields[1..], kinds_list[0..]) |field, *kind| kind.* = @enumFromInt(field.value);
-        break :docKinds kinds_list[0..];
+        const kinds_out = kinds_list;
+        break :docKinds kinds_out[0..];
     };
 
     const cmd_type_name = @field(program, md_config.cmd_type_name);
