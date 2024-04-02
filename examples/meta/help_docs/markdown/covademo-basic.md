@@ -1,5 +1,5 @@
 # basic
-__[covademo](examples/meta/help_docs/markdown/covademo.md)__ > __basic__
+__[covademo](./covademo.md)__ > __basic__
 
 The most basic Command.
 

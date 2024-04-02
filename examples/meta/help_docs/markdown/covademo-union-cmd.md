@@ -1,5 +1,5 @@
 # union-cmd
-__[covademo](examples/meta/help_docs/markdown/covademo.md)__ > __union-cmd__
+__[covademo](./covademo.md)__ > __union-cmd__
 
 A demo sub command made from a union.
 

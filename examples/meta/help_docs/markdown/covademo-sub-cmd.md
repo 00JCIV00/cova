@@ -1,5 +1,5 @@
 # sub-cmd
-__[covademo](examples/meta/help_docs/markdown/covademo.md)__ > __sub-cmd__
+__[covademo](./covademo.md)__ > __sub-cmd__
 
 A demo sub command.
 

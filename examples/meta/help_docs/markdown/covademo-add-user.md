@@ -1,5 +1,5 @@
 # add-user
-__[covademo](examples/meta/help_docs/markdown/covademo.md)__ > __add-user__
+__[covademo](./covademo.md)__ > __add-user__
 
 A demo sub command for adding a user.
 

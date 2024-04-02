@@ -337,6 +337,7 @@ fn createMarkdownCtx(
         try fs.cwd().makePath(path);
         break :genFilepath path ++ md_name ++ ".md";
     };
+    const local_path = "./" ++ md_name ++ ".md";
     var markdown = try fs.cwd().createFile(filepath, .{});
     var md_writer = markdown.writer();
     defer markdown.close();
@@ -394,7 +395,7 @@ fn createMarkdownCtx(
             inline for (sub_cmds) |sub_cmd|
                 try md_writer.print(md_config.md_subcmds_fmt, .{
                     sub_cmd.name,
-                    filepath[0..filepath.len - 3] ++ "-" ++ sub_cmd.name ++ ".md",
+                    local_path[0..local_path.len - 3] ++ "-" ++ sub_cmd.name ++ ".md",
                     sub_cmd.description,
                 });
         }
@@ -444,8 +445,8 @@ fn createMarkdownCtx(
             if (new_ctx.pre_names) |pre_names| pre_names ++ @as([]const []const u8, &.{ cmd.name })
             else &.{ cmd.name };
         new_ctx.pre_paths =
-            if (new_ctx.pre_paths[0].len > 0) new_ctx.pre_paths ++ @as([]const []const u8, &.{ filepath })
-            else &.{ filepath };
+            if (new_ctx.pre_paths[0].len > 0) new_ctx.pre_paths ++ @as([]const []const u8, &.{ local_path })
+            else &.{ local_path };
         try createMarkdownCtx(CommandT, sub_cmd, md_config, new_ctx);
     }
 }

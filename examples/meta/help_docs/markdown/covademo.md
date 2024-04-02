@@ -24,13 +24,13 @@ USAGE:
 
 ## Arguments
 ### Commands
-- [__sub-cmd__](examples/meta/help_docs/markdown/covademo-sub-cmd.md): A demo sub command.
-- [__basic__](examples/meta/help_docs/markdown/covademo-basic.md): The most basic Command.
-- [__nest-1__](examples/meta/help_docs/markdown/covademo-nest-1.md): Nested Level 1.
-- [__struct-cmd__](examples/meta/help_docs/markdown/covademo-struct-cmd.md): A demo sub command made from a struct.
-- [__union-cmd__](examples/meta/help_docs/markdown/covademo-union-cmd.md): A demo sub command made from a union.
-- [__fn-cmd__](examples/meta/help_docs/markdown/covademo-fn-cmd.md): A demo sub command made from a function.
-- [__add-user__](examples/meta/help_docs/markdown/covademo-add-user.md): A demo sub command for adding a user.
+- [__sub-cmd__](./covademo-sub-cmd.md): A demo sub command.
+- [__basic__](./covademo-basic.md): The most basic Command.
+- [__nest-1__](./covademo-nest-1.md): Nested Level 1.
+- [__struct-cmd__](./covademo-struct-cmd.md): A demo sub command made from a struct.
+- [__union-cmd__](./covademo-union-cmd.md): A demo sub command made from a union.
+- [__fn-cmd__](./covademo-fn-cmd.md): A demo sub command made from a function.
+- [__add-user__](./covademo-add-user.md): A demo sub command for adding a user.
 ### Options
 - __string_opt__:
     - `-s, --string, --text <string_val (string)>`

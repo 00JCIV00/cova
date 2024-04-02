@@ -1,5 +1,5 @@
 # fn-cmd
-__[covademo](examples/meta/help_docs/markdown/covademo.md)__ > __fn-cmd__
+__[covademo](./covademo.md)__ > __fn-cmd__
 
 A demo sub command made from a function.
 

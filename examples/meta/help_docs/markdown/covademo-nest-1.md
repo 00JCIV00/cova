@@ -1,5 +1,5 @@
 # nest-1
-__[covademo](examples/meta/help_docs/markdown/covademo.md)__ > __nest-1__
+__[covademo](./covademo.md)__ > __nest-1__
 
 Nested Level 1.
 
@@ -14,5 +14,5 @@ USAGE:
 
 ## Arguments
 ### Commands
-- [__nest-2__](examples/meta/help_docs/markdown/covademo-nest-1-nest-2.md): Nested Level 2.
+- [__nest-2__](./covademo-nest-1-nest-2.md): Nested Level 2.
 
