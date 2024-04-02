@@ -1,0 +1,36 @@
+.TH covademo-union-cmd 1 "30 MAR 2024" "0.10.0" 
+
+.SH NAME
+.B covademo-union-cmd
+
+.SH SYNOPSIS
+.B covademo-union-cmd
+.RB [COMMAND]
+.RB [OPTIONS]
+.RB [VALUES]
+
+.SH DESCRIPTION
+.B A demo sub command made from a union.
+.SH ARGUMENTS
+.SS OPTIONS
+.B int:
+[-i,--int "int (i32)"]:
+  The first Integer Value for the union-cmd.
+
+.B str:
+[-s,--str "str (text)"]:
+  The first String Value for the union-cmd.
+
+.SS VALUES
+.B union-uint:
+(u8): The 'union-uint' Value of type 'u8'.
+
+.B union-str:
+(text): The 'union-str' Value of type '[]const u8'.
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B MIT License

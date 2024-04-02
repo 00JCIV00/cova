@@ -1,0 +1,38 @@
+.TH covademo-sub-cmd 1 "30 MAR 2024" "0.10.0" 
+
+.SH NAME
+.B covademo-sub-cmd
+
+.SH SYNOPSIS
+.B covademo-sub-cmd
+.RB [COMMAND]
+.RB [OPTIONS]
+.RB [VALUES]
+
+.SH DESCRIPTION
+.B A demo sub command.
+.SH ARGUMENTS
+.SS OPTIONS
+.B nested_int_opt:
+[-i,--nested_int "nested_int_val (u8)"]:
+  A nested integer option.
+
+.B nested_str_opt:
+[-s,--nested_str "nested_str_val (text)"]:
+  A nested string option.
+
+.SS VALUES
+.B nested_float_val:
+(f32): A nested float value.
+
+.SH Examples
+
+.B covademo sub-cmd 3.14
+
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B MIT License

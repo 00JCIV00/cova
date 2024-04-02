@@ -1,0 +1,73 @@
+.TH covademo-struct-cmd 1 "30 MAR 2024" "0.10.0" 
+
+.SH NAME
+.B covademo-struct-cmd
+
+.SH SYNOPSIS
+.B covademo-struct-cmd
+.RB [COMMAND]
+.RB [OPTIONS]
+.RB [VALUES]
+
+.SH DESCRIPTION
+.B A demo sub command made from a struct.
+.SH ARGUMENTS
+.SS COMMANDS
+.B inner-cmd:
+An inner/nested command for struct-cmd
+
+.SS OPTIONS
+.B int:
+[-null,--int "int (i32)"]:
+  The first Integer Value for the struct-cmd.
+
+.B str:
+[-null,--str "str (text)"]:
+  The 'str' Option of type '?[]const u8'.
+
+.B str2:
+[-null,--str2 "str2 (text)"]:
+  The 'str2' Option of type '?[]const u8'.
+
+.B flt:
+[-null,--flt "flt (f16)"]:
+  The 'flt' Option of type '?f16'.
+
+.B int2:
+[-null,--int2 "int2 (u16)"]:
+  The 'int2' Option of type '?u16'.
+
+.B multi-int:
+[-null,--multi-int "multi-int (u8)"]:
+  The 'multi_int' Option of type '[3]?u8'.
+
+.B multi-str:
+[-null,--multi-str "multi-str (text)"]:
+  The 'multi_str' Option of type '[5]?[]const u8'.
+
+.B rgb-enum:
+[-null,--rgb-enum "rgb-enum (u2)"]:
+  The 'rgb_enum' Option of type '?covademo.DemoStruct.InnerEnum'.
+
+.B struct-bool:
+[-null,--struct-bool "struct-bool (bool)"]:
+  The 'struct_bool' Option of type 'bool'.
+
+.B struct-str:
+[-null,--struct-str "struct-str (text)"]:
+  The 'struct_str' Option of type '[]const u8'.
+
+.B struct-int:
+[-null,--struct-int "struct-int (i64)"]:
+  The 'struct_int' Option of type 'i64'.
+
+.SS VALUES
+.B multi-int-val:
+(u16): The 'multi-int-val' Value of type '[2]u16'.
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B MIT License

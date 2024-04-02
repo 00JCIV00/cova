@@ -1,0 +1,45 @@
+.TH covademo-add-user 1 "30 MAR 2024" "0.10.0" 
+
+.SH NAME
+.B covademo-add-user
+
+.SH SYNOPSIS
+.B covademo-add-user
+.RB [COMMAND]
+.RB [OPTIONS]
+.RB [VALUES]
+
+.SH DESCRIPTION
+.B A demo sub command for adding a user.
+.SH ARGUMENTS
+.SS OPTIONS
+.B fname:
+[-f,--fname "fname (text)"]:
+  The 'fname' Option of type '?[]const u8'.
+
+.B lname:
+[-l,--lname "lname (text)"]:
+  The 'lname' Option of type '?[]const u8'.
+
+.B age:
+[-a,--age "age (u8)"]:
+  The 'age' Option of type '?u8'.
+
+.B admin:
+[-A,--admin "admin (bool)"]:
+  The 'admin' Option of type '?bool'.
+
+.B ref-ids:
+[-r,--ref-ids "ref-ids (u8)"]:
+  The 'ref_ids' Option of type '[3]?u8'.
+
+.SS VALUES
+.B id:
+(u16): The 'id' Value of type 'u16'.
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B MIT License

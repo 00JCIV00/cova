@@ -75,18 +75,16 @@ pub fn build(b: *std.Build) void {
             .ver_date = "30 MAR 2024",
             .author = "00JCIV00",
             .copyright = "MIT License",
-            //.help_docs_config = .{
-            //    .local_filepath = "meta/manpages",
-            //    .man_name = "User's Manual",
-            //},
-            //.tab_complete_config = .{
-            //    .local_filepath = "meta",
-            //    .include_opts = true,
-            //},
-            //.arg_template_config = .{
-            //    .local_filepath = "meta/arg_templates",
-            //    .include_opts = true
-            //},
+            .help_docs_config = .{
+                .local_filepath = "examples/meta/help_docs/",
+            },
+            .tab_complete_config = .{
+                .local_filepath = "examples/meta/tab_completions/",
+                .include_opts = true,
+            },
+            .arg_template_config = .{
+                .local_filepath = "examples/meta/arg_templates",
+            },
         },
     );
     const cova_demo_gen_step = b.step("cova-demo-gen", "Generate Meta Docs for the 'covademo'");

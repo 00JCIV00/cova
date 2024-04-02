@@ -1,0 +1,465 @@
+"Meta Info": {
+    "name": "covademo",
+    "description": "A demo of the Cova command line argument parser.",
+    "version": "0.10.0",
+    "ver_date": "30 MAR 2024",
+    "author": "00JCIV00",
+    "copyright": "MIT License"
+},
+"Arguments": {
+    "name": "covademo",
+    "description": "A demo of the Cova command line argument parser.",
+    "sub_cmds": [
+        {
+            "name": "sub-cmd",
+            "description": "A demo sub command.",
+            "aliases": [
+                "alias-cmd",
+                "test-alias"
+            ],
+            "group": "RAW",
+            "opts": [
+                {
+                    "name": "nested_int_opt",
+                    "long_name": "nested_int",
+                    "short_name": 105,
+                    "description": "A nested integer option.",
+                    "type_name": "u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "nested_str_opt",
+                    "long_name": "nested_str",
+                    "short_name": 115,
+                    "description": "A nested string option.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ],
+            "vals": [
+                {
+                    "name": "nested_float_val",
+                    "description": "A nested float value.",
+                    "type_name": "f32",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        },
+        {
+            "name": "basic",
+            "description": "The most basic Command.",
+            "aliases": [
+                "basic-cmd"
+            ],
+            "group": "RAW"
+        },
+        {
+            "name": "nest-1",
+            "description": "Nested Level 1.",
+            "sub_cmds": [
+                {
+                    "name": "nest-2",
+                    "description": "Nested Level 2.",
+                    "sub_cmds": [
+                        {
+                            "name": "nest-3",
+                            "description": "Nested Level 3.",
+                            "sub_cmds": [
+                                {
+                                    "name": "nest-4",
+                                    "description": "Nested Level 4."
+                                }
+                            ],
+                            "opts": [
+                                {
+                                    "name": "inheritable",
+                                    "long_name": "inheritable",
+                                    "short_name": 105,
+                                    "description": "Inheritable Option",
+                                    "type_name": "bool",
+                                    "set_behavior": "Last",
+                                    "max_args": 1
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "struct-cmd",
+            "description": "A demo sub command made from a struct.",
+            "group": "STRUCT-BASED",
+            "sub_cmds": [
+                {
+                    "name": "inner-cmd",
+                    "description": "An inner/nested command for struct-cmd",
+                    "group": "STRUCT-BASED",
+                    "opts": [
+                        {
+                            "name": "in-bool",
+                            "long_name": "in-bool",
+                            "description": "The 'in_bool' Option of type 'bool'.",
+                            "type_name": "bool",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "in-float",
+                            "long_name": "in-float",
+                            "description": "The 'in_float' Option of type 'f32'.",
+                            "type_name": "f32",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        }
+                    ]
+                }
+            ],
+            "opts": [
+                {
+                    "name": "int",
+                    "long_name": "int",
+                    "description": "The first Integer Value for the struct-cmd.",
+                    "type_name": "i32",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "str",
+                    "long_name": "str",
+                    "description": "The 'str' Option of type '?[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "str2",
+                    "long_name": "str2",
+                    "description": "The 'str2' Option of type '?[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "flt",
+                    "long_name": "flt",
+                    "description": "The 'flt' Option of type '?f16'.",
+                    "type_name": "f16",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "int2",
+                    "long_name": "int2",
+                    "description": "The 'int2' Option of type '?u16'.",
+                    "type_name": "u16",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "multi-int",
+                    "long_name": "multi-int",
+                    "description": "The 'multi_int' Option of type '[3]?u8'.",
+                    "type_name": "u8",
+                    "set_behavior": "Multi",
+                    "max_args": 3
+                },
+                {
+                    "name": "multi-str",
+                    "long_name": "multi-str",
+                    "description": "The 'multi_str' Option of type '[5]?[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Multi",
+                    "max_args": 5
+                },
+                {
+                    "name": "rgb-enum",
+                    "long_name": "rgb-enum",
+                    "description": "The 'rgb_enum' Option of type '?covademo.DemoStruct.InnerEnum'.",
+                    "type_name": "u2",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "struct-bool",
+                    "long_name": "struct-bool",
+                    "description": "The 'struct_bool' Option of type 'bool'.",
+                    "type_name": "bool",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "struct-str",
+                    "long_name": "struct-str",
+                    "description": "The 'struct_str' Option of type '[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "struct-int",
+                    "long_name": "struct-int",
+                    "description": "The 'struct_int' Option of type 'i64'.",
+                    "type_name": "i64",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ],
+            "vals": [
+                {
+                    "name": "multi-int-val",
+                    "description": "The 'multi-int-val' Value of type '[2]u16'.",
+                    "type_name": "u16",
+                    "set_behavior": "Multi",
+                    "max_args": 2
+                }
+            ]
+        },
+        {
+            "name": "union-cmd",
+            "description": "A demo sub command made from a union.",
+            "group": "STRUCT-BASED",
+            "opts": [
+                {
+                    "name": "int",
+                    "long_name": "int",
+                    "short_name": 105,
+                    "description": "The first Integer Value for the union-cmd.",
+                    "type_name": "i32",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "str",
+                    "long_name": "str",
+                    "short_name": 115,
+                    "description": "The first String Value for the union-cmd.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ],
+            "vals": [
+                {
+                    "name": "union-uint",
+                    "description": "The 'union-uint' Value of type 'u8'.",
+                    "type_name": "u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "union-str",
+                    "description": "The 'union-str' Value of type '[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        },
+        {
+            "name": "fn-cmd",
+            "description": "A demo sub command made from a function.",
+            "group": "FN-BASED",
+            "vals": [
+                {
+                    "name": "val-00",
+                    "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
+                    "type_name": "i32",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "val-01",
+                    "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        },
+        {
+            "name": "add-user",
+            "description": "A demo sub command for adding a user.",
+            "group": "STRUCT-BASED",
+            "opts": [
+                {
+                    "name": "fname",
+                    "long_name": "fname",
+                    "short_name": 102,
+                    "description": "The 'fname' Option of type '?[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "lname",
+                    "long_name": "lname",
+                    "short_name": 108,
+                    "description": "The 'lname' Option of type '?[]const u8'.",
+                    "type_name": "text",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "age",
+                    "long_name": "age",
+                    "short_name": 97,
+                    "description": "The 'age' Option of type '?u8'.",
+                    "type_name": "u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "admin",
+                    "long_name": "admin",
+                    "short_name": 65,
+                    "description": "The 'admin' Option of type '?bool'.",
+                    "type_name": "bool",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "ref-ids",
+                    "long_name": "ref-ids",
+                    "short_name": 114,
+                    "description": "The 'ref_ids' Option of type '[3]?u8'.",
+                    "type_name": "u8",
+                    "set_behavior": "Multi",
+                    "max_args": 3
+                }
+            ],
+            "vals": [
+                {
+                    "name": "id",
+                    "description": "The 'id' Value of type 'u16'.",
+                    "type_name": "u16",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        }
+    ],
+    "opts": [
+        {
+            "name": "string_opt",
+            "long_name": "string",
+            "short_name": 115,
+            "description": "A string option. (Can be given up to 4 times.)",
+            "aliases": [
+                "text"
+            ],
+            "group": "STRING",
+            "type_name": "string",
+            "set_behavior": "Multi",
+            "max_args": 4
+        },
+        {
+            "name": "int_opt",
+            "long_name": "int",
+            "short_name": 105,
+            "description": "An integer option. (Can be given up to 10 times.)",
+            "group": "INT",
+            "type_name": "i16",
+            "set_behavior": "Multi",
+            "max_args": 10
+        },
+        {
+            "name": "float_opt",
+            "long_name": "float",
+            "short_name": 102,
+            "description": "An float option. (Can be given up to 10 times.)",
+            "type_name": "f16",
+            "set_behavior": "Multi",
+            "max_args": 10
+        },
+        {
+            "name": "file_opt",
+            "long_name": "file",
+            "short_name": 70,
+            "description": "A filepath option.",
+            "group": "STRING",
+            "type_name": "filepath",
+            "set_behavior": "Last",
+            "max_args": 1
+        },
+        {
+            "name": "ordinal_opt",
+            "long_name": "ordinal",
+            "short_name": 111,
+            "description": "An ordinal number option.",
+            "group": "STRING",
+            "type_name": "text",
+            "set_behavior": "Last",
+            "max_args": 1
+        },
+        {
+            "name": "cardinal_opt",
+            "long_name": "cardinal",
+            "short_name": 99,
+            "description": "A cardinal number option.",
+            "group": "INT",
+            "type_name": "u8",
+            "set_behavior": "Multi",
+            "max_args": 3
+        },
+        {
+            "name": "toggle_opt",
+            "long_name": "toggle",
+            "short_name": 116,
+            "description": "A toggle/boolean option.",
+            "aliases": [
+                "switch"
+            ],
+            "group": "BOOL",
+            "type_name": "bool",
+            "set_behavior": "Last",
+            "max_args": 1
+        },
+        {
+            "name": "bool_opt",
+            "long_name": "bool",
+            "short_name": 98,
+            "description": "A toggle/boolean option.",
+            "group": "BOOL",
+            "type_name": "bool",
+            "set_behavior": "Last",
+            "max_args": 1
+        },
+        {
+            "name": "verbosity_opt",
+            "long_name": "verbosity",
+            "short_name": 118,
+            "description": "Set the CovaDemo verbosity level. (WIP)",
+            "type_name": "u4",
+            "set_behavior": "Last",
+            "max_args": 1
+        }
+    ],
+    "vals": [
+        {
+            "name": "cmd_str",
+            "description": "A string value for the command.",
+            "group": "STRING",
+            "type_name": "text",
+            "set_behavior": "Last",
+            "max_args": 1
+        },
+        {
+            "name": "cmd_bool",
+            "description": "A boolean value for the command.",
+            "type_name": "bool",
+            "set_behavior": "Multi",
+            "max_args": 10
+        },
+        {
+            "name": "cmd_u64",
+            "description": "A u64 value for the command.",
+            "type_name": "u64",
+            "set_behavior": "Multi",
+            "max_args": 3
+        }
+    ]
+}

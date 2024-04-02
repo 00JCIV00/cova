@@ -1,0 +1,88 @@
+# This KDL template is formatted to match the `usage` tool as detailed here: https://sr.ht/~jdx/usage/
+
+name "covademo"
+bin "covademo"
+about "A demo of the Cova command line argument parser."
+version "0.10.0"
+author "00JCIV00"
+
+flag "-s,--string" help="A string option. (Can be given up to 4 times.)"
+flag "-i,--int" help="An integer option. (Can be given up to 10 times.)"
+flag "-f,--float" help="An float option. (Can be given up to 10 times.)"
+flag "-F,--file" help="A filepath option."
+flag "-o,--ordinal" help="An ordinal number option."
+flag "-c,--cardinal" help="A cardinal number option."
+flag "-t,--toggle" help="A toggle/boolean option."
+flag "-b,--bool" help="A toggle/boolean option."
+flag "-v,--verbosity" help="Set the CovaDemo verbosity level. (WIP)"
+
+arg "cmd_str" help="A string value for the command."
+arg "cmd_bool" help="A boolean value for the command."
+arg "cmd_u64" help="A u64 value for the command."
+
+cmd "sub-cmd" help="A demo sub command." {
+    alias "alias-cmd"
+    alias "test-alias"
+
+    flag "-i,--nested_int" help="A nested integer option."
+    flag "-s,--nested_str" help="A nested string option."
+
+    arg "nested_float_val" help="A nested float value."
+}
+
+cmd "basic" help="The most basic Command." {
+    alias "basic-cmd"
+}
+
+cmd "nest-1" help="Nested Level 1." {
+    cmd "nest-2" help="Nested Level 2." {
+        cmd "nest-3" help="Nested Level 3." {
+            flag "-i,--inheritable" help="Inheritable Option"
+            cmd "nest-4" help="Nested Level 4."
+        }
+    }
+}
+
+cmd "struct-cmd" help="A demo sub command made from a struct." {
+    flag "--int" help="The first Integer Value for the struct-cmd."
+    flag "--str" help="The 'str' Option of type '?[]const u8'."
+    flag "--str2" help="The 'str2' Option of type '?[]const u8'."
+    flag "--flt" help="The 'flt' Option of type '?f16'."
+    flag "--int2" help="The 'int2' Option of type '?u16'."
+    flag "--multi-int" help="The 'multi_int' Option of type '[3]?u8'."
+    flag "--multi-str" help="The 'multi_str' Option of type '[5]?[]const u8'."
+    flag "--rgb-enum" help="The 'rgb_enum' Option of type '?covademo.DemoStruct.InnerEnum'."
+    flag "--struct-bool" help="The 'struct_bool' Option of type 'bool'."
+    flag "--struct-str" help="The 'struct_str' Option of type '[]const u8'."
+    flag "--struct-int" help="The 'struct_int' Option of type 'i64'."
+
+    arg "multi-int-val" help="The 'multi-int-val' Value of type '[2]u16'."
+
+    cmd "inner-cmd" help="An inner/nested command for struct-cmd" {
+        flag "--in-bool" help="The 'in_bool' Option of type 'bool'."
+        flag "--in-float" help="The 'in_float' Option of type 'f32'."
+    }
+}
+
+cmd "union-cmd" help="A demo sub command made from a union." {
+    flag "-i,--int" help="The first Integer Value for the union-cmd."
+    flag "-s,--str" help="The first String Value for the union-cmd."
+
+    arg "union-uint" help="The 'union-uint' Value of type 'u8'."
+    arg "union-str" help="The 'union-str' Value of type '[]const u8'."
+}
+
+cmd "fn-cmd" help="A demo sub command made from a function." {
+    arg "val-00" help="No description. (Descriptions cannot currently be generated from Function Parameters.)"
+    arg "val-01" help="No description. (Descriptions cannot currently be generated from Function Parameters.)"
+}
+
+cmd "add-user" help="A demo sub command for adding a user." {
+    flag "-f,--fname" help="The 'fname' Option of type '?[]const u8'."
+    flag "-l,--lname" help="The 'lname' Option of type '?[]const u8'."
+    flag "-a,--age" help="The 'age' Option of type '?u8'."
+    flag "-A,--admin" help="The 'admin' Option of type '?bool'."
+    flag "-r,--ref-ids" help="The 'ref_ids' Option of type '[3]?u8'."
+
+    arg "id" help="The 'id' Value of type 'u16'."
+}
