@@ -71,7 +71,7 @@ pub fn CommandTemplate(CommandT: type) type {
     };
 }
 
-/// The Option Template Type, built from a Option Type.
+/// The Option Template Type, built from an Option Type.
 pub fn OptionTemplate(OptionT: type) type {
     return struct {
         const OptT: type = OptionT;
