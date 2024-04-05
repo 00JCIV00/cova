@@ -25,7 +25,7 @@
 typeset -A cmd_args
 cmd_args=(
     "covademo" "sub-cmd basic nest-1 struct-cmd union-cmd fn-cmd add-user help usage --string --int --float --file --ordinal --cardinal --toggle --bool --verbosity --help --usage"
-    "covademo_sub-cmd" "help usage --nested_int --nested_str --help --usage"
+    "covademo_sub-cmd" "help usage --nested_str --help --usage"
     "covademo_basic" "help usage --help --usage"
     "covademo_nest-1" "nest-2 help usage --help --usage"
     "covademo_nest-1_nest-2" "nest-3 help usage --help --usage"

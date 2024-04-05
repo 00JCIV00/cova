@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    sub-cmd -i, --nested_int <nested_int_val (u8)> | -s, --nested_str <nested_str_val (text)>
+    sub-cmd -i  <nested_int_val (u8)> | -s, --nested_str <nested_str_val (text)>
     sub-cmd "nested_float_val (f32)"
     sub-cmd 
 
@@ -25,7 +25,7 @@ USAGE:
 ## Arguments
 ### Options
 - __nested_int_opt__:
-    - `-i, --nested_int <nested_int_val (u8)>`
+    - `-i <nested_int_val (u8)>`
     - A nested integer option.
 - __nested_str_opt__:
     - `-s, --nested_str <nested_str_val (text)>`

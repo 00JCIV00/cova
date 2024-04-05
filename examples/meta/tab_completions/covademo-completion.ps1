@@ -52,7 +52,6 @@ function _covademo-sub-cmd {
     $suggestions = @(
 		'help',
 		'usage',
-		'--nested_int',
 		'--nested_str',
 		'--help',
 		'--usage'

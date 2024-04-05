@@ -87,7 +87,7 @@ pub const Config = struct {
     ///
     /// Must support the following format types in this order:
     /// 1. Character (Short Prefix) 
-    /// 2. Optional Character "{?c}" (Short Name)
+    /// 2. Optional Character "{?u}" (Short Name)
     /// 3. String Name Separator
     /// 4. String (Long Prefix)
     /// 5. Optional String "{?s}" (Long Name)
@@ -95,7 +95,7 @@ pub const Config = struct {
     /// 7. String (Value Type)
     ///
     /// Note, a comma "," will automatically be placed between the short and long name if they both exist.
-    usage_fmt: []const u8 = "{c}{?c}{s}{s}{?s} <{s} ({s})>",
+    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s} <{s} ({s})>",
 
     /// Prefix for Short Options.
     short_prefix: ?u8 = '-',
@@ -320,8 +320,8 @@ pub fn Custom(comptime config: Config) type {
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
 
             try writer.print(usage_fmt, .{ 
-                if (short_prefix != null and self.short_name != null) short_prefix.? else 0,
-                if (short_prefix != null) self.short_name orelse 0 else 0,
+                @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),
+                @as(u21, if (short_prefix != null) self.short_name orelse 0x200B else 0x200B),
                 if (self.short_name != null and self.long_name != null) name_sep_fmt else "",
                 if (long_prefix != null and self.long_name != null) long_prefix.? else "",
                 if (long_prefix != null) self.long_name orelse "" else "",

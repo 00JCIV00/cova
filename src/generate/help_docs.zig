@@ -66,14 +66,14 @@ pub const HelpDocsConfig = struct{
     /// Manpages Options Format.
     /// Must support the following format types in this order:
     /// 1. Character (Option Short Prefix)
-    /// 2. Optional Character "{?c}" (Option Short Name)
+    /// 2. Optional Character "{?u}" (Option Short Name)
     /// 3. String (Option Long Prefix)
     /// 4. Optional String "{?s}" (Option Long Name)
     /// 5. String (Option Value Name)
     /// 6. String (Option Value Type)
     /// 7. String (Option Name)
     /// 8. String (Option Description)
-    mp_opts_fmt: []const u8 = ".B {s}:\n[{c}{?c},{s}{?s} \"{s} ({s})\"]:\n  {s}\n\n",
+    mp_opts_fmt: []const u8 = ".B {s}:\n[{u}{?u},{s}{?s} \"{s} ({s})\"]:\n  {s}\n\n",
     /// Manpages Values Format.
     /// Must support the following format types in this order:
     /// 1. String (Value Name)
@@ -94,20 +94,23 @@ pub const HelpDocsConfig = struct{
     /// Markdown Options Format.
     /// Must support the following format types in this order:
     /// 1. Character (Option Short Prefix)
-    /// 2. Optional Character "{?c}" (Option Short Name)
-    /// 3. String (Option Long Prefix)
-    /// 4. Optional String "{?s}" (Option Long Name)
-    /// 5. String (Option Aliases)
-    /// 6. String (Option Value Name)
-    /// 7. String (Option Value Type)
-    /// 8. String (Option Name)
-    /// 9. String (Option Description)
+    /// 2. Optional Character "{?u}" (Option Short Name)
+    /// 3. String (Option Name Separator)
+    /// 4. String (Option Long Prefix)
+    /// 5. Optional String "{?s}" (Option Long Name)
+    /// 6. String (Option Aliases)
+    /// 7. String (Option Value Name)
+    /// 8. String (Option Value Type)
+    /// 9. String (Option Name)
+    /// 10. String (Option Description)
     md_opts_fmt: []const u8 =
         \\- __{s}__:
-        \\    - `{c}{?c}, {s}{?s}{s} <{s} ({s})>`
+        \\    - `{u}{?u}{s}{s}{?s}{s} <{s} ({s})>`
         \\    - {s}
         \\
     ,
+    /// Markdown Option Names Separator Format
+    md_opt_names_sep_fmt: []const u8 = ", ",
     /// Markdown Values Format.
     /// Must support the following format types in this order:
     /// 1. String (Value Name)
@@ -176,7 +179,7 @@ fn createManpageCtx(
     const mp_name = mp_ctx.name;
     const mp_description = mp_config.description orelse cmd.description;
     const title = fmt.comptimePrint(
-        \\.TH {s} {c} {s}{s}{s}
+        \\.TH {s} {u} {s}{s}{s}
         \\
         , .{
             mp_name,
@@ -405,13 +408,14 @@ fn createMarkdownCtx(
             inline for (opts) |opt|
                 try md_writer.print(md_config.md_opts_fmt, .{
                     opt.name,
-                    CommandT.OptionT.short_prefix orelse 0,
-                    if (CommandT.OptionT.short_prefix != null) opt.short_name else 0,
-                    opt_long_pf,
-                    if (CommandT.OptionT.long_prefix != null) opt.long_name else "",
+                    @as(u21, if (opt.short_name != null) CommandT.OptionT.short_prefix orelse 0x200B else 0x200B),
+                    @as(u21, if (CommandT.OptionT.short_prefix != null) opt.short_name orelse 0x200B else 0x200B),
+                    if (opt.short_name != null and opt.long_name != null) md_config.md_opt_names_sep_fmt else "",
+                    if (opt.long_name != null) opt_long_pf else "",
+                    if (CommandT.OptionT.long_prefix != null) opt.long_name orelse "" else "",
                     if (opt.alias_long_names) |opt_aliases| optAliases: {
                         comptime var alias_list: []const u8 = "";
-                        inline for (opt_aliases) |opt_alias| alias_list = alias_list ++ ", " ++ opt_long_pf ++ opt_alias;
+                        inline for (opt_aliases) |opt_alias| alias_list = alias_list ++ md_config.md_opt_names_sep_fmt ++ opt_long_pf ++ opt_alias;
                         break :optAliases alias_list;
                     }
                     else "",

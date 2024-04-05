@@ -62,7 +62,7 @@ _covademo_sub-cmd_completions() {
 
     case "${prev}" in
         "sub-cmd")
-            COMPREPLY=($(compgen -W "help usage --nested_int --nested_str --help --usage" -- ${cur}))
+            COMPREPLY=($(compgen -W "help usage --nested_str --help --usage" -- ${cur}))
             ;;
         *)
             COMPREPLY=($(compgen -f -- ${cur}))

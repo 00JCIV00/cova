@@ -21,7 +21,6 @@
             "opts": [
                 {
                     "name": "nested_int_opt",
-                    "long_name": "nested_int",
                     "short_name": 105,
                     "description": "A nested integer option.",
                     "type_name": "u8",

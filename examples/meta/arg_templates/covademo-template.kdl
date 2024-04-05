@@ -24,7 +24,7 @@ cmd "sub-cmd" help="A demo sub command." {
     alias "alias-cmd"
     alias "test-alias"
 
-    flag "-i,--nested_int" help="A nested integer option."
+    flag "-i," help="A nested integer option."
     flag "-s,--nested_str" help="A nested string option."
 
     arg "nested_float_val" help="A nested float value."

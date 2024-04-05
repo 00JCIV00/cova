@@ -135,14 +135,14 @@ pub const CommandT = Command.Custom(.{
     //}.help,
     //.global_case_sensitive = false,
     .opt_config = .{
-        .usage_fmt = "{c}{?c}{s} {s}{?s} <{s} ({s})>",
+        .usage_fmt = "{u}{?u}{s} {s}{?s} <{s} ({s})>",
         //.allow_arg_indices = false,
         //.global_case_sensitive = false,
         //.usage_fn = struct{
         //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
         //        const short_prefix = @TypeOf(self.*).short_prefix;
         //        const long_prefix = @TypeOf(self.*).long_prefix;
-        //        try writer.print("{?c}{?c}, {?s}{?s}", .{
+        //        try writer.print("{?u}{?u}, {?s}{?s}", .{
         //                short_prefix, 
         //                self.short_name, 
         //                long_prefix, 
@@ -278,7 +278,7 @@ pub const setup_cmd: CommandT = .{
                 .{
                     .name = "nested_int_opt",
                     .short_name = 'i',
-                    .long_name = "nested_int",
+                    //.long_name = "nested_int",
                     .val = ValueT.ofType(u8, .{
                         .name = "nested_int_val",
                         .description = "A nested integer value.",
