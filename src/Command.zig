@@ -151,9 +151,11 @@ pub const Config = struct {
     /// The Default Max Number of Arguments for Commands, Options, and Values individually.
     /// This is used for both `init()` and `from()` but can be overwritten for the latter.
     max_args: u8 = 25,
-    /// Allow tracking of Argument Indices.
-    allow_arg_indices: bool = true,
+    /// Include tracking of Argument Indices.
+    /// If not included, this feature wil be `void`ed to reduce binary size.
+    include_arg_indices: bool = true,
     /// Include Examples in Help Messages.
+    /// If not included, this feature wil be `void`ed to reduce binary size.
     include_examples: bool = true,
 
     /// During parsing, mandate that a Sub Command be used with a Command if one is available.
@@ -171,14 +173,29 @@ pub const Config = struct {
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
 
-    /// Return an instance of this Config with all `_fmt` fields set to `""`.
-    /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
-    pub fn noFormats() @This() {
-        var config: @This() = .{};
-        config.opt_config = Option.Config.noFormats();
-        config.val_config = Value.Config.noFormats();
-        inline for (meta.fields(@This())) |field| {
-            if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+    /// Configuration for `optimized()`.
+    pub const OptimizeConfig = struct{
+        /// Set all `_fmt` fields `""`.
+        /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
+        no_formats: bool = true,
+        /// Remove the following features by setting them to `void`:
+        /// - `include_arg_indices`
+        /// - `include_examples`
+        remove_features: bool = true,
+    };
+
+    /// Return a CommandConfig that is optimized for smaller binary sizes.
+    pub fn optimized(optimize_config: OptimizeConfig) @This() {
+        var config: @This() = .{
+            .include_arg_indices = !optimize_config.remove_features,
+            .include_examples = !optimize_config.remove_features,
+        };
+        config.opt_config = Option.Config.optimized(OptimizeConfig, optimize_config);
+        config.val_config = Value.Config.optimized(OptimizeConfig, optimize_config);
+        if (optimize_config.no_formats) {
+            inline for (meta.fields(@This())) |field| {
+                if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+            }
         }
         const conf = config;
         return conf;
@@ -268,9 +285,9 @@ pub fn Custom(comptime config: Config) type {
         /// Max Args.
         /// Check (`Command.Config`) for details.
         pub const max_args = config.max_args;
-        /// Allow Argument Indices.
+        /// Include Argument Indices.
         /// Check (`Command.Config`) for details.
-        pub const allow_arg_indices = config.allow_arg_indices;
+        pub const include_arg_indices = config.include_arg_indices;
         /// Include Examples.
         /// Check (`Command.Config`) for details.
         pub const include_examples = config.include_examples;
@@ -309,7 +326,7 @@ pub fn Custom(comptime config: Config) type {
         /// The Argument Index of this Command which is determined during parsing.
         ///
         /// *This should be Read-Only for library users.*
-        arg_idx: if (allow_arg_indices) ?u8 else void = if (allow_arg_indices) null else {},
+        arg_idx: if (include_arg_indices) ?u8 else void = if (include_arg_indices) null else {},
 
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
@@ -359,7 +376,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set the Argument Index of this Command.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) void {
-            if (!allow_arg_indices) return;
+            if (!include_arg_indices) return;
             @constCast(self).arg_idx = arg_idx;
         }
 

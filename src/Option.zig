@@ -115,16 +115,20 @@ pub const Config = struct {
     /// During parsing, mandate that Option instances of this Option Type must be used in a case-sensitive manner when called by their Long Name.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
-    /// Allow tracking of Argument Indices.
-    allow_arg_indices: bool = true,
+    /// Include tracking of Argument Indices.
+    /// If not included, this feature wil be `void`ed to reduce binary size.
+    include_arg_indices: bool = true,
 
-    /// Return an instance of this Config with all `_fmt` fields set to `""`.
-    /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
-    pub fn noFormats() @This() {
-        var config: @This() = .{};
-        config.val_config = Value.Config.noFormats();
-        inline for (meta.fields(@This())) |field| {
-            if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+    /// Return an Option Config that is optimized for smaller binary sizes.
+    pub fn optimized(comptime OptimizeConfig: type, optimize_config: OptimizeConfig) @This() {
+        var config: @This() = .{
+            .include_arg_indices = !optimize_config.remove_features,
+        };
+        config.val_config = Value.Config.optimized(OptimizeConfig, optimize_config);
+        if (optimize_config.no_formats) {
+            inline for (meta.fields(@This())) |field| {
+                if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+            }
         }
         const conf = config;
         return conf;
@@ -179,9 +183,9 @@ pub fn Custom(comptime config: Config) type {
         /// Allow Abbreviated Long Options.
         /// Check `Options.Config` for details.
         pub const allow_abbreviated_long_opts = config.allow_abbreviated_long_opts;
-        /// Allow Argument Indices.
+        /// Include Argument Indices.
         /// Check (`Option.Config`) for details.
-        pub const allow_arg_indices = config.allow_arg_indices;
+        pub const include_arg_indices = config.include_arg_indices;
 
         /// The Allocator for this Option's parent Command.
         /// This is set during the `init()` call of this Option's parent Command.
@@ -207,7 +211,7 @@ pub fn Custom(comptime config: Config) type {
         ///
         /// *This should be Read-Only for library users.*
         //arg_idx: ?[]u8 = null,
-        arg_idx: if (allow_arg_indices) ?[]u8 else void = if (allow_arg_indices) null else {},
+        arg_idx: if (include_arg_indices) ?[]u8 else void = if (include_arg_indices) null else {},
 
         /// This Option's Short Name (ex: `-s`).
         short_name: ?u8 = null,
@@ -258,7 +262,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set a new Argument Index for this Option.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
-            if (!allow_arg_indices) return;
+            if (!include_arg_indices) return;
             const alloc = self._alloc orelse return error.OptionNotInitialized;
             if (self.arg_idx == null) {
                 @constCast(self).*.arg_idx = try alloc.alloc(u8, 1);

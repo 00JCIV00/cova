@@ -18,8 +18,8 @@ const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
 const ex_structs = @import("example_structs.zig");
-const conf_no_fmt = Command.Config.noFormat();
-pub const CommandT = Command.Custom(.{ 
+const conf_optimized = Command.Config.optimized(.{});
+pub const CommandT = Command.Custom(.{
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
     //.allow_arg_indices = false,
@@ -648,4 +648,7 @@ pub fn main() !void {
     const args = try cova.tokenizeArgs(arg_str, alloc, .{ .groupers_open = "\"'(", .groupers_close = "\"')" });
     defer alloc.free(args);
     log.debug("Tokenized Args:\n{s}", .{ args });
+
+    // Optimized Config
+    log.debug("Optimized Config:\n{any}", .{ conf_optimized });
 }

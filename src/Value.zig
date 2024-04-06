@@ -45,8 +45,9 @@ pub const Config = struct {
     global_arg_delims: []const u8 = ",;",
     /// Maximum instances of a Child Type that a Value can hold.
     max_children: u8 = 10,
-    /// Allow tracking of Argument Indices.
-    allow_arg_indices: bool = true,
+    /// Include tracking of Argument Indices.
+    /// If not included, this feature wil be `void`ed to reduce binary size.
+    include_arg_indices: bool = true,
 
     /// Custom Types for this project's Custom Values. 
     /// If these Types are `Value.Typed` they'll be coerced to match the parent `Value.Config` (not preferred).
@@ -156,12 +157,15 @@ pub const Config = struct {
     /// 3. String (Value Description)
     help_fmt: []const u8 = "{s} ({s}): {s}",
 
-    /// Return an instance of this Config with all `_fmt` fields set to `""`.
-    /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
-    pub fn noFormats() @This() {
-        var config: @This() = .{};
-        inline for (meta.fields(@This())) |field| {
-            if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+    /// Return an Option Config that is optimized for smaller binary sizes.
+    pub fn optimized(comptime OptimizeConfig: type, optimize_config: OptimizeConfig) @This() {
+        var config: @This() = .{
+            .include_arg_indices = !optimize_config.remove_features,
+        };
+        if (optimize_config.no_formats) {
+            inline for (meta.fields(@This())) |field| {
+                if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+            }
         }
         const conf = config;
         return conf;
@@ -204,7 +208,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         ///
         /// *This should be Read-Only for library users.*
         //arg_idx: ?[]u8 = null,
-        arg_idx: if (config.allow_arg_indices) ?[]u8 else void = if (config.allow_arg_indices) null else {},
+        arg_idx: if (config.include_arg_indices) ?[]u8 else void = if (config.include_arg_indices) null else {},
 
         /// The Parsed and Validated Argument(s) this Value has been set to.
         ///
@@ -586,9 +590,9 @@ pub fn Custom(comptime config: Config) type {
         /// Custom Usage Function.
         /// Check (`Value.Config`) for details.
         pub const global_usage_fn = config.global_usage_fn;
-        /// Allow Argument Indices.
+        /// Include Argument Indices.
         /// Check (`Value.Config`) for details.
-        pub const allow_arg_indices = config.allow_arg_indices;
+        pub const include_arg_indices = config.include_arg_indices;
 
         /// Values Help Format.
         /// Check (`Value.Config`) for details.
@@ -641,7 +645,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set a new Argument Index for this Value.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
-            if (!config.allow_arg_indices) return;
+            if (!config.include_arg_indices) return;
             const alloc = self.allocator() orelse return error.ValueNotInitialized;
             const self_idx = switch(meta.activeTag(self.*.generic)) {
                 inline else => |tag| &@field(@constCast(self).*.generic, @tagName(tag)).arg_idx,
@@ -889,7 +893,7 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (!allow_arg_indices) return;
+            if (!include_arg_indices) return;
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));
