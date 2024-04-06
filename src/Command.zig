@@ -853,6 +853,8 @@ pub fn Custom(comptime config: Config) type {
             cmd_alias_names: ?[]const []const u8 = null,
             /// A Description for the Command.
             cmd_description: []const u8 = "",
+            /// Example(s) for the Command.
+            cmd_examples: if (include_examples) ?[]const []const u8 else void = if (include_examples) null else {},
             /// A Help Prefix for the Command.
             cmd_help_prefix: []const u8 = global_help_prefix,
             /// Command Groups for this Command
@@ -1058,6 +1060,7 @@ pub fn Custom(comptime config: Config) type {
                 .name = cmd_name,
                 .alias_names = from_config.cmd_alias_names,
                 .description = from_config.cmd_description,
+                .examples = from_config.cmd_examples,
                 .hidden = from_config.cmd_hidden,
                 .help_prefix = from_config.cmd_help_prefix,
                 .cmd_groups = from_config.cmd_groups,
@@ -1160,6 +1163,7 @@ pub fn Custom(comptime config: Config) type {
                 .name = if (from_config.cmd_name) |c_name| c_name else @typeName(FromFn),
                 .alias_names = from_config.cmd_alias_names,
                 .description = from_config.cmd_description,
+                .examples = from_config.cmd_examples,
                 .hidden = from_config.cmd_hidden,
                 .cmd_groups = from_config.cmd_groups,
                 .cmd_group = from_config.cmd_group,

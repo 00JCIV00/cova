@@ -43,12 +43,15 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(User, .{
             .cmd_name = "new",
             .cmd_description = "Add a new user.",
+            // Examples can be added for Commands to be shown in Help Messages 
+            // and Generated Help Docs.
+            .cmd_examples = &.{ "basic-app new -f Bruce -l Wayne -a 40 -p \"555 555 5555\" -A \" 1007 Mountain Drive, Gotham\" true" },
             .cmd_group = "INTERACT",
             // Descriptions can be added for Options and Values of Struct or Union conversions as
             // seen here.
             .sub_descriptions = &.{
                 .{ "is_admin", "Add this user as an admin?" },
-                .{ "first_name", "User's First Name." }, 
+                .{ "first_name", "User's First Name." },
                 .{ "last_name", "User's Last Name." },
                 .{ "age", "User's Age." },
                 .{ "phone", "User's Phone #." },
@@ -59,6 +62,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
+            .cmd_examples = &.{ "basic-app open users.csv" },
             .cmd_group = "INTERACT",
         }),
         // A "raw" Command, same as the parent `setup_cmd`.
@@ -79,6 +83,10 @@ pub const setup_cmd: CommandT = .{
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
+            .examples = &.{ 
+                "basic-app clean",
+                "basic-app delete --file users.csv"
+            },
             // Aliases can be created for Commands and Options to give end users alternative words 
             // for using those Arguments.
             .alias_names = &.{ "delete" },
