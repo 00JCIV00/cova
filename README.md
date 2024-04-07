@@ -22,7 +22,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - **[Comptime Setup](#comptime-setup). [Runtime Use](#runtime-use).**
   - Cova is designed to have Argument Types set up at ***compile time*** so they can be validated during each compilation, thus providing you with immediate feedback.
   - Once validated, Argument Types are initialized to memory for ***runtime*** use where end user argument tokens are parsed then made ready to be analyzed by your code.
-- **[Build-time Bonuses](#build-time-bonuses)!** Cova also provides a simple build step to generate Help Docs, Tab Completion Scripts, and Argument Templates at **build-time**!
+- **[Build-time Bonuses!](#build-time-bonuses)** Cova also provides a simple build step to generate Help Docs, Tab Completion Scripts, and Argument Templates at ***build-time***!
 - **Simple Design:**
   - All argument tokens are parsed to Argument Types: Commands, Options, or Values.
     - Options = _Flags_ and Values = _Positional Arguments_
@@ -31,7 +31,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - **Granular, Robust Customization:**
   - [POSIX Compliant](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html) by default, with plenty of ways to configure to whatever standard you'd like.
     - Ex: `command --option option_string "standalone value" subcmd -i 42 --bool`
-  - Cova offers deep customization through the Argument Types and several Config Structs. These Types and Structs all provide simple and predictable defaults, allowing library users to only configure what they need.
+  - Cova offers deep customization through the Argument Types and several Config Structs. These customizations all provide simple and predictable defaults, allowing you to only configure what you need.
 - [***And much more!***](./docs/README_extended.md#features)
 
 ## Usage
@@ -47,12 +47,13 @@ pub const CommandT = cova.Command.Base();
 pub const OptionT = CommandT.OptionT;
 pub const ValueT = CommandT.ValueT;
 
+// The root Command for your program.
 pub const setup_cmd: CommandT = .{
     .name = "basic-app",
     .description = "A basic user management application designed to highlight key features of the Cova library.",
     .cmd_groups = &.{ "INTERACT", "VIEW" },
     .sub_cmds = &.{
-        // A Command created from converting a Struct named `User`.
+        // A Sub Command created from converting a Struct named `User`.
         // Usage Ex: `basic-app new -f Bruce -l Wayne -a 40 -p "555 555 5555" -A " 1007 Mountain Drive, Gotham" true`
         CommandT.from(User, .{
             .cmd_name = "new",
@@ -67,14 +68,14 @@ pub const setup_cmd: CommandT = .{
                 .{ "address", "User's Address." },
             },
         }),
-        // A Command created from a Function named `open`.
+        // A Sub Command created from a Function named `open`.
         // Usage Ex: `basic-app open users.csv`
         CommandT.from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
             .cmd_group = "INTERACT",
         }),
-        // A manually created Command, same as the parent `setup_cmd`.
+        // A manually created Sub Command, same as the root `setup_cmd`.
         // Usage Ex: `basic-app clean` or `basic-app delete --file users.csv`
         CommandT{
             .name = "clean",
