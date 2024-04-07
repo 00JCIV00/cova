@@ -1,0 +1,50 @@
+.TH basic-app-new 1 "06 APR 2024" "0.10.0" 
+
+.SH NAME
+.B basic-app-new
+
+.SH SYNOPSIS
+.B basic-app-new
+.RB [COMMAND]
+.RB [OPTIONS]
+.RB [VALUES]
+
+.SH DESCRIPTION
+.B Add a new user.
+.SH ARGUMENTS
+.SS OPTIONS
+.B first-name:
+[-f,--first-name "first-name ([]const u8)"]:
+  User's First Name.
+
+.B last-name:
+[-l,--last-name "last-name ([]const u8)"]:
+  User's Last Name.
+
+.B age:
+[-a,--age "age (u8)"]:
+  User's Age.
+
+.B phone:
+[-p,--phone "phone ([]const u8)"]:
+  User's Phone #.
+
+.B address:
+[-A,--address "address ([]const u8)"]:
+  User's Address.
+
+.SS VALUES
+.B is-admin:
+(bool): Add this user as an admin?
+
+.SH Examples
+
+.B basic-app new -f Bruce -l Wayne -a 40 -p "555 555 5555" -A " 1007 Mountain Drive, Gotham" true
+
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B MIT License

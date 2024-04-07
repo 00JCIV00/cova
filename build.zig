@@ -14,13 +14,16 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/cova.zig" },
     });
     // - Generator Artifact
-    const cova_gen_exe = b.addExecutable(.{
-        .name = "cova_generator",
+    //const cova_gen_exe = b.addExecutable(.{
+    //    .name = "cova_generator",
+    //    .root_source_file = .{ .path = "src/generator.zig" },
+    //    .target = target,
+    //    .optimize = optimize,
+    //});
+    //b.installArtifact(cova_gen_exe);
+    _ = b.addModule("cova_gen", .{
         .root_source_file = .{ .path = "src/generator.zig" },
-        .target = target,
-        .optimize = optimize,
     });
-    b.installArtifact(cova_gen_exe);
 
     // Static Lib (Used for Docs)
     const cova_lib = b.addStaticLibrary(.{
@@ -51,7 +54,10 @@ pub fn build(b: *std.Build) void {
     const build_docs_step = b.step("docs", "Build the cova library docs");
     build_docs_step.dependOn(&build_docs.step);
 
+
+    //==========================================
     // Examples
+    //==========================================
     // - Cova Demo Exe
     const cova_demo = b.addExecutable(.{
         .name = bin_name orelse "covademo",
@@ -66,24 +72,24 @@ pub fn build(b: *std.Build) void {
     // - Cova Demo Meta Docs
     const cova_demo_gen = createDocGenStep(
         b,
-        cova_gen_exe,
         cova_mod,
-        &cova_demo.root_module,
+        .{ .path = "src/generator.zig" },
+        cova_demo,
         .{
             .kinds = &.{ .all },
             .version = "0.10.0",
-            .ver_date = "30 MAR 2024",
+            .ver_date = "06 APR 2024",
             .author = "00JCIV00",
             .copyright = "MIT License",
             .help_docs_config = .{
-                .local_filepath = "examples/meta/help_docs/",
+                .local_filepath = "examples/cova_demo_meta/help_docs/",
             },
             .tab_complete_config = .{
-                .local_filepath = "examples/meta/tab_completions/",
+                .local_filepath = "examples/cova_demo_meta/tab_completions/",
                 .include_opts = true,
             },
             .arg_template_config = .{
-                .local_filepath = "examples/meta/arg_templates",
+                .local_filepath = "examples/cova_demo_meta/arg_templates",
             },
         },
     );
@@ -102,33 +108,31 @@ pub fn build(b: *std.Build) void {
     const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
     build_basic_app_step.dependOn(&build_basic_app.step);
     // - Basic App Meta Docs
-    //const basic_app_gen = createDocGenStep(
-    //    b,
-    //    cova_gen_exe,
-    //    cova_mod,
-    //    &basic_app.root_module,
-    //    .{
-    //        .kinds = &.{ .all },
-    //        .version = "0.10.0",
-    //        .ver_date = "10 FEB 2024",
-    //        .author = "00JCIV00",
-    //        .copyright = "MIT License",
-    //        .manpages_config = .{
-    //            .local_filepath = "meta/manpages",
-    //            .man_name = "User's Manual",
-    //        },
-    //        .tab_complete_config = .{
-    //            .local_filepath = "meta",
-    //            .include_opts = true,
-    //        },
-    //        .arg_template_config = .{
-    //            .local_filepath = "meta/arg_templates",
-    //            .include_opts = true
-    //        },
-    //    },
-    //);
-    //const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
-    //basic_app_gen_step.dependOn(&basic_app_gen.step);
+    const basic_app_gen = createDocGenStep(
+        b,
+        cova_mod,
+        .{ .path = "src/generator.zig" },
+        basic_app,
+        .{
+            .kinds = &.{ .all },
+            .version = "0.10.0",
+            .ver_date = "06 APR 2024",
+            .author = "00JCIV00",
+            .copyright = "MIT License",
+            .help_docs_config = .{
+                .local_filepath = "examples/basic_app_meta/help_docs/",
+            },
+            .tab_complete_config = .{
+                .local_filepath = "examples/basic_app_meta/tab_completions/",
+                .include_opts = true,
+            },
+            .arg_template_config = .{
+                .local_filepath = "examples/basic_app_meta/arg_templates",
+            },
+        },
+    );
+    const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
+    basic_app_gen_step.dependOn(&basic_app_gen.step);
 }
 
 
@@ -137,16 +141,18 @@ pub fn addCovaDocGenStep(
     b: *std.Build,
     /// The Cova Dependency of the project's `build.zig`.
     cova_dep: *std.Build.Dependency,
-    /// The Program Module where the Command Type and Setup Command can be found.
-    program_mod: *std.Build.Module,
+    /// The Program Compile Step where the Command Type and Setup Command can be found.
+    /// This is typically created with `const exe = b.addExecutable(.{...});` or similar
+    program_step: *std.Build.Step.Compile,
     /// The Config for Meta Doc Generation.
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
+    //const cova_dep = covaDep(b, .{});
     return createDocGenStep(
         b,
-        cova_dep.artifact("cova_generator"),
         cova_dep.module("cova"),
-        program_mod,
+        cova_dep.path("src/generator.zig"),
+        program_step,
         doc_gen_config,
     );
 }
@@ -154,13 +160,19 @@ pub fn addCovaDocGenStep(
 /// Create the Meta Doc Generation Step.
 fn createDocGenStep(
     b: *std.Build,
-    cova_gen_exe: *std.Build.Step.Compile,
     cova_mod: *std.Build.Module,
-    program_mod: *std.Build.Module,
+    cova_gen_path: std.Build.LazyPath,
+    program_step: *std.Build.Step.Compile,
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
-    //const cova_gen_exe = cova_dep.artifact("cova_generator");
-    //cova_gen_exe.root_module.addImport("cova", cova_dep.module("cova"));
+    const program_mod = &program_step.root_module;
+    const cova_gen_exe = b.addExecutable(.{
+        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
+        .root_source_file = cova_gen_path,
+        .target = b.host,
+        .optimize = .Debug,
+    });
+    b.installArtifact(cova_gen_exe);
     cova_gen_exe.root_module.addImport("cova", cova_mod);
     cova_gen_exe.root_module.addImport("program", program_mod);
 
@@ -230,4 +242,23 @@ fn createDocGenStep(
     }
 
     return b.addRunArtifact(cova_gen_exe);
+}
+
+/// Return the Cova Dependency
+/// Courtesy of @castholm
+fn covaDep(b: *std.Build, args: anytype) *std.Build.Dependency {
+    getDep: {
+        const all_pkgs = @import("root").dependencies.packages;
+        const pkg_hash =
+            inline for (@typeInfo(all_pkgs).Struct.decls) |decl| {
+                const pkg = @field(all_pkgs, decl.name);
+                if (@hasDecl(pkg, "build_zig") and pkg.build_zig == @This()) break decl.name;
+            }
+            else break :getDep;
+        const dep_name = 
+            for (b.available_deps) |dep| { if (std.mem.eql(u8, dep[1], pkg_hash)) break dep[0]; }
+            else break :getDep;
+        return b.dependency(dep_name, args);
+    }
+    std.debug.panic("'cova' is not a dependency of '{s}'", .{ b.pathFromRoot("build.zig.zon") });
 }

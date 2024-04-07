@@ -1,0 +1,49 @@
+.TH basic-app-list-filter 1 "06 APR 2024" "0.10.0" 
+
+.SH NAME
+.B basic-app-list-filter
+
+.SH SYNOPSIS
+.B basic-app-list-filter
+.RB [COMMAND]
+.RB [OPTIONS]
+.RB [VALUES]
+
+.SH DESCRIPTION
+.B List all current users matching the provided filter. Filters can be exactly ONE of any user field.
+.SH ARGUMENTS
+.SS OPTIONS
+.B id:
+[-i,--id "id (u16)"]:
+  The 'id' Option of type '?u16'.
+
+.B admin:
+[-a,--admin "admin (bool)"]:
+  The 'admin' Option of type '?bool'.
+
+.B age:
+[-A,--age "age (u8)"]:
+  The 'age' Option of type '?u8'.
+
+.B first-name:
+[-f,--first-name "first-name ([]const u8)"]:
+  The 'first_name' Option of type '?[]const u8'.
+
+.B last-name:
+[-l,--last-name "last-name ([]const u8)"]:
+  The 'last_name' Option of type '?[]const u8'.
+
+.B phone:
+[-p,--phone "phone ([]const u8)"]:
+  The 'phone' Option of type '?[]const u8'.
+
+.B address:
+[-d,--address "address ([]const u8)"]:
+  The 'address' Option of type '?[]const u8'.
+
+
+.SH AUTHOR
+.B 00JCIV00
+
+.SH COPYRIGHT
+.B MIT License

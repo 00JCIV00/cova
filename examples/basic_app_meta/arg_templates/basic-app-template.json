@@ -1,0 +1,192 @@
+"Meta Info": {
+    "name": "basic-app",
+    "description": "A basic user management application designed to highlight key features of the Cova library.",
+    "version": "0.10.0",
+    "ver_date": "06 APR 2024",
+    "author": "00JCIV00",
+    "copyright": "MIT License"
+},
+"Arguments": {
+    "name": "basic-app",
+    "description": "A basic user management application designed to highlight key features of the Cova library.",
+    "sub_cmds": [
+        {
+            "name": "new",
+            "description": "Add a new user.",
+            "group": "INTERACT",
+            "opts": [
+                {
+                    "name": "first-name",
+                    "long_name": "first-name",
+                    "short_name": 102,
+                    "description": "User's First Name.",
+                    "type_name": "[]const u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "last-name",
+                    "long_name": "last-name",
+                    "short_name": 108,
+                    "description": "User's Last Name.",
+                    "type_name": "[]const u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "age",
+                    "long_name": "age",
+                    "short_name": 97,
+                    "description": "User's Age.",
+                    "type_name": "u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "phone",
+                    "long_name": "phone",
+                    "short_name": 112,
+                    "description": "User's Phone #.",
+                    "type_name": "[]const u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                },
+                {
+                    "name": "address",
+                    "long_name": "address",
+                    "short_name": 65,
+                    "description": "User's Address.",
+                    "type_name": "[]const u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ],
+            "vals": [
+                {
+                    "name": "is-admin",
+                    "description": "Add this user as an admin?",
+                    "type_name": "bool",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        },
+        {
+            "name": "open",
+            "description": "Open or create a users file.",
+            "group": "INTERACT",
+            "vals": [
+                {
+                    "name": "val-00",
+                    "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
+                    "type_name": "[]const u8",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        },
+        {
+            "name": "list",
+            "description": "List all current users.",
+            "group": "VIEW",
+            "sub_cmds": [
+                {
+                    "name": "filter",
+                    "description": "List all current users matching the provided filter. Filters can be exactly ONE of any user field.",
+                    "opts": [
+                        {
+                            "name": "id",
+                            "long_name": "id",
+                            "short_name": 105,
+                            "description": "The 'id' Option of type '?u16'.",
+                            "type_name": "u16",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "admin",
+                            "long_name": "admin",
+                            "short_name": 97,
+                            "description": "The 'admin' Option of type '?bool'.",
+                            "type_name": "bool",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "age",
+                            "long_name": "age",
+                            "short_name": 65,
+                            "description": "The 'age' Option of type '?u8'.",
+                            "type_name": "u8",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "first-name",
+                            "long_name": "first-name",
+                            "short_name": 102,
+                            "description": "The 'first_name' Option of type '?[]const u8'.",
+                            "type_name": "[]const u8",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "last-name",
+                            "long_name": "last-name",
+                            "short_name": 108,
+                            "description": "The 'last_name' Option of type '?[]const u8'.",
+                            "type_name": "[]const u8",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "phone",
+                            "long_name": "phone",
+                            "short_name": 112,
+                            "description": "The 'phone' Option of type '?[]const u8'.",
+                            "type_name": "[]const u8",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        },
+                        {
+                            "name": "address",
+                            "long_name": "address",
+                            "short_name": 100,
+                            "description": "The 'address' Option of type '?[]const u8'.",
+                            "type_name": "[]const u8",
+                            "set_behavior": "Last",
+                            "max_args": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "clean",
+            "description": "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
+            "aliases": [
+                "delete"
+            ],
+            "group": "INTERACT",
+            "opts": [
+                {
+                    "name": "clean_file",
+                    "long_name": "file",
+                    "short_name": 102,
+                    "description": "Specify a single file to be cleaned (deleted) instead of the defaults.",
+                    "aliases": [
+                        "delete_file"
+                    ],
+                    "type_name": "filepath",
+                    "set_behavior": "Last",
+                    "max_args": 1
+                }
+            ]
+        },
+        {
+            "name": "view-lists",
+            "description": "View all lists (csv files) in the current directory.",
+            "group": "VIEW"
+        }
+    ]
+}

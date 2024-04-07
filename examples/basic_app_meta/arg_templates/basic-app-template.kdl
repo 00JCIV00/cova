@@ -1,0 +1,41 @@
+# This KDL template is formatted to match the `usage` tool as detailed here: https://sr.ht/~jdx/usage/
+
+name "basic-app"
+bin "basic-app"
+about "A basic user management application designed to highlight key features of the Cova library."
+version "0.10.0"
+author "00JCIV00"
+
+cmd "new" help="Add a new user." {
+    flag "-f,--first-name" help="User's First Name."
+    flag "-l,--last-name" help="User's Last Name."
+    flag "-a,--age" help="User's Age."
+    flag "-p,--phone" help="User's Phone #."
+    flag "-A,--address" help="User's Address."
+
+    arg "is-admin" help="Add this user as an admin?"
+}
+
+cmd "open" help="Open or create a users file." {
+    arg "val-00" help="No description. (Descriptions cannot currently be generated from Function Parameters.)"
+}
+
+cmd "list" help="List all current users." {
+    cmd "filter" help="List all current users matching the provided filter. Filters can be exactly ONE of any user field." {
+        flag "-i,--id" help="The 'id' Option of type '?u16'."
+        flag "-a,--admin" help="The 'admin' Option of type '?bool'."
+        flag "-A,--age" help="The 'age' Option of type '?u8'."
+        flag "-f,--first-name" help="The 'first_name' Option of type '?[]const u8'."
+        flag "-l,--last-name" help="The 'last_name' Option of type '?[]const u8'."
+        flag "-p,--phone" help="The 'phone' Option of type '?[]const u8'."
+        flag "-d,--address" help="The 'address' Option of type '?[]const u8'."
+    }
+}
+
+cmd "clean" help="Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist)." {
+    alias "delete"
+
+    flag "-f,--file" help="Specify a single file to be cleaned (deleted) instead of the defaults."
+}
+
+cmd "view-lists" help="View all lists (csv files) in the current directory."
