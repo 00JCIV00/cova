@@ -42,7 +42,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - [***And much more!***](./docs/README_extended.md#features)
 
 ## Usage
-Cova makes it easy to both set up your Argument Types at _comptime_ and use the input provided by your end users at _runtime_!
+Cova makes it easy to set up your Argument Types at _comptime_ and use the input provided by your end users at _runtime_!
 
 ### Comptime Setup
 There are two main ways to set up your Argument Types. You can either convert existing Zig Types within your project or create them manually. You can even mix and match these techniques to get the best of both.
@@ -60,6 +60,7 @@ pub const setup_cmd: CommandT = .{
     .cmd_groups = &.{ "INTERACT", "VIEW" },
     .sub_cmds = &.{
         // A Command created from converting a Struct named `User`.
+        // Usage Ex: `basic-app new -f Bruce -l Wayne -a 40 -p "555 555 5555" -A " 1007 Mountain Drive, Gotham" true`
         CommandT.from(User, .{
             .cmd_name = "new",
             .cmd_description = "Add a new user.",
@@ -74,12 +75,14 @@ pub const setup_cmd: CommandT = .{
             },
         }),
         // A Command created from a Function named `open`.
+        // Usage Ex: `basic-app open users.csv`
         CommandT.from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
             .cmd_group = "INTERACT",
         }),
         // A manually created Command, same as the parent `setup_cmd`.
+        // Usage Ex: `basic-app clean` or `basic-app delete --file users.csv`
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
