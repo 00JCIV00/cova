@@ -247,13 +247,10 @@ pub fn delete(filename: []const u8) !void {
 }
 
 pub fn main() !void {
-    // While technicaally any Allocator can be used, Cova is designed to be used with an
-    // Arena Allocator. That said, any backing allocator can be used for the Arena Allocator.
-    const fba_size = 50 << 10;
-    var alloc_buf: [fba_size]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(alloc_buf[0..]);
-    var sfba = std.heap.stackFallback(fba_size, fba.allocator());
-    const alloc = sfba.get();
+    // While any Allocator can be used, Cova is designed to wrap what's provided with an
+    // Arena Allocator. This allows for flexiblity.
+    var gpa = std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }){};
+    const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
     const main_cmd = try setup_cmd.init(alloc, .{}); 
@@ -349,8 +346,8 @@ pub fn main() !void {
     if (main_cmd.matchSubCmd("open")) |open_cmd| {
         // Using `cova.Command.Custom.callAs()` is similar to the `to()` function but converts the
         // Command to a Function then calls it directly. If the Function being called is a method,
-        // (if its first parameter is `self`) the host object can be specified as the second
-        // parameter to `callAs()`, otherwise that parameter should be null.
+        // (if its first parameter is of an instance's Type) the host instance can be specified as
+        // the second parameter to `callAs()`, otherwise that parameter should be null.
         user_file = try open_cmd.callAs(open, null, std.fs.File);
     }
     if (main_cmd.matchSubCmd("list")) |list_cmd| {
@@ -369,7 +366,7 @@ pub fn main() !void {
         }
     }
     if (main_cmd.matchSubCmd("clean")) |clean_cmd| cleanCmd: {
-        // The Sub-Commands, Options, and Values of a Command can be referenced by name using 
+        // The Sub-Commands, Options, and Values of a Command can be referenced by name using
         // the following methods:
         // - `cova.Command.Custom.getSubCmds()`
         // - `cova.Command.Custom.getOpts()`
@@ -385,8 +382,8 @@ pub fn main() !void {
         try delete("users.csv");
         try delete(".ba_persist");
     }
-    // Conversely, the `cova.Command.Custom.checkSubCmd()` method should be used if the Command 
-    // doesn't need to be returned. This will simply return a boolean check on whether or not 
+    // Conversely, the `cova.Command.Custom.checkSubCmd()` method should be used if the Command
+    // doesn't need to be returned. This will simply return a boolean check on whether or not
     // the provided string is the same Active Sub Command's name.
     if (main_cmd.checkSubCmd("view-lists")) {
         try stdout.print("Available Lists:\n", .{});

@@ -116,7 +116,7 @@ You can call various methods on the Command to use that data however you need.
 ```zig
 // ...continued from the Comptime Setup.
 pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator;
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
