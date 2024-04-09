@@ -27,6 +27,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - All argument tokens are parsed to Argument Types: Commands, Options, or Values.
     - Options = _Flags_ and Values = _Positional Arguments_
   - These Argument Types can be *created from* or *converted to* your Structs, Unions, and Functions along with their corresponding Fields and Parameters.
+  - This design allows for **infinitely nestable** Commands, Options, and Values in a way that's simple to parse, analyze, and use in your projects.
 - **Multiplatform.** Tested across common architectures of Linux, Mac, and Windows.
 - **Granular, Robust Customization:**
   - [POSIX Compliant](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html) by default, with plenty of ways to configure to whatever standard you'd like.
@@ -38,7 +39,10 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 Cova makes it easy to set up your Argument Types at _comptime_ and use the input provided by your end users at _runtime_!
 
 ### Comptime Setup
-There are two main ways to set up your Argument Types. You can either convert existing Zig Types within your project or create them manually. You can even mix and match these techniques to get the best of both.
+There are two main ways to set up your Argument Types. You can either convert existing Zig Types within your project or create them manually. You can even mix and match these techniques to get the best of both!
+
+<details>
+<summary>Code Example</summary>
 
 ```zig
 const std = @import("std");
@@ -100,12 +104,16 @@ pub const setup_cmd: CommandT = .{
         },
     }
 };
-// Continue to the Runtime Use...
+// Continue to Runtime Use...
 ```
+</details>
 
 ### Runtime Use
 Once Cova has parsed input from your end users it puts that data into the Command you set up. 
 You can call various methods on the Command to use that data however you need.
+
+<details>
+<summary>Code Example</summary>
 
 ```zig
 // ...continued from the Comptime Setup.
@@ -161,6 +169,7 @@ pub fn main() !void {
     }
 }
 ```
+</details>
 
 ### More Examples
 - [basic-app](./examples/basic_app.zig): Where the above examples come from.
@@ -178,7 +187,10 @@ Cova's simple Meta Doc Generator build step lets you quickly and easily generate
 - Argument Templates:
   - JSON
   - KDL
- 
+
+ <details>
+<summary>Code Example</summary>
+   
 ```zig
 // Within 'build.zig'
 pub fn build(b: *std.Build) void {
@@ -200,6 +212,7 @@ pub fn build(b: *std.Build) void {
     meta_doc_gen.dependOn(&cova_gen.step);
 }
 ```
+</details>
 
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
