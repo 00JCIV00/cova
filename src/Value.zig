@@ -792,7 +792,7 @@ pub fn Custom(comptime config: Config) type {
         /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
         pub fn from(comptime from_comp: anytype, from_config: FromConfig) ?@This() {
             const comp_name: []const u8 = 
-                if (from_config.val_name) |val_name| val_name    
+                if (from_config.val_name) |val_name| val_name
                 else switch (@TypeOf(from_comp)) {
                     std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
                     std.builtin.Type.Fn.Param => "",
@@ -907,7 +907,7 @@ pub fn Custom(comptime config: Config) type {
                     if (@TypeOf(val).child_type_usage_fn)|usageFn| return usageFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
                 }
             }
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator orelse return error.ValueNotInitialized);
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
             try writer.print(vals_usage_fmt, .{ self.name(), self.childType() });
         }
 
