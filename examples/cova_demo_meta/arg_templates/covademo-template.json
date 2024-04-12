@@ -25,7 +25,7 @@
                     "description": "A nested integer option.",
                     "type_name": "u8",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "nested_str_opt",
@@ -34,7 +34,7 @@
                     "description": "A nested string option.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ],
             "vals": [
@@ -43,7 +43,7 @@
                     "description": "A nested float value.",
                     "type_name": "f32",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ]
         },
@@ -80,7 +80,7 @@
                                     "description": "Inheritable Option",
                                     "type_name": "bool",
                                     "set_behavior": "Last",
-                                    "max_args": 1
+                                    "max_entries": 1
                                 }
                             ]
                         }
@@ -104,7 +104,7 @@
                             "description": "The 'in_bool' Option of type 'bool'.",
                             "type_name": "bool",
                             "set_behavior": "Last",
-                            "max_args": 1
+                            "max_entries": 1
                         },
                         {
                             "name": "in-float",
@@ -112,7 +112,7 @@
                             "description": "The 'in_float' Option of type 'f32'.",
                             "type_name": "f32",
                             "set_behavior": "Last",
-                            "max_args": 1
+                            "max_entries": 1
                         }
                     ]
                 }
@@ -124,7 +124,7 @@
                     "description": "The first Integer Value for the struct-cmd.",
                     "type_name": "i32",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "str",
@@ -132,7 +132,7 @@
                     "description": "The 'str' Option of type '?[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "str2",
@@ -140,7 +140,7 @@
                     "description": "The 'str2' Option of type '?[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "flt",
@@ -148,7 +148,7 @@
                     "description": "The 'flt' Option of type '?f16'.",
                     "type_name": "f16",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "int2",
@@ -156,7 +156,7 @@
                     "description": "The 'int2' Option of type '?u16'.",
                     "type_name": "u16",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "multi-int",
@@ -164,7 +164,7 @@
                     "description": "The 'multi_int' Option of type '[3]?u8'.",
                     "type_name": "u8",
                     "set_behavior": "Multi",
-                    "max_args": 3
+                    "max_entries": 3
                 },
                 {
                     "name": "multi-str",
@@ -172,7 +172,7 @@
                     "description": "The 'multi_str' Option of type '[5]?[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Multi",
-                    "max_args": 5
+                    "max_entries": 5
                 },
                 {
                     "name": "rgb-enum",
@@ -180,7 +180,7 @@
                     "description": "The 'rgb_enum' Option of type '?covademo.DemoStruct.InnerEnum'.",
                     "type_name": "u2",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "struct-bool",
@@ -188,7 +188,7 @@
                     "description": "The 'struct_bool' Option of type 'bool'.",
                     "type_name": "bool",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "struct-str",
@@ -196,7 +196,7 @@
                     "description": "The 'struct_str' Option of type '[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "struct-int",
@@ -204,7 +204,7 @@
                     "description": "The 'struct_int' Option of type 'i64'.",
                     "type_name": "i64",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ],
             "vals": [
@@ -213,7 +213,7 @@
                     "description": "The 'multi-int-val' Value of type '[2]u16'.",
                     "type_name": "u16",
                     "set_behavior": "Multi",
-                    "max_args": 2
+                    "max_entries": 2
                 }
             ]
         },
@@ -229,7 +229,7 @@
                     "description": "The first Integer Value for the union-cmd.",
                     "type_name": "i32",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "str",
@@ -238,7 +238,7 @@
                     "description": "The first String Value for the union-cmd.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ],
             "vals": [
@@ -247,14 +247,14 @@
                     "description": "The 'union-uint' Value of type 'u8'.",
                     "type_name": "u8",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "union-str",
                     "description": "The 'union-str' Value of type '[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ]
         },
@@ -268,14 +268,14 @@
                     "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
                     "type_name": "i32",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "val-01",
                     "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ]
         },
@@ -291,7 +291,7 @@
                     "description": "The 'fname' Option of type '?[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "lname",
@@ -300,7 +300,7 @@
                     "description": "The 'lname' Option of type '?[]const u8'.",
                     "type_name": "text",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "age",
@@ -309,7 +309,7 @@
                     "description": "The 'age' Option of type '?u8'.",
                     "type_name": "u8",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "admin",
@@ -318,7 +318,7 @@
                     "description": "The 'admin' Option of type '?bool'.",
                     "type_name": "bool",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 },
                 {
                     "name": "ref-ids",
@@ -327,7 +327,7 @@
                     "description": "The 'ref_ids' Option of type '[3]?u8'.",
                     "type_name": "u8",
                     "set_behavior": "Multi",
-                    "max_args": 3
+                    "max_entries": 3
                 }
             ],
             "vals": [
@@ -336,7 +336,7 @@
                     "description": "The 'id' Value of type 'u16'.",
                     "type_name": "u16",
                     "set_behavior": "Last",
-                    "max_args": 1
+                    "max_entries": 1
                 }
             ]
         }
@@ -353,7 +353,7 @@
             "group": "STRING",
             "type_name": "string",
             "set_behavior": "Multi",
-            "max_args": 4
+            "max_entries": 4
         },
         {
             "name": "int_opt",
@@ -363,7 +363,7 @@
             "group": "INT",
             "type_name": "i16",
             "set_behavior": "Multi",
-            "max_args": 10
+            "max_entries": 10
         },
         {
             "name": "float_opt",
@@ -372,7 +372,7 @@
             "description": "An float option. (Can be given up to 10 times.)",
             "type_name": "f16",
             "set_behavior": "Multi",
-            "max_args": 10
+            "max_entries": 10
         },
         {
             "name": "file_opt",
@@ -382,7 +382,7 @@
             "group": "STRING",
             "type_name": "filepath",
             "set_behavior": "Last",
-            "max_args": 1
+            "max_entries": 1
         },
         {
             "name": "ordinal_opt",
@@ -392,7 +392,7 @@
             "group": "STRING",
             "type_name": "text",
             "set_behavior": "Last",
-            "max_args": 1
+            "max_entries": 1
         },
         {
             "name": "cardinal_opt",
@@ -402,7 +402,7 @@
             "group": "INT",
             "type_name": "u8",
             "set_behavior": "Multi",
-            "max_args": 3
+            "max_entries": 3
         },
         {
             "name": "toggle_opt",
@@ -415,7 +415,7 @@
             "group": "BOOL",
             "type_name": "bool",
             "set_behavior": "Last",
-            "max_args": 1
+            "max_entries": 1
         },
         {
             "name": "bool_opt",
@@ -425,7 +425,7 @@
             "group": "BOOL",
             "type_name": "bool",
             "set_behavior": "Last",
-            "max_args": 1
+            "max_entries": 1
         },
         {
             "name": "verbosity_opt",
@@ -434,7 +434,7 @@
             "description": "Set the CovaDemo verbosity level. (WIP)",
             "type_name": "u4",
             "set_behavior": "Last",
-            "max_args": 1
+            "max_entries": 1
         }
     ],
     "vals": [
@@ -444,21 +444,21 @@
             "group": "STRING",
             "type_name": "text",
             "set_behavior": "Last",
-            "max_args": 1
+            "max_entries": 1
         },
         {
             "name": "cmd_bool",
             "description": "A boolean value for the command.",
             "type_name": "bool",
             "set_behavior": "Multi",
-            "max_args": 10
+            "max_entries": 10
         },
         {
             "name": "cmd_u64",
             "description": "A u64 value for the command.",
             "type_name": "u64",
             "set_behavior": "Multi",
-            "max_args": 3
+            "max_entries": 3
         }
     ]
 }

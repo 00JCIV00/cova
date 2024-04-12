@@ -93,8 +93,8 @@ pub fn OptionTemplate(OptionT: type) type {
         type_name: []const u8,
         /// Value Set Behavior
         set_behavior: []const u8,
-        /// Value Max Arguments
-        max_args: u8,
+        /// Value Max Entries
+        max_entries: u8,
 
         /// Create a Template from a Option.
         pub fn from(comptime opt: OptionT) @This() {
@@ -107,7 +107,7 @@ pub fn OptionTemplate(OptionT: type) type {
                 .group = opt.opt_group,
                 .type_name = opt.val.childType(),
                 .set_behavior = @tagName(opt.val.setBehavior()),
-                .max_args = opt.val.maxArgs(),
+                .max_entries = opt.val.maxEntries(),
             };
         }
     };
@@ -130,7 +130,7 @@ pub fn ValueTemplate(ValueT: type) type {
         /// Value Set Behavior
         set_behavior: []const u8,
         /// Value Max Arguments
-        max_args: u8,
+        max_entries: u8,
 
         /// Create a Template from a Value.
         pub fn from(comptime val: ValueT) @This() {
@@ -140,7 +140,7 @@ pub fn ValueTemplate(ValueT: type) type {
                 .group = val.valGroup(),
                 .type_name = val.childType(),
                 .set_behavior = @tagName(val.setBehavior()),
-                .max_args = val.maxArgs(),
+                .max_entries = val.maxEntries(),
             };
         }
     };
