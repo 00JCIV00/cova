@@ -1279,7 +1279,7 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Pointer, .Enum => {
                         for (vals) |val| {
                             if (mem.eql(u8, val.name(), arg_name)) {
-                                //if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
+                                //if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .Struct) {
                                 if (!val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     const def_val = field.default_value orelse {
@@ -1331,7 +1331,7 @@ pub fn Custom(comptime config: Config) type {
                             .Bool, .Int, .Float, .Pointer => {
                                 for (vals) |val| {
                                     if (mem.eql(u8, val.name(), arg_name)) {
-                                        if (!val.isSet() and val.argIdx() == val.maxArgs() and type_info == .Struct) {
+                                        if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             const def_val = field.default_value orelse {
                                                 log.err("The Field '{s}' has no default value.", .{ field.name });

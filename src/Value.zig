@@ -175,11 +175,11 @@ pub const Config = struct {
 /// The Behavior for Setting Values with `set()`.
 /// This applies to Values within Options and standalone Values.
 pub const SetBehavior = enum {
-    /// Keeps the First Argument this Value was `set()` to.
+    /// Keeps the First Argument Entry this Value was `set()` to.
     First,
-    /// Keeps the Last Argument this Value was `set()` to.
+    /// Keeps the Last Argument Entry this Value was `set()` to.
     Last,
-    /// Keeps Multiple Arguments in this Value up to the Value's `max_args`.
+    /// Keeps Multiple Argument Entries in this Value up to the Value's `max_entries`.
     Multi,
 };
 
@@ -214,13 +214,13 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         ///
         /// **Internal Use.**
         _set_args: [config.max_children]?ChildT = .{ null } ** config.max_children,
-        /// The current Index of Raw Arguments for this Value.
+        /// The current Index of Raw Argument Entries for this Value.
         ///
         /// **Internal Use.**
-        _arg_idx: u7 = 0,
-        /// The Max number of Raw Arguments that can be provided.
+        _entry_idx: u7 = 0,
+        /// The Max number of Raw Argument Entries that can be provided.
         /// This must be between 1 to the value of `config.max_children`.
-        max_args: u7 = 1,
+        max_entries: u7 = 1,
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         ///
         /// *This should be Read-Only for library users.*
@@ -324,18 +324,18 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 switch (self.set_behavior) {
                     .First => if (self._set_args[0] == null) { 
                         @constCast(self)._set_args[0] = parsed_arg;
-                        @constCast(self)._arg_idx += 1;
+                        @constCast(self)._entry_idx += 1;
                     },
                     .Last => {
                         @constCast(self)._set_args[0] = parsed_arg;
-                        if (self._arg_idx < 1) @constCast(self)._arg_idx += 1;
+                        if (self._entry_idx < 1) @constCast(self)._entry_idx += 1;
                     },
-                    .Multi => if (self._arg_idx < self.max_args) {
-                        @constCast(self)._set_args[self._arg_idx] = parsed_arg;
-                        @constCast(self)._arg_idx += 1;
+                    .Multi => if (self._entry_idx < self.max_entries) {
+                        @constCast(self)._set_args[self._entry_idx] = parsed_arg;
+                        @constCast(self)._entry_idx += 1;
                     }
                 }
-                @constCast(self).is_maxed = self._arg_idx == self.max_args;
+                @constCast(self).is_maxed = self._entry_idx == self.max_entries;
             }
             else return error.InvalidValue;
         }
@@ -361,8 +361,8 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 }
                 else return error.ValueNotSet;
             }
-            var vals = try alloc.alloc(ChildT, self._arg_idx);
-            for (self._set_args[0..self._arg_idx], 0..) |arg, idx| vals[idx] = arg.?;
+            var vals = try alloc.alloc(ChildT, self._entry_idx);
+            for (self._set_args[0..self._entry_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
         }
 
@@ -645,7 +645,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set a new Argument Index for this Value.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
-            if (!config.include_arg_indices) return;
+            if (!include_arg_indices) return;
             const alloc = self.allocator() orelse return error.ValueNotInitialized;
             const self_idx = switch(meta.activeTag(self.*.generic)) {
                 inline else => |tag| &@field(@constCast(self).*.generic, @tagName(tag)).arg_idx,
@@ -663,6 +663,13 @@ pub fn Custom(comptime config: Config) type {
                     self_idx.* = try idx_list.toOwnedSlice();
                 },
             }
+        }
+        /// Get the inner Typed Value's Argument Index.
+        pub fn argIdx(self: *const @This()) !?[]u8 {
+            if (!include_arg_indices) return error.ArgIndicesNotEnabled;
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).arg_idx,
+            };
         }
 
         /// Get the inner Typed Value's Allocator.
@@ -722,16 +729,17 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).default_val != null,
             };
         }
-        /// Get the inner Typed Value's Argument Index.
-        pub fn argIdx(self: *const @This()) u7 {
+        /// Get the inner Typed Value's Current Entry Index for Value Parsing.
+        /// Note, this should not be confused with this Value's Argument Index.
+        pub fn entryIdx(self: *const @This()) u7 {
             return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag))._arg_idx,
+                inline else => |tag| @field(self.*.generic, @tagName(tag))._entry_idx,
             };
         }
-        /// Get the inner Typed Value's Max Arguments.
-        pub fn maxArgs(self: *const @This()) u7 {
+        /// Get the inner Typed Value's Max Entries.
+        pub fn maxEntries(self: *const @This()) u7 {
             return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).max_args,
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).max_entries,
             };
         }
         /// Get the inner Typed Value's Set Behavior.
@@ -819,7 +827,7 @@ pub fn Custom(comptime config: Config) type {
                 .Enum => |enum_info| enum_info.tag_type,
                 // TODO: Check if Pointer is a String.
                 .Bool, .Int, .Float, .Pointer => FromT,
-                else => { 
+                else => {
                     if (!from_config.ignore_incompatible) @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(FromT) ++ "' is incompatible.")
                     else return null;
                 },
@@ -829,14 +837,14 @@ pub fn Custom(comptime config: Config) type {
                 .name = comp_name,
                 //.description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
                 .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of type '{s}'.", .{ comp_name, @typeName(FromT) }),
-                .max_args = 
+                .max_entries =
                     if (comp_info == .Array) comp_info.Array.len
                     else 1,
                 .set_behavior =
                     if (comp_info == .Array) .Multi
                     else .Last,
                 // TODO: Handle default Array Elements.
-                .default_val = defVal: { 
+                .default_val = defVal: {
                     if (
                         utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_value") != null and 
                         from_comp.default_value != null
@@ -893,7 +901,6 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (!include_arg_indices) return;
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));

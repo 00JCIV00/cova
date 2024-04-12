@@ -398,7 +398,7 @@ pub const setup_cmd: CommandT = .{
                 .default_val = "Default string value.",
                 .alias_child_type = "string",
                 .set_behavior = .Multi,
-                .max_args = 4,
+                .max_entries = 4,
                 .parse_fn = Value.ParsingFns.toUpper,
             }),
         },
@@ -413,7 +413,7 @@ pub const setup_cmd: CommandT = .{
                 .description = "An integer value.",
                 .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int < 666; } }.valFn,
                 .set_behavior = .Multi,
-                .max_args = 10,
+                .max_entries = 10,
             }),
         },
         //.{
@@ -426,7 +426,7 @@ pub const setup_cmd: CommandT = .{
         //        .name = "uint_val",
         //        .description = "An unsigned integer value.",
         //        .set_behavior = .Multi,
-        //        .max_args = 10,
+        //        .max_entries = 10,
         //    }),
         //},
         .{
@@ -440,7 +440,7 @@ pub const setup_cmd: CommandT = .{
                 .description = "A float value.",
                 .valid_fn = Value.ValidationFns.Builder.inRange(f16, 0.0, 36_000.0, true),
                 .set_behavior = .Multi,
-                .max_args = 10,
+                .max_entries = 10,
             }),
         },
         .{
@@ -479,7 +479,7 @@ pub const setup_cmd: CommandT = .{
                 .description = "A cardinal number value.",
                 .parse_fn = Value.ParsingFns.Builder.asEnumType(enum(u8) { zero, one, two }),
                 .set_behavior = .Multi,
-                .max_args = 3,
+                .max_entries = 3,
             }),
         },
         .{
@@ -532,7 +532,7 @@ pub const setup_cmd: CommandT = .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
             .set_behavior = .Multi,
-            .max_args = 10,
+            .max_entries = 10,
             .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y" }, &.{ "false", "f", "no", "n", "0" }, .Error),
         }),
         ValueT.ofType(u64, .{
@@ -540,7 +540,7 @@ pub const setup_cmd: CommandT = .{
             .description = "A u64 value for the command.",
             .default_val = 654321,
             .set_behavior = .Multi,
-            .max_args = 3,
+            .max_entries = 3,
             .parse_fn = struct{ fn parseFn(arg: []const u8, alloc: mem.Allocator) !u64 { _ = alloc; return (try fmt.parseInt(u64, arg, 0)) * 100; } }.parseFn, 
             .valid_fn = Value.ValidationFns.Builder.inRange(u64, 123456, 9999999999, true),
         }),

@@ -549,7 +549,7 @@ fn parseArgsCtx(
                     log.err("", .{});
                     return error.CouldNotParseValue;
                 };
-                if (val.argIdx() == val.maxArgs()) val_idx += 1;
+                if (val.entryIdx() == val.maxEntries()) val_idx += 1;
 
                 try val.setArgIdx(parse_ctx.arg_idx);
                 parse_ctx.*.arg_idx += 1;
@@ -692,7 +692,7 @@ const test_setup_cmd: TestCommand = .{
                 .name = "string_opt_val",
                 .description = "A test string opt value.",
                 .set_behavior = .Multi,
-                .max_args = 6,
+                .max_entries = 6,
             }),
         },
         .{
@@ -705,7 +705,7 @@ const test_setup_cmd: TestCommand = .{
                 .description = "A test integer opt value.",
                 .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int <= 666; } }.valFn,
                 .set_behavior = .Multi,
-                .max_args = 6,
+                .max_entries = 6,
             }),
         },
         .{
@@ -718,7 +718,7 @@ const test_setup_cmd: TestCommand = .{
                 .description = "An float opt value.",
                 .valid_fn = struct{ fn valFn(float: f16, alloc: mem.Allocator) bool { _ = alloc; return float < 30000; } }.valFn,
                 .set_behavior = .Multi,
-                .max_args = 6,
+                .max_entries = 6,
             }),
         },
         .{
