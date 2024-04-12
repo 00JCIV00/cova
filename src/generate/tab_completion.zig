@@ -54,11 +54,11 @@ pub fn createTabCompletion(
     const tc_name = tc_config.name orelse cmd.name;
     const script_header = tc_config.script_header orelse switch (shell_kind) {
         .bash => "#! /usr/bin/env bash",
-        .zsh => "#! /usr/bin/env zsh",
+        .zsh => "#compdef " ++ cmd.name,
         .ps1 => "# Requires PowerShell v5.1+",
     };
 
-    const filename = tc_name ++ "-completion." ++ @tagName(shell_kind);
+    const filename = (if (shell_kind == .zsh) "_" else "") ++ tc_name ++ "-completion." ++ @tagName(shell_kind);
     const filepath = genFilepath: {
         comptime var path = if (tc_config.local_filepath.len >= 0) tc_config.local_filepath else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
@@ -126,7 +126,7 @@ pub fn createTabCompletion(
             if (tc_config.add_install_instructions) {
                 try tc_writer.print(
                     \\# Zsh Completion Installation Instructions for {s}
-                    \\# 1. Place this script in a directory specified in your $fpath, such as
+                    \\# 1. Place this script in a directory specified in your $fpath, or a new one such as
                     \\#    ~/.zsh/completion/
                     \\#
                     \\# 2. Ensure the script has executable permissions:
@@ -135,7 +135,7 @@ pub fn createTabCompletion(
                     \\# 3. Add the script's directory to your $fpath in your .zshrc if not already included:
                     \\#    fpath=(~/.zsh/completion $fpath)
                     \\#
-                    \\# 4. Enable and initialize completion in your .zshrc if you haven't already:
+                    \\# 4. Enable and initialize completion in your .zshrc if you haven't already (oh-my-zsh does this automatically):
                     \\#    autoload -Uz compinit && compinit
                     \\#
                     \\# 5. Restart your terminal session or source your .zshrc again:
@@ -362,7 +362,6 @@ fn cmdTabCompletionZsh(
             \\# Generic function for command completions
             \\_{s}_completions() {{
             \\    local -a completions
-
             \\    # Determine the current command context
             \\    local context="{s}"
             \\    for word in "${{words[@]:1:$CURRENT-1}}"; do
@@ -370,18 +369,14 @@ fn cmdTabCompletionZsh(
             \\            context="${{context}}_${{word}}"
             \\        fi
             \\    done
-
             \\    # Generate completions for the current context
             \\    completions=(${{(s: :)cmd_args[$context]}})
-
             \\    if [[ -n $completions ]]; then
             \\        _describe -t commands "{s}" completions && return 0
             \\    fi
             \\}}
-
-            \\# Register the completion function for {s}
-            \\compdef _{s}_completions {s}
-            , .{ tc_ctx.name } ** 6
+            \\_{s}_completions "$@"
+            , .{ tc_ctx.name } ** 4
         );
     }
 }
