@@ -199,7 +199,18 @@ fn createManpageCtx(
         \\.SH SYNOPSIS
         \\{s}
         \\
-        , .{ if (mp_config.synopsis) |synopsis| synopsis else ".B " ++ mp_name ++ "\n.RB [COMMAND]\n.RB [OPTIONS]\n.RB [VALUES]" }
+        , .{ 
+            if (mp_config.synopsis) |synopsis| synopsis 
+            else fmt.comptimePrint(
+                ".B {s}{s}{s}{s}", 
+                .{
+                    mp_name,
+                    if (cmd.opts) |_| "\n.RB [OPTIONS]" else "",
+                    if (cmd.vals) |_| "\n.RB [VALUES]" else "",
+                    if (cmd.sub_cmds) |_| "\n.RB [SUB COMMAND...]" else "",
+                }
+            )
+        }
     );
     const description = fmt.comptimePrint(
         \\.SH DESCRIPTION
@@ -217,7 +228,7 @@ fn createManpageCtx(
             )
         else if (CommandT.include_examples) cmdExamples: {
             const examples = cmd.examples orelse break :cmdExamples "";
-            comptime var example_str: []const u8 = ".SH Examples\n\n";
+            comptime var example_str: []const u8 = ".SH EXAMPLES\n\n";
             inline for (examples) |example| 
                 example_str = example_str ++ fmt.comptimePrint(mp_config.mp_examples_fmt, .{ example });
             example_str = example_str ++ "\n";

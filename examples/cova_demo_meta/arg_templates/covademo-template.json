@@ -9,6 +9,11 @@
 "Arguments": {
     "name": "covademo",
     "description": "A demo of the Cova command line argument parser.",
+    "examples": [
+        "covademo -b --string \"Optional String\"",
+        "covademo -i 0 -i=1 -i2 -i=3,4,5 -i6,7 --int 8 --int=9",
+        "covademo --file \"/some/file\""
+    ],
     "sub_cmds": [
         {
             "name": "sub-cmd",
@@ -18,6 +23,9 @@
                 "test-alias"
             ],
             "group": "RAW",
+            "examples": [
+                "covademo sub-cmd 3.14"
+            ],
             "opts": [
                 {
                     "name": "nested_int_opt",

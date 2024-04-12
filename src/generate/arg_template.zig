@@ -22,10 +22,12 @@ pub fn CommandTemplate(CommandT: type) type {
         name: []const u8,
         /// Command Description
         description: []const u8,
-        /// Option Aliases
+        /// Command Aliases
         aliases: ?[]const []const u8,
-        /// Option Group
+        /// Command Group
         group: ?[]const u8,
+        /// Command Examples
+        examples: ?[]const []const u8,
 
         /// Sub-Commands
         sub_cmds: ?[]const @This() = null,
@@ -42,6 +44,7 @@ pub fn CommandTemplate(CommandT: type) type {
                 .description = cmd.description,
                 .aliases = cmd.alias_names,
                 .group = cmd.cmd_group,
+                .examples = cmd.examples,
                 .sub_cmds = comptime subCmds: {
                     if (!at_config.include_cmds) break :subCmds null;
                     const sub_cmds = cmd.sub_cmds orelse break :subCmds null;
