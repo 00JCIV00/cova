@@ -374,6 +374,37 @@ pub fn Custom(comptime config: Config) type {
         /// This will NOT affect Command Validation nor Tab-Completion.
         case_sensitive: bool = config.global_case_sensitive,
 
+        /// Config for Getting Options and Values.
+        pub const GetConfig = struct{
+            /// An optional Argument Group to filter the returned Options or Values.
+            arg_group: ?[]const u8 = null,
+        };
+
+        /// Argument Groups Types for `checkGroup()`.
+        pub const ArgumentGroupType = enum{
+            All,
+            Command,
+            Option,
+            Value,
+        };
+        /// Check if an Argument from a specific Argument Group was used.
+        pub fn checkArgGroup(self: @This(), ArgGroupT: ArgumentGroupType, arg_group: []const u8) bool {
+            if (utils.indexOfEql(ArgumentGroupType, &.{ .Command, .All }, ArgGroupT)) |_| checkCmdGroup: {
+                const sub_cmd = self.sub_cmd orelse break :checkCmdGroup;
+                const sub_cmd_group = sub_cmd.cmd_group orelse break :checkCmdGroup;
+                if (mem.eql(u8, sub_cmd_group, arg_group)) return true;
+            }
+            if (utils.indexOfEql(ArgumentGroupType, &.{ .Option, .All }, ArgGroupT)) |_| checkOptGroup: {
+                const check_opts = self.getOpts(.{ .arg_group = arg_group }) catch break :checkOptGroup;
+                if (check_opts.count() > 0) return true;
+            }
+            if (utils.indexOfEql(ArgumentGroupType, &.{ .Value, .All }, ArgGroupT)) |_| checkValGroup: {
+                const check_vals = self.getVals(.{ .arg_group = arg_group }) catch break :checkValGroup;
+                if (check_vals.count() > 0) return true;
+            }
+            return false;
+        }
+
         /// Set the Argument Index of this Command.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) void {
             if (!include_arg_indices) return;
@@ -404,12 +435,6 @@ pub fn Custom(comptime config: Config) type {
             return if (self.checkSubCmd(cmd_name)) self.sub_cmd.? else null;
         }
 
-        /// Config for Getting Options and Values.
-        pub const GetConfig = struct{
-            /// An optional Argument Group to filter the returned Options or Values.
-            arg_group: ?[]const u8 = null,
-        };
-
         /// Gets a StringHashMap of this Command's Options using its initialization Allocator.
         /// Memory is owned by this Command's Allocator. Look at the `...Alloc()` version of this method to use a different Allocator.
         pub fn getOpts(self: *const @This(), get_config: GetConfig) !StringHashMap(OptionT) {
@@ -420,7 +445,7 @@ pub fn Custom(comptime config: Config) type {
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(OptionT) {
             if (self.opts == null) return error.NoOptionsInCommand;
             var map = StringHashMap(OptionT).init(alloc);
-            for (self.opts.?) |opt| { 
+            for (self.opts.?) |opt| {
                 checkGroup: {
                     const conf_group = get_config.arg_group orelse break :checkGroup;
                     const opt_group = opt.opt_group orelse continue;
