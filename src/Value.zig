@@ -393,6 +393,7 @@ pub fn Generic(comptime config: Config) type {
         u16: Typed(u16, config),
         u32: Typed(u32, config),
         u64: Typed(u64, config),
+        usize: Typed(usize, config),
         //u128: Typed(u128, config),
         //u256: Typed(u256, config),
 
@@ -404,6 +405,7 @@ pub fn Generic(comptime config: Config) type {
         i16: Typed(i16, config),
         i32: Typed(i32, config),
         i64: Typed(i64, config),
+        isize: Typed(isize, config),
         //i128: Typed(i128, config),
         //i256: Typed(i256, config),
 
@@ -428,7 +430,7 @@ pub fn Generic(comptime config: Config) type {
                 const uint_name = @typeName(meta.Int(.unsigned, bit_width));
                 const uint_type = Typed(meta.Int(.unsigned, bit_width), config);
                 union_info.fields = union_info.fields ++ .{ .{
-                   .name = uint_name, 
+                   .name = uint_name,
                    .type = uint_type,
                    .alignment = @alignOf(uint_type),
                 } };
@@ -441,7 +443,7 @@ pub fn Generic(comptime config: Config) type {
                 const int_type = Typed(meta.Int(.signed, bit_width), config);
                 union_info.fields = union_info.fields ++ .{ .{
                    .name = int_name,
-                   .type = int_type, 
+                   .type = int_type,
                    .alignment = @alignOf(int_type),
                 } };
                 tag_info.fields = tag_info.fields ++ .{ .{
@@ -461,6 +463,7 @@ pub fn Generic(comptime config: Config) type {
                     u16: Typed(u16, config),
                     u32: Typed(u32, config),
                     u64: Typed(u64, config),
+                    usize: Typed(usize, config),
                     //u128: Typed(u128, config),
                     //u256: Typed(u256, config),
 
@@ -472,6 +475,7 @@ pub fn Generic(comptime config: Config) type {
                     i16: Typed(i16, config),
                     i32: Typed(i32, config),
                     i64: Typed(i64, config),
+                    isize: Typed(isize, config),
                     //i128: Typed(i128, config),
                     //i256: Typed(i256, config),
                 };
@@ -525,7 +529,7 @@ pub fn Generic(comptime config: Config) type {
                 }
             };
             const union_field = Type.UnionField{
-               .name = @typeName(AddT.ChildT), 
+               .name = @typeName(AddT.ChildT),
                .type = AddT,
                .alignment = @alignOf(AddT),
             };
@@ -541,28 +545,26 @@ pub fn Generic(comptime config: Config) type {
                     for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx|
                        r_fld.* = if (r_idx == idx) union_field else o_fld;
                     const rebuild_out = rebuild;
-                    break :rebuildFields rebuild_out[0..]; 
-                };    
+                    break :rebuildFields rebuild_out[0..];
+                };
                 tag_info.fields = rebuildFields: {
                     var rebuild: [tag_info.fields.len]Type.EnumField = undefined;
                     for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx|
                        r_fld.* = if (r_idx == idx) union_tag else o_fld;
                     const rebuild_out = rebuild;
-                    break :rebuildFields rebuild_out[0..]; 
-                };    
+                    break :rebuildFields rebuild_out[0..];
+                };
                 break;
             }
             else {
                 union_info.fields = union_info.fields ++ .{ union_field };
                 tag_info.fields = tag_info.fields ++ .{ union_tag };
             }
-            
         }
 
         const tag_info_out = tag_info;
+        union_info.tag_type = @Type(.{ .Enum = tag_info_out });
         const union_info_out = union_info;
-
-        union_info.tag_type = @Type(.{ .Enum = tag_info_out }); 
         break :customUnion @Type(.{ .Union = union_info_out });
     };
 }
