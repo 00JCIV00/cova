@@ -26,26 +26,27 @@ pub fn build(b: *std.Build) void {
     });
 
     // Static Lib (Used for Docs)
-    const cova_lib = b.addStaticLibrary(.{
-        .name = "cova",
-        .root_source_file = .{ .path = "src/cova.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
+    //const cova_lib = b.addStaticLibrary(.{
+    //    .name = "cova",
+    //    .root_source_file = .{ .path = "src/cova.zig" },
+    //    .target = target,
+    //    .optimize = optimize,
+    //});
     //b.installArtifact(cova_lib);
 
-    // Tests 
+    // Tests
     const cova_tests = b.addTest(.{
         .root_source_file = .{ .path = "src/cova.zig" },
         .target = target,
         .optimize = optimize,
     });
     const run_cova_tests = b.addRunArtifact(cova_tests);
-    const test_step = b.step("test", "Run cova library tests");
+    const test_step = b.step("test", "Run the cova library tests");
     test_step.dependOn(&run_cova_tests.step);
 
     // Docs
-    const cova_docs = cova_lib;
+    //const cova_docs = cova_lib;
+    const cova_docs = cova_tests;
     const build_docs = b.addInstallDirectory(.{
         .source_dir = cova_docs.getEmittedDocs(),
         .install_dir = .prefix,

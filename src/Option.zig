@@ -1,4 +1,4 @@
-//! Wrapper Argument for a Value that is ALWAYS optional.
+//! Wrapper Argument for a Value which is typically optional.
 //!
 //! End-User Example:
 //!
