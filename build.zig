@@ -26,12 +26,12 @@ pub fn build(b: *std.Build) void {
     });
 
     // Static Lib (Used for Docs)
-    //const cova_lib = b.addStaticLibrary(.{
-    //    .name = "cova",
-    //    .root_source_file = .{ .path = "src/cova.zig" },
-    //    .target = target,
-    //    .optimize = optimize,
-    //});
+    const cova_lib = b.addStaticLibrary(.{
+        .name = "cova",
+        .root_source_file = .{ .path = "src/cova.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
     //b.installArtifact(cova_lib);
 
     // Tests
@@ -45,8 +45,8 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_cova_tests.step);
 
     // Docs
-    //const cova_docs = cova_lib;
-    const cova_docs = cova_tests;
+    const cova_docs = cova_lib;
+    //const cova_docs = cova_tests;
     const build_docs = b.addInstallDirectory(.{
         .source_dir = cova_docs.getEmittedDocs(),
         .install_dir = .prefix,

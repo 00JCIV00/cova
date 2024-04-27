@@ -12,7 +12,7 @@ const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 
 
-/// Display what is captured within a Command `display_cmd` after Cova parsing.
+/// Display what is captured within a Command (`display_cmd`) after Cova parsing.
 pub fn displayCmdInfo(comptime CommandT: type, display_cmd: *const CommandT, alloc: mem.Allocator, writer: anytype) !void {
     var cur_cmd: ?*const CommandT = display_cmd;
     while (cur_cmd) |cmd| {
