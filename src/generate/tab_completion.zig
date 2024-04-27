@@ -10,7 +10,7 @@ const mem = std.mem;
 // Cova
 const utils = @import("../utils.zig");
 
-/// A Config for creating tab completion scripts with `createTabCompletion()`.
+/// Config for creating tab completion scripts with `createTabCompletion()`.
 pub const TabCompletionConfig = struct{
     /// Script Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`-completion.`shell_kind`".

@@ -199,7 +199,7 @@ pub const ParseConfig = struct {
     /// Enable Option Termination using the long prefix without an Option (default `--` per the POSIX standard).
     /// Note, this will cause the remainder of the argument tokens to be read in as either Commands or Values.
     enable_opt_termination: bool = true,
-    /// Override the Optiion Termination Symbol.
+    /// Override the Option Termination Symbol.
     /// Leaving this null will default to the long prefix of the associated Option Type.
     set_opt_termination_symbol: ?[]const u8 = null,
 

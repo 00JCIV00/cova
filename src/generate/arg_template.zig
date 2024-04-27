@@ -165,7 +165,7 @@ pub const MetaInfoTemplate = struct{
     copyright: ?[]const u8 = null,
 };
 
-/// A Config for creating Argument Templates with `createArgTemplate()`.
+/// Config for creating Argument Templates with `createArgTemplate()`.
 pub const ArgTemplateConfig = struct{
     /// Script Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`-template.`template_kind`".

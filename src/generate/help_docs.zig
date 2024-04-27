@@ -11,7 +11,7 @@ const mem = std.mem;
 // Cova
 const utils = @import("../utils.zig");
 
-/// A Config for creating Help Docs with `createHelpDoc()`.
+/// Config for creating Help Docs with `createHelpDoc()`.
 /// Leaving any field `null` will remove it from the created Help Doc.
 pub const HelpDocsConfig = struct{
     /// Help Doc Local Filepath
