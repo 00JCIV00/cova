@@ -16,7 +16,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 ## Get Started Quickly!
 - [Quick Start Guide](https://github.com/00JCIV00/cova/wiki/Getting-Started)
 - [Full Wiki Guide](https://github.com/00JCIV00/cova/wiki/)
-- [API Docs](https://00jciv00.github.io/cova/#A;cova)
+- [API Docs](https://00jciv00.github.io/cova/)
 
 ## Features
 - **[Comptime Setup](#comptime-setup). [Runtime Use](#runtime-use).**
@@ -33,7 +33,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - [POSIX Compliant](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html) by default, with plenty of ways to configure to whatever standard you'd like.
     - Ex: `command --option option_string "standalone value" subcmd -i 42 --bool`
   - Cova offers deep customization through the Argument Types and several Config Structs. These customizations all provide simple and predictable defaults, allowing you to only configure what you need.
-- [***And much more!***](./docs/README_extended.md#features)
+- [***And much more!***](https://github.com/00JCIV00/cova/wiki/Feature-List)
 
 ## Usage
 Cova makes it easy to set up your Argument Types at _comptime_ and use the input provided by your end users at _runtime_!
