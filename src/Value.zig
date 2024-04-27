@@ -500,7 +500,7 @@ pub fn Generic(comptime config: Config) type {
                 const float_info = @typeInfo(float_union).Union;
                 const float_tag_info = @typeInfo(float_info.tag_type.?).Enum;
 
-                const add_val = if (config.add_base_ints) 18 else 2;
+                const add_val = if (config.add_base_ints) 20 else 2;
                 union_info.fields = union_info.fields ++ float_info.fields;
                 for (float_tag_info.fields) |tag| {
                     tag_info.fields = tag_info.fields ++ .{ .{
