@@ -1,6 +1,7 @@
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
 //! Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
+//! Checkout Cova's [GitHub Wiki Guide](https://github.com/00JCIV00/cova/wiki)
 
 // Standard
 const builtin = @import("builtin");
@@ -55,7 +56,6 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
                 start += 1;
                 continue;
             }
-            //try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
             try args_list.append(arg_str[start..end]);
             start = end + 1;
         }
@@ -68,7 +68,6 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
         else if (quote_char) |q_char| {
             if (char == q_char) {
                 end = idx;
-                //try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
                 try args_list.append(arg_str[start..end]);
                 start = end + 1;
                 quote_char = null;
@@ -76,7 +75,6 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
         }
         else if (idx == arg_str.len - 1) {
             end = arg_str.len;
-            //try args_list.append(try alloc.dupe(u8, arg_str[start..end]));
             try args_list.append(arg_str[start..end]);
         }
     }
@@ -172,7 +170,7 @@ pub const ArgIteratorGeneric = union(enum) {
         return genIter: inline for (meta.fields(@This())) |field| {
             if (field.type == iter_type) break :genIter @unionInit(@This(), field.name, arg_iter);
         }
-        else @compileError("The provided type '" ++ @typeName(iter_type) ++ "' is not supported by the ArgIteratorGeneric Interface.");
+        else @compileError("The provided Type '" ++ @typeName(iter_type) ++ "' is not supported by the ArgIteratorGeneric Interface.");
     }
 
     /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
@@ -189,9 +187,9 @@ pub const ArgIteratorGeneric = union(enum) {
 
 /// Config for custom argument token Parsing using `parseArgs()`.
 pub const ParseConfig = struct {
-    /// Skip the first Argument (the executable's name).
+    /// Skip the first Argument (in a typical shell, this is the executable's name).
     /// This should generally be set to `true`, but the option is here for unforeseen outliers.
-    skip_exe_name_arg: bool = true,
+    skip_first_arg: bool = true,
     /// Auto-handle Usage/Help messages during parsing.
     /// This is especially useful if used in conjuction with the default auto-generated Usage/Help messages from Command and Option.
     /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
@@ -226,7 +224,7 @@ pub fn parseArgs(
     parse_config: ParseConfig,
 ) !void {
     var parse_ctx: ParseCtx = .{
-        .arg_idx = if (parse_config.skip_exe_name_arg) 1 else 0,
+        .arg_idx = if (parse_config.skip_first_arg) 1 else 0,
     };
     try parseArgsCtx(
         args,
@@ -260,7 +258,7 @@ fn parseArgsCtx(
     const OptionT = CommandT.OptionT;
 
     // Bypass argument 0 (the filename being executed);
-    const init_arg = if (parse_config.skip_exe_name_arg and args.index() == 0) args.next() else args.peek();
+    const init_arg = if (parse_config.skip_first_arg and args.index() == 0) args.next() else args.peek();
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
