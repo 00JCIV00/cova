@@ -124,6 +124,7 @@ pub const HelpDocsConfig = struct{
     /// Markdown Examples Format.
     /// Must support the following format types in this order:
     /// 1. String (Example)
+    //md_examples_fmt: []const u8 = "\n```shell\n{s}\n```\n",
     md_examples_fmt: []const u8 = "- `{s}`\n",
 
     /// Available Kinds of Help Docs.
