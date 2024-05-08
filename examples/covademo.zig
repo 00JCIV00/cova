@@ -264,7 +264,7 @@ pub const setup_cmd: CommandT = .{
     .opt_groups = &.{ "INT", "BOOL", "STRING" },
     .val_groups = &.{ "INT", "BOOL", "STRING" },
     .sub_cmds_mandatory = false,
-    .mandatory_opt_groups = &.{ "BOOL" },
+    //.mandatory_opt_groups = &.{ "BOOL" },
     .sub_cmds = &.{
         .{
             .name = "sub-cmd",
@@ -584,13 +584,13 @@ pub fn main() !void {
 
     // Analysis
     // - Debug Output of Commands after Parsing. 
-    try stdout.print("\n", .{});
-    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout);
+    try stdout.print("\nCova Demo Argument Results:\n", .{});
+    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, true);
     try stdout_bw.flush();
 
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
-    log.info("Main Cmd", .{});
+    log.debug("Main Cmd", .{});
 
     // -- Get Values
     const val_map = try main_cmd.getVals(.{ .arg_group = "STRING" });
@@ -619,9 +619,9 @@ pub fn main() !void {
     //    for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
     //}
     if (main_cmd.checkSubCmd("sub-cmd"))
-        log.info("-> Sub Cmd", .{});
+        log.debug("-> Sub Cmd", .{});
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
-        log.info("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
+        log.debug("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| structCmd: {
         log.debug("Parent Cmd (struct-cmd): {s]}", .{ struct_cmd.parent_cmd.?.name });
         log.debug("Parent Cmd (int-opt / int-val): {s} / {s}", optPar: {
@@ -630,16 +630,16 @@ pub fn main() !void {
             break :optPar .{ if (int_opt.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]", if (int_opt.val.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]" };
         });
         const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
-        log.info("-> Struct Cmd\n{any}", .{ demo_struct });
+        log.debug("-> Struct Cmd\n{any}", .{ demo_struct });
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
-            log.info("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
+            log.debug("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
         //for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
         break :structCmd;
     }
     if (main_cmd.checkSubCmd("union-cmd"))
-        log.info("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
+        log.debug("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
     if (main_cmd.matchSubCmd("fn-cmd")) |fn_cmd| {
-        log.info("-> Fn Cmd", .{});
+        log.debug("-> Fn Cmd", .{});
         try fn_cmd.callAs(demoFn, null, void);
     }
 
