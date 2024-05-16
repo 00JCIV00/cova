@@ -11,24 +11,17 @@ pub fn build(b: *std.Build) void {
     // Modules & Artifacts
     // - Lib Module
     const cova_mod = b.addModule("cova", .{
-        .root_source_file = .{ .path = "src/cova.zig" },
+        .root_source_file = b.path("src/cova.zig"),
     });
     // - Generator Artifact
-    //const cova_gen_exe = b.addExecutable(.{
-    //    .name = "cova_generator",
-    //    .root_source_file = .{ .path = "src/generator.zig" },
-    //    .target = target,
-    //    .optimize = optimize,
-    //});
-    //b.installArtifact(cova_gen_exe);
     _ = b.addModule("cova_gen", .{
-        .root_source_file = .{ .path = "src/generator.zig" },
+        .root_source_file = b.path("src/generator.zig"),
     });
 
     // Static Lib (Used for Docs)
     const cova_lib = b.addStaticLibrary(.{
         .name = "cova",
-        .root_source_file = .{ .path = "src/cova.zig" },
+        .root_source_file = b.path("src/cova.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -36,7 +29,7 @@ pub fn build(b: *std.Build) void {
 
     // Tests
     const cova_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/cova.zig" },
+        .root_source_file = b.path("src/cova.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -62,7 +55,7 @@ pub fn build(b: *std.Build) void {
     // - Cova Demo Exe
     const cova_demo = b.addExecutable(.{
         .name = bin_name orelse "covademo",
-        .root_source_file = .{ .path = "examples/covademo.zig" },
+        .root_source_file = b.path("examples/covademo.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -74,12 +67,12 @@ pub fn build(b: *std.Build) void {
     const cova_demo_gen = createDocGenStep(
         b,
         cova_mod,
-        .{ .path = "src/generator.zig" },
+        b.path("src/generator.zig"),
         cova_demo,
         .{
             .kinds = &.{ .all },
             .version = "0.10.0",
-            .ver_date = "06 APR 2024",
+            .ver_date = "16 MAY 2024",
             .author = "00JCIV00",
             .copyright = "MIT License",
             .help_docs_config = .{
@@ -100,7 +93,7 @@ pub fn build(b: *std.Build) void {
     // - Basic App Exe
     const basic_app = b.addExecutable(.{
         .name = bin_name orelse "basic-app",
-        .root_source_file = .{ .path = "examples/basic_app.zig" },
+        .root_source_file = b.path("examples/basic_app.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -112,7 +105,7 @@ pub fn build(b: *std.Build) void {
     const basic_app_gen = createDocGenStep(
         b,
         cova_mod,
-        .{ .path = "src/generator.zig" },
+        b.path("src/generator.zig"),
         basic_app,
         .{
             .kinds = &.{ .all },
