@@ -71,8 +71,8 @@ pub fn build(b: *std.Build) void {
         cova_demo,
         .{
             .kinds = &.{ .all },
-            .version = "0.10.0",
-            .ver_date = "16 MAY 2024",
+            .version = "0.10.1",
+            .ver_date = "21 MAY 2024",
             .author = "00JCIV00",
             .copyright = "MIT License",
             .help_docs_config = .{
@@ -109,8 +109,8 @@ pub fn build(b: *std.Build) void {
         basic_app,
         .{
             .kinds = &.{ .all },
-            .version = "0.10.0",
-            .ver_date = "06 APR 2024",
+            .version = "0.10.1",
+            .ver_date = "21 MAY 2024",
             .author = "00JCIV00",
             .copyright = "MIT License",
             .help_docs_config = .{
@@ -127,6 +127,18 @@ pub fn build(b: *std.Build) void {
     );
     const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
     basic_app_gen_step.dependOn(&basic_app_gen.step);
+
+    // - Log Enum Exe
+    const log_enum = b.addExecutable(.{
+        .name = bin_name orelse "log-enum",
+        .root_source_file = b.path("examples/log_enum.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    log_enum.root_module.addImport("cova", cova_mod);
+    const build_log_enum = b.addInstallArtifact(log_enum, .{});
+    const build_log_enum_step = b.step("log-enum", "Build the 'log-enum' example (default: Debug)");
+    build_log_enum_step.dependOn(&build_log_enum.step);
 }
 
 

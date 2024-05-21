@@ -776,7 +776,14 @@ pub fn Custom(comptime config: Config) type {
                 if (T == []const u8) "string" 
                 //else if (@typeInfo(T) == .Enum) @typeName(@typeInfo(T).Enum.tag_type)
                 else @typeName(T);
-            return @This(){ .generic = @unionInit(GenericT, active_tag, typed_val) };
+            const out_val =
+                if (@typeInfo(T) == .Enum and typed_val.parse_fn == null) outVal: {
+                    var o_val = typed_val;
+                    o_val.parse_fn = ParsingFns.Builder.asEnumTag(T);
+                    break :outVal o_val;
+                }
+                else typed_val;
+            return @This(){ .generic = @unionInit(GenericT, active_tag, out_val) };
         }
 
         /// Config for creating Values from Componenet Types (Function Parameters, Struct Fields, and Union Fields) using `from()`.
@@ -968,7 +975,7 @@ pub const ParsingFns = struct {
             }.toBase;
         }
 
-        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
+        /// Parse the given argument token (`arg`) to an Int based on the Enum Tag Type of the provided `EnumT`.
         pub fn asEnumType(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
             if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
@@ -984,6 +991,18 @@ pub const ParsingFns = struct {
             }.enumInt;
         }
 
+        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
+        pub fn asEnumTag(comptime EnumT: type) enumFnType: {
+            const enum_info = @typeInfo(EnumT);
+            if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
+            break :enumFnType fn([]const u8, mem.Allocator) anyerror!EnumT;
+        } {
+            return struct { 
+                fn enumTag(arg: []const u8, _: mem.Allocator) !EnumT {
+                    return meta.stringToEnum(EnumT, mem.trim(u8, arg, &.{ 0, ' ', '\t' })) orelse error.EnumTagDoesNotExist;
+                }
+            }.enumTag;
+        }
     };
 
     /// Trim all Whitespace from the beginning and end of the provided argument token (`arg`).
