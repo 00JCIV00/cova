@@ -25,7 +25,7 @@ const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 const sort = std.sort;
-const ComptimeStringMap = std.ComptimeStringMap;
+const StaticStringMap = std.StaticStringMap;
 const StringHashMap = std.StringHashMap;
 
 const toLower = ascii.toLower;
@@ -950,7 +950,7 @@ pub fn Custom(comptime config: Config) type {
             var vals_idx: u8 = 0;
 
             // TODO: Make this a nullable field and just use null conditional syntax for adding descriptions below.
-            const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+            const arg_descriptions = StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
 
             const fields = meta.fields(FromT);
             const start_idx = if (from_config.ignore_first) 1 else 0;
@@ -1869,6 +1869,14 @@ pub fn Custom(comptime config: Config) type {
             if (self._arena) |arena| arena.deinit();
             if (self._root_alloc) |root_alloc| root_alloc.destroy(self);
         }
+
+        ///// Reset the Root Command with the provided InitConfig (`init_config`) and its current Root Allocator.
+        ///// If this Command has not yet been initialized or is not the Root Command, this does nothing.
+        //pub fn reset(self: *const @This(), init_config: InitConfig) !void {
+        //    const alloc = self._root_alloc orelse return;
+        //    self.deinit();
+        //    _ = try self.init(alloc, init_config);
+        //}
     };
 }
 
