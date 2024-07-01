@@ -640,7 +640,7 @@ const test_setup_cmd: TestCommand = .{
         .{
             .name = "sub-test-cmd",
             .description = "A Test Sub Command.",
-            .opts = &.{            
+            .opts = &.{
                 .{
                     .name = "sub_string_opt",
                     .description = "A test sub string long option.",

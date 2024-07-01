@@ -25,7 +25,7 @@ pub const Config = struct {
     /// This will be filled in automatically.
     CommandT: ?type = null,
 
-    /// Value Config for this Option type.
+    /// Value Config for this Option Type.
     /// This will default to the same Value.Config used by the overarching custom Command Type of this custom Option Type.
     val_config: Value.Config = .{},
 
@@ -135,7 +135,7 @@ pub const Config = struct {
     }
 };
 
-/// Create an Option type with the Base (default) configuration.
+/// Create an Option Type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
 /// Create a Custom Option type from the provided Config (`config`).

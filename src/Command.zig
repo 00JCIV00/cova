@@ -872,7 +872,7 @@ pub fn Custom(comptime config: Config) type {
             default_val_opts: bool = false,
 
             /// A Name for the Command.
-            /// A null value will default to the type name of the Struct.
+            /// A null value will default to the Type name of the Struct.
             cmd_name: ?[]const u8 = null,
             /// A list of Alias Names for this Command.
             cmd_alias_names: ?[]const []const u8 = null,
@@ -1006,7 +1006,7 @@ pub fn Custom(comptime config: Config) type {
                         cmds_idx += 1;
                     },
                     // Options
-                    // TODO - Handle Command types passed as Optionals?
+                    // TODO - Handle Command Types passed as Optionals?
                     .Optional => {
                         from_opts[opts_idx] = (OptionT.from(field, .{ 
                             .name = arg_name,
@@ -1061,11 +1061,11 @@ pub fn Custom(comptime config: Config) type {
                                 }) orelse continue;
                                 vals_idx += 1;
                             },
-                            else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                            else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of Type 'Array' is incompatible. Arrays must contain one of the following Types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
                         }
                     },
                     // Incompatible
-                    else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Command, Option, or Value."),
+                    else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of Type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Command, Option, or Value."),
                 }
             }
 
@@ -1173,11 +1173,11 @@ pub fn Custom(comptime config: Config) type {
                                 }) orelse continue;
                                 vals_idx += 1;
                             },
-                            else => if (!from_config.ignore_incompatible) @compileError("The parameter of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                            else => if (!from_config.ignore_incompatible) @compileError("The parameter of Type 'Array' is incompatible. Arrays must contain one of the following Types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
                         }
                     },
                     // Incompatible
-                    else => if (!from_config.ignore_incompatible) @compileError("The parameter of type '" ++ @typeName(param.type) ++ "' is incompatible as it cannot be converted to a Command or Value."),
+                    else => if (!from_config.ignore_incompatible) @compileError("The parameter of Type '" ++ @typeName(param.type) ++ "' is incompatible as it cannot be converted to a Command or Value."),
                 }
             }
 
@@ -1206,8 +1206,8 @@ pub fn Custom(comptime config: Config) type {
             /// Allow Unset Options and Values to be included.
             /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Unset Option/Value.
             allow_unset: bool = true,
-            /// Ignore Incompatible types. Incompatible types are those that fall outside of the conversion rules listed under `from()`.
-            /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Incompatible type.
+            /// Ignore Incompatible Types. Incompatible Types are those that fall outside of the conversion rules listed under `from()`.
+            /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Incompatible Type.
             /// This will also allow Values to be set to sane defaults for Integers and Floats (0) as well as Strings ("").
             allow_incompatible: bool = true,
             /// Convert dashes '-' to underscores '_' in field names.
@@ -1226,7 +1226,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Single-Options: Optional versions of Values.
         /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
-        // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
+        // TODO: Catch more error cases for Incompatible Types (i.e. Pointer not (`[]const u8`).
         pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             const type_info = @typeInfo(ToT);
@@ -1717,26 +1717,6 @@ pub fn Custom(comptime config: Config) type {
                 break :setup .{ cmd, cmd._alloc.? };
             };
             init_cmd.parent_cmd = parent_cmd;
-
-            // This implementation doesn't support `parent_cmd` pointers.
-            //var init_cmd: if (is_root_cmd) *@This() else @This(),
-            //const alloc = setup: {
-            //    const cmd = if (is_root_cmd) rootCmd: {
-            //        const root_cmd = try init_alloc.create(@This());
-            //        root_cmd.* = self.*;
-            //        root_cmd._root_alloc = init_alloc;
-            //        root_cmd._arena = heap.ArenaAllocator.init(init_alloc);
-            //        root_cmd._alloc = root_cmd._arena.?.allocator();
-            //        break :rootCmd root_cmd;
-            //    }
-            //    else childCmd: {
-            //        var child_cmd = self.*;
-            //        child_cmd._alloc = init_alloc;
-            //        break :childCmd child_cmd;
-            //    };
-            //    break :setup .{ cmd, cmd._alloc.? };
-            //};
-            //init_cmd.parent_cmd = parent_cmd;
 
             const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
             const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });

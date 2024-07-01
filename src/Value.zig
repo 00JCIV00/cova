@@ -27,7 +27,7 @@ const Type = builtin.Type;
 
 const utils = @import("utils.zig");
 
-/// Config for custom Value types. 
+/// Config for custom Value Types. 
 /// This Config is shared across Typed, Generic, and Custom.
 pub const Config = struct {
     /// Command Type.
@@ -52,7 +52,7 @@ pub const Config = struct {
     /// Custom Types for this project's Custom Values. 
     /// If these Types are `Value.Typed` they'll be coerced to match the parent `Value.Config` (not preferred).
     /// Otherwise, each Type will be wrapped into a `Value.Typed` (preferred).
-    /// This is useful for adding additional types that aren't covered by the base `Value.Generic` union.
+    /// This is useful for adding additional Types that aren't covered by the base `Value.Generic` union.
     /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function.
     /// This function is implemented on the `Value.Typed.parse_fn` field.
     custom_types: []const type = &.{},
@@ -89,13 +89,13 @@ pub const Config = struct {
     } = null,
 
     /// Use Custom Bit Width Range for Ints and UInts.
-    /// This is useful for specifying a wide range of Int and UInt types for a project.
+    /// This is useful for specifying a wide range of Int and UInt Types for a project.
     /// Note, this will slow down compilation speed!!! (It does not affect runtime speed).
     use_custom_bit_width_range: bool = false,
-    /// Minimum Bit Width for Ints and UInts in this Custom Value type.
+    /// Minimum Bit Width for Ints and UInts in this Custom Value Type.
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     min_int_bit_width: u16 = 1,
-    /// Minimum Bit Width for Ints and UInts in this Custom Value type.
+    /// Minimum Bit Width for Ints and UInts in this Custom Value Type.
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     max_int_bit_width: u16 = 256,
 
@@ -569,14 +569,14 @@ pub fn Generic(comptime config: Config) type {
     };
 }
 
-/// Create a Custom Value type from the provided Config (`config`).
+/// Create a Custom Value Type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct{
         /// The Custom Command Type of the overall project.
         const CommandT = config.CommandT.?;
         /// The Custom Option Type of the overall project.
         const OptionT = config.OptionT.?;
-        /// Custom Generic Value type.
+        /// Custom Generic Value Type.
         pub const GenericT = Generic(config);
 
         /// The Parent Command of this Value.
@@ -614,7 +614,7 @@ pub fn Custom(comptime config: Config) type {
             };
         }
 
-        /// Get the Parsed and Validated value of the inner Typed Value as the specified type (`T`).
+        /// Get the Parsed and Validated value of the inner Typed Value as the specified Type (`T`).
         pub fn getAs(self: *const @This(), comptime T: type) !T {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
@@ -788,7 +788,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Config for creating Values from Componenet Types (Function Parameters, Struct Fields, and Union Fields) using `from()`.
         pub const FromConfig = struct {
-            /// Ignore Incompatible types or error during compile time.
+            /// Ignore Incompatible Types or error during compile time.
             ignore_incompatible: bool = true,
             /// Name for the Value.
             /// If this is left blank, an attempt will be made to create a name based on the Component Type.
@@ -844,8 +844,7 @@ pub fn Custom(comptime config: Config) type {
             //const out_info = @typeInfo(CompT);
             return ofType(CompT, .{
                 .name = comp_name,
-                //.description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
-                .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of type '{s}'.", .{ comp_name, @typeName(FromT) }),
+                .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of Type '{s}'.", .{ comp_name, @typeName(FromT) }),
                 .max_entries =
                     if (comp_info == .Array) comp_info.Array.len
                     else 1,
@@ -978,7 +977,7 @@ pub const ParsingFns = struct {
         /// Parse the given argument token (`arg`) to an Int based on the Enum Tag Type of the provided `EnumT`.
         pub fn asEnumType(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
-            if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
+            if (enum_info != .Enum) @compileError("The Type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!enum_info.Enum.tag_type;
         } {
             const EnumTagT: type = @typeInfo(EnumT).Enum.tag_type;
@@ -994,7 +993,7 @@ pub const ParsingFns = struct {
         /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
         pub fn asEnumTag(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
-            if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
+            if (enum_info != .Enum) @compileError("The Type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!EnumT;
         } {
             return struct { 
@@ -1034,7 +1033,7 @@ pub const ValidationFns = struct {
             const num_info = @typeInfo(NumT);
             switch (num_info) {
                 .Int, .Float => {},
-                inline else => @compileError("The provided type '" ++ @typeName(NumT) ++ "' is not a numeric type. It must be an Integer or a Float."),
+                inline else => @compileError("The provided Type '" ++ @typeName(NumT) ++ "' is not a numeric Type. It must be an Integer or a Float."),
             }
 
             return 
