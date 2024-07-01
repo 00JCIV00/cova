@@ -1850,13 +1850,13 @@ pub fn Custom(comptime config: Config) type {
             if (self._root_alloc) |root_alloc| root_alloc.destroy(self);
         }
 
-        ///// Reset the Root Command with the provided InitConfig (`init_config`) and its current Root Allocator.
-        ///// If this Command has not yet been initialized or is not the Root Command, this does nothing.
-        //pub fn reset(self: *const @This(), init_config: InitConfig) !void {
-        //    const alloc = self._root_alloc orelse return;
-        //    self.deinit();
-        //    _ = try self.init(alloc, init_config);
-        //}
+        /// Reset the Root Command with the provided Setup Command (`setup_cmd`), InitConfig (`init_config`), and the Command's current Root Allocator.
+        /// If this Command has not yet been initialized or is not the Root Command, this does nothing.
+        pub fn reset(self: *const @This(), comptime setup_cmd: @This(), comptime init_config: InitConfig) !void {
+            const alloc = self._root_alloc orelse return;
+            self.deinit();
+            self = try setup_cmd.init(alloc, init_config);
+        }
     };
 }
 
