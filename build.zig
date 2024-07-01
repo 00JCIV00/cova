@@ -3,7 +3,9 @@ pub const generate = @import("src/generate.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
+    const optimize = b.standardOptimizeOption(.{
+        .preferred_optimize_mode = .ReleaseSafe,
+    });
     //const build_options = b.addOptions();
     const bin_name = b.option([]const u8, "name", "A name for the binary being created.");
     b.exe_dir = "./bin";
