@@ -602,6 +602,9 @@ pub fn Custom(comptime config: Config) type {
         /// Values Usage Format.
         /// Check (`Value.Config`) for details.
         pub const vals_usage_fmt = config.usage_fmt;
+        /// Values Indent Format.
+        /// Check (`Value.Config`) for details.
+        pub const indent_fmt = config.indent_fmt;
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
