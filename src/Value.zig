@@ -15,7 +15,7 @@ const builtin = std.builtin;
 const ascii = std.ascii;
 const fmt = std.fmt;
 const fs = std.fs;
-const log = std.log;
+const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
 
