@@ -135,7 +135,7 @@ pub const CommandT = Command.Custom(.{
     //}.help,
     //.global_case_sensitive = false,
     .opt_config = .{
-        .usage_fmt = "{u}{?u}{s} {s}{?s} <{s} ({s})>",
+        //.usage_fmt = "{u}{?u}{s} {s}{?s} <{s} ({s})>",
         //.allow_arg_indices = false,
         //.global_case_sensitive = false,
         //.usage_fn = struct{

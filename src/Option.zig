@@ -91,11 +91,10 @@ pub const Config = struct {
     /// 3. String Name Separator
     /// 4. String (Long Prefix)
     /// 5. Optional String "{?s}" (Long Name)
-    /// 6. String (Value Name)
-    /// 7. String (Value Type)
+    /// 6. String (Value Type)
     ///
     /// Note, a comma "," will automatically be placed between the short and long name if they both exist.
-    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s} <{s} ({s})>",
+    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s} <{s}>",
 
     /// Prefix for Short Options.
     short_prefix: ?u8 = '-',
@@ -329,7 +328,7 @@ pub fn Custom(comptime config: Config) type {
                 if (self.short_name != null and self.long_name != null) name_sep_fmt else "",
                 if (long_prefix != null and self.long_name != null) long_prefix.? else "",
                 if (long_prefix != null) self.long_name orelse "" else "",
-                self.val.name(),
+                //self.val.name(),
                 self.val.childType(),
             });
         }

@@ -42,7 +42,14 @@ pub fn displayCmdInfo(
 
 /// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
-fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
+fn displayValInfo(
+    comptime ValueT: type, 
+    val: ValueT,
+    name: ?[]const u8,
+    isOpt: bool,
+    alloc: mem.Allocator,
+    writer: anytype,
+) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
     switch (meta.activeTag(val.generic)) {
