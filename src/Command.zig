@@ -10,7 +10,7 @@
 //!
 //! # Command w/ Options and Values
 //! myapp -d "This Value belongs to the 'd' Option." --toggle "This is a standalone Value."
-//! 
+//!
 //! # Command w/ Sub Command
 //! myapp --opt "Option for 'myapp' Command." subcmd --subcmd_opt "Option for 'subcmd' Sub Command."
 //! ```
@@ -25,7 +25,7 @@ const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 const sort = std.sort;
-const ComptimeStringMap = std.ComptimeStringMap;
+const StaticStringMap = std.StaticStringMap;
 const StringHashMap = std.StringHashMap;
 
 const toLower = ascii.toLower;
@@ -35,8 +35,7 @@ const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 const utils = @import("utils.zig");
 
-
-/// Config for custom Command Types. 
+/// Config for custom Command Types.
 pub const Config = struct {
     /// Option Config for this Command Type.
     opt_config: Option.Config = .{},
@@ -44,7 +43,7 @@ pub const Config = struct {
     val_config: Value.Config = .{},
 
     /// The Global Help Prefix for all instances of this Command Type.
-    /// This can be overwritten per instance using the `help_prefix` field. 
+    /// This can be overwritten per instance using the `help_prefix` field.
     global_help_prefix: []const u8 = "",
 
     /// A custom Help function to override the default `help()` function globally for ALL Command instances of this custom Command Type.
@@ -54,7 +53,7 @@ pub const Config = struct {
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    global_help_fn: ?*const fn (anytype, anytype, mem.Allocator) anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Command instances of this custom Command Type.
     /// This function is 1st in precedence.
     ///
@@ -62,7 +61,7 @@ pub const Config = struct {
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    global_usage_fn: ?*const fn (anytype, anytype, mem.Allocator) anyerror!void = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
@@ -87,7 +86,7 @@ pub const Config = struct {
     /// 2. String (Command Name)
     /// 3. String (Indent)
     /// 4. String (Command Description)
-    help_header_fmt: []const u8 = 
+    help_header_fmt: []const u8 =
         \\HELP:
         \\{s}COMMAND: {s}
         \\
@@ -104,7 +103,7 @@ pub const Config = struct {
     /// 1. String (Indent)
     /// 2. String (Aliases)
     /// Note, there will be curly-brackets `{}` surrounding the list due to how Zig handles printing `[]const []const u8`.
-    cmd_alias_fmt: []const u8 = 
+    cmd_alias_fmt: []const u8 =
         \\{s}ALIAS(ES): {s}
         \\
         \\
@@ -113,9 +112,9 @@ pub const Config = struct {
     /// Must support the following format types in this order:
     /// 1. String (Indent)
     /// 2. String (Command)
-    usage_header_fmt: []const u8 = 
+    usage_header_fmt: []const u8 =
         \\USAGE:
-        \\{s}{s} 
+        \\{s}{s}
     ,
     /// Sub Commands Help Title Format
     /// Must support the following format types in this order:
@@ -137,7 +136,7 @@ pub const Config = struct {
     /// Sub Commands Usage Format.
     /// Must support the following format types in this order:
     /// 1. String (Command Name)
-    subcmds_usage_fmt: []const u8 = "{s}", 
+    subcmds_usage_fmt: []const u8 = "{s}",
     /// Sub Commands Alias List Format.
     /// Must support the following format types in this order:
     /// 1. String (Aliases)
@@ -174,7 +173,7 @@ pub const Config = struct {
     global_case_sensitive: bool = true,
 
     /// Configuration for `optimized()`.
-    pub const OptimizeConfig = struct{
+    pub const OptimizeConfig = struct {
         /// Set all `_fmt` fields `""`.
         /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
         no_formats: bool = true,
@@ -203,7 +202,9 @@ pub const Config = struct {
 };
 
 /// Create a Command Type with the Base (default) configuration.
-pub fn Base() type { return Custom(.{}); }
+pub fn Base() type {
+    return Custom(.{});
+}
 
 /// Create a Custom Command Type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
@@ -292,15 +293,14 @@ pub fn Custom(comptime config: Config) type {
         /// Check (`Command.Config`) for details.
         pub const include_examples = config.include_examples;
 
-
         /// The Root Allocator for this Command.
         /// This is the Allocator provided to `init()`.
-        /// 
+        ///
         /// **Internal Use.**
         _root_alloc: ?mem.Allocator = null,
         /// The Arena Allocator for this Command.
         /// This is created by wrapping the Root Allocator provided to `init()`.
-        /// 
+        ///
         /// **Internal Use.**
         _arena: ?heap.ArenaAllocator = null,
         /// The Allocator for this Command.
@@ -368,20 +368,20 @@ pub fn Custom(comptime config: Config) type {
         /// During parsing, mandate that all Values for this Command must be filled, otherwise error out.
         /// This should generally be set to `true`. Prefer to use Options over Values for Arguments that are not mandatory.
         vals_mandatory: bool = config.global_vals_mandatory,
-        /// Allows this Command to inherit Options 
+        /// Allows this Command to inherit Options
         allow_inheritable_opts: bool = config.global_allow_inheritable_opts,
         /// During parsing, mandate that THIS Command, and its aliases, must be used in a case-sensitive manner.
         /// This will NOT affect Command Validation nor Tab-Completion.
         case_sensitive: bool = config.global_case_sensitive,
 
         /// Config for Getting Options and Values.
-        pub const GetConfig = struct{
+        pub const GetConfig = struct {
             /// An optional Argument Group to filter the returned Options or Values.
             arg_group: ?[]const u8 = null,
         };
 
         /// Argument Groups Types for `checkGroup()`.
-        pub const ArgumentGroupType = enum{
+        pub const ArgumentGroupType = enum {
             All,
             Command,
             Option,
@@ -429,7 +429,7 @@ pub fn Custom(comptime config: Config) type {
         pub fn checkSubCmd(self: *const @This(), cmd_name: []const u8) bool {
             return if (self.sub_cmd) |cmd| mem.eql(u8, cmd.name, cmd_name) else false;
         }
-        /// Returns the active Sub Command of this Command if it matches the provided Name (`cmd_name`). 
+        /// Returns the active Sub Command of this Command if it matches the provided Name (`cmd_name`).
         /// This is useful for analyzing Commands that DO have Sub Commands that need to be subsequently analyzed.
         pub fn matchSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
             return if (self.checkSubCmd(cmd_name)) self.sub_cmd.? else null;
@@ -451,12 +451,12 @@ pub fn Custom(comptime config: Config) type {
                     const opt_group = opt.opt_group orelse continue;
                     if (!mem.eql(u8, conf_group, opt_group)) continue;
                 }
-                try map.put(opt.name, opt); 
+                try map.put(opt.name, opt);
             }
             return map;
         }
         /// Config for Checking or Matching multiple Options from this Command.
-        pub const OptionsCheckConfig = struct{
+        pub const OptionsCheckConfig = struct {
             /// The type of Boolean Logic to be used when checking or matching Options.
             logic: CheckLogic = .OR,
             /// The maximum number of Options allowed for XOR Logic.
@@ -466,7 +466,7 @@ pub fn Custom(comptime config: Config) type {
             opt_group: ?[]const u8 = null,
 
             /// Boolean Logic types for checking/matching Options.
-            pub const CheckLogic = enum{
+            pub const CheckLogic = enum {
                 /// All Options from the provided list must be set.
                 AND,
                 /// At least one Option from the provided list must be set.
@@ -493,8 +493,8 @@ pub fn Custom(comptime config: Config) type {
                     .AND => {
                         if (opts_count == opt_names.len) {
                             logic_flag = true;
-                            break;   
-                        }    
+                            break;
+                        }
                     },
                     .OR => logic_flag = true,
                     .XOR => {
@@ -584,13 +584,13 @@ pub fn Custom(comptime config: Config) type {
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(ValueT) {
             if (self.vals == null) return error.NoValuesInCommand;
             var map = StringHashMap(ValueT).init(alloc);
-            for (self.vals.?) |val| { 
+            for (self.vals.?) |val| {
                 checkGroup: {
                     const conf_group = get_config.arg_group orelse break :checkGroup;
                     const val_group = val.valGroup() orelse continue;
                     if (!mem.eql(u8, conf_group, val_group)) continue;
                 }
-                try map.put(val.name(), val); 
+                try map.put(val.name(), val);
             }
             return map;
         }
@@ -600,30 +600,27 @@ pub fn Custom(comptime config: Config) type {
             if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
 
             const alloc = self._alloc orelse return error.CommandNotInitialized;
-            
-            try writer.print("{s}\n", .{ self.help_prefix });
+
+            try writer.print("{s}\n", .{self.help_prefix});
             try self.usage(writer);
-            try writer.print(help_header_fmt, .{ 
-                indent_fmt, self.name, 
-                indent_fmt, self.description 
-            });
+            try writer.print(help_header_fmt, .{ indent_fmt, self.name, indent_fmt, self.description });
 
             if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases });
 
             showExamples: {
                 if (!include_examples) break :showExamples;
                 const examples = self.examples orelse break :showExamples;
-                try writer.print(examples_header_fmt, .{ indent_fmt });
+                try writer.print(examples_header_fmt, .{indent_fmt});
                 for (examples) |example| {
-                    try writer.print("{s}{s}", .{ indent_fmt } ** 2);
-                    try writer.print(example_fmt, .{ example });
+                    try writer.print("{s}{s}", .{indent_fmt} ** 2);
+                    try writer.print(example_fmt, .{example});
                     try writer.print("\n", .{});
                 }
                 try writer.print("\n", .{});
             }
 
             if (self.sub_cmds) |sub_cmds| {
-                try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
+                try writer.print(subcmds_help_title_fmt, .{indent_fmt});
                 var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
                 defer cmd_list.deinit();
                 for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
@@ -650,7 +647,7 @@ pub fn Custom(comptime config: Config) type {
                                 try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
                                 if (cmd.alias_names) |aliases| {
                                     try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
-                                    try writer.print(subcmd_alias_fmt, .{ aliases });
+                                    try writer.print(subcmd_alias_fmt, .{aliases});
                                 }
                                 try writer.print("\n", .{});
                                 try remove_list.append(cmd.name);
@@ -674,7 +671,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.opts) |opts| {
-                try writer.print(opts_help_title_fmt, .{ indent_fmt });
+                try writer.print(opts_help_title_fmt, .{indent_fmt});
                 var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
                 defer opt_list.deinit();
                 for (opts) |opt| try opt_list.put(opt.name, opt);
@@ -721,7 +718,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("\n", .{});
 
             if (self.vals) |vals| {
-                try writer.print(vals_help_title_fmt, .{ indent_fmt });
+                try writer.print(vals_help_title_fmt, .{indent_fmt});
                 var val_list = std.StringArrayHashMap(ValueT).init(alloc);
                 defer val_list.deinit();
                 for (vals) |val| try val_list.put(val.name(), val);
@@ -778,7 +775,7 @@ pub fn Custom(comptime config: Config) type {
                     }
                     try opt.usage(writer);
                     if (idx == opts.len - 1) post_sep = "";
-                    try writer.print("{s}", .{ post_sep });
+                    try writer.print("{s}", .{post_sep});
                 }
                 if (hidden_count < opts.len) try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
             }
@@ -787,7 +784,7 @@ pub fn Custom(comptime config: Config) type {
                 for (vals, 0..) |val, idx| {
                     try val.usage(writer);
                     if (idx == vals.len - 1) post_sep = "";
-                    try writer.print("{s}", .{ post_sep });
+                    try writer.print("{s}", .{post_sep});
                 }
                 try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
             }
@@ -795,11 +792,11 @@ pub fn Custom(comptime config: Config) type {
                 var post_sep: []const u8 = " | ";
                 for (cmds, 0..) |cmd, idx| {
                     if (cmd.hidden) continue;
-                    try writer.print(subcmds_usage_fmt, .{ cmd.name });
+                    try writer.print(subcmds_usage_fmt, .{cmd.name});
                     if (idx == cmds.len - 1) post_sep = "";
-                    try writer.print("{s}", .{ post_sep });
+                    try writer.print("{s}", .{post_sep});
                 }
-            } 
+            }
 
             try writer.print("\n\n", .{});
         }
@@ -821,31 +818,29 @@ pub fn Custom(comptime config: Config) type {
         /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
-            return (
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
+            return ((self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
                 checkOpt: {
-                    if (self.opts != null) {
-                        for (self.opts.?) |opt| {
-                            if (mem.eql(u8, opt.name, flag_name) and 
-                                mem.eql(u8, opt.val.childType(), "bool") and 
-                                opt.val.getAs(bool) catch false)
-                                    break :checkOpt true;
-                        }
+                if (self.opts != null) {
+                    for (self.opts.?) |opt| {
+                        if (mem.eql(u8, opt.name, flag_name) and
+                            mem.eql(u8, opt.val.childType(), "bool") and
+                            opt.val.getAs(bool) catch false)
+                            break :checkOpt true;
                     }
-                    break :checkOpt false;
-                } or
-                checkVal: {
-                    if (self.vals != null) {
-                        for (self.vals.?) |val| {
-                            if (mem.eql(u8, val.name(), flag_name) and
-                                mem.eql(u8, val.childType(), "bool") and
-                                val.getAs(bool) catch false)
-                                    break :checkVal true;
-                        }
-                    }
-                    break :checkVal false;
                 }
-            );
+                break :checkOpt false;
+            } or
+                checkVal: {
+                if (self.vals != null) {
+                    for (self.vals.?) |val| {
+                        if (mem.eql(u8, val.name(), flag_name) and
+                            mem.eql(u8, val.childType(), "bool") and
+                            val.getAs(bool) catch false)
+                            break :checkVal true;
+                    }
+                }
+                break :checkVal false;
+            });
         }
 
         /// Config for creating Commands from Structs using `from()`.
@@ -863,8 +858,8 @@ pub fn Custom(comptime config: Config) type {
             /// Be sure to set the counterpart to this flag in the `ToConfig` if this Command will be converted back to a Struct or Union.
             convert_syntax: bool = true,
             /// Attempt to create Short Options.
-            /// This will attempt to make a short option name from the first letter of the field name in lowercase then uppercase, 
-            /// sequentially working through each next letter if the previous one has already been used. 
+            /// This will attempt to make a short option name from the first letter of the field name in lowercase then uppercase,
+            /// sequentially working through each next letter if the previous one has already been used.
             /// (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
             attempt_short_opts: bool = true,
             /// Convert Fields with default values to Options instead of Values.
@@ -893,7 +888,7 @@ pub fn Custom(comptime config: Config) type {
             /// These Descriptions will be used across this Command and all of its Sub Commands.
             ///
             /// Format: `.{ "argument_name", "Description of the Argument." }`
-            sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
+            sub_descriptions: []const struct { []const u8, []const u8 } = &.{.{ "__nosubdescriptionsprovided__", "" }},
             /// During parsing, mandate that a Sub Command be used with a Command if one is available.
             /// This will not include Usage/Help Commands.
             sub_cmds_mandatory: bool = config.global_sub_cmds_mandatory,
@@ -911,7 +906,7 @@ pub fn Custom(comptime config: Config) type {
             /// Max number of Values.
             max_vals: u8 = max_args,
         };
-        
+
         /// Create a Command from the provided Type (`FromT`).
         /// The provided Type must be a Comptime-known Function, Struct, or Union.
         pub fn from(comptime FromT: type, comptime from_config: FromConfig) @This() {
@@ -950,7 +945,7 @@ pub fn Custom(comptime config: Config) type {
             var vals_idx: u8 = 0;
 
             // TODO: Make this a nullable field and just use null conditional syntax for adding descriptions below.
-            const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+            const arg_descriptions = StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
 
             const fields = meta.fields(FromT);
             const start_idx = if (from_config.ignore_first) 1 else 0;
@@ -1008,9 +1003,9 @@ pub fn Custom(comptime config: Config) type {
                     // Options
                     // TODO - Handle Command types passed as Optionals?
                     .Optional => {
-                        from_opts[opts_idx] = (OptionT.from(field, .{ 
+                        from_opts[opts_idx] = (OptionT.from(field, .{
                             .name = arg_name,
-                            .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                            .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null,
                             .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .opt_description = arg_description,
@@ -1020,9 +1015,9 @@ pub fn Custom(comptime config: Config) type {
                     // Values
                     .Bool, .Int, .Float, .Pointer, .Enum => {
                         if (from_config.default_val_opts and field.default_value != null) {
-                            from_opts[opts_idx] = (OptionT.from(field, .{ 
+                            from_opts[opts_idx] = (OptionT.from(field, .{
                                 .name = arg_name,
-                                .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                                .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null,
                                 .long_name = arg_name,
                                 .ignore_incompatible = from_config.ignore_incompatible,
                                 .opt_description = arg_description,
@@ -1043,22 +1038,12 @@ pub fn Custom(comptime config: Config) type {
                         switch (ary_info) {
                             // Options
                             .Optional => {
-                                from_opts[opts_idx] = OptionT.from(field, .{
-                                    .name = arg_name,
-                                    .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
-                                    .long_name = arg_name,
-                                    .ignore_incompatible = from_config.ignore_incompatible,
-                                    .opt_description = arg_description
-                                }) orelse continue;
+                                from_opts[opts_idx] = OptionT.from(field, .{ .name = arg_name, .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, .long_name = arg_name, .ignore_incompatible = from_config.ignore_incompatible, .opt_description = arg_description }) orelse continue;
                                 opts_idx += 1;
                             },
                             // Values
                             .Bool, .Int, .Float, .Pointer, .Enum => {
-                                from_vals[vals_idx] = ValueT.from(field, .{
-                                    .ignore_incompatible = from_config.ignore_incompatible,
-                                    .val_name = arg_name,
-                                    .val_description = arg_description
-                                }) orelse continue;
+                                from_vals[vals_idx] = ValueT.from(field, .{ .ignore_incompatible = from_config.ignore_incompatible, .val_name = arg_name, .val_description = arg_description }) orelse continue;
                                 vals_idx += 1;
                             },
                             else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
@@ -1138,14 +1123,14 @@ pub fn Custom(comptime config: Config) type {
             const params = from_info.Fn.params;
             const start_idx = if (from_config.ignore_first) 1 else 0;
             inline for (params[start_idx..]) |param| {
-                const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
+                const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)"; //arg_descriptions.get(param.name);
                 // Handle Argument Types.
                 switch (@typeInfo(param.type.?)) {
                     // Commands
                     .Fn, .Struct, .Union => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
-                            new_config.cmd_name = "cmd-" ++ &.{ cmds_idx + 48 };
+                            new_config.cmd_name = "cmd-" ++ &.{cmds_idx + 48};
                             new_config.cmd_description = arg_description orelse "The '" ++ new_config.cmd_name ++ "' Command.";
                             break :subConfig new_config;
                         };
@@ -1156,7 +1141,10 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
-                            .val_name = "val-" ++ .{ '0', (vals_idx + 48), },
+                            .val_name = "val-" ++ .{
+                                '0',
+                                (vals_idx + 48),
+                            },
                             .val_description = arg_description,
                         }) orelse continue);
                         vals_idx += 1;
@@ -1167,10 +1155,7 @@ pub fn Custom(comptime config: Config) type {
                         switch (ary_info) {
                             // Values
                             .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
-                                from_vals[vals_idx] = ValueT.from(param, .{
-                                    .ignore_incompatible = from_config.ignore_incompatible,
-                                    .val_description = arg_description
-                                }) orelse continue;
+                                from_vals[vals_idx] = ValueT.from(param, .{ .ignore_incompatible = from_config.ignore_incompatible, .val_description = arg_description }) orelse continue;
                                 vals_idx += 1;
                             },
                             else => if (!from_config.ignore_incompatible) @compileError("The parameter of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
@@ -1230,26 +1215,26 @@ pub fn Custom(comptime config: Config) type {
         pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             const type_info = @typeInfo(ToT);
-            if (type_info == .Union) { 
+            if (type_info == .Union) {
                 const vals_idx = if (self.vals) |vals| valsIdx: {
                     var idx: u8 = 0;
-                    for (vals) |val| { if (val.isSet()) idx += 1; }
+                    for (vals) |val| {
+                        if (val.isSet()) idx += 1;
+                    }
                     break :valsIdx idx;
                 } else 0;
                 const opts_idx = if (self.opts) |opts| optsIdx: {
                     var idx: u8 = 0;
-                    for (opts) |opt| { 
-                        if (
-                            opt.val.isSet() and
+                    for (opts) |opt| {
+                        if (opt.val.isSet() and
                             !mem.eql(u8, opt.name, "usage") and
-                            !mem.eql(u8, opt.name, "help")
-                        ) idx += 1; 
+                            !mem.eql(u8, opt.name, "help")) idx += 1;
                     }
                     break :optsIdx idx;
                 } else 0;
                 const total_idx = vals_idx + opts_idx;
-                if (total_idx > 1) { 
-                    log.err("Commands from Unions can only hold 1 Value or Option, but '{d}' were given.", .{ total_idx });
+                if (total_idx > 1) {
+                    log.err("Commands from Unions can only hold 1 Value or Option, but '{d}' were given.", .{total_idx});
                     return error.ExpectedOnlyOneValOrOpt;
                 }
             }
@@ -1275,11 +1260,10 @@ pub fn Custom(comptime config: Config) type {
                 switch (field_info) {
                     // Commands
                     .Struct => {
-                        @field(out, field.name) = 
+                        @field(out, field.name) =
                             if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name))
-                                try self.sub_cmd.?.to(field.type, to_config)
-                            else if (to_config.allow_unset) field.type{}
-                            else return error.ValueNotSet;
+                            try self.sub_cmd.?.to(field.type, to_config)
+                        else if (to_config.allow_unset) field.type{} else return error.ValueNotSet;
                     },
                     .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
                         return @unionInit(ToT, field.name, try self.sub_cmd.?.to(field.type, to_config));
@@ -1290,12 +1274,11 @@ pub fn Custom(comptime config: Config) type {
                             if (mem.eql(u8, opt.name, arg_name)) {
                                 if (!opt.val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
-                                    @field(out, field.name) = 
-                                        if (field.default_value) |def_val| @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
-                                        else null;
+                                    @field(out, field.name) =
+                                        if (field.default_value) |def_val| @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).* else null;
                                     break;
                                 }
-                                if (type_info == .Union) return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
+                                if (type_info == .Union) return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue);
                                 @field(out, field.name) = try opt.val.getAs(f_opt.child);
                             }
                         }
@@ -1308,24 +1291,26 @@ pub fn Custom(comptime config: Config) type {
                                 if (!val.isSet() and type_info == .Struct) {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     const def_val = field.default_value orelse {
-                                        log.err("The Field '{s}' has no default value.", .{ field.name });
+                                        log.err("The Field '{s}' has no default value.", .{field.name});
                                         return error.NoDefaultValue;
                                     };
                                     @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
                                     break;
                                 }
-                                if (type_info == .Union) return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
+                                if (type_info == .Union) return @unionInit(ToT, field.name, val.getAs(field.type) catch continue);
                                 @field(out, field.name) = val.getAs(field.type) catch |err| setVal: {
                                     if (!to_config.allow_incompatible) return error.IncompatibleType;
                                     break :setVal switch (field_info) {
                                         .Bool => false,
-                                        .Int, .Float, => @as(field.type, 0),
-                                        .Pointer => "",    
+                                        .Int,
+                                        .Float,
+                                        => @as(field.type, 0),
+                                        .Pointer => "",
                                         else => return err,
                                     };
                                 };
                             }
-                        } 
+                        }
                     },
                     // Multi
                     .Array => |ary| {
@@ -1339,14 +1324,15 @@ pub fn Custom(comptime config: Config) type {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             @field(out, field.name) =
                                                 if (field.default_value) |def_val|
-                                                    @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
-                                                else .{ null } ** ary.len;
+                                                @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
+                                            else
+                                                .{null} ** ary.len;
                                             break;
                                         }
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
                                         var f_ary: field.type = undefined;
                                         for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
-                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
+                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary);
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -1359,7 +1345,7 @@ pub fn Custom(comptime config: Config) type {
                                         if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .Struct) {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             const def_val = field.default_value orelse {
-                                                log.err("The Field '{s}' has no default value.", .{ field.name });
+                                                log.err("The Field '{s}' has no default value.", .{field.name});
                                                 return error.NoDefaultValue;
                                             };
                                             @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
@@ -1370,16 +1356,18 @@ pub fn Custom(comptime config: Config) type {
                                         for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx] orelse elmVal: {
                                             break :elmVal switch (ary_info) {
                                                 .Bool => false,
-                                                .Int, .Float, => @as(ary.child, 0),
-                                                .Pointer => "",    
+                                                .Int,
+                                                .Float,
+                                                => @as(ary.child, 0),
+                                                .Pointer => "",
                                                 else => if (!to_config.allow_incompatible) return error.IncompatibleType,
                                             };
                                         };
-                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
+                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary);
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
-                                } 
+                                }
                             },
                             else => {
                                 if (!to_config.allow_incompatible) return error.IncompatibleType;
@@ -1396,19 +1384,17 @@ pub fn Custom(comptime config: Config) type {
 
         /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`ReturnT`).
         /// If the Return Type is an Error Union, this method expects only the payload Type.
-        /// If the Function has a `self` parameter it can be provided using (`fn_self`). 
+        /// If the Function has a `self` parameter it can be provided using (`fn_self`).
         /// This effectively wraps the `@call()` builtin function by using this Command's Values as the function parameters.
         pub fn callAs(self: *const @This(), comptime call_fn: anytype, fn_self: anytype, comptime ReturnT: type) !ReturnT {
             const fn_info = @typeInfo(@TypeOf(call_fn));
             const fn_name = @typeName(@TypeOf(call_fn));
             if (fn_info != .Fn) {
-                log.err("Expected a Function but received '{s}'.", .{ fn_name });
+                log.err("Expected a Function but received '{s}'.", .{fn_name});
                 return error.ExpectedFn;
             }
             if (self.vals == null or self.vals.?.len < fn_info.Fn.params.len) {
-                log.err("The provided function requires {d} parameters but only {d} was/were provided.", .{ 
-                    fn_info.Fn.params.len, 
-                    if (self.vals == null) 0 else self.vals.?.len });
+                log.err("The provided function requires {d} parameters but only {d} was/were provided.", .{ fn_info.Fn.params.len, if (self.vals == null) 0 else self.vals.?.len });
                 return error.ExpectedMoreParameters;
             }
             if (fn_info.Fn.return_type.? != ReturnT) checkErrorUnion: {
@@ -1418,7 +1404,7 @@ pub fn Custom(comptime config: Config) type {
                 return error.ReturnTypeMismatch;
             }
 
-            const params = valsToParams: { 
+            const params = valsToParams: {
                 const param_types = comptime paramTypes: {
                     var types: [fn_info.Fn.params.len]type = undefined;
                     for (types[0..], fn_info.Fn.params) |*T, param| T.* = param.type.?;
@@ -1429,13 +1415,13 @@ pub fn Custom(comptime config: Config) type {
                 if (start_idx == 1) params_tuple[0] = fn_self;
                 inline for (self.vals.?, &params_tuple, 0..) |val, *param, idx| {
                     if (idx < start_idx) continue;
-                    param.* = try val.getAs(@TypeOf(param.*)); 
+                    param.* = try val.getAs(@TypeOf(param.*));
                 }
-                
+
                 break :valsToParams params_tuple;
             };
 
-            return @call(.auto, call_fn, params); 
+            return @call(.auto, call_fn, params);
         }
 
         /// Create Sub Commands Enum.
@@ -1450,14 +1436,12 @@ pub fn Custom(comptime config: Config) type {
                     .value = idx,
                 };
             }
-            return @Type(builtin.Type{
-                .Enum = .{
-                    .tag_type = u8,
-                    .fields = cmd_fields[0..],
-                    .decls = &.{},
-                    .is_exhaustive = true,
-                }
-            });
+            return @Type(builtin.Type{ .Enum = .{
+                .tag_type = u8,
+                .fields = cmd_fields[0..],
+                .decls = &.{},
+                .is_exhaustive = true,
+            } });
         }
 
         /// Config for the Validation of this Command.
@@ -1482,17 +1466,16 @@ pub fn Custom(comptime config: Config) type {
         pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
             comptime {
                 @setEvalBranchQuota(100_000);
-                const usage_help_strs = .{ "usage", "help" } ++ (.{ "" } ** (max_args - 2));
+                const usage_help_strs = .{ "usage", "help" } ++ (.{""} ** (max_args - 2));
                 // Check for distinct Sub Commands and Validate them.
                 if (self.sub_cmds) |cmds| {
                     const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
                     var distinct_cmd: [max_args][]const u8 =
-                        if (!valid_config.check_help_cmds) .{ "" } ** max_args
-                        else usage_help_strs; 
+                        if (!valid_config.check_help_cmds) .{""} ** max_args else usage_help_strs;
                     for (cmds, 0..) |cmd, idx| {
-                        if (self.case_sensitive and utils.indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null) 
+                        if (self.case_sensitive and utils.indexOfEql([]const u8, distinct_cmd[0..idx], cmd.name) != null)
                             @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
-                        if (!self.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_cmd[0..idx], cmd.name) != null) 
+                        if (!self.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_cmd[0..idx], cmd.name) != null)
                             @compileError("The Sub Command '" ++ cmd.name ++ "' is set more than once.");
                         distinct_cmd[idx + idx_offset] = cmd.name;
                     }
@@ -1501,27 +1484,22 @@ pub fn Custom(comptime config: Config) type {
                 // Check for distinct Options.
                 if (self.opts) |opts| {
                     const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
-                    var distinct_name: [max_args][]const u8 = 
-                        if (!valid_config.check_help_opts) .{ "" } ** max_args
-                        else usage_help_strs; 
-                    var distinct_short: [max_args]u8 = 
-                        if (!valid_config.check_help_opts) .{ ' ' } ** max_args
-                        else .{ 'u', 'h' } ++ (.{ ' ' } ** (max_args - 2));
-                    var distinct_long: [max_args][]const u8 = 
-                        if (!valid_config.check_help_opts) .{ "" } ** max_args
-                        else usage_help_strs; 
+                    var distinct_name: [max_args][]const u8 =
+                        if (!valid_config.check_help_opts) .{""} ** max_args else usage_help_strs;
+                    var distinct_short: [max_args]u8 =
+                        if (!valid_config.check_help_opts) .{' '} ** max_args else .{ 'u', 'h' } ++ (.{' '} ** (max_args - 2));
+                    var distinct_long: [max_args][]const u8 =
+                        if (!valid_config.check_help_opts) .{""} ** max_args else usage_help_strs;
                     for (opts, 0..) |opt, idx| {
-                        if (utils.indexOfEql([]const u8, distinct_name[0..], opt.name) != null) 
+                        if (utils.indexOfEql([]const u8, distinct_name[0..], opt.name) != null)
                             @compileError("The Option '" ++ opt.name ++ "' is set more than once.");
                         distinct_name[idx + idx_offset] = opt.name;
-                        if (opt.short_name != null and utils.indexOfEql(u8, distinct_short[0..], opt.short_name.?) != null) 
-                            @compileError("The Option Short Name '" ++ .{ opt.short_name.? } ++ "' is set more than once.");
+                        if (opt.short_name != null and utils.indexOfEql(u8, distinct_short[0..], opt.short_name.?) != null)
+                            @compileError("The Option Short Name '" ++ .{opt.short_name.?} ++ "' is set more than once.");
                         distinct_short[idx + idx_offset] = opt.short_name orelse ' ';
                         if (opt.long_name) |long_name| {
-                            if (
-                                (opt.case_sensitive and utils.indexOfEql([]const u8, distinct_long[0..], long_name) != null) or
-                                (!opt.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_long[0..], long_name) != null)
-                            ) @compileError("The Option Long Name '" ++ long_name ++ "' is set more than once.");
+                            if ((opt.case_sensitive and utils.indexOfEql([]const u8, distinct_long[0..], long_name) != null) or
+                                (!opt.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_long[0..], long_name) != null)) @compileError("The Option Long Name '" ++ long_name ++ "' is set more than once.");
                         }
                         distinct_long[idx + idx_offset] = opt.long_name orelse "a!garbage@long#name$";
                     }
@@ -1529,9 +1507,9 @@ pub fn Custom(comptime config: Config) type {
 
                 // Check for distinct Values.
                 if (self.vals) |vals| {
-                    var distinct_val: [max_args][]const u8 = .{ "" } ** max_args;
+                    var distinct_val: [max_args][]const u8 = .{""} ** max_args;
                     for (vals, 0..) |val, idx| {
-                        if (utils.indexOfEql([]const u8, distinct_val[0..], val.name()) != null) 
+                        if (utils.indexOfEql([]const u8, distinct_val[0..], val.name()) != null)
                             @compileError("The Value '" ++ val.name ++ "' is set more than once.");
                         distinct_val[idx] = val.name();
                     }
@@ -1544,7 +1522,7 @@ pub fn Custom(comptime config: Config) type {
                         const groups = self.cmd_groups orelse break :cmdGroups;
                         checkCmds: for (cmds) |cmd| {
                             if (utils.indexOfEql([]const u8, groups, cmd.cmd_group orelse continue :checkCmds) == null)
-                                @compileError("The Command '" ++ cmd.name ++ "' has non-existent Group '" ++ cmd.cmd_group.? ++ "'.\n" ++ 
+                                @compileError("The Command '" ++ cmd.name ++ "' has non-existent Group '" ++ cmd.cmd_group.? ++ "'.\n" ++
                                     "This validation check can be disabled using `Command.Custom.ValidateConfig.check_arg_groups`.");
                         }
                     }
@@ -1562,10 +1540,9 @@ pub fn Custom(comptime config: Config) type {
                         if (self.opt_groups) |groups| {
                             for (man_groups) |man_group| {
                                 if (utils.indexOfEql([]const u8, groups, man_group) == null)
-                                    @compileError(fmt.comptimePrint("The Mandatory Option Group {s} is not in the given Option Groups.", .{ man_group }));
+                                    @compileError(fmt.comptimePrint("The Mandatory Option Group {s} is not in the given Option Groups.", .{man_group}));
                             }
-                        }
-                        else @compileError("Mandatory Option Groups must be a subset of Option Groups but no Option Groups were given.");
+                        } else @compileError("Mandatory Option Groups must be a subset of Option Groups but no Option Groups were given.");
                     }
                     // - Value Groups.
                     if (self.vals) |vals| valGroups: {
@@ -1585,25 +1562,17 @@ pub fn Custom(comptime config: Config) type {
                         checkCmds2: for (cmds) |cmd_2| {
                             if (mem.eql(u8, cmd_1.name, cmd_2.name)) continue :checkCmds2;
                             checkAliases: for (cmd_1.alias_names orelse continue :checkCmds1) |alias| {
-                                const case_sense = cmd_1.case_sensitive or cmd_2.case_sensitive; 
-                                if (
-                                    (case_sense and mem.eql(u8, cmd_2.name, alias)) or
-                                    (!case_sense and ascii.eqlIgnoreCase(cmd_2.name, alias))
-                                )
-                                    @compileError(
-                                        "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Command '" ++ 
-                                        cmd_2.name ++ "'.\n" ++ 
-                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`."
-                                    );
-                                if (
-                                    (case_sense and utils.indexOfEql([]const u8, cmd_2.alias_names orelse continue :checkAliases, alias) != null) or
-                                    (!case_sense and utils.indexOfEqlIgnoreCase(cmd_2.alias_names orelse continue :checkAliases, alias) != null)
-                                )
-                                    @compileError(
-                                        "The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Command '" ++ 
-                                        cmd_2.name ++ "'.\n" ++ 
-                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`."
-                                    );
+                                const case_sense = cmd_1.case_sensitive or cmd_2.case_sensitive;
+                                if ((case_sense and mem.eql(u8, cmd_2.name, alias)) or
+                                    (!case_sense and ascii.eqlIgnoreCase(cmd_2.name, alias)))
+                                    @compileError("The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Command '" ++
+                                        cmd_2.name ++ "'.\n" ++
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`.");
+                                if ((case_sense and utils.indexOfEql([]const u8, cmd_2.alias_names orelse continue :checkAliases, alias) != null) or
+                                    (!case_sense and utils.indexOfEqlIgnoreCase(cmd_2.alias_names orelse continue :checkAliases, alias) != null))
+                                    @compileError("The Command '" ++ cmd_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Command '" ++
+                                        cmd_2.name ++ "'.\n" ++
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_cmd_aliases`.");
                             }
                         }
                     }
@@ -1613,35 +1582,27 @@ pub fn Custom(comptime config: Config) type {
                     const opts = self.opts orelse break :distinctAliases;
                     checkCmds1: for (opts) |opt_1| {
                         const opt_1_ln = opt_1.long_name orelse {
-                            if (opt_1.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_1.name }));
+                            if (opt_1.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{opt_1.name}));
                             continue :checkCmds1;
                         };
                         checkCmds2: for (opts) |opt_2| {
                             const opt_2_ln = opt_2.long_name orelse {
-                                if (opt_2.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_2.name }));
+                                if (opt_2.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{opt_2.name}));
                                 continue :checkCmds2;
                             };
                             if (mem.eql(u8, opt_1_ln, opt_2_ln)) continue :checkCmds2;
                             checkAliases: for (opt_1.alias_long_names orelse continue :checkCmds1) |alias| {
-                                const case_sense = opt_1.case_sensitive or opt_2.case_sensitive; 
-                                if (
-                                    (case_sense and mem.eql(u8, opt_2_ln, alias)) or
-                                    (!case_sense and ascii.eqlIgnoreCase(opt_2_ln, alias))
-                                )
-                                    @compileError(
-                                        "The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Option '" ++ 
-                                        opt_2_ln ++ "'.\n" ++ 
-                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`."
-                                    );
-                                if (
-                                    (case_sense and utils.indexOfEql([]const u8, opt_2.alias_long_names orelse continue :checkAliases, alias) != null) or
-                                    (!case_sense and utils.indexOfEqlIgnoreCase(opt_2.alias_long_names orelse continue :checkAliases, alias) != null)
-                                )
-                                    @compileError(
-                                        "The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Option '" ++ 
-                                        opt_2.name ++ "'.\n" ++ 
-                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`."
-                                    );
+                                const case_sense = opt_1.case_sensitive or opt_2.case_sensitive;
+                                if ((case_sense and mem.eql(u8, opt_2_ln, alias)) or
+                                    (!case_sense and ascii.eqlIgnoreCase(opt_2_ln, alias)))
+                                    @compileError("The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Option '" ++
+                                        opt_2_ln ++ "'.\n" ++
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`.");
+                                if ((case_sense and utils.indexOfEql([]const u8, opt_2.alias_long_names orelse continue :checkAliases, alias) != null) or
+                                    (!case_sense and utils.indexOfEqlIgnoreCase(opt_2.alias_long_names orelse continue :checkAliases, alias) != null))
+                                    @compileError("The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Option '" ++
+                                        opt_2.name ++ "'.\n" ++
+                                        "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`.");
                             }
                         }
                     }
@@ -1671,7 +1632,7 @@ pub fn Custom(comptime config: Config) type {
             init_subcmds: bool = true,
 
             /// Determine behavior for adding a Help Argument Group.
-            pub const AddHelpGroup = enum{
+            pub const AddHelpGroup = enum {
                 /// Add if there are other Argument Groups.
                 AddIfOthers,
                 /// Add regardless of other Argument Groups.
@@ -1689,13 +1650,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Initialize Recursively with Context (`is_root_cmd`).
         /// *INTERNAL USE*
-        fn initCtx(
-            comptime self: *const @This(),
-            comptime init_config: InitConfig,
-            comptime is_root_cmd: bool,
-            parent_cmd: ?*const @This(),
-            init_alloc: mem.Allocator
-        ) !if (is_root_cmd) *@This() else @This() {
+        fn initCtx(comptime self: *const @This(), comptime init_config: InitConfig, comptime is_root_cmd: bool, parent_cmd: ?*const @This(), init_alloc: mem.Allocator) !if (is_root_cmd) *@This() else @This() {
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = init_config.add_help_cmds;
@@ -1704,16 +1659,14 @@ pub fn Custom(comptime config: Config) type {
                 self.validate(val_conf);
             }
 
-            var init_cmd,
-            const alloc = setup: {
+            var init_cmd, const alloc = setup: {
                 var cmd = try init_alloc.create(@This());
                 cmd.* = self.*;
                 if (is_root_cmd) {
                     cmd._root_alloc = init_alloc;
                     cmd._arena = heap.ArenaAllocator.init(init_alloc);
                     cmd._alloc = cmd._arena.?.allocator();
-                }
-                else cmd._alloc = init_alloc;
+                } else cmd._alloc = init_alloc;
                 break :setup .{ cmd, cmd._alloc.? };
             };
             init_cmd.parent_cmd = parent_cmd;
@@ -1738,56 +1691,51 @@ pub fn Custom(comptime config: Config) type {
             //};
             //init_cmd.parent_cmd = parent_cmd;
 
-            const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
-            const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
+            const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{self.name});
+            const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{self.name});
 
             if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                 const add_cmd_help_group = switch (init_config.add_cmd_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.cmd_groups) |cmd_groups| {
-                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } });
+                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{init_config.help_group_name} });
                             break :ifOthers true;
                         }
                         break :ifOthers false;
                     },
                     .Add => add: {
-                        init_cmd.cmd_groups = 
-                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                        init_cmd.cmd_groups =
+                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{init_config.help_group_name} }) else try alloc.dupe([]const u8, &.{init_config.help_group_name});
                         break :add true;
                     },
                     .DoNotAdd => false,
                 };
 
-                const help_sub_cmds = [2]@This(){
-                    .{
-                        .name = "usage",
-                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
-                        .help_prefix = init_cmd.name,
-                        .description = usage_description,
-                        .parent_cmd = init_cmd,
-                        ._alloc = alloc,
-                    },
-                    .{
-                        .name = "help",
-                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
-                        .help_prefix = init_cmd.name,
-                        .description = help_description,
-                        .parent_cmd = init_cmd,
-                        ._alloc = alloc,
-                    }
-                };
+                const help_sub_cmds = [2]@This(){ .{
+                    .name = "usage",
+                    .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null,
+                    .help_prefix = init_cmd.name,
+                    .description = usage_description,
+                    .parent_cmd = init_cmd,
+                    ._alloc = alloc,
+                }, .{
+                    .name = "help",
+                    .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null,
+                    .help_prefix = init_cmd.name,
+                    .description = help_description,
+                    .parent_cmd = init_cmd,
+                    ._alloc = alloc,
+                } };
 
-                init_cmd.sub_cmds = 
-                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] })
-                    else try alloc.dupe(@This(), help_sub_cmds[0..]);
+                init_cmd.sub_cmds =
+                    if (init_cmd.sub_cmds != null) try mem.concat(alloc, @This(), &.{ init_cmd.sub_cmds.?, help_sub_cmds[0..] }) else try alloc.dupe(@This(), help_sub_cmds[0..]);
             }
 
             if (init_config.init_subcmds) addSubCmds: {
                 const sub_cmds = if (self.sub_cmds) |s_cmds| s_cmds else break :addSubCmds;
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
-                inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc); 
+                inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc);
                 if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
@@ -1809,15 +1757,14 @@ pub fn Custom(comptime config: Config) type {
                 const add_opt_help_group = switch (init_config.add_opt_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.opt_groups) |opt_groups| {
-                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } });
+                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{init_config.help_group_name} });
                             break :ifOthers true;
                         }
                         break :ifOthers false;
                     },
                     .Add => add: {
-                        init_cmd.opt_groups = 
-                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                        init_cmd.opt_groups =
+                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{init_config.help_group_name} }) else try alloc.dupe([]const u8, &.{init_config.help_group_name});
                         break :add true;
                     },
                     .DoNotAdd => false,
@@ -1825,7 +1772,7 @@ pub fn Custom(comptime config: Config) type {
                 var help_opts = [2]OptionT{
                     .{
                         ._alloc = alloc,
-                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
+                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null,
                         .name = "usage",
                         .short_name = 'u',
                         .long_name = "usage",
@@ -1835,7 +1782,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         ._alloc = alloc,
-                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
+                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null,
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
@@ -1846,9 +1793,8 @@ pub fn Custom(comptime config: Config) type {
                 };
                 for (help_opts[0..]) |*opt| opt.* = opt.init(alloc);
 
-                init_cmd.opts = 
-                    if (init_cmd.opts) |init_opts| try mem.concat(alloc, @This().OptionT, &.{ init_opts, help_opts[0..] })
-                    else try alloc.dupe(OptionT, help_opts[0..]);
+                init_cmd.opts =
+                    if (init_cmd.opts) |init_opts| try mem.concat(alloc, @This().OptionT, &.{ init_opts, help_opts[0..] }) else try alloc.dupe(OptionT, help_opts[0..]);
             }
 
             if (self.vals) |vals| {
@@ -1871,4 +1817,3 @@ pub fn Custom(comptime config: Config) type {
         }
     };
 }
-

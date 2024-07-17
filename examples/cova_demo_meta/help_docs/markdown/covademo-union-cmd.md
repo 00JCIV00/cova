@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    union-cmd -i, --int <int (i32)> | -s, --str <str (text)>
+    union-cmd-i, --int <int (i32)> | -s, --str <str (text)>
     union-cmd "union-uint (u8)" | "union-str (text)"
     union-cmd 
 

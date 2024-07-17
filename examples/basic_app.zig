@@ -13,24 +13,24 @@ const cova = @import("cova");
 // values. However, customization via `cova.Command.Custom()` and configuration of the provided
 // `cova.Command.Config` will create a Command Type that's more tailored to a project.
 // The most basic example of this is simply adding a title to the help page as seen below.
-pub const CommandT = cova.Command.Custom(.{ 
+pub const CommandT = cova.Command.Custom(.{
     .global_help_prefix = "Basic User Management App", // This will appear at the top of Usage/Help.
-}); 
+});
 // Customized Option and Value Types can also be created via their respective `from()` functions
 // and `Config` structs. The `Config` structs can be provided directly to the `cova.Command.Config`
-// that's configured above so that the Types are created within the Command Type. This is the 
+// that's configured above so that the Types are created within the Command Type. This is the
 // preferred way to set up these Argument Types and allows them to be referenced as seen below.
 pub const OptionT = CommandT.OptionT;
 pub const ValueT = CommandT.ValueT;
 
 // - Main Command
-// Cova is designed on the principle of 'Comptime Setup. Runtime Use.' All this means is that 
+// Cova is designed on the principle of 'Comptime Setup. Runtime Use.' All this means is that
 // Commands and their corresponding Options and Values will be declared and set up during Comptime,
 // then initialized with an allocator for parsing and analysis during Runtime.
 //
 // For Comptime Setup, a `setup_cmd` should be created. This is the Comptime version of the main
 // command for the app, which can be thought of as the main menu. The example below is also an
-// example of how Commands are declared when they aren't created by converting from a Struct, 
+// example of how Commands are declared when they aren't created by converting from a Struct,
 // Union, or Function. Notably, Commands can easily be nested via the `sub_cmds` field.
 pub const setup_cmd: CommandT = .{
     .name = "basic-app",
@@ -43,9 +43,9 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(User, .{
             .cmd_name = "new",
             .cmd_description = "Add a new user.",
-            // Examples can be added for Commands to be shown in Help Messages 
+            // Examples can be added for Commands to be shown in Help Messages
             // and Generated Help Docs.
-            .cmd_examples = &.{ "basic-app new -f Bruce -l Wayne -a 40 -p \"555 555 5555\" -A \" 1007 Mountain Drive, Gotham\" true" },
+            .cmd_examples = &.{"basic-app new -f Bruce -l Wayne -a 40 -p \"555 555 5555\" -A \" 1007 Mountain Drive, Gotham\" true"},
             .cmd_group = "INTERACT",
             // Descriptions can be added for Options and Values of Struct or Union conversions as
             // seen here.
@@ -62,7 +62,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
-            .cmd_examples = &.{ "basic-app open users.csv" },
+            .cmd_examples = &.{"basic-app open users.csv"},
             .cmd_group = "INTERACT",
         }),
         // A "raw" Command, same as the parent `setup_cmd`.
@@ -83,19 +83,16 @@ pub const setup_cmd: CommandT = .{
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
-            .examples = &.{ 
-                "basic-app clean",
-                "basic-app delete --file users.csv"
-            },
-            // Aliases can be created for Commands and Options to give end users alternative words 
+            .examples = &.{ "basic-app clean", "basic-app delete --file users.csv" },
+            // Aliases can be created for Commands and Options to give end users alternative words
             // for using those Arguments.
-            .alias_names = &.{ "delete" },
+            .alias_names = &.{"delete"},
             .cmd_group = "INTERACT",
             .opts = &.{
                 OptionT{
                     .name = "clean_file",
                     .description = "Specify a single file to be cleaned (deleted) instead of the defaults.",
-                    .alias_long_names = &.{ "delete_file" },
+                    .alias_long_names = &.{"delete_file"},
                     .short_name = 'f',
                     .long_name = "file",
                     .val = ValueT.ofType([]const u8, .{
@@ -132,7 +129,7 @@ pub const User = struct {
     // - Integers `u8` / `i32`
     // - Floats `f32`
     // - Strings `[]const u8`
-    // 
+    //
     // If a field begins with an underscore `_` it will be considered private and not converted
     // to a Value.
     // If a default value is provided for a field, the corresponding Value will inherit it as a
@@ -146,15 +143,15 @@ pub const User = struct {
     // Each Option wraps a Value, so the above conversion rules for Values apply to them as well.
     //
     // Additionally, Options will generate a short and long name from each field by default.
-    // Short name generation will take the first free lower then upper case character of a field 
-    // name, sequentially working through the name from the first to last character. 
-    // Underscores `_` will also be converted to dashes `-`. End users can also abbreviate 
+    // Short name generation will take the first free lower then upper case character of a field
+    // name, sequentially working through the name from the first to last character.
+    // Underscores `_` will also be converted to dashes `-`. End users can also abbreviate
     // long names as long as the abbreviation is unique.
     first_name: ?[]const u8, // `-f` or `--first-name` (`--first` abbreviation would work)
     last_name: ?[]const u8, // `-l` or `--last-name` (`--last` abbreviation would work)
     age: ?u8, // -a or --age
     phone: ?[]const u8 = "not provided", // -p or --phone
-    address: ?[]const u8 = "not provided", // -A or --address (`--addr` abbreviation would work) 
+    address: ?[]const u8 = "not provided", // -A or --address (`--addr` abbreviation would work)
 
     pub fn from(line: []const u8) !@This() {
         var field_iter = std.mem.splitAny(u8, line, ",");
@@ -162,20 +159,26 @@ pub const User = struct {
         var idx: u3 = 0;
         const user_id = field_iter.first();
         if (user_id.len == 0) return error.NotUserString;
-        std.log.debug("User: {s}", .{ user_id });
+        std.log.debug("User: {s}", .{user_id});
         field_iter.reset();
         while (field_iter.next()) |field| : (idx += 1) {
             const trimmed_field = std.mem.trim(u8, field, " ");
-            std.log.debug("Field: {s}", .{ trimmed_field });
+            std.log.debug("Field: {s}", .{trimmed_field});
             switch (idx) {
-                0 => out._id = std.fmt.parseInt(u16, trimmed_field, 10) catch |err| { std.log.err("ID error: {s}", .{ trimmed_field }); return err; },
+                0 => out._id = std.fmt.parseInt(u16, trimmed_field, 10) catch |err| {
+                    std.log.err("ID error: {s}", .{trimmed_field});
+                    return err;
+                },
                 1 => out.is_admin = std.mem.eql(u8, trimmed_field, "true"),
                 2 => out.first_name = trimmed_field,
                 3 => out.last_name = trimmed_field,
-                4 => out.age = std.fmt.parseInt(u8, trimmed_field, 10) catch |err| { std.log.err("Age error: {s}", .{ trimmed_field }); return err; },
+                4 => out.age = std.fmt.parseInt(u8, trimmed_field, 10) catch |err| {
+                    std.log.err("Age error: {s}", .{trimmed_field});
+                    return err;
+                },
                 5 => out.phone = trimmed_field,
                 6 => out.address = trimmed_field,
-                else => return error.TooManyTokens, 
+                else => return error.TooManyTokens,
             }
         }
         return out;
@@ -203,20 +206,20 @@ pub const User = struct {
             \\ - Phone #: {?s}
             \\ - Address: {?s}
             \\
-            , .{
-                value._id,
-                value.is_admin,
-                value.last_name, value.first_name,
-                value.age,
-                value.phone,
-                value.address,
-            }
-        );
+        , .{
+            value._id,
+            value.is_admin,
+            value.last_name,
+            value.first_name,
+            value.age,
+            value.phone,
+            value.address,
+        });
     }
 };
 
 // Commands can be created from Unions same as with Structs.
-pub const Filter = union(enum){
+pub const Filter = union(enum) {
     id: ?u16,
     admin: ?bool,
     age: ?u8,
@@ -226,24 +229,23 @@ pub const Filter = union(enum){
     address: ?[]const u8,
 };
 
-// Commands can also be created from Functions. Similar to Struct and Union Types, the 
+// Commands can also be created from Functions. Similar to Struct and Union Types, the
 // `cova.Command.Custom.from()` and `cova.Command.Custom.FromConfig` are used configure and convert
 // the Function into a Command. Due to a lack of parameter names in a Function's Type Info,
 // Function Parameters can only be converted to Values (not Options).
 pub fn open(filename: []const u8) !std.fs.File {
-    const filename_checked = 
-        if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) filename
-        else filenameChecked: {
-            var fnc_buf: [100]u8 = .{ 0 } ** 100;
-            break :filenameChecked (try std.fmt.bufPrint(fnc_buf[0..], "{s}.csv", .{ filename }))[0..(filename.len + 4)];
-        };
+    const filename_checked =
+        if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) filename else filenameChecked: {
+        var fnc_buf: [100]u8 = .{0} ** 100;
+        break :filenameChecked (try std.fmt.bufPrint(fnc_buf[0..], "{s}.csv", .{filename}))[0..(filename.len + 4)];
+    };
     const open_file = try std.fs.cwd().createFile(filename_checked, .{ .read = true, .truncate = false });
-    try std.fs.cwd().writeFile(".ba_persist", filename_checked);
+    try std.fs.cwd().writeFile(.{ .sub_path = ".ba_persist", .data = filename_checked, .flags = .{} });
     return open_file;
 }
 
 pub fn delete(filename: []const u8) !void {
-    std.fs.cwd().deleteFile(filename) catch std.log.err("There was an issue deleting the '{s}' file!", .{ filename });
+    std.fs.cwd().deleteFile(filename) catch std.log.err("There was an issue deleting the '{s}' file!", .{filename});
 }
 
 pub fn main() !void {
@@ -253,7 +255,7 @@ pub fn main() !void {
     const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
-    const main_cmd = try setup_cmd.init(alloc, .{}); 
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     // Parsing
@@ -280,7 +282,8 @@ pub fn main() !void {
         error.TooManyValues,
         error.UnrecognizedArgument,
         error.UnexpectedArgument,
-        error.CouldNotParseOption => {},
+        error.CouldNotParseOption,
+        => {},
         else => return err,
     };
 
@@ -291,20 +294,20 @@ pub fn main() !void {
     // to utilizing the resulting values in a project. All of which are demonstrated below.
     //
     // - Debug Output of Commands after Parsing.
-    // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed 
+    // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed
     // Command. This is done recursively for any sub Argument Types within the Command and can be
     // used to debug said Command.
     if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
 
     // - App Vars
-    var user_filename_buf: [100]u8 = .{ 0 } ** 100;
+    var user_filename_buf: [100]u8 = .{0} ** 100;
     _ = std.fs.cwd().readFile(".ba_persist", user_filename_buf[0..]) catch {
-        try std.fs.cwd().writeFile(".ba_persist", "users.csv");
+        try std.fs.cwd().writeFile(.{ .sub_path = ".ba_persist", .data = "users.csv", .flags = .{} });
         for (user_filename_buf[0..9], "users.csv") |*u, c| u.* = c;
     };
     const ufb_end = std.mem.indexOfScalar(u8, user_filename_buf[0..], 0) orelse 9;
     const user_filename = user_filename_buf[0..ufb_end];
-    std.log.debug("User File Name: '{s}'", .{ user_filename });
+    std.log.debug("User File Name: '{s}'", .{user_filename});
 
     var user_file: std.fs.File = try open(user_filename);
     defer user_file.close();
@@ -324,7 +327,7 @@ pub fn main() !void {
     // Commands have two primary methods for analysis.
     //
     // `cova.Command.Custom.matchSubCmd()` will return the Active Sub Command of a Command if its
-    // name matches the provided string. Otherwise, it returns null. This fits nicely with Zig's 
+    // name matches the provided string. Otherwise, it returns null. This fits nicely with Zig's
     // syntax for handling optional/nullable returns as seen below.
     if (main_cmd.matchSubCmd("new")) |new_cmd| {
         // Using `cova.Command.Custom.to()` is effectively the opposite of `from()`. It allows a
@@ -339,9 +342,9 @@ pub fn main() !void {
         new_user._id = user_id;
         try users.append(new_user);
         try users_mal.append(alloc, new_user);
-        var user_buf: [512]u8 = .{ 0 } ** 512;
-        try user_file.writer().print("{s}\n", .{ try new_user.to(user_buf[0..]) });
-        try stdout.print("Added:\n{s}\n", .{ new_user });
+        var user_buf: [512]u8 = .{0} ** 512;
+        try user_file.writer().print("{s}\n", .{try new_user.to(user_buf[0..])});
+        try stdout.print("Added:\n{s}\n", .{new_user});
     }
     if (main_cmd.matchSubCmd("open")) |open_cmd| {
         // Using `cova.Command.Custom.callAs()` is similar to the `to()` function but converts the
@@ -362,7 +365,7 @@ pub fn main() !void {
                 .phone => |phone| if (user.phone) |u_phone| std.mem.eql(u8, phone.?, u_phone) else false,
                 .address => |addr| if (user.address) |u_addr| std.mem.eql(u8, addr.?, u_addr) else false,
             } else true;
-            if (print_user) try stdout.print("{s}\n", .{ user });
+            if (print_user) try stdout.print("{s}\n", .{user});
         }
     }
     if (main_cmd.matchSubCmd("clean")) |clean_cmd| cleanCmd: {
@@ -395,10 +398,9 @@ pub fn main() !void {
             if (filename.len <= 4) continue;
             if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) {
                 found_list = true;
-                try stdout.print("- {s}\n", .{ filename });
+                try stdout.print("- {s}\n", .{filename});
             }
         }
         if (!found_list) try stdout.print("- None Found!\n", .{});
     }
 }
-

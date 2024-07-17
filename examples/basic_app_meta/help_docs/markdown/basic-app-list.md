@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    list filter
+    listfilter
 
 ```
 

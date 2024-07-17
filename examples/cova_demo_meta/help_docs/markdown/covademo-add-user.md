@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    add-user -f, --fname <fname (text)> | -l, --lname <lname (text)> | -a, --age <age (u8)> | -A, --admin <admin (bool)> | -r, --ref-ids <ref-ids (u8)>
+    add-user-f, --fname <fname (text)> | -l, --lname <lname (text)> | -a, --age <age (u8)> | -A, --admin <admin (bool)> | -r, --ref-ids <ref-ids (u8)>
     add-user "id (u16)"
     add-user 
 

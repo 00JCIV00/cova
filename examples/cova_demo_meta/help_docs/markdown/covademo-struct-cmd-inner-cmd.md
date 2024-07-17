@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    inner-cmd ​​ --in-bool <in-bool (bool)> | ​​ --in-float <in-float (f32)>
+    inner-cmd​​ --in-bool <in-bool (bool)> | ​​ --in-float <in-float (f32)>
     inner-cmd 
 
 ```

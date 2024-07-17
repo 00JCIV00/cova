@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    view-lists 
+    view-lists
 
 ```
 

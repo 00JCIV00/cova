@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    struct-cmd ​​ --int <int (i32)> | ​​ --str <str (text)> | ​​ --str2 <str2 (text)> | ​​ --flt <flt (f16)> | ​​ --int2 <int2 (u16)> | ​​ --multi-int <multi-int (u8)> | ​​ --multi-str <multi-str (text)> | ​​ --rgb-enum <rgb-enum (u2)> | ​​ --struct-bool <struct-bool (bool)> | ​​ --struct-str <struct-str (text)> | ​​ --struct-int <struct-int (i64)>
+    struct-cmd​​ --int <int (i32)> | ​​ --str <str (text)> | ​​ --str2 <str2 (text)> | ​​ --flt <flt (f16)> | ​​ --int2 <int2 (u16)> | ​​ --multi-int <multi-int (u8)> | ​​ --multi-str <multi-str (text)> | ​​ --rgb-enum <rgb-enum (u2)> | ​​ --struct-bool <struct-bool (bool)> | ​​ --struct-str <struct-str (text)> | ​​ --struct-int <struct-int (i64)>
     struct-cmd "multi-int-val (u16)"
     struct-cmd inner-cmd
 

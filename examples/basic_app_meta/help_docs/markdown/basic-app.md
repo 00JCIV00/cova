@@ -10,7 +10,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    basic-app new | open | list | clean | view-lists
+    basic-appnew | open | list | clean | view-lists
 
 ```
 

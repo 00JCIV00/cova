@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    nest-1 nest-2
+    nest-1nest-2
 
 ```
 

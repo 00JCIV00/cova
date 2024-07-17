@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    filter -i,--id <id (u16)> | -a,--admin <admin (bool)> | -A,--age <age (u8)> | -f,--first-name <first-name ([]const u8)> | -l,--last-name <last-name ([]const u8)> | -p,--phone <phone ([]const u8)> | -d,--address <address ([]const u8)>
+    filter-i,--id <id (u16)> | -a,--admin <admin (bool)> | -A,--age <age (u8)> | -f,--first-name <first-name ([]const u8)> | -l,--last-name <last-name ([]const u8)> | -p,--phone <phone ([]const u8)> | -d,--address <address ([]const u8)>
     filter 
 
 ```

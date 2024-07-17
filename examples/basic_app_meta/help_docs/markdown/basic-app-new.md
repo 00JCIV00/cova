@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    new -f,--first-name <first-name ([]const u8)> | -l,--last-name <last-name ([]const u8)> | -a,--age <age (u8)> | -p,--phone <phone ([]const u8)> | -A,--address <address ([]const u8)>
+    new-f,--first-name <first-name ([]const u8)> | -l,--last-name <last-name ([]const u8)> | -a,--age <age (u8)> | -p,--phone <phone ([]const u8)> | -A,--address <address ([]const u8)>
     new "is-admin (bool)"
     new 
 

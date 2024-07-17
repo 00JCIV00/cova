@@ -2,7 +2,7 @@
 A demo of the Cova command line argument parser.
 
 __Version:__ 0.10.0<br>
-__Date:__ 06 APR 2024<br>
+__Date:__ 16 MAY 2024<br>
 __Author:__ 00JCIV00<br>
 __Copyright:__ MIT License<br>
 ___
@@ -10,7 +10,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    covademo -s, --string <string_val (string)> | -i, --int <int_val (i16)> | -f, --float <float_val (f16)> | -F, --file <filepath (filepath)> | -o, --ordinal <ordinal_val (text)> | -c, --cardinal <cardinal_val (u8)> | -t, --toggle <toggle_val (bool)> | -b, --bool <bool_val (bool)> | -v, --verbosity <verbosity_level (u4)>
+    covademo-s, --string <string_val (string)> | -i, --int <int_val (i16)> | -f, --float <float_val (f16)> | -F, --file <filepath (filepath)> | -o, --ordinal <ordinal_val (text)> | -c, --cardinal <cardinal_val (u8)> | -t, --toggle <toggle_val (bool)> | -b, --bool <bool_val (bool)> | -v, --verbosity <verbosity_level (u4)>
     covademo "cmd_str (text)" | "cmd_bool (bool)" | "cmd_u64 (u64)"
     covademo sub-cmd | basic | nest-1 | struct-cmd | union-cmd | fn-cmd | add-user
 

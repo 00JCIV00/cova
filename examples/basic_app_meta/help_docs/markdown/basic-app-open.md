@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    open "val-00 ([]const u8)"
+    open"val-00 ([]const u8)"
     open 
 
 ```
