@@ -591,7 +591,7 @@ fn parseArgsCtx(
         val_idx < cmd.vals.?.len and
         !parse_ctx.usage_help_flag
     ) {
-        log.err("Command '{s}' expects {d} Values, but only received {d}.", .{
+        log.err("Command '{s}' expects {d} Value(s), but received {d}.", .{
             cmd.name,
             cmd.vals.?.len,
             val_idx,
@@ -840,7 +840,7 @@ test "argument analysis" {
         }    
     };
 
-    try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);
+    try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer, false);
 
     //_ = test_setup_cmd.SubCommandsEnum();
 }

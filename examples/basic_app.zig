@@ -238,7 +238,7 @@ pub fn open(filename: []const u8) !std.fs.File {
             break :filenameChecked (try std.fmt.bufPrint(fnc_buf[0..], "{s}.csv", .{ filename }))[0..(filename.len + 4)];
         };
     const open_file = try std.fs.cwd().createFile(filename_checked, .{ .read = true, .truncate = false });
-    try std.fs.cwd().writeFile(".ba_persist", filename_checked);
+    try std.fs.cwd().writeFile(.{ .sub_path = ".ba_persist", .data = filename_checked });
     return open_file;
 }
 
@@ -294,12 +294,12 @@ pub fn main() !void {
     // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed 
     // Command. This is done recursively for any sub Argument Types within the Command and can be
     // used to debug said Command.
-    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
+    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout, true);
 
     // - App Vars
     var user_filename_buf: [100]u8 = .{ 0 } ** 100;
     _ = std.fs.cwd().readFile(".ba_persist", user_filename_buf[0..]) catch {
-        try std.fs.cwd().writeFile(".ba_persist", "users.csv");
+        try std.fs.cwd().writeFile(.{ .sub_path = ".ba_persist", .data = "users.csv" });
         for (user_filename_buf[0..9], "users.csv") |*u, c| u.* = c;
     };
     const ufb_end = std.mem.indexOfScalar(u8, user_filename_buf[0..], 0) orelse 9;
