@@ -369,10 +369,10 @@ fn parseArgsCtx(
                                     else {
                                         parseOpt(args, OptionT, opt) catch {
                                             if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                                            log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
+                                            log.err("Could not parse Option '{c}{?c}: {s}'.", .{
                                                 short_pf,
-                                                opt.short_name, 
-                                                opt.name 
+                                                opt.short_name,
+                                                opt.name,
                                             });
                                             try errReaction(parse_config.err_reaction, opt, writer);
                                             try writer.print("\n", .{});

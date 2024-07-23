@@ -286,7 +286,7 @@ pub fn Custom(comptime config: Config) type {
             //    return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
             if (typeHelpFn: {
-                const val_child_type = self.val.childType();
+                const val_child_type = self.val.childTypeName();
                 for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
                     if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
                         break :typeHelpFn elm.help_fn;
@@ -313,7 +313,7 @@ pub fn Custom(comptime config: Config) type {
             //    return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
             if (typeUsageFn: {
-                const val_child_type = self.val.childType();
+                const val_child_type = self.val.childTypeName();
                 for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
                     if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
                         break :typeUsageFn elm.usage_fn;
@@ -329,7 +329,7 @@ pub fn Custom(comptime config: Config) type {
                 if (long_prefix != null and self.long_name != null) long_prefix.? else "",
                 if (long_prefix != null) self.long_name orelse "" else "",
                 //self.val.name(),
-                self.val.childType(),
+                self.val.childTypeName(),
             });
         }
 

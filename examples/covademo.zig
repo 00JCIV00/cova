@@ -182,6 +182,10 @@ pub const CommandT = Command.Custom(.{
                 .ChildT = []const u8,
                 .alias = "text",
             },
+            .{
+                .ChildT = bool,
+                .alias = "toggle",
+            }
         }
     },
     //.global_usage_fn = struct{ 

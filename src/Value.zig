@@ -698,8 +698,19 @@ pub fn Custom(comptime config: Config) type {
             };
         }
         /// Get the inner Typed Value's Child Type Name.
-        /// This is where aliasing happens via `Value.Typed.alias_child_type` or `Value.Config.child_type_aliases`.
+        /// This will provide the actual Child Type Name without aliasing.
         pub fn childType(self: *const @This()) []const u8 {
+            @setEvalBranchQuota(config.max_int_bit_width * 10);
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| typeName: {
+                    const val = @field(self.*.generic, @tagName(tag));
+                    break :typeName @typeName(@TypeOf(val).ChildT);
+                }
+            };
+        }
+        /// Get the inner Typed Value's Child Type Name.
+        /// This is where aliasing happens via `Value.Typed.alias_child_type` or `Value.Config.child_type_aliases`.
+        pub fn childTypeName(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| typeName: {
@@ -894,7 +905,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("{s}", .{ @tagName(meta.activeTag(self.generic)) });
             try writer.print("{s}:  Type: {s}, Set: {any}", .{
                 self.name(),
-                self.childType(),
+                self.childTypeName(),
                 self.isSet(),
             });
         }
@@ -908,7 +919,7 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
             if (global_help_fn) |helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
-            try writer.print(vals_help_fmt, .{ self.name(), self.childType(), self.description() });
+            try writer.print(vals_help_fmt, .{ self.name(), self.childTypeName(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
@@ -919,7 +930,7 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
-            try writer.print(vals_usage_fmt, .{ self.name(), self.childType() });
+            try writer.print(vals_usage_fmt, .{ self.name(), self.childTypeName() });
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).
