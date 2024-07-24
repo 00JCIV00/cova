@@ -619,6 +619,12 @@ pub fn main() !void {
             xor_opts_check,
         }
     );
+    var main_opts = try main_cmd.getOpts(.{});
+    if (main_opts.get("string_opt")) |str_opt| {
+        const opt_strs = try str_opt.val.getAllAs([]const u8);
+        log.debug("Option Strings (--string): {d}", .{ opt_strs.len });
+        for (opt_strs, 0..) |str, idx| log.debug(" {d}. {s}", .{ idx, str });
+    }
     //if (main_cmd.opts) |main_opts| {
     //    for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
     //}

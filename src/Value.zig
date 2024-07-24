@@ -350,9 +350,9 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 else error.ValueNotSet;
         }
 
-        /// Get All Parsed and Validated Arguments of this Value.
+        /// Get All Parsed and Validated Arguments of this Value using the provided Allocator (`alloc`).
         /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
-        pub fn getAll(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
+        pub fn getAllAlloc(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
             if (!self.is_set) {
                 if (self.default_val) |def_val| {
                     var val = try alloc.alloc(ChildT, 1);
@@ -364,6 +364,12 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             var vals = try alloc.alloc(ChildT, self._entry_idx);
             for (self._set_args[0..self._entry_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
+        }
+
+        /// Get All Parsed and Validated Arguments of this Value.
+        /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
+        pub fn getAll(self: *const @This()) ![]ChildT {
+            return self.getAllAlloc(self._alloc orelse return error.ValueNotInitialized);
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).
@@ -633,6 +639,35 @@ pub fn Custom(comptime config: Config) type {
                             const val = try typed_val.get();
                             switch (@typeInfo(@TypeOf(val))) {
                                 .Int => return @enumFromInt(val),
+                                inline else => return error.RequestedTypeMismatch,
+                            }
+                        }
+                        else error.RequestedTypeMismatch;
+                },
+            };
+        }
+
+        /// Get All of the Parsed and Validated values of the inner Typed Value as a Slice of the specified Type (`T`).
+        pub fn getAllAs(self: *const @This(), comptime T: type) ![]T {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| {
+                    const typed_val = @field(self.*.generic, @tagName(tag));
+                    return 
+                        if (@TypeOf(typed_val).ChildT == T) try typed_val.getAll()
+                        else if (
+                            @typeInfo(T) == .Enum or (
+                                @typeInfo(T) == .Optional and
+                                @typeInfo(@typeInfo(T).Optional.child) == .Enum
+                            )
+                        ) {
+                            const ValT = @typeInfo(@TypeOf(try typed_val.get()));
+                            switch (ValT) {
+                                .Int => {
+                                    const vals = try typed_val.getAll();
+                                    var vals_list = std.ArrayList(T).init(self.allocator().?);
+                                    for (vals) |val| try vals_list.append(@enumFromInt(val));
+                                    return try vals_list.toOwnedSlice();
+                                },
                                 inline else => return error.RequestedTypeMismatch,
                             }
                         }
