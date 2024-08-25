@@ -7,11 +7,9 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    struct-cmd ​​ --int <int (i32)> | ​​ --str <str (text)> | ​​ --str2 <str2 (text)> | ​​ --flt <flt (f16)> | ​​ --int2 <int2 (u16)> | ​​ --multi-int <multi-int (u8)> | ​​ --multi-str <multi-str (text)> | ​​ --rgb-enum <rgb-enum (u2)> | ​​ --struct-bool <struct-bool (bool)> | ​​ --struct-str <struct-str (text)> | ​​ --struct-int <struct-int (i64)>
-    struct-cmd "multi-int-val (u16)"
-    struct-cmd inner-cmd
-
+USAGE
+    struct-cmd [ --int |  --str |  --str2 |  --flt |  --int2 |  --multi-int |  --multi-str |  --rgb-enum |  --struct-bool |  --struct-str |  --struct-int ]
+    struct-cmd [ inner-cmd ]
 ```
 
 ## Arguments
@@ -22,10 +20,10 @@ USAGE:
     - `​​--int <int (i32)>`
     - The first Integer Value for the struct-cmd.
 - __str__:
-    - `​​--str <str (text)>`
+    - `​​--str <str ([]const u8)>`
     - The 'str' Option of type '?[]const u8'.
 - __str2__:
-    - `​​--str2 <str2 (text)>`
+    - `​​--str2 <str2 ([]const u8)>`
     - The 'str2' Option of type '?[]const u8'.
 - __flt__:
     - `​​--flt <flt (f16)>`
@@ -37,7 +35,7 @@ USAGE:
     - `​​--multi-int <multi-int (u8)>`
     - The 'multi_int' Option of type '[3]?u8'.
 - __multi-str__:
-    - `​​--multi-str <multi-str (text)>`
+    - `​​--multi-str <multi-str ([]const u8)>`
     - The 'multi_str' Option of type '[5]?[]const u8'.
 - __rgb-enum__:
     - `​​--rgb-enum <rgb-enum (u2)>`
@@ -46,12 +44,12 @@ USAGE:
     - `​​--struct-bool <struct-bool (bool)>`
     - The 'struct_bool' Option of type 'bool'.
 - __struct-str__:
-    - `​​--struct-str <struct-str (text)>`
+    - `​​--struct-str <struct-str ([]const u8)>`
     - The 'struct_str' Option of type '[]const u8'.
 - __struct-int__:
     - `​​--struct-int <struct-int (i64)>`
     - The 'struct_int' Option of type 'i64'.
 ### Values
 - __multi-int-val__ (u16)
-    - The 'multi-int-val' Value of type '[2]u16'.
+    - The 'multi-int-val' Value of Type '[2]u16'.
 

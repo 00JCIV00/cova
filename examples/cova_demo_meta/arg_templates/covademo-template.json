@@ -1,8 +1,8 @@
 "Meta Info": {
     "name": "covademo",
     "description": "A demo of the Cova command line argument parser.",
-    "version": "0.10.0",
-    "ver_date": "06 APR 2024",
+    "version": "0.10.1",
+    "ver_date": "21 MAY 2024",
     "author": "00JCIV00",
     "copyright": "MIT License"
 },
@@ -40,7 +40,7 @@
                     "long_name": "nested_str",
                     "short_name": 115,
                     "description": "A nested string option.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -138,7 +138,7 @@
                     "name": "str",
                     "long_name": "str",
                     "description": "The 'str' Option of type '?[]const u8'.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -146,7 +146,7 @@
                     "name": "str2",
                     "long_name": "str2",
                     "description": "The 'str2' Option of type '?[]const u8'.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -178,7 +178,7 @@
                     "name": "multi-str",
                     "long_name": "multi-str",
                     "description": "The 'multi_str' Option of type '[5]?[]const u8'.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Multi",
                     "max_entries": 5
                 },
@@ -202,7 +202,7 @@
                     "name": "struct-str",
                     "long_name": "struct-str",
                     "description": "The 'struct_str' Option of type '[]const u8'.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -218,7 +218,7 @@
             "vals": [
                 {
                     "name": "multi-int-val",
-                    "description": "The 'multi-int-val' Value of type '[2]u16'.",
+                    "description": "The 'multi-int-val' Value of Type '[2]u16'.",
                     "type_name": "u16",
                     "set_behavior": "Multi",
                     "max_entries": 2
@@ -244,7 +244,7 @@
                     "long_name": "str",
                     "short_name": 115,
                     "description": "The first String Value for the union-cmd.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -252,15 +252,15 @@
             "vals": [
                 {
                     "name": "union-uint",
-                    "description": "The 'union-uint' Value of type 'u8'.",
+                    "description": "The 'union-uint' Value of Type 'u8'.",
                     "type_name": "u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
                 {
                     "name": "union-str",
-                    "description": "The 'union-str' Value of type '[]const u8'.",
-                    "type_name": "text",
+                    "description": "The 'union-str' Value of Type '[]const u8'.",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -281,7 +281,7 @@
                 {
                     "name": "val-01",
                     "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -297,7 +297,7 @@
                     "long_name": "fname",
                     "short_name": 102,
                     "description": "The 'fname' Option of type '?[]const u8'.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -306,7 +306,7 @@
                     "long_name": "lname",
                     "short_name": 108,
                     "description": "The 'lname' Option of type '?[]const u8'.",
-                    "type_name": "text",
+                    "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -341,7 +341,7 @@
             "vals": [
                 {
                     "name": "id",
-                    "description": "The 'id' Value of type 'u16'.",
+                    "description": "The 'id' Value of Type 'u16'.",
                     "type_name": "u16",
                     "set_behavior": "Last",
                     "max_entries": 1
@@ -359,7 +359,7 @@
                 "text"
             ],
             "group": "STRING",
-            "type_name": "string",
+            "type_name": "[]const u8",
             "set_behavior": "Multi",
             "max_entries": 4
         },
@@ -388,7 +388,7 @@
             "short_name": 70,
             "description": "A filepath option.",
             "group": "STRING",
-            "type_name": "filepath",
+            "type_name": "[]const u8",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -398,7 +398,7 @@
             "short_name": 111,
             "description": "An ordinal number option.",
             "group": "STRING",
-            "type_name": "text",
+            "type_name": "[]const u8",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -450,7 +450,7 @@
             "name": "cmd_str",
             "description": "A string value for the command.",
             "group": "STRING",
-            "type_name": "text",
+            "type_name": "[]const u8",
             "set_behavior": "Last",
             "max_entries": 1
         },

@@ -35,16 +35,16 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_help_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Option instances of this custom Option Type.
     /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// Custom Help functions to override the default `help()` function for all Option instances with a matching Value Child Type.
     /// These functions are 1st in precedence.
     child_type_help_fns: ?[]const struct{ 
@@ -55,8 +55,8 @@ pub const Config = struct {
         /// Function parameters:
         /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
-        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        help_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+        /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+        help_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
     } = null,
     /// Custom Usage functions to override the default `usage()` function for all Option instances with a matching Value Child Type.
     /// These functions are 1st in precedence.
@@ -68,8 +68,8 @@ pub const Config = struct {
         /// Function parameters:
         /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
-        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        usage_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+        /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+        usage_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
     } = null,
 
     /// Indent string used for Usage/Help formatting.
@@ -292,8 +292,8 @@ pub fn Custom(comptime config: Config) type {
                         break :typeHelpFn elm.help_fn;
                 }
                 else break :typeHelpFn null;
-            }) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            }) |helpFn| return helpFn(self, writer, self._alloc);
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
@@ -319,8 +319,8 @@ pub fn Custom(comptime config: Config) type {
                         break :typeUsageFn elm.usage_fn;
                 }
                 else break :typeUsageFn null;
-            }) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            }) |usageFn| return usageFn(self, writer, self._alloc);
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
 
             try writer.print(usage_fmt, .{ 
                 @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),

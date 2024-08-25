@@ -7,10 +7,8 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    inner-cmd ​​ --in-bool <in-bool (bool)> | ​​ --in-float <in-float (f32)>
-    inner-cmd 
-
+USAGE
+    inner-cmd [ --in-bool |  --in-float ]
 ```
 
 ## Arguments

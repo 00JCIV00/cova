@@ -7,20 +7,17 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    add-user -f, --fname <fname (text)> | -l, --lname <lname (text)> | -a, --age <age (u8)> | -A, --admin <admin (bool)> | -r, --ref-ids <ref-ids (u8)>
-    add-user "id (u16)"
-    add-user 
-
+USAGE
+    add-user [ --fname |  --lname |  --age |  --admin |  --ref-ids ]
 ```
 
 ## Arguments
 ### Options
 - __fname__:
-    - `-f, --fname <fname (text)>`
+    - `-f, --fname <fname ([]const u8)>`
     - The 'fname' Option of type '?[]const u8'.
 - __lname__:
-    - `-l, --lname <lname (text)>`
+    - `-l, --lname <lname ([]const u8)>`
     - The 'lname' Option of type '?[]const u8'.
 - __age__:
     - `-a, --age <age (u8)>`
@@ -33,5 +30,5 @@ USAGE:
     - The 'ref_ids' Option of type '[3]?u8'.
 ### Values
 - __id__ (u16)
-    - The 'id' Value of type 'u16'.
+    - The 'id' Value of Type 'u16'.
 

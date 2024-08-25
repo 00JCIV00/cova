@@ -7,10 +7,8 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    basic 
-
-```
+USAGE
+        basic```
 
 ## Alias(es)
 - `basic-cmd`

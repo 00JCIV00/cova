@@ -7,9 +7,8 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    nest-1 nest-2
-
+USAGE
+    nest-1 [ nest-2 ]
 ```
 
 ## Arguments

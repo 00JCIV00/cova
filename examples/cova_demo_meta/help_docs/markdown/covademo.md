@@ -1,19 +1,17 @@
 # covademo
 A demo of the Cova command line argument parser.
 
-__Version:__ 0.10.0<br>
-__Date:__ 06 APR 2024<br>
+__Version:__ 0.10.1<br>
+__Date:__ 21 MAY 2024<br>
 __Author:__ 00JCIV00<br>
 __Copyright:__ MIT License<br>
 ___
 
 ## Usage
 ```shell
-USAGE:
-    covademo -s, --string <string_val (string)> | -i, --int <int_val (i16)> | -f, --float <float_val (f16)> | -F, --file <filepath (filepath)> | -o, --ordinal <ordinal_val (text)> | -c, --cardinal <cardinal_val (u8)> | -t, --toggle <toggle_val (bool)> | -b, --bool <bool_val (bool)> | -v, --verbosity <verbosity_level (u4)>
-    covademo "cmd_str (text)" | "cmd_bool (bool)" | "cmd_u64 (u64)"
-    covademo sub-cmd | basic | nest-1 | struct-cmd | union-cmd | fn-cmd | add-user
-
+USAGE
+    covademo [ --string |  --int |  --float |  --file |  --ordinal |  --cardinal |  --toggle |  --bool |  --verbosity ]
+    covademo [ sub-cmd |  basic |  nest-1 |  struct-cmd |  union-cmd |  fn-cmd |  add-user ]
 ```
 
 ## Examples
@@ -33,7 +31,7 @@ USAGE:
 - [__add-user__](./covademo-add-user.md): A demo sub command for adding a user.
 ### Options
 - __string_opt__:
-    - `-s, --string, --text <string_val (string)>`
+    - `-s, --string, --text <string_val ([]const u8)>`
     - A string option. (Can be given up to 4 times.)
 - __int_opt__:
     - `-i, --int <int_val (i16)>`
@@ -42,10 +40,10 @@ USAGE:
     - `-f, --float <float_val (f16)>`
     - An float option. (Can be given up to 10 times.)
 - __file_opt__:
-    - `-F, --file <filepath (filepath)>`
+    - `-F, --file <filepath ([]const u8)>`
     - A filepath option.
 - __ordinal_opt__:
-    - `-o, --ordinal <ordinal_val (text)>`
+    - `-o, --ordinal <ordinal_val ([]const u8)>`
     - An ordinal number option.
 - __cardinal_opt__:
     - `-c, --cardinal <cardinal_val (u8)>`
@@ -60,7 +58,7 @@ USAGE:
     - `-v, --verbosity <verbosity_level (u4)>`
     - Set the CovaDemo verbosity level. (WIP)
 ### Values
-- __cmd_str__ (text)
+- __cmd_str__ ([]const u8)
     - A string value for the command.
 - __cmd_bool__ (bool)
     - A boolean value for the command.

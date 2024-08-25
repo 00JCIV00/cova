@@ -53,16 +53,16 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_help_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Command instances of this custom Command Type.
     /// This function is 1st in precedence.
     ///
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
@@ -597,7 +597,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Command and writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             
@@ -765,7 +765,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Usage message for this Command and writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
 
             try writer.print(usage_header_fmt, .{ indent_fmt, self.name });
             if (self.opts) |opts| {

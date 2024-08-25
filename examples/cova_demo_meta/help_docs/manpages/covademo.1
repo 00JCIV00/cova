@@ -1,4 +1,4 @@
-.TH covademo 1 "06 APR 2024" "0.10.0" 
+.TH covademo 1 "21 MAY 2024" "0.10.1" 
 
 .SH NAME
 .B covademo
@@ -36,7 +36,7 @@ A demo sub command for adding a user.
 
 .SS OPTIONS
 .B string_opt:
-[-s,--string "string_val (string)"]:
+[-s,--string "string_val ([]const u8)"]:
   A string option. (Can be given up to 4 times.)
 
 .B int_opt:
@@ -48,11 +48,11 @@ A demo sub command for adding a user.
   An float option. (Can be given up to 10 times.)
 
 .B file_opt:
-[-F,--file "filepath (filepath)"]:
+[-F,--file "filepath ([]const u8)"]:
   A filepath option.
 
 .B ordinal_opt:
-[-o,--ordinal "ordinal_val (text)"]:
+[-o,--ordinal "ordinal_val ([]const u8)"]:
   An ordinal number option.
 
 .B cardinal_opt:
@@ -73,7 +73,7 @@ A demo sub command for adding a user.
 
 .SS VALUES
 .B cmd_str:
-(text): A string value for the command.
+([]const u8): A string value for the command.
 
 .B cmd_bool:
 (bool): A boolean value for the command.
