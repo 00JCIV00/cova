@@ -1649,16 +1649,26 @@ pub fn Custom(comptime config: Config) type {
             }
         }
 
-        /// Config for the Initialization of this Command.
-        pub const InitConfig = struct {
-            /// Validate this Command.
-            validate_cmd: bool = true,
-            /// Validation Config
-            valid_config: ValidateConfig = .{},
+        /// Config for auto-generating Usage/Help Commands & Options during Initialization.
+        pub const UsageHelpConfig = struct{
             /// Add Usage/Help message Commands to this Command.
             add_help_cmds: bool = true,
             /// Add Usage/Help message Options to this Command.
             add_help_opts: bool = true,
+            /// Set a name for the Usage Options inner Value.
+            /// This only takes effect if `add_help_opts` is `true`.
+            usage_val_name: []const u8 = "usage_flag",
+            /// Set a name for the Help Options inner Value.
+            /// This only takes effect if `add_help_opts` is `true`.
+            help_val_name: []const u8 = "help_flag",
+            /// Set a description format for the Usage Command & Option.
+            /// Must support the following format types in this order:
+            /// 1. String (Command Name)
+            usage_desc_fmt: []const u8 = "Show the '{s}' usage display.",
+            /// Set a description format for the Help Command & Option.
+            /// Must support the following format types in this order:
+            /// 1. String (Command Name)
+            help_desc_fmt: []const u8 = "Show the '{s}' help display.",
             /// Add Help Argument Group for Usage/Help Commands.
             /// Note, this will only take effect if `add_help_cmds` is `true`.
             add_cmd_help_group: AddHelpGroup = .AddIfOthers,
@@ -1667,8 +1677,6 @@ pub fn Custom(comptime config: Config) type {
             add_opt_help_group: AddHelpGroup = .AddIfOthers,
             /// Help Argument Group Name.
             help_group_name: []const u8 = "HELP",
-            /// Initialize this Command's Sub Commands.
-            init_subcmds: bool = true,
 
             /// Determine behavior for adding a Help Argument Group.
             pub const AddHelpGroup = enum{
@@ -1679,6 +1687,18 @@ pub fn Custom(comptime config: Config) type {
                 /// Do not add.
                 DoNotAdd,
             };
+        };
+
+        /// Config for the Initialization of this Command.
+        pub const InitConfig = struct {
+            /// Validate this Command.
+            validate_cmd: bool = true,
+            /// Validation Config
+            valid_config: ValidateConfig = .{},
+            /// Usage/Help Config
+            help_config: UsageHelpConfig = .{},
+            /// Initialize this Command's Sub Commands.
+            init_subcmds: bool = true,
         };
 
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
@@ -1696,10 +1716,11 @@ pub fn Custom(comptime config: Config) type {
             parent_cmd: ?*const @This(),
             init_alloc: mem.Allocator
         ) !if (is_root_cmd) *@This() else @This() {
+            const help_config = init_config.help_config;
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
-                valid_config.check_help_cmds = init_config.add_help_cmds;
-                valid_config.check_help_opts = init_config.add_help_opts;
+                valid_config.check_help_cmds = help_config.add_help_cmds;
+                valid_config.check_help_opts = help_config.add_help_opts;
                 const val_conf = valid_config;
                 self.validate(val_conf);
             }
@@ -1718,22 +1739,22 @@ pub fn Custom(comptime config: Config) type {
             };
             init_cmd.parent_cmd = parent_cmd;
 
-            const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
-            const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
+            const usage_description = fmt.comptimePrint(help_config.usage_desc_fmt, .{ self.name });
+            const help_description = fmt.comptimePrint(help_config.help_desc_fmt, .{ self.name });
 
-            if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
-                const add_cmd_help_group = switch (init_config.add_cmd_help_group) {
+            if (help_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                const add_cmd_help_group = switch (help_config.add_cmd_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.cmd_groups) |cmd_groups| {
-                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } });
+                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ help_config.help_group_name } });
                             break :ifOthers true;
                         }
                         break :ifOthers false;
                     },
                     .Add => add: {
                         init_cmd.cmd_groups = 
-                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ help_config.help_group_name } })
+                            else try alloc.dupe([]const u8, &.{ help_config.help_group_name });
                         break :add true;
                     },
                     .DoNotAdd => false,
@@ -1742,7 +1763,7 @@ pub fn Custom(comptime config: Config) type {
                 const help_sub_cmds = [2]@This(){
                     .{
                         .name = "usage",
-                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
+                        .cmd_group = if (add_cmd_help_group) help_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = usage_description,
                         .parent_cmd = init_cmd,
@@ -1750,7 +1771,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         .name = "help",
-                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
+                        .cmd_group = if (add_cmd_help_group) help_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = help_description,
                         .parent_cmd = init_cmd,
@@ -1768,7 +1789,7 @@ pub fn Custom(comptime config: Config) type {
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
                 inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc); 
-                if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                if (help_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
                 }
@@ -1785,19 +1806,19 @@ pub fn Custom(comptime config: Config) type {
                 init_cmd.opts = init_opts;
             }
 
-            if (init_config.add_help_opts) {
-                const add_opt_help_group = switch (init_config.add_opt_help_group) {
+            if (help_config.add_help_opts) {
+                const add_opt_help_group = switch (help_config.add_opt_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.opt_groups) |opt_groups| {
-                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } });
+                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ help_config.help_group_name } });
                             break :ifOthers true;
                         }
                         break :ifOthers false;
                     },
                     .Add => add: {
                         init_cmd.opt_groups = 
-                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ help_config.help_group_name } })
+                            else try alloc.dupe([]const u8, &.{ help_config.help_group_name });
                         break :add true;
                     },
                     .DoNotAdd => false,
@@ -1805,7 +1826,7 @@ pub fn Custom(comptime config: Config) type {
                 var help_opts = [2]OptionT{
                     .{
                         ._alloc = alloc,
-                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
+                        .opt_group = if (add_opt_help_group) help_config.help_group_name else null, 
                         .name = "usage",
                         .short_name = 'u',
                         .long_name = "usage",
@@ -1815,7 +1836,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         ._alloc = alloc,
-                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
+                        .opt_group = if (add_opt_help_group) help_config.help_group_name else null, 
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
