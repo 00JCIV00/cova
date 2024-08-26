@@ -36,7 +36,7 @@ A demo sub command for adding a user.
 
 .SS OPTIONS
 .B string_opt:
-[-s,--string "string_val ([]const u8)"]:
+[-s,--string "string_val (string)"]:
   A string option. (Can be given up to 4 times.)
 
 .B int_opt:
@@ -48,11 +48,11 @@ A demo sub command for adding a user.
   An float option. (Can be given up to 10 times.)
 
 .B file_opt:
-[-F,--file "filepath ([]const u8)"]:
+[-F,--file "filepath (filepath)"]:
   A filepath option.
 
 .B ordinal_opt:
-[-o,--ordinal "ordinal_val ([]const u8)"]:
+[-o,--ordinal "ordinal_val (text)"]:
   An ordinal number option.
 
 .B cardinal_opt:
@@ -60,11 +60,11 @@ A demo sub command for adding a user.
   A cardinal number option.
 
 .B toggle_opt:
-[-t,--toggle "toggle_val (bool)"]:
+[-t,--toggle "toggle_val (toggle)"]:
   A toggle/boolean option.
 
 .B bool_opt:
-[-b,--bool "bool_val (bool)"]:
+[-b,--bool "bool_val (toggle)"]:
   A toggle/boolean option.
 
 .B verbosity_opt:
@@ -73,10 +73,10 @@ A demo sub command for adding a user.
 
 .SS VALUES
 .B cmd_str:
-([]const u8): A string value for the command.
+(text): A string value for the command.
 
 .B cmd_bool:
-(bool): A boolean value for the command.
+(toggle): A boolean value for the command.
 
 .B cmd_u64:
 (u64): A u64 value for the command.

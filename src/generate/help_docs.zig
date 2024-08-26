@@ -297,7 +297,7 @@ fn createManpageCtx(
                     CommandT.OptionT.long_prefix orelse 0,
                     if (CommandT.OptionT.long_prefix != null) opt.long_name else "",
                     opt.val.name(),
-                    opt.val.childType(),
+                    opt.val.childTypeName(),
                     opt.description,
                 });
         }
@@ -306,7 +306,7 @@ fn createManpageCtx(
             for (vals) |val|
                 try mp_writer.print(mp_config.mp_vals_fmt, .{
                     val.name(),
-                    val.childType(),
+                    val.childTypeName(),
                     val.description()
                 });
         }
@@ -432,7 +432,7 @@ fn createMarkdownCtx(
                     }
                     else "",
                     opt.val.name(),
-                    opt.val.childType(),
+                    opt.val.childTypeName(),
                     opt.description,
                 });
         }
@@ -441,7 +441,7 @@ fn createMarkdownCtx(
             for (vals) |val|
                 try md_writer.print(md_config.md_vals_fmt , .{
                     val.name(),
-                    val.childType(),
+                    val.childTypeName(),
                     val.description(),
                 });
         }

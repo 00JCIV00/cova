@@ -45,21 +45,21 @@ cmd "nest-1" help="Nested Level 1." {
 
 cmd "struct-cmd" help="A demo sub command made from a struct." {
     flag "--int" help="The first Integer Value for the struct-cmd."
-    flag "--str" help="The 'str' Option of type '?[]const u8'."
-    flag "--str2" help="The 'str2' Option of type '?[]const u8'."
-    flag "--flt" help="The 'flt' Option of type '?f16'."
-    flag "--int2" help="The 'int2' Option of type '?u16'."
-    flag "--multi-int" help="The 'multi_int' Option of type '[3]?u8'."
-    flag "--multi-str" help="The 'multi_str' Option of type '[5]?[]const u8'."
-    flag "--rgb-enum" help="The 'rgb_enum' Option of type '?covademo.DemoStruct.InnerEnum'."
-    flag "--struct-bool" help="The 'struct_bool' Option of type 'bool'."
-    flag "--struct-str" help="The 'struct_str' Option of type '[]const u8'."
+    flag "--str" help="The 'str' Option of type 'text'."
+    flag "--str2" help="The 'str2' Option of type 'text'."
+    flag "--flt" help="The 'flt' Option of type 'f16'."
+    flag "--int2" help="The 'int2' Option of type 'u16'."
+    flag "--multi-int" help="The 'multi_int' Option of type 'u8'."
+    flag "--multi-str" help="The 'multi_str' Option of type 'text'."
+    flag "--rgb-enum" help="The 'rgb_enum' Option of type 'covademo.DemoStruct.InnerEnum'."
+    flag "--struct-bool" help="The 'struct_bool' Option of type 'toggle'."
+    flag "--struct-str" help="The 'struct_str' Option of type 'text'."
     flag "--struct-int" help="The 'struct_int' Option of type 'i64'."
 
     arg "multi-int-val" help="The 'multi-int-val' Value of Type '[2]u16'."
 
     cmd "inner-cmd" help="An inner/nested command for struct-cmd" {
-        flag "--in-bool" help="The 'in_bool' Option of type 'bool'."
+        flag "--in-bool" help="The 'in_bool' Option of type 'toggle'."
         flag "--in-float" help="The 'in_float' Option of type 'f32'."
     }
 }
@@ -78,11 +78,11 @@ cmd "fn-cmd" help="A demo sub command made from a function." {
 }
 
 cmd "add-user" help="A demo sub command for adding a user." {
-    flag "-f,--fname" help="The 'fname' Option of type '?[]const u8'."
-    flag "-l,--lname" help="The 'lname' Option of type '?[]const u8'."
-    flag "-a,--age" help="The 'age' Option of type '?u8'."
-    flag "-A,--admin" help="The 'admin' Option of type '?bool'."
-    flag "-r,--ref-ids" help="The 'ref_ids' Option of type '[3]?u8'."
+    flag "-f,--fname" help="The 'fname' Option of type 'text'."
+    flag "-l,--lname" help="The 'lname' Option of type 'text'."
+    flag "-a,--age" help="The 'age' Option of type 'u8'."
+    flag "-A,--admin" help="The 'admin' Option of type 'toggle'."
+    flag "-r,--ref-ids" help="The 'ref_ids' Option of type 'u8'."
 
     arg "id" help="The 'id' Value of Type 'u16'."
 }

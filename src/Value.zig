@@ -870,10 +870,14 @@ pub fn Custom(comptime config: Config) type {
                     @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
                 else return null;
             }
+            var enum_name: ?[]const u8 = null;
             const CompT = switch (comp_info) {
                 .Optional => |optl| OptT: {
                     break :OptT switch (@typeInfo(optl.child)) {
-                        .Enum => |enum_info| enum_info.tag_type,
+                        .Enum => |enum_info| EnumT: {
+                            enum_name = @typeName(optl.child);
+                            break :EnumT enum_info.tag_type;
+                        },
                         inline else => optl.child,
                     };
                 },
@@ -882,7 +886,10 @@ pub fn Custom(comptime config: Config) type {
                     if (ary_info == .Optional) break :aryType ary_info.Optional.child
                     else break :aryType comp_info.Array.child;
                 },
-                .Enum => |enum_info| enum_info.tag_type,
+                .Enum => |enum_info| EnumT: {
+                    enum_name = @typeName(FromT);
+                    break :EnumT enum_info.tag_type;
+                },
                 // TODO: Check if Pointer is a String.
                 .Bool, .Int, .Float, .Pointer => FromT,
                 else => {
@@ -894,6 +901,7 @@ pub fn Custom(comptime config: Config) type {
             return ofType(CompT, .{
                 .name = comp_name,
                 .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of Type '{s}'.", .{ comp_name, @typeName(FromT) }),
+                .alias_child_type = enum_name,
                 .max_entries =
                     if (comp_info == .Array) comp_info.Array.len
                     else 1,

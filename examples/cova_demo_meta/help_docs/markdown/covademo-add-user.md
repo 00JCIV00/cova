@@ -14,20 +14,20 @@ USAGE
 ## Arguments
 ### Options
 - __fname__:
-    - `-f, --fname <fname ([]const u8)>`
-    - The 'fname' Option of type '?[]const u8'.
+    - `-f, --fname <fname (text)>`
+    - The 'fname' Option of type 'text'.
 - __lname__:
-    - `-l, --lname <lname ([]const u8)>`
-    - The 'lname' Option of type '?[]const u8'.
+    - `-l, --lname <lname (text)>`
+    - The 'lname' Option of type 'text'.
 - __age__:
     - `-a, --age <age (u8)>`
-    - The 'age' Option of type '?u8'.
+    - The 'age' Option of type 'u8'.
 - __admin__:
-    - `-A, --admin <admin (bool)>`
-    - The 'admin' Option of type '?bool'.
+    - `-A, --admin <admin (toggle)>`
+    - The 'admin' Option of type 'toggle'.
 - __ref-ids__:
     - `-r, --ref-ids <ref-ids (u8)>`
-    - The 'ref_ids' Option of type '[3]?u8'.
+    - The 'ref_ids' Option of type 'u8'.
 ### Values
 - __id__ (u16)
     - The 'id' Value of Type 'u16'.

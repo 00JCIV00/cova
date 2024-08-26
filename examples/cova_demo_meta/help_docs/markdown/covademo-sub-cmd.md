@@ -25,7 +25,7 @@ USAGE
     - `-i <nested_int_val (u8)>`
     - A nested integer option.
 - __nested_str_opt__:
-    - `-s, --nested_str <nested_str_val ([]const u8)>`
+    - `-s, --nested_str <nested_str_val (text)>`
     - A nested string option.
 ### Values
 - __nested_float_val__ (f32)

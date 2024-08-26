@@ -286,10 +286,12 @@ pub fn Custom(comptime config: Config) type {
             //    return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
             if (typeHelpFn: {
-                const val_child_type = self.val.childTypeName();
-                for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
-                    if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
-                        break :typeHelpFn elm.help_fn;
+                //const val_child_type = self.val.childType();
+                for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
+                    for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                            break :typeHelpFn elm.help_fn;
+                    }
                 }
                 else break :typeHelpFn null;
             }) |helpFn| return helpFn(self, writer, self._alloc);
@@ -313,10 +315,12 @@ pub fn Custom(comptime config: Config) type {
             //    return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
             if (typeUsageFn: {
-                const val_child_type = self.val.childTypeName();
-                for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
-                    if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
-                        break :typeUsageFn elm.usage_fn;
+                //const val_child_type = self.val.childType();
+                for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
+                    for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                            break :typeUsageFn elm.usage_fn;
+                    }
                 }
                 else break :typeUsageFn null;
             }) |usageFn| return usageFn(self, writer, self._alloc);
@@ -374,14 +378,8 @@ pub fn Custom(comptime config: Config) type {
                 },
                 inline else => optl_info,
             };
-            return .{
-                .name = if (from_config.name) |name| name else field.name,
-                .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
-                .long_name = if (from_config.long_name) |long_name| long_name else field.name,
-                .short_name = from_config.short_name, 
-                //.help_fn = from_config.help_fn,
-                //.usage_fn = from_config.usage_fn,
-                .val = optVal: {
+            return opt: {
+                const opt_val = optVal: {
                     //const child_info = @typeInfo(optl.child);
                     switch (child_info) {
                         .Bool, .Int, .Float, .Pointer, .Enum => break :optVal ValueT.from(field, .{
@@ -395,9 +393,17 @@ pub fn Custom(comptime config: Config) type {
                             else return null;
                         },
                     }
-                }
+                };
+                break :opt @This(){
+                    .name = if (from_config.name) |name| name else field.name,
+                    .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ opt_val.childTypeName() ++ "'.",
+                    .long_name = if (from_config.long_name) |long_name| long_name else field.name,
+                    .short_name = from_config.short_name, 
+                    //.help_fn = from_config.help_fn,
+                    //.usage_fn = from_config.usage_fn,
+                    .val = opt_val,
+                };
             };
-        
         }
 
         /// Initialize this Option with the provided Allocator (`alloc`).

@@ -41,6 +41,7 @@
                     "short_name": 115,
                     "description": "A nested string option.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -87,6 +88,7 @@
                                     "short_name": 105,
                                     "description": "Inheritable Option",
                                     "type_name": "bool",
+                                    "type_alias": "toggle",
                                     "set_behavior": "Last",
                                     "max_entries": 1
                                 }
@@ -109,8 +111,9 @@
                         {
                             "name": "in-bool",
                             "long_name": "in-bool",
-                            "description": "The 'in_bool' Option of type 'bool'.",
+                            "description": "The 'in_bool' Option of type 'toggle'.",
                             "type_name": "bool",
+                            "type_alias": "toggle",
                             "set_behavior": "Last",
                             "max_entries": 1
                         },
@@ -137,23 +140,25 @@
                 {
                     "name": "str",
                     "long_name": "str",
-                    "description": "The 'str' Option of type '?[]const u8'.",
+                    "description": "The 'str' Option of type 'text'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
                 {
                     "name": "str2",
                     "long_name": "str2",
-                    "description": "The 'str2' Option of type '?[]const u8'.",
+                    "description": "The 'str2' Option of type 'text'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
                 {
                     "name": "flt",
                     "long_name": "flt",
-                    "description": "The 'flt' Option of type '?f16'.",
+                    "description": "The 'flt' Option of type 'f16'.",
                     "type_name": "f16",
                     "set_behavior": "Last",
                     "max_entries": 1
@@ -161,7 +166,7 @@
                 {
                     "name": "int2",
                     "long_name": "int2",
-                    "description": "The 'int2' Option of type '?u16'.",
+                    "description": "The 'int2' Option of type 'u16'.",
                     "type_name": "u16",
                     "set_behavior": "Last",
                     "max_entries": 1
@@ -169,7 +174,7 @@
                 {
                     "name": "multi-int",
                     "long_name": "multi-int",
-                    "description": "The 'multi_int' Option of type '[3]?u8'.",
+                    "description": "The 'multi_int' Option of type 'u8'.",
                     "type_name": "u8",
                     "set_behavior": "Multi",
                     "max_entries": 3
@@ -177,32 +182,36 @@
                 {
                     "name": "multi-str",
                     "long_name": "multi-str",
-                    "description": "The 'multi_str' Option of type '[5]?[]const u8'.",
+                    "description": "The 'multi_str' Option of type 'text'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Multi",
                     "max_entries": 5
                 },
                 {
                     "name": "rgb-enum",
                     "long_name": "rgb-enum",
-                    "description": "The 'rgb_enum' Option of type '?covademo.DemoStruct.InnerEnum'.",
+                    "description": "The 'rgb_enum' Option of type 'covademo.DemoStruct.InnerEnum'.",
                     "type_name": "u2",
+                    "type_alias": "covademo.DemoStruct.InnerEnum",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
                 {
                     "name": "struct-bool",
                     "long_name": "struct-bool",
-                    "description": "The 'struct_bool' Option of type 'bool'.",
+                    "description": "The 'struct_bool' Option of type 'toggle'.",
                     "type_name": "bool",
+                    "type_alias": "toggle",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
                 {
                     "name": "struct-str",
                     "long_name": "struct-str",
-                    "description": "The 'struct_str' Option of type '[]const u8'.",
+                    "description": "The 'struct_str' Option of type 'text'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -245,6 +254,7 @@
                     "short_name": 115,
                     "description": "The first String Value for the union-cmd.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -261,6 +271,7 @@
                     "name": "union-str",
                     "description": "The 'union-str' Value of Type '[]const u8'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -282,6 +293,7 @@
                     "name": "val-01",
                     "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }
@@ -296,8 +308,9 @@
                     "name": "fname",
                     "long_name": "fname",
                     "short_name": 102,
-                    "description": "The 'fname' Option of type '?[]const u8'.",
+                    "description": "The 'fname' Option of type 'text'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -305,8 +318,9 @@
                     "name": "lname",
                     "long_name": "lname",
                     "short_name": 108,
-                    "description": "The 'lname' Option of type '?[]const u8'.",
+                    "description": "The 'lname' Option of type 'text'.",
                     "type_name": "[]const u8",
+                    "type_alias": "text",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -314,7 +328,7 @@
                     "name": "age",
                     "long_name": "age",
                     "short_name": 97,
-                    "description": "The 'age' Option of type '?u8'.",
+                    "description": "The 'age' Option of type 'u8'.",
                     "type_name": "u8",
                     "set_behavior": "Last",
                     "max_entries": 1
@@ -323,8 +337,9 @@
                     "name": "admin",
                     "long_name": "admin",
                     "short_name": 65,
-                    "description": "The 'admin' Option of type '?bool'.",
+                    "description": "The 'admin' Option of type 'toggle'.",
                     "type_name": "bool",
+                    "type_alias": "toggle",
                     "set_behavior": "Last",
                     "max_entries": 1
                 },
@@ -332,7 +347,7 @@
                     "name": "ref-ids",
                     "long_name": "ref-ids",
                     "short_name": 114,
-                    "description": "The 'ref_ids' Option of type '[3]?u8'.",
+                    "description": "The 'ref_ids' Option of type 'u8'.",
                     "type_name": "u8",
                     "set_behavior": "Multi",
                     "max_entries": 3
@@ -360,6 +375,7 @@
             ],
             "group": "STRING",
             "type_name": "[]const u8",
+            "type_alias": "string",
             "set_behavior": "Multi",
             "max_entries": 4
         },
@@ -389,6 +405,7 @@
             "description": "A filepath option.",
             "group": "STRING",
             "type_name": "[]const u8",
+            "type_alias": "filepath",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -399,6 +416,7 @@
             "description": "An ordinal number option.",
             "group": "STRING",
             "type_name": "[]const u8",
+            "type_alias": "text",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -422,6 +440,7 @@
             ],
             "group": "BOOL",
             "type_name": "bool",
+            "type_alias": "toggle",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -432,6 +451,7 @@
             "description": "A toggle/boolean option.",
             "group": "BOOL",
             "type_name": "bool",
+            "type_alias": "toggle",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -451,6 +471,7 @@
             "description": "A string value for the command.",
             "group": "STRING",
             "type_name": "[]const u8",
+            "type_alias": "text",
             "set_behavior": "Last",
             "max_entries": 1
         },
@@ -458,6 +479,7 @@
             "name": "cmd_bool",
             "description": "A boolean value for the command.",
             "type_name": "bool",
+            "type_alias": "toggle",
             "set_behavior": "Multi",
             "max_entries": 10
         },

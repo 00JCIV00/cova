@@ -94,12 +94,14 @@ pub fn OptionTemplate(OptionT: type) type {
 
         /// Value Type Name
         type_name: []const u8,
+        /// Value Type Alias
+        type_alias: ?[]const u8 = null,
         /// Value Set Behavior
         set_behavior: []const u8,
         /// Value Max Entries
         max_entries: u8,
 
-        /// Create a Template from a Option.
+        /// Create a Template from an Option.
         pub fn from(comptime opt: OptionT) @This() {
             return .{
                 .name = opt.name,
@@ -109,6 +111,7 @@ pub fn OptionTemplate(OptionT: type) type {
                 .aliases = opt.alias_long_names,
                 .group = opt.opt_group,
                 .type_name = opt.val.childType(),
+                .type_alias = if (!mem.eql(u8, opt.val.childTypeName(), opt.val.childType())) opt.val.childTypeName() else null,
                 .set_behavior = @tagName(opt.val.setBehavior()),
                 .max_entries = opt.val.maxEntries(),
             };
@@ -130,6 +133,8 @@ pub fn ValueTemplate(ValueT: type) type {
 
         /// Value Type Name
         type_name: []const u8,
+        /// Value Type Alias
+        type_alias: ?[]const u8 = null,
         /// Value Set Behavior
         set_behavior: []const u8,
         /// Value Max Arguments
@@ -142,6 +147,7 @@ pub fn ValueTemplate(ValueT: type) type {
                 .description = val.description(),
                 .group = val.valGroup(),
                 .type_name = val.childType(),
+                .type_alias = if (!mem.eql(u8, val.childTypeName(), val.childType())) val.childTypeName() else null,
                 .set_behavior = @tagName(val.setBehavior()),
                 .max_entries = val.maxEntries(),
             };

@@ -14,6 +14,6 @@ USAGE
 ### Values
 - __val-00__ (i32)
     - No description. (Descriptions cannot currently be generated from Function Parameters.)
-- __val-01__ ([]const u8)
+- __val-01__ (text)
     - No description. (Descriptions cannot currently be generated from Function Parameters.)
 

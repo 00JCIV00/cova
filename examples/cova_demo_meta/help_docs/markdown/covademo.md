@@ -31,7 +31,7 @@ USAGE
 - [__add-user__](./covademo-add-user.md): A demo sub command for adding a user.
 ### Options
 - __string_opt__:
-    - `-s, --string, --text <string_val ([]const u8)>`
+    - `-s, --string, --text <string_val (string)>`
     - A string option. (Can be given up to 4 times.)
 - __int_opt__:
     - `-i, --int <int_val (i16)>`
@@ -40,27 +40,27 @@ USAGE
     - `-f, --float <float_val (f16)>`
     - An float option. (Can be given up to 10 times.)
 - __file_opt__:
-    - `-F, --file <filepath ([]const u8)>`
+    - `-F, --file <filepath (filepath)>`
     - A filepath option.
 - __ordinal_opt__:
-    - `-o, --ordinal <ordinal_val ([]const u8)>`
+    - `-o, --ordinal <ordinal_val (text)>`
     - An ordinal number option.
 - __cardinal_opt__:
     - `-c, --cardinal <cardinal_val (u8)>`
     - A cardinal number option.
 - __toggle_opt__:
-    - `-t, --toggle, --switch <toggle_val (bool)>`
+    - `-t, --toggle, --switch <toggle_val (toggle)>`
     - A toggle/boolean option.
 - __bool_opt__:
-    - `-b, --bool <bool_val (bool)>`
+    - `-b, --bool <bool_val (toggle)>`
     - A toggle/boolean option.
 - __verbosity_opt__:
     - `-v, --verbosity <verbosity_level (u4)>`
     - Set the CovaDemo verbosity level. (WIP)
 ### Values
-- __cmd_str__ ([]const u8)
+- __cmd_str__ (text)
     - A string value for the command.
-- __cmd_bool__ (bool)
+- __cmd_bool__ (toggle)
     - A boolean value for the command.
 - __cmd_u64__ (u64)
     - A u64 value for the command.
