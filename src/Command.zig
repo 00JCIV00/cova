@@ -64,6 +64,10 @@ pub const Config = struct {
     /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
     global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
 
+    /// Help Category Order.
+    /// The order that Help Categories will be written when writing a Help Message.
+    help_category_order: []const HelpCategory = &.{ .Prefix, .Usage, .Header, .Aliases, .Examples, .Commands, .Options, .Values },
+
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
     /// but it can be overriden in the Option and Value Configs.
@@ -173,6 +177,27 @@ pub const Config = struct {
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
 
+
+    /// Help Categories.
+    pub const HelpCategory = enum{
+        /// The `global_help_prefix` or `help_prefix`.
+        Prefix,
+        /// The `usage()` function which can be overwritten.
+        Usage,
+        /// The `help_header_fmt`.
+        Header,
+        /// The Command's Aliases.
+        Aliases,
+        /// The Command's Examples.
+        Examples,
+        /// The Command's sub-Commands.
+        Commands,
+        /// The Command's Options.
+        Options,
+        /// The Command's Values.
+        Values,
+    };
+
     /// Configuration for `optimized()`.
     pub const OptimizeConfig = struct{
         /// Set all `_fmt` fields `""`.
@@ -236,6 +261,10 @@ pub fn Custom(comptime config: Config) type {
         /// Custom Usage Function.
         /// Check (`Command.Config`) for details.
         pub const global_usage_fn = config.global_usage_fn;
+
+        /// Help Category Order.
+        /// Check (`Command.Config`) for details.
+        pub const help_category_order = config.help_category_order;
 
         /// Group Title Format.
         /// Check (`Command.Config`) for details.
@@ -600,167 +629,174 @@ pub fn Custom(comptime config: Config) type {
             if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             const alloc = self._alloc orelse return error.CommandNotInitialized;
-            
-            try writer.print("{s}\n", .{ self.help_prefix });
-            try self.usage(writer);
-            try writer.print(help_header_fmt, .{ 
-                indent_fmt, self.name, 
-                indent_fmt, self.description 
-            });
 
-            if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases });
-
-            showExamples: {
-                if (!include_examples) break :showExamples;
-                const examples = self.examples orelse break :showExamples;
-                try writer.print(examples_header_fmt, .{ indent_fmt });
-                for (examples) |example| {
-                    try writer.print("{s}{s}", .{ indent_fmt } ** 2);
-                    try writer.print(example_fmt, .{ example });
-                    try writer.print("\n", .{});
-                }
-                try writer.print("\n", .{});
-            }
-
-            if (self.sub_cmds) |sub_cmds| {
-                try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
-                var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
-                defer cmd_list.deinit();
-                for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
-                var remove_list = std.ArrayList([]const u8).init(alloc);
-                defer remove_list.deinit();
-                if (self.cmd_groups) |groups| {
-                    var need_other_title = false;
-                    for (groups) |group| {
-                        var need_title = true;
-                        var cmd_iter = cmd_list.iterator();
-                        cmdGroup: while (cmd_iter.next()) |cmd_entry| {
-                            const cmd = cmd_entry.value_ptr;
-                            if (cmd.hidden) {
-                                try remove_list.append(cmd.name);
-                                continue;
-                            }
-                            if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
-                                if (need_title) {
-                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
-                                    need_title = false;
-                                    need_other_title = true;
+            for (help_category_order) |cat| {
+                switch (cat) {
+                    .Prefix => try writer.print("{s}\n", .{ self.help_prefix }),
+                    .Usage => try self.usage(writer),
+                    .Header => {
+                        try writer.print(help_header_fmt, .{ 
+                            indent_fmt, self.name, 
+                            indent_fmt, self.description 
+                        });
+                    },
+                    .Aliases => { if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases }); },
+                    .Examples => showExamples: {
+                        if (!include_examples) break :showExamples;
+                        const examples = self.examples orelse break :showExamples;
+                        try writer.print(examples_header_fmt, .{ indent_fmt });
+                        for (examples) |example| {
+                            try writer.print("{s}{s}", .{ indent_fmt } ** 2);
+                            try writer.print(example_fmt, .{ example });
+                            try writer.print("\n", .{});
+                        }
+                        try writer.print("\n", .{});
+                    },
+                    .Commands => {
+                        if (self.sub_cmds) |sub_cmds| {
+                            try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
+                            var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
+                            defer cmd_list.deinit();
+                            for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
+                            var remove_list = std.ArrayList([]const u8).init(alloc);
+                            defer remove_list.deinit();
+                            if (self.cmd_groups) |groups| {
+                                var need_other_title = false;
+                                for (groups) |group| {
+                                    var need_title = true;
+                                    var cmd_iter = cmd_list.iterator();
+                                    cmdGroup: while (cmd_iter.next()) |cmd_entry| {
+                                        const cmd = cmd_entry.value_ptr;
+                                        if (cmd.hidden) {
+                                            try remove_list.append(cmd.name);
+                                            continue;
+                                        }
+                                        if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
+                                            if (need_title) {
+                                                try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                                need_title = false;
+                                                need_other_title = true;
+                                            }
+                                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                            try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
+                                            if (cmd.alias_names) |aliases| {
+                                                try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
+                                                try writer.print(subcmd_alias_fmt, .{ aliases });
+                                            }
+                                            try writer.print("\n", .{});
+                                            try remove_list.append(cmd.name);
+                                        }
+                                    }
+                                    if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                                 }
+                                if (need_other_title and remove_list.items.len < cmd_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            }
+                            for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
+
+                            var cmd_iter = cmd_list.iterator();
+                            while (cmd_iter.next()) |cmd_entry| {
+                                const cmd = cmd_entry.value_ptr;
+                                if (cmd.hidden) continue;
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
-                                if (cmd.alias_names) |aliases| {
-                                    try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
-                                    try writer.print(subcmd_alias_fmt, .{ aliases });
-                                }
                                 try writer.print("\n", .{});
-                                try remove_list.append(cmd.name);
                             }
                         }
-                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
-                    }
-                    if (need_other_title and remove_list.items.len < cmd_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
-                }
-                for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
-
-                var cmd_iter = cmd_list.iterator();
-                while (cmd_iter.next()) |cmd_entry| {
-                    const cmd = cmd_entry.value_ptr;
-                    if (cmd.hidden) continue;
-                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
-                    try writer.print("\n", .{});
-                }
-            }
-            try writer.print("\n", .{});
-
-            if (self.opts) |opts| {
-                try writer.print(opts_help_title_fmt, .{ indent_fmt });
-                var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
-                defer opt_list.deinit();
-                for (opts) |opt| try opt_list.put(opt.name, opt);
-                var remove_list = std.ArrayList([]const u8).init(alloc);
-                defer remove_list.deinit();
-                if (self.opt_groups) |groups| {
-                    var need_other_title = false;
-                    for (groups) |group| {
-                        var need_title = true;
-                        var opt_iter = opt_list.iterator();
-                        optGroup: while (opt_iter.next()) |opt_entry| {
-                            const opt = opt_entry.value_ptr;
-                            if (opt.hidden) {
-                                try remove_list.append(opt.name);
-                                continue;
-                            }
-                            if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
-                                if (need_title) {
-                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
-                                    need_title = false;
-                                    need_other_title = true;
+                        try writer.print("\n", .{});
+                    },
+                    .Options => {
+                        if (self.opts) |opts| {
+                            try writer.print(opts_help_title_fmt, .{ indent_fmt });
+                            var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
+                            defer opt_list.deinit();
+                            for (opts) |opt| try opt_list.put(opt.name, opt);
+                            var remove_list = std.ArrayList([]const u8).init(alloc);
+                            defer remove_list.deinit();
+                            if (self.opt_groups) |groups| {
+                                var need_other_title = false;
+                                for (groups) |group| {
+                                    var need_title = true;
+                                    var opt_iter = opt_list.iterator();
+                                    optGroup: while (opt_iter.next()) |opt_entry| {
+                                        const opt = opt_entry.value_ptr;
+                                        if (opt.hidden) {
+                                            try remove_list.append(opt.name);
+                                            continue;
+                                        }
+                                        if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
+                                            if (need_title) {
+                                                try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                                need_title = false;
+                                                need_other_title = true;
+                                            }
+                                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                            try opt.help(writer);
+                                            try writer.print("\n", .{});
+                                            try remove_list.append(opt.name);
+                                        }
+                                    }
+                                    if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                                 }
+                                if (need_other_title and remove_list.items.len < opt_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            }
+                            for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
+
+                            var opt_iter = opt_list.iterator();
+                            while (opt_iter.next()) |opt_entry| {
+                                const opt = opt_entry.value_ptr;
+                                if (opt.hidden) continue;
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try opt.help(writer);
                                 try writer.print("\n", .{});
-                                try remove_list.append(opt.name);
                             }
                         }
-                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
-                    }
-                    if (need_other_title and remove_list.items.len < opt_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
-                }
-                for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
-
-                var opt_iter = opt_list.iterator();
-                while (opt_iter.next()) |opt_entry| {
-                    const opt = opt_entry.value_ptr;
-                    if (opt.hidden) continue;
-                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try opt.help(writer);
-                    try writer.print("\n", .{});
-                }
-            }
-            try writer.print("\n", .{});
-
-            if (self.vals) |vals| {
-                try writer.print(vals_help_title_fmt, .{ indent_fmt });
-                var val_list = std.StringArrayHashMap(ValueT).init(alloc);
-                defer val_list.deinit();
-                for (vals) |val| try val_list.put(val.name(), val);
-                var remove_list = std.ArrayList([]const u8).init(alloc);
-                defer remove_list.deinit();
-                if (self.val_groups) |groups| {
-                    var need_other_title = false;
-                    for (groups) |group| {
-                        var need_title = true;
-                        var val_iter = val_list.iterator();
-                        valGroup: while (val_iter.next()) |val_entry| {
-                            const val = val_entry.value_ptr;
-                            if (mem.eql(u8, val.valGroup() orelse continue :valGroup, group)) {
-                                if (need_title) {
-                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
-                                    need_title = false;
-                                    need_other_title = true;
+                        try writer.print("\n", .{});
+                    },
+                    .Values => {
+                        if (self.vals) |vals| {
+                            try writer.print(vals_help_title_fmt, .{ indent_fmt });
+                            var val_list = std.StringArrayHashMap(ValueT).init(alloc);
+                            defer val_list.deinit();
+                            for (vals) |val| try val_list.put(val.name(), val);
+                            var remove_list = std.ArrayList([]const u8).init(alloc);
+                            defer remove_list.deinit();
+                            if (self.val_groups) |groups| {
+                                var need_other_title = false;
+                                for (groups) |group| {
+                                    var need_title = true;
+                                    var val_iter = val_list.iterator();
+                                    valGroup: while (val_iter.next()) |val_entry| {
+                                        const val = val_entry.value_ptr;
+                                        if (mem.eql(u8, val.valGroup() orelse continue :valGroup, group)) {
+                                            if (need_title) {
+                                                try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                                need_title = false;
+                                                need_other_title = true;
+                                            }
+                                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                            try val.help(writer);
+                                            try writer.print("\n", .{});
+                                            try remove_list.append(val.name());
+                                        }
+                                    }
+                                    if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                                 }
+                                if (need_other_title and remove_list.items.len < val_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            }
+                            for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
+
+                            var val_iter = val_list.iterator();
+                            while (val_iter.next()) |val_entry| {
+                                const val = val_entry.value_ptr;
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try val.help(writer);
                                 try writer.print("\n", .{});
-                                try remove_list.append(val.name());
                             }
                         }
-                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
-                    }
-                    if (need_other_title and remove_list.items.len < val_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
-                }
-                for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
-
-                var val_iter = val_list.iterator();
-                while (val_iter.next()) |val_entry| {
-                    const val = val_entry.value_ptr;
-                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try val.help(writer);
-                    try writer.print("\n", .{});
+                        try writer.print("\n", .{});
+                    },
                 }
             }
-            try writer.print("\n", .{});
         }
 
         /// Creates the Usage message for this Command and writes it to the provided Writer (`writer`).

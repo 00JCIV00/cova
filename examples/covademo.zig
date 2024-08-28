@@ -22,6 +22,7 @@ const conf_optimized = Command.Config.optimized(.{});
 pub const CommandT = Command.Custom(.{
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
+    .help_category_order = &.{ .Prefix, .Header, .Aliases, .Values, .Options, .Commands },
     //.allow_arg_indices = false,
     .global_usage_fn = struct{
         fn usage(self: anytype, writer: anytype, _: ?mem.Allocator) !void {

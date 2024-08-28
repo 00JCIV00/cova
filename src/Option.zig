@@ -287,7 +287,7 @@ pub fn Custom(comptime config: Config) type {
             //}
             if (typeHelpFn: {
                 //const val_child_type = self.val.childType();
-                for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
+                inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
                     for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
                         if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
                             break :typeHelpFn elm.help_fn;
@@ -316,7 +316,7 @@ pub fn Custom(comptime config: Config) type {
             //}
             if (typeUsageFn: {
                 //const val_child_type = self.val.childType();
-                for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
+                inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
                     for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
                         if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
                             break :typeUsageFn elm.usage_fn;
