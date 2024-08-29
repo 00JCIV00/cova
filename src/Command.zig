@@ -624,7 +624,42 @@ pub fn Custom(comptime config: Config) type {
             return map;
         }
 
+        /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
+        /// This is particularly useful for checking if Help or Usage has been called.
+        pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
+            return (
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
+                checkOpt: {
+                    if (self.opts != null) {
+                        for (self.opts.?) |opt| {
+                            if (
+                                mem.eql(u8, opt.name, flag_name) and 
+                                mem.eql(u8, opt.val.childType(), "bool") and 
+                                opt.val.getAs(bool) catch false
+                            )
+                                break :checkOpt true;
+                        }
+                    }
+                    break :checkOpt false;
+                } or
+                checkVal: {
+                    if (self.vals != null) {
+                        for (self.vals.?) |val| {
+                            if (
+                                mem.eql(u8, val.name(), flag_name) and
+                                mem.eql(u8, val.childType(), "bool") and
+                                val.getAs(bool) catch false
+                            )
+                                break :checkVal true;
+                        }
+                    }
+                    break :checkVal false;
+                }
+            );
+        }
+
         /// Creates the Help message for this Command and writes it to the provided Writer (`writer`).
+        /// Check Command.Config for customization options.
         pub fn help(self: *const @This(), writer: anytype) !void {
             if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
@@ -852,36 +887,6 @@ pub fn Custom(comptime config: Config) type {
                 return true;
             }
             return false;
-        }
-
-        /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
-        /// This is particularly useful for checking if Help or Usage has been called.
-        pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
-            return (
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
-                checkOpt: {
-                    if (self.opts != null) {
-                        for (self.opts.?) |opt| {
-                            if (mem.eql(u8, opt.name, flag_name) and 
-                                mem.eql(u8, opt.val.childType(), "bool") and 
-                                opt.val.getAs(bool) catch false)
-                                    break :checkOpt true;
-                        }
-                    }
-                    break :checkOpt false;
-                } or
-                checkVal: {
-                    if (self.vals != null) {
-                        for (self.vals.?) |val| {
-                            if (mem.eql(u8, val.name(), flag_name) and
-                                mem.eql(u8, val.childType(), "bool") and
-                                val.getAs(bool) catch false)
-                                    break :checkVal true;
-                        }
-                    }
-                    break :checkVal false;
-                }
-            );
         }
 
         /// Config for creating Commands from Structs using `from()`.
@@ -1192,7 +1197,7 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
-                            .val_name = "val-" ++ .{ '0', (vals_idx + 48), },
+                            .val_name = "val-" ++ .{ '0', (vals_idx + 48) },
                             .val_description = arg_description,
                         }) orelse continue);
                         vals_idx += 1;
