@@ -52,93 +52,55 @@ pub fn build(b: *std.Build) void {
     //==========================================
     // Examples
     //==========================================
-    // - Cova Demo Exe
-    const cova_demo = b.addExecutable(.{
-        .name = bin_name orelse "covademo",
-        .root_source_file = b.path("examples/covademo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    cova_demo.root_module.addImport("cova", cova_mod);
-    const build_cova_demo = b.addInstallArtifact(cova_demo, .{});
-    const build_cova_demo_step = b.step("cova-demo", "Build the 'covademo' example (default: Debug)");
-    build_cova_demo_step.dependOn(&build_cova_demo.step);
-    // - Cova Demo Meta Docs
-    const cova_demo_gen = createDocGenStep(
-        b,
-        cova_mod,
-        b.path("src/generator.zig"),
-        cova_demo,
-        .{
-            .kinds = &.{ .all },
-            .version = "0.10.1",
-            .ver_date = "21 MAY 2024",
-            .author = "00JCIV00",
-            .copyright = "MIT License",
-            .help_docs_config = .{
-                .local_filepath = "examples/cova_demo_meta/help_docs/",
+    const examples = &.{ "cova-demo", "basic-app", "log-enum" };
+    var ex_arena = std.heap.ArenaAllocator.init(b.allocator);
+    defer ex_arena.deinit();
+    const ex_alloc = ex_arena.allocator();
+    inline for (examples) |example| {
+        var ex_scored_buf = ex_alloc.dupe(u8, example) catch @panic("OOM");
+        const ex_scored = std.mem.replaceOwned(u8, ex_alloc, ex_scored_buf[0..], "-", "_") catch @panic("OOM");
+        const ex_name = exName: {
+            if (std.mem.eql(u8, example, "cova-demo")) break :exName "covademo";
+            break :exName example;
+        };
+        // - Exe
+        const ex_exe = b.addExecutable(.{
+            .name = bin_name orelse ex_name,
+            .root_source_file = b.path(std.fmt.allocPrint(ex_alloc, "examples/{s}.zig", .{ ex_name }) catch @panic("OOM")),
+            .target = target,
+            .optimize = optimize,
+        });
+        ex_exe.root_module.addImport("cova", cova_mod);
+        const build_ex_demo = b.addInstallArtifact(ex_exe, .{});
+        const build_ex_demo_step = b.step(example, "Build the '" ++ example ++ "' example (default: Debug)");
+        build_ex_demo_step.dependOn(&build_ex_demo.step);
+        // - Demo Meta Docs
+        const ex_demo_gen = createDocGenStep(
+            b,
+            cova_mod,
+            b.path("src/generator.zig"),
+            ex_exe,
+            .{
+                .kinds = &.{ .all },
+                .version = "0.10.1",
+                .ver_date = "27 AUG 2024",
+                .author = "00JCIV00",
+                .copyright = "MIT License",
+                .help_docs_config = .{
+                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/help_docs/", .{ ex_scored }) catch @panic("OOM"),
+                },
+                .tab_complete_config = .{
+                    .local_filepath = std.fmt.allocPrint(ex_alloc,"examples/{s}_meta/tab_completions/", .{ ex_scored }) catch @panic("OOM"),
+                    .include_opts = true,
+                },
+                .arg_template_config = .{
+                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/arg_templates/", .{ ex_scored }) catch @panic("OOM"),
+                },
             },
-            .tab_complete_config = .{
-                .local_filepath = "examples/cova_demo_meta/tab_completions/",
-                .include_opts = true,
-            },
-            .arg_template_config = .{
-                .local_filepath = "examples/cova_demo_meta/arg_templates",
-            },
-        },
-    );
-    const cova_demo_gen_step = b.step("cova-demo-gen", "Generate Meta Docs for the 'covademo'");
-    cova_demo_gen_step.dependOn(&cova_demo_gen.step);
-
-    // - Basic App Exe
-    const basic_app = b.addExecutable(.{
-        .name = bin_name orelse "basic-app",
-        .root_source_file = b.path("examples/basic_app.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    basic_app.root_module.addImport("cova", cova_mod);
-    const build_basic_app = b.addInstallArtifact(basic_app, .{});
-    const build_basic_app_step = b.step("basic-app", "Build the 'basic-app' example (default: Debug)");
-    build_basic_app_step.dependOn(&build_basic_app.step);
-    // - Basic App Meta Docs
-    const basic_app_gen = createDocGenStep(
-        b,
-        cova_mod,
-        b.path("src/generator.zig"),
-        basic_app,
-        .{
-            .kinds = &.{ .all },
-            .version = "0.10.1",
-            .ver_date = "21 MAY 2024",
-            .author = "00JCIV00",
-            .copyright = "MIT License",
-            .help_docs_config = .{
-                .local_filepath = "examples/basic_app_meta/help_docs/",
-            },
-            .tab_complete_config = .{
-                .local_filepath = "examples/basic_app_meta/tab_completions/",
-                .include_opts = true,
-            },
-            .arg_template_config = .{
-                .local_filepath = "examples/basic_app_meta/arg_templates",
-            },
-        },
-    );
-    const basic_app_gen_step = b.step("basic-app-gen", "Generate Meta Docs for the 'basic-app'");
-    basic_app_gen_step.dependOn(&basic_app_gen.step);
-
-    // - Log Enum Exe
-    const log_enum = b.addExecutable(.{
-        .name = bin_name orelse "log-enum",
-        .root_source_file = b.path("examples/log_enum.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    log_enum.root_module.addImport("cova", cova_mod);
-    const build_log_enum = b.addInstallArtifact(log_enum, .{});
-    const build_log_enum_step = b.step("log-enum", "Build the 'log-enum' example (default: Debug)");
-    build_log_enum_step.dependOn(&build_log_enum.step);
+        );
+        const ex_demo_gen_step = b.step(example ++ "-gen", "Generate Meta Docs for the '" ++ example ++ "'");
+        ex_demo_gen_step.dependOn(&ex_demo_gen.step);
+    }
 }
 
 

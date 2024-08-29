@@ -3,12 +3,12 @@ const log = std.log;
 const cova = @import("cova");
 
 // We need to add any Enums we're using to our Value Config.
-const CommandT = cova.Command.Custom(.{
+pub const CommandT = cova.Command.Custom(.{
     .val_config = .{
         .custom_types = &.{ log.Level },
     },
 });
-const setup_cmd = CommandT{
+pub const setup_cmd = CommandT{
     .name = "log_enum",
     .description = "A small demo of using the Log Level Enum as an Option.",
     .opts = &.{
