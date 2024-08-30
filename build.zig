@@ -105,6 +105,8 @@ pub fn build(b: *std.Build) void {
 
 
 /// Add Cova's Meta Doc Generation Step to a project's `build.zig`.
+/// Note, the `program_step` must have the same Target as the host machine.
+/// Prefer to use `addCovaDocGenStepOrError` if the step will be used in cross-compilation CI pipeline.
 pub fn addCovaDocGenStep(
     b: *std.Build,
     /// The Cova Dependency of the project's `build.zig`.
@@ -116,6 +118,33 @@ pub fn addCovaDocGenStep(
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
     //const cova_dep = covaDep(b, .{});
+    return createDocGenStep(
+        b,
+        cova_dep.module("cova"),
+        cova_dep.path("src/generator.zig"),
+        program_step,
+        doc_gen_config,
+    );
+}
+
+/// Add Cova's Meta Doc Generation Step to a project's `build.zig` or return an error if there's a Target mismatch.
+/// A Target mismatch happens if the provided `program_step` doesn't have the same Target as the host machine.
+/// This function is useful for cross-compilation in CI pipelines to ensure Target mismatches are handled properly.
+pub fn addCovaDocGenStepOrError(
+    b: *std.Build,
+    /// The Cova Dependency of the project's `build.zig`.
+    cova_dep: *std.Build.Dependency,
+    /// The Program Compile Step where the Command Type and Setup Command can be found.
+    /// This is typically created with `const exe = b.addExecutable(.{...});` or similar
+    program_step: *std.Build.Step.Compile,
+    /// The Config for Meta Doc Generation.
+    doc_gen_config: generate.MetaDocConfig,
+) !*std.Build.Step.Run {
+    const host_triplets = b.graph.host.result.zigTriple(b.allocator) catch @panic("OOM");
+    defer b.allocator.free(host_triplets);
+    const program_triplets = program_step.rootModuleTarget().zigTriple(b.allocator) catch @panic("OOM");
+    defer b.allocator.free(program_triplets);
+    if (!std.mem.eql(u8, host_triplets, program_triplets)) return error.TargetMismatch;
     return createDocGenStep(
         b,
         cova_dep.module("cova"),
