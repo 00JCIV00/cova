@@ -908,6 +908,8 @@ pub fn Custom(comptime config: Config) type {
             /// sequentially working through each next letter if the previous one has already been used. 
             /// (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
             attempt_short_opts: bool = true,
+            /// A list of Option Short Names to Exclude if attempting to create Short Options.
+            excluded_short_opts: []const u8 = &.{ 'u', 'h' },
             /// Convert Fields with default values to Options instead of Values.
             /// There's a corresponding field in the `ToConfig`.
             default_val_opts: bool = false,
@@ -1051,7 +1053,12 @@ pub fn Custom(comptime config: Config) type {
                     .Optional => {
                         from_opts[opts_idx] = (OptionT.from(field, .{ 
                             .name = arg_name,
-                            .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                            .short_name = if (from_config.attempt_short_opts) optShortName(
+                                arg_name, 
+                                short_names, 
+                                &short_idx,
+                                from_config.excluded_short_opts,
+                            ) else null, 
                             .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .opt_description = arg_description,
@@ -1063,7 +1070,12 @@ pub fn Custom(comptime config: Config) type {
                         if (from_config.default_val_opts and field.default_value != null) {
                             from_opts[opts_idx] = (OptionT.from(field, .{ 
                                 .name = arg_name,
-                                .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                                .short_name = if (from_config.attempt_short_opts) optShortName(
+                                    arg_name, 
+                                    short_names, 
+                                    &short_idx,
+                                    from_config.excluded_short_opts,
+                                ) else null, 
                                 .long_name = arg_name,
                                 .ignore_incompatible = from_config.ignore_incompatible,
                                 .opt_description = arg_description,
@@ -1086,7 +1098,12 @@ pub fn Custom(comptime config: Config) type {
                             .Optional => {
                                 from_opts[opts_idx] = OptionT.from(field, .{
                                     .name = arg_name,
-                                    .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                                    .short_name = if (from_config.attempt_short_opts) optShortName(
+                                        arg_name, 
+                                        short_names, 
+                                        &short_idx,
+                                        from_config.excluded_short_opts,
+                                    ) else null, 
                                     .long_name = arg_name,
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .opt_description = arg_description
@@ -1140,12 +1157,22 @@ pub fn Custom(comptime config: Config) type {
             };
         }
         /// Create a deconflicted Option short name from the provided `arg_name` and existing `short_names`.
-        fn optShortName(arg_name: []const u8, short_names: []u8, short_idx: *u8) ?u8 {
+        fn optShortName(
+            arg_name: []const u8, 
+            short_names: []u8, 
+            short_idx: *u8,
+            excluded_short_opts: []const u8,
+        ) ?u8 {
             return shortName: {
                 for (arg_name) |char| {
                     const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
                     for (ul_chars) |ul| {
-                        if (short_idx.* > 0 and utils.indexOfEql(u8, short_names[0..short_idx.*], ul) != null) continue;
+                        if (
+                            short_idx.* > 0 and (
+                                utils.indexOfEql(u8, short_names[0..short_idx.*], ul) != null or
+                                utils.indexOfEql(u8, excluded_short_opts[0..], ul) != null
+                            )
+                        ) continue;
                         short_names[short_idx.*] = ul;
                         short_idx.* += 1;
                         break :shortName ul;

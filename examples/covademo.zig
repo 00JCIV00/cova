@@ -209,6 +209,7 @@ pub const DemoStruct = struct{
     pub const InnerStruct = struct{
         in_bool: bool = false,
         in_float: f32 = 0,
+        h_string: []const u8 = "Just a test for fields starting with 'h'",
     };
     pub const InnerEnum = enum(u2){
         red,
@@ -351,7 +352,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
-            .attempt_short_opts = false,
+            .attempt_short_opts = true,
             //.cmd_hidden = true,
             .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,
