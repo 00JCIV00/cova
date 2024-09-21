@@ -11,12 +11,68 @@ A simple yet robust cross-platform command line argument parsing library for Zig
 ___
 
 ## Overview
+`command --option value`
+
 Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These Types are assembled into a single Command struct which is then used to parse argument tokens. Whether you're looking for simple argument parsing or want to create something as complex as the [`ip`](https://www.man7.org/linux/man-pages/man8/ip.8.html) or [`git`](https://www.man7.org/linux/man-pages/man1/git.1.html) commands, Cova makes it easy.
 
 ## Get Started Quickly!
 - [Quick Start Guide](https://github.com/00JCIV00/cova/wiki/Getting-Started)
 - [Full Wiki Guide](https://github.com/00JCIV00/cova/wiki/)
 - [API Docs](https://00jciv00.github.io/cova/)
+
+### Quick Example
+[Log Enum Example](https://github.com/00JCIV00/cova/blob/main/examples/log-enum.zig)
+```shell
+logger --log-level info
+```
+#### Set up a Command
+```zig
+// ...
+pub const CommandT = cova.Command.Custom(.{...});
+pub const setup_cmd = CommandT{
+    .name = "log_enum",
+    .description = "A small demo of using the Log Level Enum as an Option.",
+    .opts = &.{
+        .{
+            .name = "log_level",
+            .description = "An Option using the `log.Level` Enum.",
+            .long_name = "log-level",
+            .mandatory = true,
+            .val = CommandT.ValueT.ofType(log.Level, .{
+                .name = "log_level_val",
+                .description = " This Value will handle the Enum."
+            })
+        }
+    },
+};
+```
+#### Parse the Command
+```zig
+pub fn main() !void {
+    // ...
+    var main_cmd = try setup_cmd.init(alloc, .{});
+    defer main_cmd.deinit();
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    defer args_iter.deinit();
+
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
+        error.UsageHelpCalled => {},
+        else => return err,
+    };
+    // ...
+```
+#### Use the Data
+```zig
+    // ...
+    const main_opts = try main_cmd.getOpts(.{});
+    const log_lvl_opt = main_opts.get("log_level").?;
+    const log_lvl = log_lvl_opt.val.getAs(log.Level) catch {
+        log.err("The provided Log Level was invalid.", .{});
+        return;
+    };
+    log.info("Provided Log Level: {s}", .{ @tagName(log_lvl) });
+}
+```
 
 ## Features
 - **[Comptime Setup](#comptime-setup). [Runtime Use](#runtime-use).**
@@ -27,11 +83,13 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
   - All argument tokens are parsed to Argument Types: Commands, Options, or Values.
     - Options = _Flags_ and Values = _Positional Arguments_
   - These Argument Types can be *created from* or *converted to* your Structs, Unions, and Functions along with their corresponding Fields and Parameters.
+  - Default Arguments such as `usage` and `help` can be automatically added to all Commands easily. 
   - This design allows for **infinitely nestable** Commands, Options, and Values in a way that's simple to parse, analyze, and use in your projects.
 - **Multiplatform.** Tested across common architectures of Linux, Mac, and Windows.
 - **Granular, Robust Customization:**
-  - [POSIX Compliant](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html) by default, with plenty of ways to configure to whatever standard you'd like.
-    - Ex: `command --option option_string "standalone value" subcmd -i 42 --bool`
+  - [POSIX Compliant](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html) by default, with plenty of ways to configure to **whatever standard you'd like**.
+    - Posix: `command --option option_string "standalone value" subcmd -i 42 --bool`
+    - Windows: `Your-Command -StringOption "value" -FileOption .\user\file\path`
   - Cova offers deep customization through the Argument Types and several Config Structs. These customizations all provide simple and predictable defaults, allowing you to only configure what you need.
 - [***And much more!***](https://github.com/00JCIV00/cova/wiki/Feature-List)
 
@@ -109,7 +167,7 @@ pub const setup_cmd: CommandT = .{
 </details>
 
 ### Runtime Use
-Once Cova has parsed input from your end users it puts that data into the Command you set up. 
+Once Cova has parsed input from your end users, it puts that data into the Command you set up. 
 You can call various methods on the Command to use that data however you need.
 
 <details>
@@ -172,6 +230,7 @@ pub fn main() !void {
 </details>
 
 ### More Examples
+- [log-enum](./examples/log-enum.zig): The simple example from the top of the README.
 - [basic-app](./examples/basic_app.zig): Where the above examples come from.
 - [covademo](./examples/covademo.zig): This is the testbed for Cova, but its a good demo of virtually every feature in the library.
 
@@ -203,8 +262,8 @@ pub fn build(b: *std.Build) void {
 
     const cova_gen = @import("cova").addCovaDocGenStep(b, cova_dep, exe, .{
         .kinds = &.{ .all },
-        .version = "0.10.0",
-        .ver_date = "06 APR 2024",
+        .version = "0.10.1",
+        .ver_date = "12 SEP 2024",
         .author = "00JCIV00",
         .copyright = "MIT License",
     });
@@ -218,8 +277,8 @@ pub fn build(b: *std.Build) void {
 ![cova_demo](./docs/cova_demo.gif)
   
 ## Alternatives
+- [flags](https://github.com/n0s4/flags)
 - [yazap](https://github.com/PrajwalCH/yazap)
 - [zig-args](https://github.com/masterQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
 - [zig-cli](https://github.com/sam701/zig-cli)
-- [zig-parse-args](https://github.com/winksaville/zig-parse-args)
