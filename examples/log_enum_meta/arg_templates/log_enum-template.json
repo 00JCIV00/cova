@@ -1,0 +1,22 @@
+"Meta Info": {
+    "name": "log_enum",
+    "description": "A small demo of using the Log Level Enum as an Option.",
+    "version": "0.10.1",
+    "ver_date": "27 AUG 2024",
+    "author": "00JCIV00",
+    "copyright": "MIT License"
+},
+"Arguments": {
+    "name": "log_enum",
+    "description": "A small demo of using the Log Level Enum as an Option.",
+    "opts": [
+        {
+            "name": "log_level",
+            "long_name": "log-level",
+            "description": "An Option using the `log.Level` Enum.",
+            "type_name": "log.Level",
+            "set_behavior": "Last",
+            "max_entries": 1
+        }
+    ]
+}

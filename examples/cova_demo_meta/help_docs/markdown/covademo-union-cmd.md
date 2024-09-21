@@ -7,11 +7,8 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    union-cmd -i, --int <int (i32)> | -s, --str <str (text)>
-    union-cmd "union-uint (u8)" | "union-str (text)"
-    union-cmd 
-
+USAGE
+    union-cmd [ --int |  --str ]
 ```
 
 ## Arguments
@@ -24,7 +21,7 @@ USAGE:
     - The first String Value for the union-cmd.
 ### Values
 - __union-uint__ (u8)
-    - The 'union-uint' Value of type 'u8'.
+    - The 'union-uint' Value of Type 'u8'.
 - __union-str__ (text)
-    - The 'union-str' Value of type '[]const u8'.
+    - The 'union-str' Value of Type '[]const u8'.
 

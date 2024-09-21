@@ -7,11 +7,8 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    fn-cmd "val-00 (i32)" | "val-01 (text)"
-    fn-cmd 
-
-```
+USAGE
+        fn-cmd```
 
 ## Arguments
 ### Values

@@ -7,11 +7,8 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    sub-cmd -i  <nested_int_val (u8)> | -s, --nested_str <nested_str_val (text)>
-    sub-cmd "nested_float_val (f32)"
-    sub-cmd 
-
+USAGE
+    sub-cmd [ --i |  --nested_str ]
 ```
 
 ## Alias(es)

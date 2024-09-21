@@ -7,7 +7,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const ascii = std.ascii;
-const log = std.log;
+const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
@@ -369,10 +369,10 @@ fn parseArgsCtx(
                                     else {
                                         parseOpt(args, OptionT, opt) catch {
                                             if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                                            log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
+                                            log.err("Could not parse Option '{c}{?c}: {s}'.", .{
                                                 short_pf,
-                                                opt.short_name, 
-                                                opt.name 
+                                                opt.short_name,
+                                                opt.name,
                                             });
                                             try errReaction(parse_config.err_reaction, opt, writer);
                                             try writer.print("\n", .{});
@@ -591,7 +591,7 @@ fn parseArgsCtx(
         val_idx < cmd.vals.?.len and
         !parse_ctx.usage_help_flag
     ) {
-        log.err("Command '{s}' expects {d} Values, but only received {d}.", .{
+        log.err("Command '{s}' expects {d} Value(s), but received {d}.", .{
             cmd.name,
             cmd.vals.?.len,
             val_idx,
@@ -640,7 +640,7 @@ const test_setup_cmd: TestCommand = .{
         .{
             .name = "sub-test-cmd",
             .description = "A Test Sub Command.",
-            .opts = &.{            
+            .opts = &.{
                 .{
                     .name = "sub_string_opt",
                     .description = "A test sub string long option.",
@@ -840,7 +840,7 @@ test "argument analysis" {
         }    
     };
 
-    try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer);
+    try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer, false);
 
     //_ = test_setup_cmd.SubCommandsEnum();
 }

@@ -15,7 +15,7 @@ const builtin = std.builtin;
 const ascii = std.ascii;
 const fmt = std.fmt;
 const fs = std.fs;
-const log = std.log;
+const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
 
@@ -27,7 +27,7 @@ const Type = builtin.Type;
 
 const utils = @import("utils.zig");
 
-/// Config for custom Value types. 
+/// Config for custom Value Types. 
 /// This Config is shared across Typed, Generic, and Custom.
 pub const Config = struct {
     /// Command Type.
@@ -52,7 +52,7 @@ pub const Config = struct {
     /// Custom Types for this project's Custom Values. 
     /// If these Types are `Value.Typed` they'll be coerced to match the parent `Value.Config` (not preferred).
     /// Otherwise, each Type will be wrapped into a `Value.Typed` (preferred).
-    /// This is useful for adding additional types that aren't covered by the base `Value.Generic` union.
+    /// This is useful for adding additional Types that aren't covered by the base `Value.Generic` union.
     /// Note, any non-numeric (Int, UInt, Float) or non-`Value.Typed` Types will require their own Parse Function.
     /// This function is implemented on the `Value.Typed.parse_fn` field.
     custom_types: []const type = &.{},
@@ -89,13 +89,13 @@ pub const Config = struct {
     } = null,
 
     /// Use Custom Bit Width Range for Ints and UInts.
-    /// This is useful for specifying a wide range of Int and UInt types for a project.
+    /// This is useful for specifying a wide range of Int and UInt Types for a project.
     /// Note, this will slow down compilation speed!!! (It does not affect runtime speed).
     use_custom_bit_width_range: bool = false,
-    /// Minimum Bit Width for Ints and UInts in this Custom Value type.
+    /// Minimum Bit Width for Ints and UInts in this Custom Value Type.
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     min_int_bit_width: u16 = 1,
-    /// Minimum Bit Width for Ints and UInts in this Custom Value type.
+    /// Minimum Bit Width for Ints and UInts in this Custom Value Type.
     /// Note, only applies if `use_custom_bit_width_range` is set to `true`.
     max_int_bit_width: u16 = 256,
 
@@ -105,16 +105,16 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_help_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// A custom Help function to override the default `usage()` function globally for ALL Value instances of this custom Value Type.
     /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed.)
-    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// Custom Help functions to override the default `help()` function for all Value instances with a matching Child Type.
     /// These functions are 1st in precedence.
     child_type_help_fns: ?[]const struct{ 
@@ -125,8 +125,8 @@ pub const Config = struct {
         /// Function parameters:
         /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
-        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        help_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+        /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+        help_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
     } = null,
     /// Custom Usage functions to override the default `usage()` function for all Value instances with a matching Child Type.
     /// These functions are 1st in precedence.
@@ -138,8 +138,8 @@ pub const Config = struct {
         /// Function parameters:
         /// 1. ValueT (This should be the `self` parameter. As such it needs to match the Value Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
-        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        usage_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+        /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+        usage_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
     } = null,
 
     /// Indent string used for Usage/Help formatting.
@@ -260,17 +260,17 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// Custom Help function for this Value Type.
         /// Check `Value.Config` for details.
-        pub const child_type_help_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeHelpFn: {
+        pub const child_type_help_fn: ?*const fn([]const u8, ?mem.Allocator) anyerror!ChildT = typeHelpFn: {
             for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
-                if (elm.ChildT == SetT) break :typeHelpFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.help_fn)));
+                if (elm.ChildT == SetT) break :typeHelpFn @as(*const fn(anytype, anytype, ?mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.help_fn)));
             }
             else break :typeHelpFn null;
         };
         /// Custom Usage function for this Value Type.
         /// Check `Value.Config` for details.
-        pub const child_type_usage_fn: ?*const fn([]const u8, mem.Allocator) anyerror!ChildT = typeUsageFn: {
+        pub const child_type_usage_fn: ?*const fn([]const u8, ?mem.Allocator) anyerror!ChildT = typeUsageFn: {
             for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
-                if (elm.ChildT == SetT) break :typeUsageFn @as(*const fn(anytype, anytype, mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.usage_fn)));
+                if (elm.ChildT == SetT) break :typeUsageFn @as(*const fn(anytype, anytype, ?mem.Allocator) anyerror!ChildT, @alignCast(@ptrCast(elm.usage_fn)));
             }
             else break :typeUsageFn null;
         };
@@ -350,9 +350,9 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 else error.ValueNotSet;
         }
 
-        /// Get All Parsed and Validated Arguments of this Value.
+        /// Get All Parsed and Validated Arguments of this Value using the provided Allocator (`alloc`).
         /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
-        pub fn getAll(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
+        pub fn getAllAlloc(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
             if (!self.is_set) {
                 if (self.default_val) |def_val| {
                     var val = try alloc.alloc(ChildT, 1);
@@ -364,6 +364,12 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             var vals = try alloc.alloc(ChildT, self._entry_idx);
             for (self._set_args[0..self._entry_idx], 0..) |arg, idx| vals[idx] = arg.?;
             return vals;
+        }
+
+        /// Get All Parsed and Validated Arguments of this Value.
+        /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
+        pub fn getAll(self: *const @This()) ![]ChildT {
+            return self.getAllAlloc(self._alloc orelse return error.ValueNotInitialized);
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).
@@ -569,14 +575,14 @@ pub fn Generic(comptime config: Config) type {
     };
 }
 
-/// Create a Custom Value type from the provided Config (`config`).
+/// Create a Custom Value Type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
     return struct{
         /// The Custom Command Type of the overall project.
         const CommandT = config.CommandT.?;
         /// The Custom Option Type of the overall project.
         const OptionT = config.OptionT.?;
-        /// Custom Generic Value type.
+        /// Custom Generic Value Type.
         pub const GenericT = Generic(config);
 
         /// The Parent Command of this Value.
@@ -602,6 +608,9 @@ pub fn Custom(comptime config: Config) type {
         /// Values Usage Format.
         /// Check (`Value.Config`) for details.
         pub const vals_usage_fmt = config.usage_fmt;
+        /// Values Indent Format.
+        /// Check (`Value.Config`) for details.
+        pub const indent_fmt = config.indent_fmt orelse CommandT.indent_fmt;
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only 
@@ -614,7 +623,7 @@ pub fn Custom(comptime config: Config) type {
             };
         }
 
-        /// Get the Parsed and Validated value of the inner Typed Value as the specified type (`T`).
+        /// Get the Parsed and Validated value of the inner Typed Value as the specified Type (`T`).
         pub fn getAs(self: *const @This(), comptime T: type) !T {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
@@ -630,6 +639,35 @@ pub fn Custom(comptime config: Config) type {
                             const val = try typed_val.get();
                             switch (@typeInfo(@TypeOf(val))) {
                                 .Int => return @enumFromInt(val),
+                                inline else => return error.RequestedTypeMismatch,
+                            }
+                        }
+                        else error.RequestedTypeMismatch;
+                },
+            };
+        }
+
+        /// Get All of the Parsed and Validated values of the inner Typed Value as a Slice of the specified Type (`T`).
+        pub fn getAllAs(self: *const @This(), comptime T: type) ![]T {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| {
+                    const typed_val = @field(self.*.generic, @tagName(tag));
+                    return 
+                        if (@TypeOf(typed_val).ChildT == T) try typed_val.getAll()
+                        else if (
+                            @typeInfo(T) == .Enum or (
+                                @typeInfo(T) == .Optional and
+                                @typeInfo(@typeInfo(T).Optional.child) == .Enum
+                            )
+                        ) {
+                            const ValT = @typeInfo(@TypeOf(try typed_val.get()));
+                            switch (ValT) {
+                                .Int => {
+                                    const vals = try typed_val.getAll();
+                                    var vals_list = std.ArrayList(T).init(self.allocator().?);
+                                    for (vals) |val| try vals_list.append(@enumFromInt(val));
+                                    return try vals_list.toOwnedSlice();
+                                },
                                 inline else => return error.RequestedTypeMismatch,
                             }
                         }
@@ -695,8 +733,19 @@ pub fn Custom(comptime config: Config) type {
             };
         }
         /// Get the inner Typed Value's Child Type Name.
-        /// This is where aliasing happens via `Value.Typed.alias_child_type` or `Value.Config.child_type_aliases`.
+        /// This will provide the actual Child Type Name without aliasing.
         pub fn childType(self: *const @This()) []const u8 {
+            @setEvalBranchQuota(config.max_int_bit_width * 10);
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| typeName: {
+                    const val = @field(self.*.generic, @tagName(tag));
+                    break :typeName @typeName(@TypeOf(val).ChildT);
+                }
+            };
+        }
+        /// Get the inner Typed Value's Child Type Name.
+        /// This is where aliasing happens via `Value.Typed.alias_child_type` or `Value.Config.child_type_aliases`.
+        pub fn childTypeName(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| typeName: {
@@ -776,12 +825,19 @@ pub fn Custom(comptime config: Config) type {
                 if (T == []const u8) "string" 
                 //else if (@typeInfo(T) == .Enum) @typeName(@typeInfo(T).Enum.tag_type)
                 else @typeName(T);
-            return @This(){ .generic = @unionInit(GenericT, active_tag, typed_val) };
+            const out_val =
+                if (@typeInfo(T) == .Enum and typed_val.parse_fn == null) outVal: {
+                    var o_val = typed_val;
+                    o_val.parse_fn = ParsingFns.Builder.asEnumTag(T);
+                    break :outVal o_val;
+                }
+                else typed_val;
+            return @This(){ .generic = @unionInit(GenericT, active_tag, out_val) };
         }
 
         /// Config for creating Values from Componenet Types (Function Parameters, Struct Fields, and Union Fields) using `from()`.
         pub const FromConfig = struct {
-            /// Ignore Incompatible types or error during compile time.
+            /// Ignore Incompatible Types or error during compile time.
             ignore_incompatible: bool = true,
             /// Name for the Value.
             /// If this is left blank, an attempt will be made to create a name based on the Component Type.
@@ -814,10 +870,14 @@ pub fn Custom(comptime config: Config) type {
                     @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
                 else return null;
             }
+            var enum_name: ?[]const u8 = null;
             const CompT = switch (comp_info) {
                 .Optional => |optl| OptT: {
                     break :OptT switch (@typeInfo(optl.child)) {
-                        .Enum => |enum_info| enum_info.tag_type,
+                        .Enum => |enum_info| EnumT: {
+                            enum_name = @typeName(optl.child);
+                            break :EnumT enum_info.tag_type;
+                        },
                         inline else => optl.child,
                     };
                 },
@@ -826,7 +886,10 @@ pub fn Custom(comptime config: Config) type {
                     if (ary_info == .Optional) break :aryType ary_info.Optional.child
                     else break :aryType comp_info.Array.child;
                 },
-                .Enum => |enum_info| enum_info.tag_type,
+                .Enum => |enum_info| EnumT: {
+                    enum_name = @typeName(FromT);
+                    break :EnumT enum_info.tag_type;
+                },
                 // TODO: Check if Pointer is a String.
                 .Bool, .Int, .Float, .Pointer => FromT,
                 else => {
@@ -837,8 +900,8 @@ pub fn Custom(comptime config: Config) type {
             //const out_info = @typeInfo(CompT);
             return ofType(CompT, .{
                 .name = comp_name,
-                //.description = from_config.val_description orelse "The '" ++ comp_name ++ "' Value of type '" ++ @typeName(FromT) ++ "'.",
-                .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of type '{s}'.", .{ comp_name, @typeName(FromT) }),
+                .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of Type '{s}'.", .{ comp_name, @typeName(FromT) }),
+                .alias_child_type = enum_name,
                 .max_entries =
                     if (comp_info == .Array) comp_info.Array.len
                     else 1,
@@ -885,7 +948,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print("{s}", .{ @tagName(meta.activeTag(self.generic)) });
             try writer.print("{s}:  Type: {s}, Set: {any}", .{
                 self.name(),
-                self.childType(),
+                self.childTypeName(),
                 self.isSet(),
             });
         }
@@ -895,22 +958,22 @@ pub fn Custom(comptime config: Config) type {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));
-                    if (@TypeOf(val).child_type_help_fn)|helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
+                    if (@TypeOf(val).child_type_help_fn)|helpFn| return helpFn(self, writer, self.allocator());
                 }
             }
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
-            try writer.print(vals_help_fmt, .{ self.name(), self.childType(), self.description() });
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self.allocator());
+            try writer.print(vals_help_fmt, .{ self.name(), self.childTypeName(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));
-                    if (@TypeOf(val).child_type_usage_fn)|usageFn| return usageFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
+                    if (@TypeOf(val).child_type_usage_fn)|usageFn| return usageFn(self, writer, self.allocator());
                 }
             }
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator() orelse return error.ValueNotInitialized);
-            try writer.print(vals_usage_fmt, .{ self.name(), self.childType() });
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator());
+            try writer.print(vals_usage_fmt, .{ self.name(), self.childTypeName() });
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).
@@ -968,10 +1031,10 @@ pub const ParsingFns = struct {
             }.toBase;
         }
 
-        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
+        /// Parse the given argument token (`arg`) to an Int based on the Enum Tag Type of the provided `EnumT`.
         pub fn asEnumType(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
-            if (enum_info != .Enum) @compileError("The type of `EnumT` must be Enum!");
+            if (enum_info != .Enum) @compileError("The Type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!enum_info.Enum.tag_type;
         } {
             const EnumTagT: type = @typeInfo(EnumT).Enum.tag_type;
@@ -984,6 +1047,18 @@ pub const ParsingFns = struct {
             }.enumInt;
         }
 
+        /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
+        pub fn asEnumTag(comptime EnumT: type) enumFnType: {
+            const enum_info = @typeInfo(EnumT);
+            if (enum_info != .Enum) @compileError("The Type of `EnumT` must be Enum!");
+            break :enumFnType fn([]const u8, mem.Allocator) anyerror!EnumT;
+        } {
+            return struct { 
+                fn enumTag(arg: []const u8, _: mem.Allocator) !EnumT {
+                    return meta.stringToEnum(EnumT, mem.trim(u8, arg, &.{ 0, ' ', '\t' })) orelse error.EnumTagDoesNotExist;
+                }
+            }.enumTag;
+        }
     };
 
     /// Trim all Whitespace from the beginning and end of the provided argument token (`arg`).
@@ -1015,7 +1090,7 @@ pub const ValidationFns = struct {
             const num_info = @typeInfo(NumT);
             switch (num_info) {
                 .Int, .Float => {},
-                inline else => @compileError("The provided type '" ++ @typeName(NumT) ++ "' is not a numeric type. It must be an Integer or a Float."),
+                inline else => @compileError("The provided Type '" ++ @typeName(NumT) ++ "' is not a numeric Type. It must be an Integer or a Float."),
             }
 
             return 

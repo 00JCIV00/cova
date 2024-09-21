@@ -25,7 +25,7 @@ pub const Config = struct {
     /// This will be filled in automatically.
     CommandT: ?type = null,
 
-    /// Value Config for this Option type.
+    /// Value Config for this Option Type.
     /// This will default to the same Value.Config used by the overarching custom Command Type of this custom Option Type.
     val_config: Value.Config = .{},
 
@@ -35,16 +35,16 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_help_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Option instances of this custom Option Type.
     /// This function is 2nd in precedence.
     ///
     /// Function parameters:
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// Custom Help functions to override the default `help()` function for all Option instances with a matching Value Child Type.
     /// These functions are 1st in precedence.
     child_type_help_fns: ?[]const struct{ 
@@ -55,8 +55,8 @@ pub const Config = struct {
         /// Function parameters:
         /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
-        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        help_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+        /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+        help_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
     } = null,
     /// Custom Usage functions to override the default `usage()` function for all Option instances with a matching Value Child Type.
     /// These functions are 1st in precedence.
@@ -68,8 +68,8 @@ pub const Config = struct {
         /// Function parameters:
         /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
-        /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        usage_fn: *const fn(anytype, anytype, mem.Allocator)anyerror!void,
+        /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+        usage_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
     } = null,
 
     /// Indent string used for Usage/Help formatting.
@@ -91,11 +91,10 @@ pub const Config = struct {
     /// 3. String Name Separator
     /// 4. String (Long Prefix)
     /// 5. Optional String "{?s}" (Long Name)
-    /// 6. String (Value Name)
-    /// 7. String (Value Type)
+    /// 6. String (Value Type)
     ///
     /// Note, a comma "," will automatically be placed between the short and long name if they both exist.
-    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s} <{s} ({s})>",
+    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s} <{s}>",
 
     /// Prefix for Short Options.
     short_prefix: ?u8 = '-',
@@ -135,7 +134,7 @@ pub const Config = struct {
     }
 };
 
-/// Create an Option type with the Base (default) configuration.
+/// Create an Option Type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
 /// Create a Custom Option type from the provided Config (`config`).
@@ -287,14 +286,16 @@ pub fn Custom(comptime config: Config) type {
             //    return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
             if (typeHelpFn: {
-                const val_child_type = self.val.childType();
-                for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
-                    if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
-                        break :typeHelpFn elm.help_fn;
+                //const val_child_type = self.val.childType();
+                inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
+                    for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                            break :typeHelpFn elm.help_fn;
+                    }
                 }
                 else break :typeHelpFn null;
-            }) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            }) |helpFn| return helpFn(self, writer, self._alloc);
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
@@ -314,14 +315,16 @@ pub fn Custom(comptime config: Config) type {
             //    return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
             if (typeUsageFn: {
-                const val_child_type = self.val.childType();
-                for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
-                    if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
-                        break :typeUsageFn elm.usage_fn;
+                //const val_child_type = self.val.childType();
+                inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
+                    for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                            break :typeUsageFn elm.usage_fn;
+                    }
                 }
                 else break :typeUsageFn null;
-            }) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
+            }) |usageFn| return usageFn(self, writer, self._alloc);
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
 
             try writer.print(usage_fmt, .{ 
                 @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),
@@ -329,8 +332,8 @@ pub fn Custom(comptime config: Config) type {
                 if (self.short_name != null and self.long_name != null) name_sep_fmt else "",
                 if (long_prefix != null and self.long_name != null) long_prefix.? else "",
                 if (long_prefix != null) self.long_name orelse "" else "",
-                self.val.name(),
-                self.val.childType(),
+                //self.val.name(),
+                self.val.childTypeName(),
             });
         }
 
@@ -375,14 +378,8 @@ pub fn Custom(comptime config: Config) type {
                 },
                 inline else => optl_info,
             };
-            return .{
-                .name = if (from_config.name) |name| name else field.name,
-                .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ @typeName(field.type) ++ "'.",
-                .long_name = if (from_config.long_name) |long_name| long_name else field.name,
-                .short_name = from_config.short_name, 
-                //.help_fn = from_config.help_fn,
-                //.usage_fn = from_config.usage_fn,
-                .val = optVal: {
+            return opt: {
+                const opt_val = optVal: {
                     //const child_info = @typeInfo(optl.child);
                     switch (child_info) {
                         .Bool, .Int, .Float, .Pointer, .Enum => break :optVal ValueT.from(field, .{
@@ -396,9 +393,17 @@ pub fn Custom(comptime config: Config) type {
                             else return null;
                         },
                     }
-                }
+                };
+                break :opt @This(){
+                    .name = if (from_config.name) |name| name else field.name,
+                    .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ opt_val.childTypeName() ++ "'.",
+                    .long_name = if (from_config.long_name) |long_name| long_name else field.name,
+                    .short_name = from_config.short_name, 
+                    //.help_fn = from_config.help_fn,
+                    //.usage_fn = from_config.usage_fn,
+                    .val = opt_val,
+                };
             };
-        
         }
 
         /// Initialize this Option with the provided Allocator (`alloc`).

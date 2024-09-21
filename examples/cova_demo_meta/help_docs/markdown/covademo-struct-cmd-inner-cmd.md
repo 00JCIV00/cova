@@ -7,17 +7,15 @@ ___
 
 ## Usage
 ```shell
-USAGE:
-    inner-cmd ​​ --in-bool <in-bool (bool)> | ​​ --in-float <in-float (f32)>
-    inner-cmd 
-
+USAGE
+    inner-cmd [ --in-bool |  --in-float ]
 ```
 
 ## Arguments
 ### Options
 - __in-bool__:
-    - `​​--in-bool <in-bool (bool)>`
-    - The 'in_bool' Option of type 'bool'.
+    - `​​--in-bool <in-bool (toggle)>`
+    - The 'in_bool' Option of type 'toggle'.
 - __in-float__:
     - `​​--in-float <in-float (f32)>`
     - The 'in_float' Option of type 'f32'.

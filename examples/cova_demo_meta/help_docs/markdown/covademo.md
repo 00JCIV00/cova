@@ -1,19 +1,17 @@
 # covademo
 A demo of the Cova command line argument parser.
 
-__Version:__ 0.10.0<br>
-__Date:__ 06 APR 2024<br>
+__Version:__ 0.10.1<br>
+__Date:__ 27 AUG 2024<br>
 __Author:__ 00JCIV00<br>
 __Copyright:__ MIT License<br>
 ___
 
 ## Usage
 ```shell
-USAGE:
-    covademo -s, --string <string_val (string)> | -i, --int <int_val (i16)> | -f, --float <float_val (f16)> | -F, --file <filepath (filepath)> | -o, --ordinal <ordinal_val (text)> | -c, --cardinal <cardinal_val (u8)> | -t, --toggle <toggle_val (bool)> | -b, --bool <bool_val (bool)> | -v, --verbosity <verbosity_level (u4)>
-    covademo "cmd_str (text)" | "cmd_bool (bool)" | "cmd_u64 (u64)"
-    covademo sub-cmd | basic | nest-1 | struct-cmd | union-cmd | fn-cmd | add-user
-
+USAGE
+    covademo [ --string |  --int |  --float |  --file |  --ordinal |  --cardinal |  --toggle |  --bool |  --verbosity ]
+    covademo [ sub-cmd |  basic |  nest-1 |  struct-cmd |  union-cmd |  fn-cmd |  add-user ]
 ```
 
 ## Examples
@@ -51,10 +49,10 @@ USAGE:
     - `-c, --cardinal <cardinal_val (u8)>`
     - A cardinal number option.
 - __toggle_opt__:
-    - `-t, --toggle, --switch <toggle_val (bool)>`
+    - `-t, --toggle, --switch <toggle_val (toggle)>`
     - A toggle/boolean option.
 - __bool_opt__:
-    - `-b, --bool <bool_val (bool)>`
+    - `-b, --bool <bool_val (toggle)>`
     - A toggle/boolean option.
 - __verbosity_opt__:
     - `-v, --verbosity <verbosity_level (u4)>`
@@ -62,7 +60,7 @@ USAGE:
 ### Values
 - __cmd_str__ (text)
     - A string value for the command.
-- __cmd_bool__ (bool)
+- __cmd_bool__ (toggle)
     - A boolean value for the command.
 - __cmd_u64__ (u64)
     - A u64 value for the command.

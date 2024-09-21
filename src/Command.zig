@@ -21,11 +21,11 @@ const builtin = std.builtin;
 const fmt = std.fmt;
 const heap = std.heap;
 const json = std.json;
-const log = std.log;
+const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
 const sort = std.sort;
-const ComptimeStringMap = std.ComptimeStringMap;
+const StaticStringMap = std.StaticStringMap;
 const StringHashMap = std.StringHashMap;
 
 const toLower = ascii.toLower;
@@ -53,16 +53,20 @@ pub const Config = struct {
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_help_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_help_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Command instances of this custom Command Type.
     /// This function is 1st in precedence.
     ///
     /// Function parameters:
     /// 1. CommandT (This should be the `self` parameter. As such it needs to match the Command Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
-    /// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-    global_usage_fn: ?*const fn(anytype, anytype, mem.Allocator)anyerror!void = null,
+    /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
+    global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
+
+    /// Help Category Order.
+    /// The order that Help Categories will be written when writing a Help Message.
+    help_category_order: []const HelpCategory = &.{ .Prefix, .Usage, .Header, .Aliases, .Examples, .Commands, .Options, .Values },
 
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
@@ -173,6 +177,27 @@ pub const Config = struct {
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
 
+
+    /// Help Categories.
+    pub const HelpCategory = enum{
+        /// The `global_help_prefix` or `help_prefix`.
+        Prefix,
+        /// The `usage()` function which can be overwritten.
+        Usage,
+        /// The `help_header_fmt`.
+        Header,
+        /// The Command's Aliases.
+        Aliases,
+        /// The Command's Examples.
+        Examples,
+        /// The Command's sub-Commands.
+        Commands,
+        /// The Command's Options.
+        Options,
+        /// The Command's Values.
+        Values,
+    };
+
     /// Configuration for `optimized()`.
     pub const OptimizeConfig = struct{
         /// Set all `_fmt` fields `""`.
@@ -236,6 +261,10 @@ pub fn Custom(comptime config: Config) type {
         /// Custom Usage Function.
         /// Check (`Command.Config`) for details.
         pub const global_usage_fn = config.global_usage_fn;
+
+        /// Help Category Order.
+        /// Check (`Command.Config`) for details.
+        pub const help_category_order = config.help_category_order;
 
         /// Group Title Format.
         /// Check (`Command.Config`) for details.
@@ -595,177 +624,219 @@ pub fn Custom(comptime config: Config) type {
             return map;
         }
 
+        /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
+        /// This is particularly useful for checking if Help or Usage has been called.
+        pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
+            return (
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
+                checkOpt: {
+                    if (self.opts != null) {
+                        for (self.opts.?) |opt| {
+                            if (
+                                mem.eql(u8, opt.name, flag_name) and 
+                                mem.eql(u8, opt.val.childType(), "bool") and 
+                                opt.val.getAs(bool) catch false
+                            )
+                                break :checkOpt true;
+                        }
+                    }
+                    break :checkOpt false;
+                } or
+                checkVal: {
+                    if (self.vals != null) {
+                        for (self.vals.?) |val| {
+                            if (
+                                mem.eql(u8, val.name(), flag_name) and
+                                mem.eql(u8, val.childType(), "bool") and
+                                val.getAs(bool) catch false
+                            )
+                                break :checkVal true;
+                        }
+                    }
+                    break :checkVal false;
+                }
+            );
+        }
+
         /// Creates the Help message for this Command and writes it to the provided Writer (`writer`).
+        /// Check Command.Config for customization options.
         pub fn help(self: *const @This(), writer: anytype) !void {
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
+            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             const alloc = self._alloc orelse return error.CommandNotInitialized;
-            
-            try writer.print("{s}\n", .{ self.help_prefix });
-            try self.usage(writer);
-            try writer.print(help_header_fmt, .{ 
-                indent_fmt, self.name, 
-                indent_fmt, self.description 
-            });
 
-            if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases });
-
-            showExamples: {
-                if (!include_examples) break :showExamples;
-                const examples = self.examples orelse break :showExamples;
-                try writer.print(examples_header_fmt, .{ indent_fmt });
-                for (examples) |example| {
-                    try writer.print("{s}{s}", .{ indent_fmt } ** 2);
-                    try writer.print(example_fmt, .{ example });
-                    try writer.print("\n", .{});
-                }
-                try writer.print("\n", .{});
-            }
-
-            if (self.sub_cmds) |sub_cmds| {
-                try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
-                var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
-                defer cmd_list.deinit();
-                for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
-                var remove_list = std.ArrayList([]const u8).init(alloc);
-                defer remove_list.deinit();
-                if (self.cmd_groups) |groups| {
-                    var need_other_title = false;
-                    for (groups) |group| {
-                        var need_title = true;
-                        var cmd_iter = cmd_list.iterator();
-                        cmdGroup: while (cmd_iter.next()) |cmd_entry| {
-                            const cmd = cmd_entry.value_ptr;
-                            if (cmd.hidden) {
-                                try remove_list.append(cmd.name);
-                                continue;
-                            }
-                            if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
-                                if (need_title) {
-                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
-                                    need_title = false;
-                                    need_other_title = true;
+            for (help_category_order) |cat| {
+                switch (cat) {
+                    .Prefix => try writer.print("{s}\n", .{ self.help_prefix }),
+                    .Usage => try self.usage(writer),
+                    .Header => {
+                        try writer.print(help_header_fmt, .{ 
+                            indent_fmt, self.name, 
+                            indent_fmt, self.description 
+                        });
+                    },
+                    .Aliases => { if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases }); },
+                    .Examples => showExamples: {
+                        if (!include_examples) break :showExamples;
+                        const examples = self.examples orelse break :showExamples;
+                        try writer.print(examples_header_fmt, .{ indent_fmt });
+                        for (examples) |example| {
+                            try writer.print("{s}{s}", .{ indent_fmt } ** 2);
+                            try writer.print(example_fmt, .{ example });
+                            try writer.print("\n", .{});
+                        }
+                        try writer.print("\n", .{});
+                    },
+                    .Commands => {
+                        if (self.sub_cmds) |sub_cmds| {
+                            try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
+                            var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
+                            defer cmd_list.deinit();
+                            for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
+                            var remove_list = std.ArrayList([]const u8).init(alloc);
+                            defer remove_list.deinit();
+                            if (self.cmd_groups) |groups| {
+                                var need_other_title = false;
+                                for (groups) |group| {
+                                    var need_title = true;
+                                    var cmd_iter = cmd_list.iterator();
+                                    cmdGroup: while (cmd_iter.next()) |cmd_entry| {
+                                        const cmd = cmd_entry.value_ptr;
+                                        if (cmd.hidden) {
+                                            try remove_list.append(cmd.name);
+                                            continue;
+                                        }
+                                        if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
+                                            if (need_title) {
+                                                try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                                need_title = false;
+                                                need_other_title = true;
+                                            }
+                                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                            try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
+                                            if (cmd.alias_names) |aliases| {
+                                                try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
+                                                try writer.print(subcmd_alias_fmt, .{ aliases });
+                                            }
+                                            try writer.print("\n", .{});
+                                            try remove_list.append(cmd.name);
+                                        }
+                                    }
+                                    if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                                 }
+                                if (need_other_title and remove_list.items.len < cmd_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            }
+                            for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
+
+                            var cmd_iter = cmd_list.iterator();
+                            while (cmd_iter.next()) |cmd_entry| {
+                                const cmd = cmd_entry.value_ptr;
+                                if (cmd.hidden) continue;
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
-                                if (cmd.alias_names) |aliases| {
-                                    try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
-                                    try writer.print(subcmd_alias_fmt, .{ aliases });
-                                }
                                 try writer.print("\n", .{});
-                                try remove_list.append(cmd.name);
                             }
                         }
-                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
-                    }
-                    if (need_other_title and remove_list.items.len < cmd_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
-                }
-                for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
-
-                var cmd_iter = cmd_list.iterator();
-                while (cmd_iter.next()) |cmd_entry| {
-                    const cmd = cmd_entry.value_ptr;
-                    if (cmd.hidden) continue;
-                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
-                    try writer.print("\n", .{});
-                }
-            }
-            try writer.print("\n", .{});
-
-            if (self.opts) |opts| {
-                try writer.print(opts_help_title_fmt, .{ indent_fmt });
-                var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
-                defer opt_list.deinit();
-                for (opts) |opt| try opt_list.put(opt.name, opt);
-                var remove_list = std.ArrayList([]const u8).init(alloc);
-                defer remove_list.deinit();
-                if (self.opt_groups) |groups| {
-                    var need_other_title = false;
-                    for (groups) |group| {
-                        var need_title = true;
-                        var opt_iter = opt_list.iterator();
-                        optGroup: while (opt_iter.next()) |opt_entry| {
-                            const opt = opt_entry.value_ptr;
-                            if (opt.hidden) {
-                                try remove_list.append(opt.name);
-                                continue;
-                            }
-                            if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
-                                if (need_title) {
-                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
-                                    need_title = false;
-                                    need_other_title = true;
+                        try writer.print("\n", .{});
+                    },
+                    .Options => {
+                        if (self.opts) |opts| {
+                            try writer.print(opts_help_title_fmt, .{ indent_fmt });
+                            var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
+                            defer opt_list.deinit();
+                            for (opts) |opt| try opt_list.put(opt.name, opt);
+                            var remove_list = std.ArrayList([]const u8).init(alloc);
+                            defer remove_list.deinit();
+                            if (self.opt_groups) |groups| {
+                                var need_other_title = false;
+                                for (groups) |group| {
+                                    var need_title = true;
+                                    var opt_iter = opt_list.iterator();
+                                    optGroup: while (opt_iter.next()) |opt_entry| {
+                                        const opt = opt_entry.value_ptr;
+                                        if (opt.hidden) {
+                                            try remove_list.append(opt.name);
+                                            continue;
+                                        }
+                                        if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
+                                            if (need_title) {
+                                                try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                                need_title = false;
+                                                need_other_title = true;
+                                            }
+                                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                            try opt.help(writer);
+                                            try writer.print("\n", .{});
+                                            try remove_list.append(opt.name);
+                                        }
+                                    }
+                                    if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                                 }
+                                if (need_other_title and remove_list.items.len < opt_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            }
+                            for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
+
+                            var opt_iter = opt_list.iterator();
+                            while (opt_iter.next()) |opt_entry| {
+                                const opt = opt_entry.value_ptr;
+                                if (opt.hidden) continue;
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try opt.help(writer);
                                 try writer.print("\n", .{});
-                                try remove_list.append(opt.name);
                             }
                         }
-                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
-                    }
-                    if (need_other_title and remove_list.items.len < opt_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
-                }
-                for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
-
-                var opt_iter = opt_list.iterator();
-                while (opt_iter.next()) |opt_entry| {
-                    const opt = opt_entry.value_ptr;
-                    if (opt.hidden) continue;
-                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try opt.help(writer);
-                    try writer.print("\n", .{});
-                }
-            }
-            try writer.print("\n", .{});
-
-            if (self.vals) |vals| {
-                try writer.print(vals_help_title_fmt, .{ indent_fmt });
-                var val_list = std.StringArrayHashMap(ValueT).init(alloc);
-                defer val_list.deinit();
-                for (vals) |val| try val_list.put(val.name(), val);
-                var remove_list = std.ArrayList([]const u8).init(alloc);
-                defer remove_list.deinit();
-                if (self.val_groups) |groups| {
-                    var need_other_title = false;
-                    for (groups) |group| {
-                        var need_title = true;
-                        var val_iter = val_list.iterator();
-                        valGroup: while (val_iter.next()) |val_entry| {
-                            const val = val_entry.value_ptr;
-                            if (mem.eql(u8, val.valGroup() orelse continue :valGroup, group)) {
-                                if (need_title) {
-                                    try writer.print(group_title_fmt, .{ indent_fmt, group });
-                                    need_title = false;
-                                    need_other_title = true;
+                        try writer.print("\n", .{});
+                    },
+                    .Values => {
+                        if (self.vals) |vals| {
+                            try writer.print(vals_help_title_fmt, .{ indent_fmt });
+                            var val_list = std.StringArrayHashMap(ValueT).init(alloc);
+                            defer val_list.deinit();
+                            for (vals) |val| try val_list.put(val.name(), val);
+                            var remove_list = std.ArrayList([]const u8).init(alloc);
+                            defer remove_list.deinit();
+                            if (self.val_groups) |groups| {
+                                var need_other_title = false;
+                                for (groups) |group| {
+                                    var need_title = true;
+                                    var val_iter = val_list.iterator();
+                                    valGroup: while (val_iter.next()) |val_entry| {
+                                        const val = val_entry.value_ptr;
+                                        if (mem.eql(u8, val.valGroup() orelse continue :valGroup, group)) {
+                                            if (need_title) {
+                                                try writer.print(group_title_fmt, .{ indent_fmt, group });
+                                                need_title = false;
+                                                need_other_title = true;
+                                            }
+                                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
+                                            try val.help(writer);
+                                            try writer.print("\n", .{});
+                                            try remove_list.append(val.name());
+                                        }
+                                    }
+                                    if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                                 }
+                                if (need_other_title and remove_list.items.len < val_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            }
+                            for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
+
+                            var val_iter = val_list.iterator();
+                            while (val_iter.next()) |val_entry| {
+                                const val = val_entry.value_ptr;
                                 try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                 try val.help(writer);
                                 try writer.print("\n", .{});
-                                try remove_list.append(val.name());
                             }
                         }
-                        if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
-                    }
-                    if (need_other_title and remove_list.items.len < val_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
-                }
-                for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
-
-                var val_iter = val_list.iterator();
-                while (val_iter.next()) |val_entry| {
-                    const val = val_entry.value_ptr;
-                    try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
-                    try val.help(writer);
-                    try writer.print("\n", .{});
+                        try writer.print("\n", .{});
+                    },
                 }
             }
-            try writer.print("\n", .{});
         }
 
         /// Creates the Usage message for this Command and writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc orelse return error.CommandNotInitialized);
+            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
 
             try writer.print(usage_header_fmt, .{ indent_fmt, self.name });
             if (self.opts) |opts| {
@@ -818,36 +889,6 @@ pub fn Custom(comptime config: Config) type {
             return false;
         }
 
-        /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
-        /// This is particularly useful for checking if Help or Usage has been called.
-        pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
-            return (
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
-                checkOpt: {
-                    if (self.opts != null) {
-                        for (self.opts.?) |opt| {
-                            if (mem.eql(u8, opt.name, flag_name) and 
-                                mem.eql(u8, opt.val.childType(), "bool") and 
-                                opt.val.getAs(bool) catch false)
-                                    break :checkOpt true;
-                        }
-                    }
-                    break :checkOpt false;
-                } or
-                checkVal: {
-                    if (self.vals != null) {
-                        for (self.vals.?) |val| {
-                            if (mem.eql(u8, val.name(), flag_name) and
-                                mem.eql(u8, val.childType(), "bool") and
-                                val.getAs(bool) catch false)
-                                    break :checkVal true;
-                        }
-                    }
-                    break :checkVal false;
-                }
-            );
-        }
-
         /// Config for creating Commands from Structs using `from()`.
         pub const FromConfig = struct {
             /// Ignore incompatible Types.
@@ -867,12 +908,14 @@ pub fn Custom(comptime config: Config) type {
             /// sequentially working through each next letter if the previous one has already been used. 
             /// (Note, user must deconflict for 'u' and 'h' if using auto-generated Usage/Help Options.)
             attempt_short_opts: bool = true,
+            /// A list of Option Short Names to Exclude if attempting to create Short Options.
+            excluded_short_opts: []const u8 = &.{ 'u', 'h' },
             /// Convert Fields with default values to Options instead of Values.
             /// There's a corresponding field in the `ToConfig`.
             default_val_opts: bool = false,
 
             /// A Name for the Command.
-            /// A null value will default to the type name of the Struct.
+            /// A null value will default to the Type name of the Struct.
             cmd_name: ?[]const u8 = null,
             /// A list of Alias Names for this Command.
             cmd_alias_names: ?[]const []const u8 = null,
@@ -950,7 +993,7 @@ pub fn Custom(comptime config: Config) type {
             var vals_idx: u8 = 0;
 
             // TODO: Make this a nullable field and just use null conditional syntax for adding descriptions below.
-            const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+            const arg_descriptions = StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
 
             const fields = meta.fields(FromT);
             const start_idx = if (from_config.ignore_first) 1 else 0;
@@ -1006,11 +1049,16 @@ pub fn Custom(comptime config: Config) type {
                         cmds_idx += 1;
                     },
                     // Options
-                    // TODO - Handle Command types passed as Optionals?
+                    // TODO - Handle Command Types passed as Optionals?
                     .Optional => {
                         from_opts[opts_idx] = (OptionT.from(field, .{ 
                             .name = arg_name,
-                            .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                            .short_name = if (from_config.attempt_short_opts) optShortName(
+                                arg_name, 
+                                short_names, 
+                                &short_idx,
+                                from_config.excluded_short_opts,
+                            ) else null, 
                             .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .opt_description = arg_description,
@@ -1022,7 +1070,12 @@ pub fn Custom(comptime config: Config) type {
                         if (from_config.default_val_opts and field.default_value != null) {
                             from_opts[opts_idx] = (OptionT.from(field, .{ 
                                 .name = arg_name,
-                                .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                                .short_name = if (from_config.attempt_short_opts) optShortName(
+                                    arg_name, 
+                                    short_names, 
+                                    &short_idx,
+                                    from_config.excluded_short_opts,
+                                ) else null, 
                                 .long_name = arg_name,
                                 .ignore_incompatible = from_config.ignore_incompatible,
                                 .opt_description = arg_description,
@@ -1045,7 +1098,12 @@ pub fn Custom(comptime config: Config) type {
                             .Optional => {
                                 from_opts[opts_idx] = OptionT.from(field, .{
                                     .name = arg_name,
-                                    .short_name = if (from_config.attempt_short_opts) optShortName(arg_name, short_names, &short_idx) else null, 
+                                    .short_name = if (from_config.attempt_short_opts) optShortName(
+                                        arg_name, 
+                                        short_names, 
+                                        &short_idx,
+                                        from_config.excluded_short_opts,
+                                    ) else null, 
                                     .long_name = arg_name,
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .opt_description = arg_description
@@ -1061,11 +1119,11 @@ pub fn Custom(comptime config: Config) type {
                                 }) orelse continue;
                                 vals_idx += 1;
                             },
-                            else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                            else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of Type 'Array' is incompatible. Arrays must contain one of the following Types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
                         }
                     },
                     // Incompatible
-                    else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Command, Option, or Value."),
+                    else => if (!from_config.ignore_incompatible) @compileError("The field '" ++ field.name ++ "' of Type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Command, Option, or Value."),
                 }
             }
 
@@ -1099,12 +1157,22 @@ pub fn Custom(comptime config: Config) type {
             };
         }
         /// Create a deconflicted Option short name from the provided `arg_name` and existing `short_names`.
-        fn optShortName(arg_name: []const u8, short_names: []u8, short_idx: *u8) ?u8 {
+        fn optShortName(
+            arg_name: []const u8, 
+            short_names: []u8, 
+            short_idx: *u8,
+            excluded_short_opts: []const u8,
+        ) ?u8 {
             return shortName: {
                 for (arg_name) |char| {
                     const ul_chars: [2]u8 = .{ toLower(char), toUpper(char) };
                     for (ul_chars) |ul| {
-                        if (short_idx.* > 0 and utils.indexOfEql(u8, short_names[0..short_idx.*], ul) != null) continue;
+                        if (
+                            short_idx.* > 0 and (
+                                utils.indexOfEql(u8, short_names[0..short_idx.*], ul) != null or
+                                utils.indexOfEql(u8, excluded_short_opts[0..], ul) != null
+                            )
+                        ) continue;
                         short_names[short_idx.*] = ul;
                         short_idx.* += 1;
                         break :shortName ul;
@@ -1156,7 +1224,7 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
-                            .val_name = "val-" ++ .{ '0', (vals_idx + 48), },
+                            .val_name = "val-" ++ .{ '0', (vals_idx + 48) },
                             .val_description = arg_description,
                         }) orelse continue);
                         vals_idx += 1;
@@ -1173,11 +1241,11 @@ pub fn Custom(comptime config: Config) type {
                                 }) orelse continue;
                                 vals_idx += 1;
                             },
-                            else => if (!from_config.ignore_incompatible) @compileError("The parameter of type 'Array' is incompatible. Arrays must contain one of the following types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
+                            else => if (!from_config.ignore_incompatible) @compileError("The parameter of Type 'Array' is incompatible. Arrays must contain one of the following Types: Bool, Int, Float, Pointer (const u8), or their Optional counterparts."),
                         }
                     },
                     // Incompatible
-                    else => if (!from_config.ignore_incompatible) @compileError("The parameter of type '" ++ @typeName(param.type) ++ "' is incompatible as it cannot be converted to a Command or Value."),
+                    else => if (!from_config.ignore_incompatible) @compileError("The parameter of Type '" ++ @typeName(param.type) ++ "' is incompatible as it cannot be converted to a Command or Value."),
                 }
             }
 
@@ -1206,8 +1274,8 @@ pub fn Custom(comptime config: Config) type {
             /// Allow Unset Options and Values to be included.
             /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Unset Option/Value.
             allow_unset: bool = true,
-            /// Ignore Incompatible types. Incompatible types are those that fall outside of the conversion rules listed under `from()`.
-            /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Incompatible type.
+            /// Ignore Incompatible Types. Incompatible Types are those that fall outside of the conversion rules listed under `from()`.
+            /// When this is active, an attempt will be made to use the Struct's default value (if available) in the event of an Incompatible Type.
             /// This will also allow Values to be set to sane defaults for Integers and Floats (0) as well as Strings ("").
             allow_incompatible: bool = true,
             /// Convert dashes '-' to underscores '_' in field names.
@@ -1226,7 +1294,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Single-Options: Optional versions of Values.
         /// - Single-Values: Booleans, Integers (Signed/Unsigned), and Pointers (`[]const u8`) only)
         /// - Multi-Options/Values: Arrays of the corresponding Optionals or Values.
-        // TODO: Catch more error cases for incompatible types (i.e. Pointer not (`[]const u8`).
+        // TODO: Catch more error cases for Incompatible Types (i.e. Pointer not (`[]const u8`).
         pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             const type_info = @typeInfo(ToT);
@@ -1649,16 +1717,26 @@ pub fn Custom(comptime config: Config) type {
             }
         }
 
-        /// Config for the Initialization of this Command.
-        pub const InitConfig = struct {
-            /// Validate this Command.
-            validate_cmd: bool = true,
-            /// Validation Config
-            valid_config: ValidateConfig = .{},
+        /// Config for auto-generating Usage/Help Commands & Options during Initialization.
+        pub const UsageHelpConfig = struct{
             /// Add Usage/Help message Commands to this Command.
             add_help_cmds: bool = true,
             /// Add Usage/Help message Options to this Command.
             add_help_opts: bool = true,
+            /// Set a name for the Usage Options inner Value.
+            /// This only takes effect if `add_help_opts` is `true`.
+            usage_val_name: []const u8 = "usage_flag",
+            /// Set a name for the Help Options inner Value.
+            /// This only takes effect if `add_help_opts` is `true`.
+            help_val_name: []const u8 = "help_flag",
+            /// Set a description format for the Usage Command & Option.
+            /// Must support the following format types in this order:
+            /// 1. String (Command Name)
+            usage_desc_fmt: []const u8 = "Show the '{s}' usage display.",
+            /// Set a description format for the Help Command & Option.
+            /// Must support the following format types in this order:
+            /// 1. String (Command Name)
+            help_desc_fmt: []const u8 = "Show the '{s}' help display.",
             /// Add Help Argument Group for Usage/Help Commands.
             /// Note, this will only take effect if `add_help_cmds` is `true`.
             add_cmd_help_group: AddHelpGroup = .AddIfOthers,
@@ -1667,8 +1745,6 @@ pub fn Custom(comptime config: Config) type {
             add_opt_help_group: AddHelpGroup = .AddIfOthers,
             /// Help Argument Group Name.
             help_group_name: []const u8 = "HELP",
-            /// Initialize this Command's Sub Commands.
-            init_subcmds: bool = true,
 
             /// Determine behavior for adding a Help Argument Group.
             pub const AddHelpGroup = enum{
@@ -1679,6 +1755,18 @@ pub fn Custom(comptime config: Config) type {
                 /// Do not add.
                 DoNotAdd,
             };
+        };
+
+        /// Config for the Initialization of this Command.
+        pub const InitConfig = struct {
+            /// Validate this Command.
+            validate_cmd: bool = true,
+            /// Validation Config
+            valid_config: ValidateConfig = .{},
+            /// Usage/Help Config
+            help_config: UsageHelpConfig = .{},
+            /// Initialize this Command's Sub Commands.
+            init_subcmds: bool = true,
         };
 
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
@@ -1696,10 +1784,11 @@ pub fn Custom(comptime config: Config) type {
             parent_cmd: ?*const @This(),
             init_alloc: mem.Allocator
         ) !if (is_root_cmd) *@This() else @This() {
+            const help_config = init_config.help_config;
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
-                valid_config.check_help_cmds = init_config.add_help_cmds;
-                valid_config.check_help_opts = init_config.add_help_opts;
+                valid_config.check_help_cmds = help_config.add_help_cmds;
+                valid_config.check_help_opts = help_config.add_help_opts;
                 const val_conf = valid_config;
                 self.validate(val_conf);
             }
@@ -1718,42 +1807,22 @@ pub fn Custom(comptime config: Config) type {
             };
             init_cmd.parent_cmd = parent_cmd;
 
-            // This implementation doesn't support `parent_cmd` pointers.
-            //var init_cmd: if (is_root_cmd) *@This() else @This(),
-            //const alloc = setup: {
-            //    const cmd = if (is_root_cmd) rootCmd: {
-            //        const root_cmd = try init_alloc.create(@This());
-            //        root_cmd.* = self.*;
-            //        root_cmd._root_alloc = init_alloc;
-            //        root_cmd._arena = heap.ArenaAllocator.init(init_alloc);
-            //        root_cmd._alloc = root_cmd._arena.?.allocator();
-            //        break :rootCmd root_cmd;
-            //    }
-            //    else childCmd: {
-            //        var child_cmd = self.*;
-            //        child_cmd._alloc = init_alloc;
-            //        break :childCmd child_cmd;
-            //    };
-            //    break :setup .{ cmd, cmd._alloc.? };
-            //};
-            //init_cmd.parent_cmd = parent_cmd;
+            const usage_description = fmt.comptimePrint(help_config.usage_desc_fmt, .{ self.name });
+            const help_description = fmt.comptimePrint(help_config.help_desc_fmt, .{ self.name });
 
-            const usage_description = fmt.comptimePrint("Show the '{s}' usage display.", .{ self.name });
-            const help_description = fmt.comptimePrint("Show the '{s}' help display.", .{ self.name });
-
-            if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
-                const add_cmd_help_group = switch (init_config.add_cmd_help_group) {
+            if (help_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                const add_cmd_help_group = switch (help_config.add_cmd_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.cmd_groups) |cmd_groups| {
-                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } });
+                            init_cmd.cmd_groups = try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ help_config.help_group_name } });
                             break :ifOthers true;
                         }
                         break :ifOthers false;
                     },
                     .Add => add: {
                         init_cmd.cmd_groups = 
-                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ init_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                            if (init_cmd.cmd_groups) |cmd_groups| try mem.concat(alloc, []const u8, &.{ cmd_groups, &.{ help_config.help_group_name } })
+                            else try alloc.dupe([]const u8, &.{ help_config.help_group_name });
                         break :add true;
                     },
                     .DoNotAdd => false,
@@ -1762,7 +1831,7 @@ pub fn Custom(comptime config: Config) type {
                 const help_sub_cmds = [2]@This(){
                     .{
                         .name = "usage",
-                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
+                        .cmd_group = if (add_cmd_help_group) help_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = usage_description,
                         .parent_cmd = init_cmd,
@@ -1770,7 +1839,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         .name = "help",
-                        .cmd_group = if (add_cmd_help_group) init_config.help_group_name else null, 
+                        .cmd_group = if (add_cmd_help_group) help_config.help_group_name else null, 
                         .help_prefix = init_cmd.name,
                         .description = help_description,
                         .parent_cmd = init_cmd,
@@ -1788,7 +1857,7 @@ pub fn Custom(comptime config: Config) type {
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
                 inline for (sub_cmds, 0..) |cmd, idx| init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc); 
-                if (init_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
+                if (help_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];
                 }
@@ -1805,19 +1874,19 @@ pub fn Custom(comptime config: Config) type {
                 init_cmd.opts = init_opts;
             }
 
-            if (init_config.add_help_opts) {
-                const add_opt_help_group = switch (init_config.add_opt_help_group) {
+            if (help_config.add_help_opts) {
+                const add_opt_help_group = switch (help_config.add_opt_help_group) {
                     .AddIfOthers => ifOthers: {
                         if (init_cmd.opt_groups) |opt_groups| {
-                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } });
+                            init_cmd.opt_groups = try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ help_config.help_group_name } });
                             break :ifOthers true;
                         }
                         break :ifOthers false;
                     },
                     .Add => add: {
                         init_cmd.opt_groups = 
-                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ init_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ init_config.help_group_name });
+                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ help_config.help_group_name } })
+                            else try alloc.dupe([]const u8, &.{ help_config.help_group_name });
                         break :add true;
                     },
                     .DoNotAdd => false,
@@ -1825,7 +1894,7 @@ pub fn Custom(comptime config: Config) type {
                 var help_opts = [2]OptionT{
                     .{
                         ._alloc = alloc,
-                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
+                        .opt_group = if (add_opt_help_group) help_config.help_group_name else null, 
                         .name = "usage",
                         .short_name = 'u',
                         .long_name = "usage",
@@ -1835,7 +1904,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .{
                         ._alloc = alloc,
-                        .opt_group = if (add_opt_help_group) init_config.help_group_name else null, 
+                        .opt_group = if (add_opt_help_group) help_config.help_group_name else null, 
                         .name = "help",
                         .short_name = 'h',
                         .long_name = "help",
@@ -1868,6 +1937,14 @@ pub fn Custom(comptime config: Config) type {
         pub fn deinit(self: *const @This()) void {
             if (self._arena) |arena| arena.deinit();
             if (self._root_alloc) |root_alloc| root_alloc.destroy(self);
+        }
+
+        /// Reset the Root Command with the provided Setup Command (`setup_cmd`), InitConfig (`init_config`), and the Command's current Root Allocator.
+        /// If this Command has not yet been initialized or is not the Root Command, this does nothing.
+        pub fn reset(self: *const @This(), comptime setup_cmd: @This(), comptime init_config: InitConfig) !void {
+            const alloc = self._root_alloc orelse return;
+            self.deinit();
+            self = try setup_cmd.init(alloc, init_config);
         }
     };
 }

@@ -42,12 +42,19 @@ pub fn displayCmdInfo(
 
 /// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
-fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: bool, alloc: mem.Allocator, writer: anytype) !void {
+fn displayValInfo(
+    comptime ValueT: type, 
+    val: ValueT,
+    name: ?[]const u8,
+    isOpt: bool,
+    alloc: mem.Allocator,
+    writer: anytype,
+) !void {
     const prefix = if (isOpt) "Opt" else "Val";
 
     switch (meta.activeTag(val.generic)) {
         .string => {
-            const str_vals = val.generic.string.getAll(alloc) catch noVal: {
+            const str_vals = val.generic.string.getAllAlloc(alloc) catch noVal: {
                 const no_val = alloc.dupe([]const u8, &.{ "" }) catch @panic("OOM");
                 break :noVal no_val;
             };
@@ -64,7 +71,7 @@ fn displayValInfo(comptime ValueT: type, val: ValueT, name: ?[]const u8, isOpt: 
             const tag_self = @field(val.generic, @tagName(tag));
             if (tag_self.set_behavior == .Multi) {
                 const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
-                    if (tag_self.getAll(alloc) catch null) |data| break :rawData data;
+                    if (tag_self.getAllAlloc(alloc) catch null) |data| break :rawData data;
                     const data: ?@TypeOf(tag_self).ChildT = tag_self.get() catch null;
                     if (data) |_data| {
                         var data_slice = alloc.alloc(@TypeOf(tag_self).ChildT, 1) catch @panic("OOM");

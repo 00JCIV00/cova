@@ -22,55 +22,56 @@ const conf_optimized = Command.Config.optimized(.{});
 pub const CommandT = Command.Custom(.{
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
+    .help_category_order = &.{ .Prefix, .Header, .Aliases, .Values, .Options, .Commands },
     //.allow_arg_indices = false,
-    //.global_usage_fn = struct{
-    //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
-    //        const CmdT = @TypeOf(self.*);
-    //        const OptT = CmdT.OptionT;
-    //        const indent_fmt = CmdT.indent_fmt;
-    //        var no_args = true;
-    //        var pre_sep: []const u8 = "";
+    .global_usage_fn = struct{
+        fn usage(self: anytype, writer: anytype, _: ?mem.Allocator) !void {
+            const CmdT = @TypeOf(self.*);
+            const OptT = CmdT.OptionT;
+            const indent_fmt = CmdT.indent_fmt;
+            var no_args = true;
+            var pre_sep: []const u8 = "";
 
-    //        try writer.print("USAGE\n", .{});
-    //        if (self.opts) |opts| {
-    //            no_args = false;
-    //            try writer.print("{s}{s} [", .{ 
-    //                indent_fmt,
-    //                self.name,
-    //            });
-    //            for (opts) |opt| {
-    //                try writer.print("{s} {s}{s} ", .{ 
-    //                    pre_sep,
-    //                    OptT.long_prefix orelse opt.short_prefix,
-    //                    opt.long_name orelse &.{ opt.short_name orelse 0 },
-    //                });
-    //                pre_sep = "| ";
-    //            }
-    //            try writer.print("]\n", .{});
-    //        }
-    //        if (self.sub_cmds) |cmds| {
-    //            no_args = false;
-    //            try writer.print("{s}{s} [", .{ 
-    //                indent_fmt,
-    //                self.name,
-    //            });
-    //            pre_sep = "";
-    //            for (cmds) |cmd| {
-    //                try writer.print("{s} {s} ", .{ 
-    //                    pre_sep,
-    //                    cmd.name,
-    //                });
-    //                pre_sep = "| ";
-    //            }
-    //            try writer.print("]\n", .{});
-    //        }
-    //        if (no_args) try writer.print("{s}{s}{s}", .{ 
-    //            indent_fmt, 
-    //            indent_fmt,
-    //            self.name,
-    //        });
-    //    }
-    //}.usage,
+            try writer.print("USAGE\n", .{});
+            if (self.opts) |opts| {
+                no_args = false;
+                try writer.print("{s}{s} [", .{ 
+                    indent_fmt,
+                    self.name,
+                });
+                for (opts) |opt| {
+                    try writer.print("{s} {s}{s} ", .{ 
+                        pre_sep,
+                        OptT.long_prefix orelse opt.short_prefix,
+                        opt.long_name orelse &.{ opt.short_name orelse 0 },
+                    });
+                    pre_sep = "| ";
+                }
+                try writer.print("]\n", .{});
+            }
+            if (self.sub_cmds) |cmds| {
+                no_args = false;
+                try writer.print("{s}{s} [", .{ 
+                    indent_fmt,
+                    self.name,
+                });
+                pre_sep = "";
+                for (cmds) |cmd| {
+                    try writer.print("{s} {s} ", .{ 
+                        pre_sep,
+                        cmd.name,
+                    });
+                    pre_sep = "| ";
+                }
+                try writer.print("]\n", .{});
+            }
+            if (no_args) try writer.print("{s}{s}{s}", .{ 
+                indent_fmt, 
+                indent_fmt,
+                self.name,
+            });
+        }
+    }.usage,
     //.help_header_fmt = 
     //    \\HELP
     //    \\{s}COMMAND: {s}
@@ -135,11 +136,11 @@ pub const CommandT = Command.Custom(.{
     //}.help,
     //.global_case_sensitive = false,
     .opt_config = .{
-        .usage_fmt = "{u}{?u}{s} {s}{?s} <{s} ({s})>",
+        //.usage_fmt = "{u}{?u}{s} {s}{?s} <{s} ({s})>",
         //.allow_arg_indices = false,
         //.global_case_sensitive = false,
         //.usage_fn = struct{
-        //    fn usage(self: anytype, writer: anytype, _: mem.Allocator) !void {
+        //    fn usage(self: anytype, writer: anytype, _: ?mem.Allocator) !void {
         //        const short_prefix = @TypeOf(self.*).short_prefix;
         //        const long_prefix = @TypeOf(self.*).long_prefix;
         //        try writer.print("{?u}{?u}, {?s}{?s}", .{
@@ -152,7 +153,7 @@ pub const CommandT = Command.Custom(.{
         //    }
         //}.usage,
         .global_help_fn = struct{
-            fn help(self: anytype, writer: anytype, _: mem.Allocator) !void {
+            fn help(self: anytype, writer: anytype, _: ?mem.Allocator) !void {
                 const indent_fmt = @TypeOf(self.*).indent_fmt;
                 try self.usage(writer);
                 try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
@@ -182,10 +183,14 @@ pub const CommandT = Command.Custom(.{
                 .ChildT = []const u8,
                 .alias = "text",
             },
+            .{
+                .ChildT = bool,
+                .alias = "toggle",
+            }
         }
     },
     //.global_usage_fn = struct{ 
-    //    fn usage(_: anytype, writer: anytype, _: mem.Allocator) !void { 
+    //    fn usage(_: anytype, writer: anytype, _: ?mem.Allocator) !void { 
     //        // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
     //        try writer.print("This is an overriding usage message!\n\n", .{}); 
     //    } 
@@ -204,6 +209,7 @@ pub const DemoStruct = struct{
     pub const InnerStruct = struct{
         in_bool: bool = false,
         in_float: f32 = 0,
+        h_string: []const u8 = "Just a test for fields starting with 'h'",
     };
     pub const InnerEnum = enum(u2){
         red,
@@ -346,7 +352,7 @@ pub const setup_cmd: CommandT = .{
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
             .cmd_description = "A demo sub command made from a struct.",
-            .attempt_short_opts = false,
+            .attempt_short_opts = true,
             //.cmd_hidden = true,
             .cmd_group = "STRUCT-BASED",
             .sub_cmds_mandatory = false,
@@ -615,6 +621,12 @@ pub fn main() !void {
             xor_opts_check,
         }
     );
+    var main_opts = try main_cmd.getOpts(.{});
+    if (main_opts.get("string_opt")) |str_opt| {
+        const opt_strs = try str_opt.val.getAllAs([]const u8);
+        log.debug("Option Strings (--string): {d}", .{ opt_strs.len });
+        for (opt_strs, 0..) |str, idx| log.debug(" {d}. {s}", .{ idx, str });
+    }
     //if (main_cmd.opts) |main_opts| {
     //    for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
     //}

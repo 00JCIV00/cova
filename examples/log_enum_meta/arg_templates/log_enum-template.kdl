@@ -1,0 +1,9 @@
+# This KDL template is formatted to match the `usage` tool as detailed here: https://sr.ht/~jdx/usage/
+
+name "log_enum"
+bin "log_enum"
+about "A small demo of using the Log Level Enum as an Option."
+version "0.10.1"
+author "00JCIV00"
+
+flag "--log-level" help="An Option using the `log.Level` Enum."
