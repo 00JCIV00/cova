@@ -933,7 +933,9 @@ pub fn Custom(comptime config: Config) type {
             cmd_hidden: bool = false,
 
             /// Descriptions of the Command's Arguments (Sub Commands, Options, and Values).
-            /// These Descriptions will be used across this Command and all of its Sub Commands.
+            /// When converting a Struct or Union, these Descriptions will be used across this Command and all of its sub-Commands.
+            /// When converting a Function, these Argument Names and Descriptions will be used for this Command only (no sub-Commands).
+            /// Note, for Functions, the Argument Names and Descriptions must be given in the proper Parameter order.
             ///
             /// Format: `.{ "argument_name", "Description of the Argument." }`
             sub_descriptions: []const struct { []const u8, []const u8 } = &.{ .{ "__nosubdescriptionsprovided__", "" } },
@@ -1061,7 +1063,7 @@ pub fn Custom(comptime config: Config) type {
                             ) else null, 
                             .long_name = arg_name,
                             .ignore_incompatible = from_config.ignore_incompatible,
-                            .opt_description = arg_description,
+                            .opt_description = arg_description orelse "The '" ++ arg_name ++ "' Option.",
                         }) orelse continue);
                         opts_idx += 1;
                     },
@@ -1086,7 +1088,7 @@ pub fn Custom(comptime config: Config) type {
                         from_vals[vals_idx] = (ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_name = arg_name,
-                            .val_description = arg_description,
+                            .val_description = arg_description orelse "The '" ++ arg_name ++ "' Value.",
                         }) orelse continue);
                         vals_idx += 1;
                     },
@@ -1106,7 +1108,7 @@ pub fn Custom(comptime config: Config) type {
                                     ) else null, 
                                     .long_name = arg_name,
                                     .ignore_incompatible = from_config.ignore_incompatible,
-                                    .opt_description = arg_description
+                                    .opt_description = arg_description orelse "The '" ++ arg_name ++ "' Value.",
                                 }) orelse continue;
                                 opts_idx += 1;
                             },
@@ -1115,7 +1117,7 @@ pub fn Custom(comptime config: Config) type {
                                 from_vals[vals_idx] = ValueT.from(field, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_name = arg_name,
-                                    .val_description = arg_description
+                                    .val_description = arg_description orelse "The '" ++ arg_name ++ "' Value.",
                                 }) orelse continue;
                                 vals_idx += 1;
                             },
@@ -1201,20 +1203,23 @@ pub fn Custom(comptime config: Config) type {
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
-            //const arg_descriptions = ComptimeStringMap([]const u8, from_config.sub_descriptions);
+            const arg_descriptions = StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
 
             const params = from_info.Fn.params;
             const start_idx = if (from_config.ignore_first) 1 else 0;
-            inline for (params[start_idx..]) |param| {
-                const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
+            inline for (params[start_idx..], 0..) |param, idx| {
+                const arg_name: ?[]const u8 = if (idx < arg_descriptions.keys().len) arg_descriptions.keys()[idx] else null;
+                const arg_description = if (idx < arg_descriptions.values().len) arg_descriptions.values()[idx] else "";
+                //const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
                 // Handle Argument Types.
                 switch (@typeInfo(param.type.?)) {
                     // Commands
                     .Fn, .Struct, .Union => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
-                            new_config.cmd_name = "cmd-" ++ &.{ cmds_idx + 48 };
+                            new_config.cmd_name = arg_name orelse "cmd-" ++ &.{ cmds_idx + 48 };
                             new_config.cmd_description = arg_description orelse "The '" ++ new_config.cmd_name ++ "' Command.";
+                            new_config.sub_descriptions = &.{ .{ "__nosubdescriptionsprovided__", "" } };
                             break :subConfig new_config;
                         };
                         from_cmds[cmds_idx] = from(param.type, sub_config);
@@ -1224,7 +1229,7 @@ pub fn Custom(comptime config: Config) type {
                     .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
-                            .val_name = "val-" ++ .{ '0', (vals_idx + 48) },
+                            .val_name = arg_name orelse "val-" ++ .{ '0', (vals_idx + 48) },
                             .val_description = arg_description,
                         }) orelse continue);
                         vals_idx += 1;
