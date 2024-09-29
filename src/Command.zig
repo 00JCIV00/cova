@@ -1203,13 +1203,13 @@ pub fn Custom(comptime config: Config) type {
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
 
-            const arg_descriptions = StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
+            const arg_details = from_config.sub_descriptions; //StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
 
             const params = from_info.Fn.params;
             const start_idx = if (from_config.ignore_first) 1 else 0;
             inline for (params[start_idx..], 0..) |param, idx| {
-                const arg_name: ?[]const u8 = if (idx < arg_descriptions.keys().len) arg_descriptions.keys()[idx] else null;
-                const arg_description = if (idx < arg_descriptions.values().len) arg_descriptions.values()[idx] else "";
+                const arg_name: ?[]const u8 = if (idx < arg_details.len) arg_details[idx][0] else null;
+                const arg_description = if (idx < arg_details.len) arg_details[idx][1] else "";
                 //const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
                 // Handle Argument Types.
                 switch (@typeInfo(param.type.?)) {
