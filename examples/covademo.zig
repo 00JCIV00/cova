@@ -186,8 +186,12 @@ pub const CommandT = Command.Custom(.{
             .{
                 .ChildT = bool,
                 .alias = "toggle",
-            }
-        }
+            },
+            .{
+                .ChildT = [6]u8,
+                .alias = "byte_array",
+            },
+        },
     },
     //.global_usage_fn = struct{ 
     //    fn usage(_: anytype, writer: anytype, _: ?mem.Allocator) !void { 
@@ -253,8 +257,8 @@ pub const DemoUnion = union(enum) {
     union_str: []const u8,
 };
 
-pub fn demoFn(int: i32, string: []const u8) void {
-    log.info("Demo function result:\n - Int: {d}\n - String: {s}", .{ int, string });
+pub fn demoFn(int: i32, string: []const u8, array: [6]u8) void {
+    log.info("Demo function result:\n - Int: {d}\n - String: {s}\n - Array: {s}", .{ int, string, array[0..] });
 }
 
 // Comptime Setup Command
@@ -376,9 +380,9 @@ pub const setup_cmd: CommandT = .{
             .cmd_description = "A demo sub command made from a function.",
             .cmd_group = "FN-BASED",
             .sub_descriptions = &.{
-                .{ "inner_config", "An inner/nested command for fn-cmd" },
                 .{ "int", "The first Integer Value for the fn-cmd." },
                 .{ "string", "The first String Value for the fn-cmd." },
+                .{ "byte_array", "A 6-Byte Array for fn-cmd" },
             },
             .ignore_incompatible = false,
         }),
@@ -662,5 +666,5 @@ pub fn main() !void {
     log.debug("Tokenized Args:\n{s}", .{ args });
 
     // Optimized Config
-    log.debug("Optimized Config:\n{any}", .{ conf_optimized });
+    //log.debug("Optimized Config:\n{any}", .{ conf_optimized });
 }

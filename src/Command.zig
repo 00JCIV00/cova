@@ -1222,7 +1222,7 @@ pub fn Custom(comptime config: Config) type {
                             new_config.sub_descriptions = &.{ .{ "__nosubdescriptionsprovided__", "" } };
                             break :subConfig new_config;
                         };
-                        from_cmds[cmds_idx] = from(param.type, sub_config);
+                        from_cmds[cmds_idx] = from(param, sub_config);
                         cmds_idx += 1;
                     },
                     // Values
@@ -1242,6 +1242,7 @@ pub fn Custom(comptime config: Config) type {
                             .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
                                 from_vals[vals_idx] = ValueT.from(param, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
+                                    .val_name = arg_name orelse "val-" ++ .{ '0', (vals_idx + 48) },
                                     .val_description = arg_description
                                 }) orelse continue;
                                 vals_idx += 1;
