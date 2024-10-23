@@ -326,7 +326,7 @@ fn parseArgsCtx(
                 if (opt_term) continue :parseArg;
                 // - Short Options
                 if (OptionT.short_prefix) |short_pf| checkShortOpt: {
-                    if (!(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
+                    if (arg.len < 1 or !(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
                     log.debug("Parsing Short Option...", .{});
                     const short_opts = arg[1..];
                     shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
@@ -416,7 +416,7 @@ fn parseArgsCtx(
                 }
                 // - Long Options
                 if (OptionT.long_prefix) |long_pf| checkLongOpt: {
-                    if (!mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
+                    if (arg.len < long_pf.len or !mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
                     log.debug("Parsing Long Option...", .{});
                     const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                     const long_opt = arg[long_pf.len..split_idx]; 
