@@ -278,7 +278,9 @@ pub fn build(b: *std.Build) void {
   
 ## Alternatives
 - [flags](https://github.com/n0s4/flags)
+- [snek](https://github.com/BitlyTwiser/snek)
 - [yazap](https://github.com/PrajwalCH/yazap)
 - [zig-args](https://github.com/masterQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
 - [zig-cli](https://github.com/sam701/zig-cli)
+- [zli](https://gitlab.com/ziglang/zig)
