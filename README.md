@@ -21,7 +21,7 @@ Cova is based on the idea that Arguments will fall into one of three types: Comm
 - [API Docs](https://00jciv00.github.io/cova/)
 
 ### Quick Example
-[Log Enum Example](https://github.com/00JCIV00/cova/blob/main/examples/log-enum.zig)
+[Logger Example](https://github.com/00JCIV00/cova/blob/main/examples/logger.zig)
 ```shell
 logger --log-level info
 ```
@@ -30,8 +30,9 @@ logger --log-level info
 // ...
 pub const CommandT = cova.Command.Custom(.{...});
 pub const setup_cmd = CommandT{
-    .name = "log_enum",
+    .name = "logger",
     .description = "A small demo of using the Log Level Enum as an Option.",
+    .examples = &.{ "logger --log-level info" },
     .opts = &.{
         .{
             .name = "log_level",
@@ -230,7 +231,7 @@ pub fn main() !void {
 </details>
 
 ### More Examples
-- [log-enum](./examples/log-enum.zig): The simple example from the top of the README.
+- [logger](./examples/logger.zig): The simple example from the top of the README.
 - [basic-app](./examples/basic_app.zig): Where the above examples come from.
 - [covademo](./examples/covademo.zig): This is the testbed for Cova, but its a good demo of virtually every feature in the library.
 
