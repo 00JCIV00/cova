@@ -4,9 +4,9 @@
 # Details at https://github.com/00JCIV00/cova
 
 
-# PowerShell Completion Installation Instructions for log_enum
+# PowerShell Completion Installation Instructions for logger
 # 1. Load the completion script into your current PowerShell session:
-#    . .\log_enum-completion.ps1
+#    . .\logger-completion.ps1
 #
 # 2. Ensure your Execution Policy allows the script to be run. Example:
 #    Set-ExecutionPolicy RemoteSigned
@@ -14,13 +14,13 @@
 # 3. To ensure this completion script is loaded automatically in future sessions,
 #    add the above sourcing command to your PowerShell profile:
 #    Notepad $PROFILE
-#    Add the line: . C:\path\to\log_enum-completion.ps1
+#    Add the line: . C:\path\to\logger-completion.ps1
 #
 # 4. Restart your PowerShell session or source your profile again:
 #    . $PROFILE
 
 
-function _log_enum {
+function _logger {
     param($wordToComplete, $commandAst)
     $suggestions = @(
 		'help',
@@ -32,7 +32,7 @@ function _log_enum {
     return $suggestions | Where-Object { $_ -like "$wordToComplete*" }
 }
 
-Register-ArgumentCompleter -CommandName 'log_enum.exe' -ScriptBlock {
+Register-ArgumentCompleter -CommandName 'logger.exe' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPos)
 
     $functionName = "_" + $($commandAst.Extent.Text.replace(' ', '-').replace(".exe", ""))

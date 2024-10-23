@@ -52,7 +52,7 @@ pub fn build(b: *std.Build) void {
     //==========================================
     // Examples
     //==========================================
-    const examples = &.{ "cova-demo", "basic-app", "log-enum" };
+    const examples = &.{ "cova-demo", "basic-app", "logger" };
     var ex_arena = std.heap.ArenaAllocator.init(b.allocator);
     defer ex_arena.deinit();
     const ex_alloc = ex_arena.allocator();
@@ -82,8 +82,8 @@ pub fn build(b: *std.Build) void {
             ex_exe,
             .{
                 .kinds = &.{ .all },
-                .version = "0.10.1",
-                .ver_date = "27 AUG 2024",
+                .version = "0.10.2",
+                .ver_date = "23 OCT 2024",
                 .author = "00JCIV00",
                 .copyright = "MIT License",
                 .help_docs_config = .{

@@ -1,13 +1,13 @@
 "Meta Info": {
-    "name": "log_enum",
+    "name": "logger",
     "description": "A small demo of using the Log Level Enum as an Option.",
-    "version": "0.10.1",
-    "ver_date": "27 AUG 2024",
+    "version": "0.10.2",
+    "ver_date": "23 OCT 2024",
     "author": "00JCIV00",
     "copyright": "MIT License"
 },
 "Arguments": {
-    "name": "log_enum",
+    "name": "logger",
     "description": "A small demo of using the Log Level Enum as an Option.",
     "opts": [
         {

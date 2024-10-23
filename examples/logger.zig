@@ -9,7 +9,7 @@ pub const CommandT = cova.Command.Custom(.{
     },
 });
 pub const setup_cmd = CommandT{
-    .name = "log_enum",
+    .name = "logger",
     .description = "A small demo of using the Log Level Enum as an Option.",
     .opts = &.{
         .{

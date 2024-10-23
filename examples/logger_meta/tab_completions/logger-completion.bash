@@ -4,28 +4,28 @@
 # Details at https://github.com/00JCIV00/cova
 
 
-# Bash Completion Installation Instructions for log_enum
+# Bash Completion Installation Instructions for logger
 # 1. Place this script in a directory like /etc/bash_completion.d/ (Linux)
 #    or /usr/local/etc/bash_completion.d/ (Mac, if using Homebrew and bash-completion)
 #
 # 2. Ensure the script has executable permissions:
-#    chmod +x log_enum-completion.bash
+#    chmod +x logger-completion.bash
 #
 # 3. Source this script from your .bashrc or .bash_profile by adding:
-#    . /path/to/log_enum-completion.bash
+#    . /path/to/logger-completion.bash
 #
 # 4. Restart your terminal session or source your profile again:
 #    source ~/.bashrc  # or ~/.bash_profile
 
 
-_log_enum_completions() {
+_logger_completions() {
     local cur prev
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD - 1]}"
 
     case "${prev}" in
-        "log_enum")
+        "logger")
             COMPREPLY=($(compgen -W "help usage --log-level --help --usage" -- ${cur}))
             ;;
         *)
@@ -34,4 +34,4 @@ _log_enum_completions() {
 }
 
 
-complete -F _log_enum_completions log_enum
+complete -F _logger_completions logger
