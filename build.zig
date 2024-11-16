@@ -48,7 +48,6 @@ pub fn build(b: *std.Build) void {
     const build_docs_step = b.step("docs", "Build the cova library docs");
     build_docs_step.dependOn(&build_docs.step);
 
-
     //==========================================
     // Examples
     //==========================================
@@ -66,7 +65,7 @@ pub fn build(b: *std.Build) void {
         // - Exe
         const ex_exe = b.addExecutable(.{
             .name = bin_name orelse ex_name,
-            .root_source_file = b.path(std.fmt.allocPrint(ex_alloc, "examples/{s}.zig", .{ ex_name }) catch @panic("OOM")),
+            .root_source_file = b.path(std.fmt.allocPrint(ex_alloc, "examples/{s}.zig", .{ex_name}) catch @panic("OOM")),
             .target = target,
             .optimize = optimize,
         });
@@ -81,20 +80,20 @@ pub fn build(b: *std.Build) void {
             b.path("src/generator.zig"),
             ex_exe,
             .{
-                .kinds = &.{ .all },
+                .kinds = &.{.all},
                 .version = "0.10.2",
                 .ver_date = "23 OCT 2024",
                 .author = "00JCIV00",
                 .copyright = "MIT License",
                 .help_docs_config = .{
-                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/help_docs/", .{ ex_scored }) catch @panic("OOM"),
+                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/help_docs/", .{ex_scored}) catch @panic("OOM"),
                 },
                 .tab_complete_config = .{
-                    .local_filepath = std.fmt.allocPrint(ex_alloc,"examples/{s}_meta/tab_completions/", .{ ex_scored }) catch @panic("OOM"),
+                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/tab_completions/", .{ex_scored}) catch @panic("OOM"),
                     .include_opts = true,
                 },
                 .arg_template_config = .{
-                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/arg_templates/", .{ ex_scored }) catch @panic("OOM"),
+                    .local_filepath = std.fmt.allocPrint(ex_alloc, "examples/{s}_meta/arg_templates/", .{ex_scored}) catch @panic("OOM"),
                 },
             },
         );
@@ -102,7 +101,6 @@ pub fn build(b: *std.Build) void {
         ex_demo_gen_step.dependOn(&ex_demo_gen.step);
     }
 }
-
 
 /// Add Cova's Meta Doc Generation Step to a project's `build.zig`.
 /// Note, the `program_step` must have the same Target as the host machine.
@@ -164,7 +162,7 @@ fn createDocGenStep(
 ) *std.Build.Step.Run {
     const program_mod = &program_step.root_module;
     const cova_gen_exe = b.addExecutable(.{
-        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
+        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{program_step.name}) catch @panic("OOM"),
         .root_source_file = cova_gen_path,
         .target = b.host,
         .optimize = .Debug,
@@ -180,7 +178,7 @@ fn createDocGenStep(
     sub_conf_map.put("arg_template_config", null) catch @panic("OOM");
 
     inline for (@typeInfo(generate.MetaDocConfig).Struct.fields) |field| {
-        switch(@typeInfo(field.type)) {
+        switch (@typeInfo(field.type)) {
             .Struct, .Enum => continue,
             .Optional => |optl| {
                 switch (@typeInfo(optl.child)) {
@@ -227,15 +225,11 @@ fn createDocGenStep(
     cova_gen_exe.root_module.addOptions("md_config_opts", md_conf_opts);
     var sub_conf_map_iter = sub_conf_map.iterator();
     while (sub_conf_map_iter.next()) |conf| {
-        cova_gen_exe.root_module.addOptions(
-            conf.key_ptr.*,
-            if (conf.value_ptr.*) |conf_opts| conf_opts
-            else confOpts: {
-                const conf_opts = b.addOptions();
-                conf_opts.addOption(bool, "provided", false);
-                break :confOpts conf_opts;
-            }
-        );
+        cova_gen_exe.root_module.addOptions(conf.key_ptr.*, if (conf.value_ptr.*) |conf_opts| conf_opts else confOpts: {
+            const conf_opts = b.addOptions();
+            conf_opts.addOption(bool, "provided", false);
+            break :confOpts conf_opts;
+        });
     }
 
     return b.addRunArtifact(cova_gen_exe);
@@ -247,15 +241,17 @@ fn covaDep(b: *std.Build, args: anytype) *std.Build.Dependency {
     getDep: {
         const all_pkgs = @import("root").dependencies.packages;
         const pkg_hash =
-            inline for (@typeInfo(all_pkgs).Struct.decls) |decl| {
-                const pkg = @field(all_pkgs, decl.name);
-                if (@hasDecl(pkg, "build_zig") and pkg.build_zig == @This()) break decl.name;
-            }
-            else break :getDep;
-        const dep_name = 
-            for (b.available_deps) |dep| { if (std.mem.eql(u8, dep[1], pkg_hash)) break dep[0]; }
-            else break :getDep;
+            inline for (@typeInfo(all_pkgs).Struct.decls) |decl|
+        {
+            const pkg = @field(all_pkgs, decl.name);
+            if (@hasDecl(pkg, "build_zig") and pkg.build_zig == @This()) break decl.name;
+        } else break :getDep;
+        const dep_name =
+            for (b.available_deps) |dep|
+        {
+            if (std.mem.eql(u8, dep[1], pkg_hash)) break dep[0];
+        } else break :getDep;
         return b.dependency(dep_name, args);
     }
-    std.debug.panic("'cova' is not a dependency of '{s}'", .{ b.pathFromRoot("build.zig.zon") });
+    std.debug.panic("'cova' is not a dependency of '{s}'", .{b.pathFromRoot("build.zig.zon")});
 }
