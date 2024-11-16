@@ -736,8 +736,9 @@ pub fn Custom(comptime config: Config) type {
                                 try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
                                 try writer.print("\n", .{});
                             }
+
+                            try writer.print("\n", .{});
                         }
-                        try writer.print("\n", .{});
                     },
                     .Options => {
                         if (self.opts) |opts| {
