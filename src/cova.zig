@@ -277,8 +277,26 @@ fn parseArgsCtx(
             checkCmds: for (cmds) |*sub_cmd| {
                 const should_parse = shouldParse: {
                     if (sub_cmd.case_sensitive) {
-                        if (mem.eql(u8, sub_cmd.name, arg)) break :shouldParse true
-                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (mem.eql(u8, alias, arg)) break :shouldParse true;
+                        if (
+                            mem.eql(u8, sub_cmd.name, arg) or
+                            (
+                                CommandT.allow_abbreviated_cmds and
+                                arg.len >= @min(sub_cmd.name.len, CommandT.abbreviated_min_len) and
+                                mem.indexOf(u8, sub_cmd.name, arg) != null and sub_cmd.name[0] == arg[0]
+                            )
+                        ) break :shouldParse true
+                        else {
+                            for (sub_cmd.alias_names orelse continue :checkCmds) |alias| {
+                                if (
+                                    mem.eql(u8, alias, arg) or 
+                                    (
+                                        CommandT.allow_abbreviated_cmds and
+                                        arg.len >= @min(alias.len, CommandT.abbreviated_min_len) and
+                                        mem.indexOf(u8, alias, arg) != null and alias[0] == arg[0]
+                                    )
+                                ) break :shouldParse true;
+                            }
+                        }
                     }
                     else {
                         if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) break :shouldParse true
@@ -436,7 +454,10 @@ fn parseArgsCtx(
                             if (matchOpt: {
                                 break :matchOpt if (opt.case_sensitive)
                                     mem.eql(u8, long_opt, long_name) or
-                                    (OptionT.allow_abbreviated_long_opts and mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0])
+                                    (
+                                        OptionT.allow_abbreviated_long_opts and
+                                        mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0]
+                                    )
                                 else
                                     ascii.eqlIgnoreCase(long_opt, long_name) or
                                     (

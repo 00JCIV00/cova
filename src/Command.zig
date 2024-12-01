@@ -176,6 +176,12 @@ pub const Config = struct {
     /// During parsing, mandate that Command instances of this Command Type, and their aliases, must be used in a case-sensitive manner.
     /// This will also affect Command Validation, but will NOT affect Tab-Completion.
     global_case_sensitive: bool = true,
+    /// During parsing, allow Abbreviated Command Names. (i.e. 'com' working for 'command')
+    /// This is seen in programs like `ip` on Linux, but may not be ideal in every use case.
+    /// Note, this does not check for uniqueness and will simply match on the first Command matching the abbreviation.
+    allow_abbreviated_cmds: bool = false,
+    /// The minimum length for an Abbreviated Command Name.
+    abbreviated_min_len: u16 = 3,
 
 
     /// Help Categories.
@@ -320,6 +326,12 @@ pub fn Custom(comptime config: Config) type {
         /// Include Examples.
         /// Check (`Command.Config`) for details.
         pub const include_examples = config.include_examples;
+        /// Allow Abbreviated Commands.
+        /// Check (`Command.Config`) for details.
+        pub const allow_abbreviated_cmds = config.allow_abbreviated_cmds;
+        /// The minimum length for an Abbreviated Command Name.
+        /// Check (`Command.Config`) for details.
+        pub const abbreviated_min_len = config.abbreviated_min_len;
 
 
         /// The Root Allocator for this Command.
