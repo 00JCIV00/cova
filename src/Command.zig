@@ -476,13 +476,13 @@ pub fn Custom(comptime config: Config) type {
             return if (self.checkSubCmd(cmd_name)) self.sub_cmd.? else null;
         }
 
-        /// Gets a StringHashMap of this Command's Options using its initialization Allocator.
+        /// Gets a StringHashMap of the Options from this Command that have a set Value using its initialization Allocator.
         /// Memory is owned by this Command's Allocator. Look at the `...Alloc()` version of this method to use a different Allocator.
         pub fn getOpts(self: *const @This(), get_config: GetConfig) !StringHashMap(OptionT) {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             return self.getOptsAlloc(alloc, get_config);
         }
-        /// Gets a StringHashMap of this Command's Options using the provided Allocator (`alloc`).
+        /// Gets a StringHashMap of the Options from this Command that have a set Value using the provided Allocator (`alloc`).
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(OptionT) {
             if (self.opts == null) return error.NoOptionsInCommand;
             var map = StringHashMap(OptionT).init(alloc);
@@ -492,7 +492,8 @@ pub fn Custom(comptime config: Config) type {
                     const opt_group = opt.opt_group orelse continue;
                     if (!mem.eql(u8, conf_group, opt_group)) continue;
                 }
-                try map.put(opt.name, opt); 
+                if (!opt.val.isSet() and !opt.val.hasDefault()) continue;
+                try map.put(opt.name, opt);
             }
             return map;
         }
@@ -534,8 +535,8 @@ pub fn Custom(comptime config: Config) type {
                     .AND => {
                         if (opts_count == opt_names.len) {
                             logic_flag = true;
-                            break;   
-                        }    
+                            break;
+                        }
                     },
                     .OR => logic_flag = true,
                     .XOR => {
