@@ -403,6 +403,7 @@ pub const setup_cmd: CommandT = .{
             .short_name = 's',
             .long_name = "string",
             .alias_long_names = &.{ "text" },
+            .allow_empty = true,
             .val = ValueT.ofType([]const u8, .{
                 .name = "string_val",
                 .description = "A string value.",
@@ -627,7 +628,11 @@ pub fn main() !void {
         }
     );
     var main_opts = try main_cmd.getOpts(.{});
-    if (main_opts.get("string_opt")) |str_opt| {
+    if (main_opts.get("string_opt")) |str_opt| strOpt: {
+        if (str_opt.val.isEmpty()) {
+            log.debug("This Option was set, but intentionally left empty.", .{});
+            break :strOpt;
+        }
         const opt_strs = try str_opt.val.getAllAs([]const u8);
         log.debug("Option Strings (--string): {d}", .{ opt_strs.len });
         for (opt_strs, 0..) |str, idx| log.debug(" {d}. {s}", .{ idx, str });

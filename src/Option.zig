@@ -227,7 +227,7 @@ pub fn Custom(comptime config: Config) type {
         name: []const u8,
         /// The Description of this Option for Usage/Help messages.
         description: []const u8 = "",
-        /// Hide thie Command from Usage/Help messages.
+        /// Hide this Command from Usage/Help messages.
         hidden: bool = false,
 
         /// During parsing, mandate that THIS Option must be used in a case-sensitive manner when called by its Long Name.
@@ -236,6 +236,8 @@ pub fn Custom(comptime config: Config) type {
         /// During parsing, mandate that this Option is given.
         /// This will do nothing if this Option's Value has a default value.
         mandatory: bool = false,
+        /// Allow this Option's Value to Empty even if it's not a Boolean.
+        allow_empty: bool = false,
 
         // (WIP) TODO: Figure out if this is possible
         ///// A custom Help function to override the default `help()` function for this custom Option INSTANCE.

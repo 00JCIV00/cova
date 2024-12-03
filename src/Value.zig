@@ -218,14 +218,14 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         ///
         /// **Internal Use.**
         _entry_idx: u7 = 0,
-        /// The Max number of Raw Argument Entries that can be provided.
+        /// The Max number of Raw Argument Entries that can be provided. 
         /// This must be between 1 to the value of `config.max_children`.
         max_entries: u7 = 1,
         /// Flag to determine if this Value is at max capacity for Raw Arguments.
         ///
         /// *This should be Read-Only for library users.*
         is_maxed: bool = false,
-        /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options.
+        /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options. 
         /// This is only applicable if `set_behavior = .Multi`.
         arg_delims: []const u8 = config.global_arg_delims,
         /// Set Behavior for this Value.
@@ -236,6 +236,11 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         ///
         /// *This should be Read-Only for library users.*
         is_set: bool = false,
+        /// Flag to determine if this Value has been set to Empty. 
+        /// This is intended to be used w/ Options.
+        ///
+        /// *This should be Read-Only for library users.*
+        is_empty: bool = true,
 
         /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing for this specific Value.
         /// This will be used FIRST, before `type_parse_fn` then the normal `parse()` functions are tried.
@@ -336,8 +341,17 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                     }
                 }
                 @constCast(self).is_maxed = self._entry_idx == self.max_entries;
+                @constCast(self).is_empty = false;
             }
             else return error.InvalidValue;
+        }
+
+        /// Set this Value without actual data so that it's "empty". 
+        /// This is intended to be used with Options.
+        pub fn setEmpty(self: *const @This()) !void {
+            if (!self.is_empty) return error.NotEmpty;
+            if (@constCast(self).default_val) |_| @constCast(self).default_val = null;
+            @constCast(self).is_set = true;
         }
 
         /// Get the first Parsed and Validated value of this Value.
@@ -682,6 +696,13 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| try @field(self.*.generic, @tagName(tag)).set(arg),
             }
         }
+        /// Set the inner Typed Value without data so that it is "empty". 
+        /// This is meant to be used with Options
+        pub fn setEmpty(self: *const @This()) !void { 
+            switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| try @field(self.*.generic, @tagName(tag)).setEmpty(),
+            }
+        }
 
         /// Set a new Argument Index for this Value.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
@@ -772,6 +793,12 @@ pub fn Custom(comptime config: Config) type {
         pub fn isSet(self: *const @This()) bool {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).is_set,
+            };
+        }
+        /// Check if the inner Typed Value is Empty.
+        pub fn isEmpty(self: *const @This()) bool {
+            return switch (meta.activeTag(self.*.generic)) {
+                inline else => |tag| @field(self.*.generic, @tagName(tag)).is_empty,
             };
         }
         /// Check if the inner Typed Value has a default value.
