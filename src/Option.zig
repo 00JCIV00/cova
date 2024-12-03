@@ -12,6 +12,7 @@
 
 const std = @import("std");
 const ascii = std.ascii;
+const fmt = std.fmt;
 const mem = std.mem;
 const meta = std.meta;
 
@@ -88,13 +89,21 @@ pub const Config = struct {
     /// Must support the following format types in this order:
     /// 1. Character (Short Prefix) 
     /// 2. Optional Character "{?u}" (Short Name)
-    /// 3. String Name Separator
+    /// 3. String (Name Separator)
     /// 4. String (Long Prefix)
     /// 5. Optional String "{?s}" (Long Name)
-    /// 6. String (Value Type)
+    /// 6. String (Alias Long Names)
+    /// 7. String (Value Type)
     ///
     /// Note, a comma "," will automatically be placed between the short and long name if they both exist.
-    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s} <{s}>",
+    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s}{s} <{s}>",
+    /// Format for each Alias Long Name in the Usage message.
+    ///
+    /// Must support the following format types in this order:
+    /// 1. String (Name Separator)
+    /// 2. String (Long Prefix)
+    /// 3. String "{s}" (Alias Long Name)
+    alias_fmt: []const u8 = "{s}{s}{s}",
 
     /// Prefix for Short Options.
     short_prefix: ?u8 = '-',
@@ -165,6 +174,9 @@ pub fn Custom(comptime config: Config) type {
         /// Usage Format.
         /// Check `Options.Config` for details.
         pub const usage_fmt = config.usage_fmt;
+        /// Long Name Aliases Format.
+        /// Check `Options.Config` for details.
+        pub const alias_fmt = config.alias_fmt;
 
         /// Short Prefix.
         /// Check `Options.Config` for details.
@@ -328,12 +340,31 @@ pub fn Custom(comptime config: Config) type {
             }) |usageFn| return usageFn(self, writer, self._alloc);
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
 
+            const AliasFormatter = struct {
+                aliases: ?[]const []const u8,
+                
+                pub fn format(
+                    formatter: @This(), 
+                    _: []const u8, 
+                    _: fmt.FormatOptions, 
+                    fmt_writer: anytype,
+                ) !void {
+                    if (formatter.aliases == null or formatter.aliases.?.len == 0) {
+                        try fmt_writer.print("", .{});
+                        return;
+                    }
+                    for (formatter.aliases.?) |alias| 
+                        try fmt_writer.print(alias_fmt, .{ name_sep_fmt, long_prefix.?, alias });
+                }
+            };
+
             try writer.print(usage_fmt, .{ 
                 @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),
                 @as(u21, if (short_prefix != null) self.short_name orelse 0x200B else 0x200B),
                 if (self.short_name != null and self.long_name != null) name_sep_fmt else "",
                 if (long_prefix != null and self.long_name != null) long_prefix.? else "",
                 if (long_prefix != null) self.long_name orelse "" else "",
+                AliasFormatter{ .aliases = self.alias_long_names },
                 //self.val.name(),
                 self.val.childTypeName(),
             });
