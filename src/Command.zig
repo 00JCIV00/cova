@@ -419,6 +419,14 @@ pub fn Custom(comptime config: Config) type {
         pub const GetConfig = struct{
             /// An optional Argument Group to filter the returned Options or Values.
             arg_group: ?[]const u8 = null,
+            /// A filter for the status of an Option or Value
+            status: StatusFilter = .set_or_default,
+
+            pub const StatusFilter = enum {
+                set,
+                set_or_default,
+                all,
+            };
         };
 
         /// Argument Groups Types for `checkGroup()`.
@@ -492,7 +500,11 @@ pub fn Custom(comptime config: Config) type {
                     const opt_group = opt.opt_group orelse continue;
                     if (!mem.eql(u8, conf_group, opt_group)) continue;
                 }
-                if (!opt.val.isSet() and !opt.val.hasDefault()) continue;
+                switch (get_config.status) {
+                    .set => if (!opt.val.isSet()) continue,
+                    .set_or_default => if (!opt.val.isSet() and !opt.val.hasDefault()) continue,
+                    else => {},
+                }
                 try map.put(opt.name, opt);
             }
             return map;
@@ -631,6 +643,11 @@ pub fn Custom(comptime config: Config) type {
                     const conf_group = get_config.arg_group orelse break :checkGroup;
                     const val_group = val.valGroup() orelse continue;
                     if (!mem.eql(u8, conf_group, val_group)) continue;
+                }
+                switch (get_config.status) {
+                    .set => if (!val.isSet()) continue,
+                    .set_or_default => if (!val.isSet() and !val.hasDefault()) continue,
+                    else => {},
                 }
                 try map.put(val.name(), val); 
             }

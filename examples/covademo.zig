@@ -545,7 +545,7 @@ pub const setup_cmd: CommandT = .{
             .description = "A boolean value for the command.",
             .set_behavior = .Multi,
             .max_entries = 10,
-            .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y" }, &.{ "false", "f", "no", "n", "0" }, .Error),
+            .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y", "1" }, &.{ "false", "f", "no", "n", "0" }, .Error),
         }),
         ValueT.ofType(u64, .{
             .name = "cmd_u64",
@@ -629,7 +629,7 @@ pub fn main() !void {
     );
     var main_opts = try main_cmd.getOpts(.{});
     if (main_opts.get("string_opt")) |str_opt| strOpt: {
-        if (str_opt.val.isEmpty()) {
+        if (str_opt.val.isEmpty() and str_opt.val.isSet()) {
             log.debug("This Option was set, but intentionally left empty.", .{});
             break :strOpt;
         }

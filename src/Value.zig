@@ -350,7 +350,6 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// This is intended to be used with Options.
         pub fn setEmpty(self: *const @This()) !void {
             if (!self.is_empty) return error.NotEmpty;
-            if (@constCast(self).default_val) |_| @constCast(self).default_val = null;
             @constCast(self).is_set = true;
         }
 
