@@ -633,7 +633,6 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
                 if (opt.allow_empty) {
                     opt.val.setEmpty() catch 
                         log.err("The Option '{s}' has already been set.", .{ opt.name });
-                    _ = args.next();
                     return;
                 }
                 else if (!opt.val.hasCustomParseFn()) 

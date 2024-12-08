@@ -52,7 +52,7 @@ pub fn build(b: *std.Build) void {
     //==========================================
     // Examples
     //==========================================
-    const examples = &.{ "cova-demo", "basic-app", "logger" };
+    const examples = &.{ "cova-demo", "basic_app", "logger" };
     var ex_arena = std.heap.ArenaAllocator.init(b.allocator);
     defer ex_arena.deinit();
     const ex_alloc = ex_arena.allocator();

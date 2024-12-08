@@ -95,7 +95,7 @@ pub const Config = struct {
     /// 6. String (Alias Long Names)
     /// 7. String (Value Type)
     ///
-    /// Note, a comma "," will automatically be placed between the short and long name if they both exist.
+    /// Note, the Name Separator (`name_sep_fmt`) will automatically be placed between the short and long name if they both exist.
     usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s}{s} <{s}>",
     /// Format for each Alias Long Name in the Usage message.
     ///
