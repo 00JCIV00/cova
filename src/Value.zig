@@ -357,7 +357,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// This will pull the first value from `_set_args` and should be used with the `First` or `Last` Set Behaviors.
         pub fn get(self: *const @This()) !ChildT {
             return 
-                if (self.is_set) self._set_args[0].?
+                if (self.is_set and !self.is_empty) self._set_args[0].?
                 else if (self.default_val) |def_val| def_val
                 else if (ChildT == bool) false
                 else error.ValueNotSet;
