@@ -354,10 +354,10 @@ fn parseArgsCtx(
                                 // Handle Argument provided to this Option with the Option/Value Separator (like '=') instead of ' '.
                                 if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
                                     if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
-                                        log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                            short_pf, 
-                                            opt.short_name, 
-                                            opt.name 
+                                        log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{
+                                            short_pf,
+                                            opt.short_name,
+                                            opt.name,
                                         });
                                         try errReaction(parse_config.err_reaction, opt, writer);
                                         try writer.print("\n", .{});
@@ -408,6 +408,12 @@ fn parseArgsCtx(
                                     try opt.setArgIdx(parse_ctx.arg_idx);
                                     parse_ctx.*.arg_idx += 1;
                                     log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                    continue :shortOpts;
+                                }
+                                // Handle a non-boolean Option that allows an Empty Value.
+                                else if (opt.allow_empty) {
+                                    opt.val.setEmpty() catch 
+                                        log.err("The Option '{s}' has already been set.", .{ opt.name });
                                     continue :shortOpts;
                                 }
                                 // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
