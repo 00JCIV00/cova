@@ -284,4 +284,4 @@ pub fn build(b: *std.Build) void {
 - [zig-args](https://github.com/masterQ32/zig-args)
 - [zig-clap](https://github.com/Hejsil/zig-clap)
 - [zig-cli](https://github.com/sam701/zig-cli)
-- [zli](https://gitlab.com/ziglang/zig)
+- [zli](https://gitlab.com/nihklas/zli)
