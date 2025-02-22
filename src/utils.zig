@@ -100,8 +100,9 @@ fn displayValInfo(
 
 /// Find the Index of any Type, Scalar or Slice, (`needle`) within a Slice of that Type (`haystack`). (Why is this not in std.mem?!?!? Did I miss it?)
 pub fn indexOfEql(comptime T: type, haystack: []const T, needle: T) ?usize {
+    @setEvalBranchQuota(10_000);
     switch (@typeInfo(T)) {
-        .Pointer => |ptr| {
+        .pointer => |ptr| {
             for (haystack, 0..) |hay, idx| if (mem.eql(ptr.child, hay, needle)) return idx;
             return null;
         },

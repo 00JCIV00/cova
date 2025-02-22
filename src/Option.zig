@@ -398,15 +398,15 @@ pub fn Custom(comptime config: Config) type {
                 @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(FieldT) ++ "' was provided.");
             const optl_info = @typeInfo(field.type);
             //const optl =
-            //    if (optl_info == .Optional) optl_info.Optional
-            //    else if (optl_info == .Array and @typeInfo(optl_info.Array.child) == .Optional) @typeInfo(optl_info.Array.child).Optional
+            //    if (optl_info == .optional) optl_info.optional
+            //    else if (optl_info == .array and @typeInfo(optl_info.array.child) == .optional) @typeInfo(optl_info.array.child).optional
             //    else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
             const child_info = switch(optl_info) {
-                .Optional => @typeInfo(optl_info.Optional.child),
-                .Array => |ary| aryInfo: {
+                .optional => @typeInfo(optl_info.optional.child),
+                .array => |ary| aryInfo: {
                     const ary_info = @typeInfo(ary.child);
                     break :aryInfo
-                        if (ary_info == .Optional) @typeInfo(ary_info.Optional.child)
+                        if (ary_info == .optional) @typeInfo(ary_info.optional.child)
                         else ary_info;
                 },
                 inline else => optl_info,
@@ -415,7 +415,7 @@ pub fn Custom(comptime config: Config) type {
                 const opt_val = optVal: {
                     //const child_info = @typeInfo(optl.child);
                     switch (child_info) {
-                        .Bool, .Int, .Float, .Pointer, .Enum => break :optVal ValueT.from(field, .{
+                        .bool, .int, .float, .pointer, .@"enum" => break :optVal ValueT.from(field, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_name = from_config.name,
                             .val_description = from_config.opt_description,

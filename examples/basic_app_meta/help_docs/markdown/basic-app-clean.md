@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    clean -f,--file <clean_file (filepath)>
+    clean -f,--file,--delete_file <filepath>
     clean 
 
 ```

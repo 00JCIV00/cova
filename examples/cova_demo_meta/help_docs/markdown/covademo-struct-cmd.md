@@ -17,39 +17,39 @@ USAGE
 - [__inner-cmd__](./covademo-struct-cmd-inner-cmd.md): An inner/nested command for struct-cmd
 ### Options
 - __int__:
-    - `​​--int <int (i32)>`
+    - `-i, --int <int (i32)>`
     - The first Integer Value for the struct-cmd.
 - __str__:
-    - `​​--str <str (text)>`
-    - The 'str' Option of type 'text'.
+    - `-s, --str <str (text)>`
+    - The 'str' Option.
 - __str2__:
-    - `​​--str2 <str2 (text)>`
-    - The 'str2' Option of type 'text'.
+    - `-S, --str2 <str2 (text)>`
+    - The 'str2' Option.
 - __flt__:
-    - `​​--flt <flt (f16)>`
-    - The 'flt' Option of type 'f16'.
+    - `-f, --flt <flt (f16)>`
+    - The 'flt' Option.
 - __int2__:
-    - `​​--int2 <int2 (u16)>`
-    - The 'int2' Option of type 'u16'.
+    - `-I, --int2 <int2 (u16)>`
+    - The 'int2' Option.
 - __multi-int__:
-    - `​​--multi-int <multi-int (u8)>`
-    - The 'multi_int' Option of type 'u8'.
+    - `-m, --multi-int <multi-int (u8)>`
+    - The 'multi-int' Value.
 - __multi-str__:
-    - `​​--multi-str <multi-str (text)>`
-    - The 'multi_str' Option of type 'text'.
+    - `-M, --multi-str <multi-str (text)>`
+    - The 'multi-str' Value.
 - __rgb-enum__:
-    - `​​--rgb-enum <rgb-enum (covademo.DemoStruct.InnerEnum)>`
-    - The 'rgb_enum' Option of type 'covademo.DemoStruct.InnerEnum'.
+    - `-r, --rgb-enum <rgb-enum (covademo.DemoStruct.InnerEnum)>`
+    - The 'rgb-enum' Option.
 - __struct-bool__:
-    - `​​--struct-bool <struct-bool (toggle)>`
+    - `-t, --struct-bool <struct-bool (toggle)>`
     - The 'struct_bool' Option of type 'toggle'.
 - __struct-str__:
-    - `​​--struct-str <struct-str (text)>`
+    - `-T, --struct-str <struct-str (text)>`
     - The 'struct_str' Option of type 'text'.
 - __struct-int__:
-    - `​​--struct-int <struct-int (i64)>`
+    - `-R, --struct-int <struct-int (i64)>`
     - The 'struct_int' Option of type 'i64'.
 ### Values
 - __multi-int-val__ (u16)
-    - The 'multi-int-val' Value of Type '[2]u16'.
+    - The 'multi-int-val' Value.
 

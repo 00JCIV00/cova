@@ -1,8 +1,8 @@
 "Meta Info": {
     "name": "basic-app",
     "description": "A basic user management application designed to highlight key features of the Cova library.",
-    "version": "0.10.0",
-    "ver_date": "06 APR 2024",
+    "version": "0.10.2",
+    "ver_date": "23 OCT 2024",
     "author": "00JCIV00",
     "copyright": "MIT License"
 },
@@ -83,8 +83,8 @@
             ],
             "vals": [
                 {
-                    "name": "val-00",
-                    "description": "No description. (Descriptions cannot currently be generated from Function Parameters.)",
+                    "name": "__nosubdescriptionsprovided__",
+                    "description": "",
                     "type_name": "[]const u8",
                     "set_behavior": "Last",
                     "max_entries": 1
@@ -104,7 +104,7 @@
                             "name": "id",
                             "long_name": "id",
                             "short_name": 105,
-                            "description": "The 'id' Option of type '?u16'.",
+                            "description": "The 'id' Option.",
                             "type_name": "u16",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -113,7 +113,7 @@
                             "name": "admin",
                             "long_name": "admin",
                             "short_name": 97,
-                            "description": "The 'admin' Option of type '?bool'.",
+                            "description": "The 'admin' Option.",
                             "type_name": "bool",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -122,7 +122,7 @@
                             "name": "age",
                             "long_name": "age",
                             "short_name": 65,
-                            "description": "The 'age' Option of type '?u8'.",
+                            "description": "The 'age' Option.",
                             "type_name": "u8",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -131,7 +131,7 @@
                             "name": "first-name",
                             "long_name": "first-name",
                             "short_name": 102,
-                            "description": "The 'first_name' Option of type '?[]const u8'.",
+                            "description": "The 'first-name' Option.",
                             "type_name": "[]const u8",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -140,7 +140,7 @@
                             "name": "last-name",
                             "long_name": "last-name",
                             "short_name": 108,
-                            "description": "The 'last_name' Option of type '?[]const u8'.",
+                            "description": "The 'last-name' Option.",
                             "type_name": "[]const u8",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -149,7 +149,7 @@
                             "name": "phone",
                             "long_name": "phone",
                             "short_name": 112,
-                            "description": "The 'phone' Option of type '?[]const u8'.",
+                            "description": "The 'phone' Option.",
                             "type_name": "[]const u8",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -158,7 +158,7 @@
                             "name": "address",
                             "long_name": "address",
                             "short_name": 100,
-                            "description": "The 'address' Option of type '?[]const u8'.",
+                            "description": "The 'address' Option.",
                             "type_name": "[]const u8",
                             "set_behavior": "Last",
                             "max_entries": 1
@@ -187,7 +187,8 @@
                     "aliases": [
                         "delete_file"
                     ],
-                    "type_name": "filepath",
+                    "type_name": "[]const u8",
+                    "type_alias": "filepath",
                     "set_behavior": "Last",
                     "max_entries": 1
                 }

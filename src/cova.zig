@@ -361,7 +361,7 @@ fn parseArgsCtx(
                                         });
                                         try errReaction(parse_config.err_reaction, opt, writer);
                                         try writer.print("\n", .{});
-                                        return error.BoolCannotTakeArgument;
+                                        return error.boolCannotTakeArgument;
                                     }
                                     if (short_idx + 2 >= short_opts.len) return error.EmptyArgumentProvidedToOption;
                                     const opt_arg = short_opts[(short_idx + 2)..];
@@ -481,7 +481,7 @@ fn parseArgsCtx(
                                         });
                                         try errReaction(parse_config.err_reaction, opt, writer);
                                         try writer.print("\n", .{});
-                                        return error.BoolCannotTakeArgument;
+                                        return error.boolCannotTakeArgument;
                                     }
                                     if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
                                     opt.val.set(sep_arg) catch {

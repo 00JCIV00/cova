@@ -8,15 +8,18 @@ ___
 ## Usage
 ```shell
 USAGE
-    inner-cmd [ --in-bool |  --in-float ]
+    inner-cmd [ --in-bool |  --in-float |  --h-string ]
 ```
 
 ## Arguments
 ### Options
 - __in-bool__:
-    - `​​--in-bool <in-bool (toggle)>`
+    - `-i, --in-bool <in-bool (toggle)>`
     - The 'in_bool' Option of type 'toggle'.
 - __in-float__:
-    - `​​--in-float <in-float (f32)>`
+    - `-I, --in-float <in-float (f32)>`
     - The 'in_float' Option of type 'f32'.
+- __h-string__:
+    - `-H, --h-string <h-string (text)>`
+    - The 'h_string' Option of type 'text'.
 

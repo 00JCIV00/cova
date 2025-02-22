@@ -21,7 +21,7 @@ USAGE
     - The first String Value for the union-cmd.
 ### Values
 - __union-uint__ (u8)
-    - The 'union-uint' Value of Type 'u8'.
+    - The 'union-uint' Value.
 - __union-str__ (text)
-    - The 'union-str' Value of Type '[]const u8'.
+    - The 'union-str' Value.
 

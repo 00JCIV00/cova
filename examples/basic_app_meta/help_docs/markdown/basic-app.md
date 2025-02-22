@@ -1,8 +1,8 @@
 # basic-app
 A basic user management application designed to highlight key features of the Cova library.
 
-__Version:__ 0.10.0<br>
-__Date:__ 06 APR 2024<br>
+__Version:__ 0.10.2<br>
+__Date:__ 23 OCT 2024<br>
 __Author:__ 00JCIV00<br>
 __Copyright:__ MIT License<br>
 ___
