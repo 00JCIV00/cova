@@ -32,7 +32,7 @@ cmd_args=(
     "covademo_nest-1_nest-2_nest-3" "nest-4 help usage --inheritable --help --usage"
     "covademo_nest-1_nest-2_nest-3_nest-4" "help usage --help --usage"
     "covademo_struct-cmd" "inner-cmd help usage --int --str --str2 --flt --int2 --multi-int --multi-str --rgb-enum --struct-bool --struct-str --struct-int --help --usage"
-    "covademo_struct-cmd_inner-cmd" "help usage --in-bool --in-float --help --usage"
+    "covademo_struct-cmd_inner-cmd" "help usage --in-bool --in-float --h-string --help --usage"
     "covademo_union-cmd" "help usage --int --str --help --usage"
     "covademo_fn-cmd" "help usage --help --usage"
     "covademo_add-user" "help usage --fname --lname --age --admin --ref-ids --help --usage"

@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    open "val-00 ([]const u8)"
+    open "__nosubdescriptionsprovided__ ([]const u8)"
     open 
 
 ```
@@ -19,6 +19,6 @@ USAGE:
 
 ## Arguments
 ### Values
-- __val-00__ ([]const u8)
-    - No description. (Descriptions cannot currently be generated from Function Parameters.)
+- ____nosubdescriptionsprovided____ ([]const u8)
+    - 
 

@@ -12,8 +12,10 @@ USAGE
 
 ## Arguments
 ### Values
-- __val-00__ (i32)
-    - No description. (Descriptions cannot currently be generated from Function Parameters.)
-- __val-01__ (text)
-    - No description. (Descriptions cannot currently be generated from Function Parameters.)
+- __int__ (i32)
+    - The first Integer Value for the fn-cmd.
+- __string__ (text)
+    - The first String Value for the fn-cmd.
+- __byte_array__ (u8)
+    - A 6-Byte Array for fn-cmd
 

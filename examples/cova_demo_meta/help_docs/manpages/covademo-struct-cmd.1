@@ -1,4 +1,4 @@
-.TH covademo-struct-cmd 1 "27 AUG 2024" "0.10.1" 
+.TH covademo-struct-cmd 1 "23 OCT 2024" "0.10.2" 
 
 .SH NAME
 .B covademo-struct-cmd
@@ -18,52 +18,52 @@ An inner/nested command for struct-cmd
 
 .SS OPTIONS
 .B int:
-[-null,--int "int (i32)"]:
+[-i,--int "int (i32)"]:
   The first Integer Value for the struct-cmd.
 
 .B str:
-[-null,--str "str (text)"]:
-  The 'str' Option of type 'text'.
+[-s,--str "str (text)"]:
+  The 'str' Option.
 
 .B str2:
-[-null,--str2 "str2 (text)"]:
-  The 'str2' Option of type 'text'.
+[-S,--str2 "str2 (text)"]:
+  The 'str2' Option.
 
 .B flt:
-[-null,--flt "flt (f16)"]:
-  The 'flt' Option of type 'f16'.
+[-f,--flt "flt (f16)"]:
+  The 'flt' Option.
 
 .B int2:
-[-null,--int2 "int2 (u16)"]:
-  The 'int2' Option of type 'u16'.
+[-I,--int2 "int2 (u16)"]:
+  The 'int2' Option.
 
 .B multi-int:
-[-null,--multi-int "multi-int (u8)"]:
-  The 'multi_int' Option of type 'u8'.
+[-m,--multi-int "multi-int (u8)"]:
+  The 'multi-int' Value.
 
 .B multi-str:
-[-null,--multi-str "multi-str (text)"]:
-  The 'multi_str' Option of type 'text'.
+[-M,--multi-str "multi-str (text)"]:
+  The 'multi-str' Value.
 
 .B rgb-enum:
-[-null,--rgb-enum "rgb-enum (covademo.DemoStruct.InnerEnum)"]:
-  The 'rgb_enum' Option of type 'covademo.DemoStruct.InnerEnum'.
+[-r,--rgb-enum "rgb-enum (covademo.DemoStruct.InnerEnum)"]:
+  The 'rgb-enum' Option.
 
 .B struct-bool:
-[-null,--struct-bool "struct-bool (toggle)"]:
+[-t,--struct-bool "struct-bool (toggle)"]:
   The 'struct_bool' Option of type 'toggle'.
 
 .B struct-str:
-[-null,--struct-str "struct-str (text)"]:
+[-T,--struct-str "struct-str (text)"]:
   The 'struct_str' Option of type 'text'.
 
 .B struct-int:
-[-null,--struct-int "struct-int (i64)"]:
+[-R,--struct-int "struct-int (i64)"]:
   The 'struct_int' Option of type 'i64'.
 
 .SS VALUES
 .B multi-int-val:
-(u16): The 'multi-int-val' Value of Type '[2]u16'.
+(u16): The 'multi-int-val' Value.
 
 
 .SH AUTHOR

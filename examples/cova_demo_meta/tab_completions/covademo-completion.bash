@@ -179,7 +179,7 @@ _covademo_struct-cmd_inner-cmd_completions() {
 
     case "${prev}" in
         "inner-cmd")
-            COMPREPLY=($(compgen -W "help usage --in-bool --in-float --help --usage" -- ${cur}))
+            COMPREPLY=($(compgen -W "help usage --in-bool --in-float --h-string --help --usage" -- ${cur}))
             ;;
         *)
             COMPREPLY=($(compgen -f -- ${cur}))

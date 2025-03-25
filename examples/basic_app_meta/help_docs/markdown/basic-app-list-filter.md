@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    filter -i,--id <id (u16)> | -a,--admin <admin (bool)> | -A,--age <age (u8)> | -f,--first-name <first-name ([]const u8)> | -l,--last-name <last-name ([]const u8)> | -p,--phone <phone ([]const u8)> | -d,--address <address ([]const u8)>
+    filter -i,--id <u16> | -a,--admin <bool> | -A,--age <u8> | -f,--first-name <[]const u8> | -l,--last-name <[]const u8> | -p,--phone <[]const u8> | -d,--address <[]const u8>
     filter 
 
 ```
@@ -17,23 +17,23 @@ USAGE:
 ### Options
 - __id__:
     - `-i, --id <id (u16)>`
-    - The 'id' Option of type '?u16'.
+    - The 'id' Option.
 - __admin__:
     - `-a, --admin <admin (bool)>`
-    - The 'admin' Option of type '?bool'.
+    - The 'admin' Option.
 - __age__:
     - `-A, --age <age (u8)>`
-    - The 'age' Option of type '?u8'.
+    - The 'age' Option.
 - __first-name__:
     - `-f, --first-name <first-name ([]const u8)>`
-    - The 'first_name' Option of type '?[]const u8'.
+    - The 'first-name' Option.
 - __last-name__:
     - `-l, --last-name <last-name ([]const u8)>`
-    - The 'last_name' Option of type '?[]const u8'.
+    - The 'last-name' Option.
 - __phone__:
     - `-p, --phone <phone ([]const u8)>`
-    - The 'phone' Option of type '?[]const u8'.
+    - The 'phone' Option.
 - __address__:
     - `-d, --address <address ([]const u8)>`
-    - The 'address' Option of type '?[]const u8'.
+    - The 'address' Option.
 

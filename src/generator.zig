@@ -39,12 +39,12 @@ const meta_info: []const []const u8 = &.{
 fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
     if (!conf_opts.provided) return null;
     var conf = ConfigT{};
-    for (@typeInfo(ConfigT).Struct.fields) |field| {
+    for (@typeInfo(ConfigT).@"struct".fields) |field| {
         if (std.mem.eql(u8, field.name, "provided")) continue;
         @field(conf, field.name) = @field(conf_opts, field.name);
         if (
             (
-                @typeInfo(@TypeOf(@field(conf, field.name))) == .Optional and 
+                @typeInfo(@TypeOf(@field(conf, field.name))) == .optional and 
                 @field(conf, field.name) != null
             ) or
             utils.indexOfEql([]const u8, meta_info, field.name) == null
@@ -63,8 +63,8 @@ pub fn main() !void {
             break :docKinds kinds_out[0..];
         }
         const mdk_info = @typeInfo(generate.MetaDocConfig.MetaDocKind);
-        var kinds_list: [mdk_info.Enum.fields[1..].len]generate.MetaDocConfig.MetaDocKind = undefined;
-        for (mdk_info.Enum.fields[1..], kinds_list[0..]) |field, *kind| kind.* = @enumFromInt(field.value);
+        var kinds_list: [mdk_info.@"enum".fields[1..].len]generate.MetaDocConfig.MetaDocKind = undefined;
+        for (mdk_info.@"enum".fields[1..], kinds_list[0..]) |field, *kind| kind.* = @enumFromInt(field.value);
         const kinds_out = kinds_list;
         break :docKinds kinds_out[0..];
     };

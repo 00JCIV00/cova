@@ -3,7 +3,7 @@
 name "basic-app"
 bin "basic-app"
 about "A basic user management application designed to highlight key features of the Cova library."
-version "0.10.0"
+version "0.10.2"
 author "00JCIV00"
 
 cmd "new" help="Add a new user." {
@@ -17,18 +17,18 @@ cmd "new" help="Add a new user." {
 }
 
 cmd "open" help="Open or create a users file." {
-    arg "val-00" help="No description. (Descriptions cannot currently be generated from Function Parameters.)"
+    arg "__nosubdescriptionsprovided__" help=""
 }
 
 cmd "list" help="List all current users." {
     cmd "filter" help="List all current users matching the provided filter. Filters can be exactly ONE of any user field." {
-        flag "-i,--id" help="The 'id' Option of type '?u16'."
-        flag "-a,--admin" help="The 'admin' Option of type '?bool'."
-        flag "-A,--age" help="The 'age' Option of type '?u8'."
-        flag "-f,--first-name" help="The 'first_name' Option of type '?[]const u8'."
-        flag "-l,--last-name" help="The 'last_name' Option of type '?[]const u8'."
-        flag "-p,--phone" help="The 'phone' Option of type '?[]const u8'."
-        flag "-d,--address" help="The 'address' Option of type '?[]const u8'."
+        flag "-i,--id" help="The 'id' Option."
+        flag "-a,--admin" help="The 'admin' Option."
+        flag "-A,--age" help="The 'age' Option."
+        flag "-f,--first-name" help="The 'first-name' Option."
+        flag "-l,--last-name" help="The 'last-name' Option."
+        flag "-p,--phone" help="The 'phone' Option."
+        flag "-d,--address" help="The 'address' Option."
     }
 }
 

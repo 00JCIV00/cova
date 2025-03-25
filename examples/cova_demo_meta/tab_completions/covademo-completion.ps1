@@ -148,6 +148,7 @@ function _covademo-struct-cmd-inner-cmd {
 		'usage',
 		'--in-bool',
 		'--in-float',
+		'--h-string',
 		'--help',
 		'--usage'
 	)

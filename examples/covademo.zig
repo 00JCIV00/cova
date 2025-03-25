@@ -310,6 +310,12 @@ pub const setup_cmd: CommandT = .{
                 },
             },
             .vals = &.{
+                ValueT.ofType([]const u8, .{
+                    .name = "nested_str_val",
+                    .description = "A nested string value.",
+                    .max_entries = 10,
+                    .set_behavior = .Multi,
+                }),
                 ValueT.ofType(f32, .{
                     .name = "nested_float_val",
                     .description = "A nested float value.",
@@ -538,6 +544,8 @@ pub const setup_cmd: CommandT = .{
             .name = "cmd_str",
             .val_group = "STRING",
             .description = "A string value for the command.",
+            .max_entries = 10,
+            .set_behavior = .Multi,
             .parse_fn = Value.ParsingFns.trimWhitespace,
         }),
         ValueT.ofType(bool, .{

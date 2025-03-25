@@ -986,8 +986,8 @@ pub fn Custom(comptime config: Config) type {
         pub fn from(comptime FromT: type, comptime from_config: FromConfig) @This() {
             const from_info = @typeInfo(FromT);
             return switch (from_info) {
-                .Fn => fromFn(FromT, from_config),
-                .Struct, .Union => fromStructOrUnion(FromT, from_config),
+                .@"fn" => fromFn(FromT, from_config),
+                .@"struct", .@"union" => fromStructOrUnion(FromT, from_config),
                 else => @compileError("The provided type '" ++ @typeName(FromT) ++ "' must be a Function, Struct, or Union."),
             };
         }
@@ -1003,7 +1003,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Arrays of Valid Optionals = Multi-Options
         pub fn fromStructOrUnion(comptime FromT: type, comptime from_config: FromConfig) @This() {
             const from_info = @typeInfo(FromT);
-            if (from_info != .Struct and from_info != .Union) @compileError("Provided Type is not a Struct or Union.");
+            if (from_info != .@"struct" and from_info != .@"union") @compileError("Provided Type is not a Struct or Union.");
 
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
@@ -1037,22 +1037,22 @@ pub fn Custom(comptime config: Config) type {
                 // Handle Argument Types.
                 switch (field.type) {
                     @This() => {
-                        if (field.default_value != null) {
-                            from_cmds[cmds_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
+                        if (field.default_value_ptr != null) {
+                            from_cmds[cmds_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value_ptr)))).*;
                             cmds_idx += 1;
                             continue;
                         }
                     },
                     OptionT => {
-                        if (field.default_value != null) {
-                            from_opts[opts_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
+                        if (field.default_value_ptr != null) {
+                            from_opts[opts_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value_ptr)))).*;
                             opts_idx += 1;
                             continue;
                         }
                     },
                     ValueT => {
-                        if (field.default_value != null) {
-                            from_vals[vals_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value)))).*;
+                        if (field.default_value_ptr != null) {
+                            from_vals[vals_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value_ptr)))).*;
                             vals_idx += 1;
                             continue;
                         }
@@ -1064,7 +1064,7 @@ pub fn Custom(comptime config: Config) type {
                 // Handle non-Argument Types.
                 switch (field_info) {
                     // Commands
-                    .Fn, .Struct => {
+                    .@"fn", .@"struct" => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
                             new_config.cmd_name = arg_name;
@@ -1076,7 +1076,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                     // Options
                     // TODO - Handle Command Types passed as Optionals?
-                    .Optional => {
+                    .optional => {
                         from_opts[opts_idx] = (OptionT.from(field, .{ 
                             .name = arg_name,
                             .short_name = if (from_config.attempt_short_opts) optShortName(
@@ -1092,8 +1092,8 @@ pub fn Custom(comptime config: Config) type {
                         opts_idx += 1;
                     },
                     // Values
-                    .Bool, .Int, .Float, .Pointer, .Enum => {
-                        if (from_config.default_val_opts and field.default_value != null) {
+                    .bool, .int, .float, .pointer, .@"enum" => {
+                        if (from_config.default_val_opts and field.default_value_ptr != null) {
                             from_opts[opts_idx] = (OptionT.from(field, .{ 
                                 .name = arg_name,
                                 .short_name = if (from_config.attempt_short_opts) optShortName(
@@ -1117,11 +1117,11 @@ pub fn Custom(comptime config: Config) type {
                         vals_idx += 1;
                     },
                     // Multi
-                    .Array => |ary| {
+                    .array => |ary| {
                         const ary_info = @typeInfo(ary.child);
                         switch (ary_info) {
                             // Options
-                            .Optional => {
+                            .optional => {
                                 from_opts[opts_idx] = OptionT.from(field, .{
                                     .name = arg_name,
                                     .short_name = if (from_config.attempt_short_opts) optShortName(
@@ -1137,7 +1137,7 @@ pub fn Custom(comptime config: Config) type {
                                 opts_idx += 1;
                             },
                             // Values
-                            .Bool, .Int, .Float, .Pointer, .Enum => {
+                            .bool, .int, .float, .pointer, .@"enum" => {
                                 from_vals[vals_idx] = ValueT.from(field, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_name = arg_name,
@@ -1215,10 +1215,10 @@ pub fn Custom(comptime config: Config) type {
         /// - Functions, Structs, Unions = Commands
         /// - Valid Single-Parameters = Single-Values (Valid Values can be found under `Value.zig/Generic`.)
         /// - Valid Array/Slice-Parameters = Multi-Values
-        /// - Note: Options can not be generated from Functions due to the lack of parameter names in `std.builtin.Type.Fn.Param`.
+        /// - Note: Options can not be generated from Functions due to the lack of parameter names in `std.builtin.Type.@"fn".Param`.
         pub fn fromFn(comptime FromFn: type, comptime from_config: FromConfig) @This() {
             const from_info = @typeInfo(FromFn);
-            if (from_info != .Fn) @compileError("Provided Type is not a Function.");
+            if (from_info != .@"fn") @compileError("Provided Type is not a Function.");
 
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
@@ -1229,7 +1229,7 @@ pub fn Custom(comptime config: Config) type {
 
             const arg_details = from_config.sub_descriptions; //StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
 
-            const params = from_info.Fn.params;
+            const params = from_info.@"fn".params;
             const start_idx = if (from_config.ignore_first) 1 else 0;
             inline for (params[start_idx..], 0..) |param, idx| {
                 const arg_name: ?[]const u8 = if (idx < arg_details.len) arg_details[idx][0] else null;
@@ -1238,7 +1238,7 @@ pub fn Custom(comptime config: Config) type {
                 // Handle Argument Types.
                 switch (@typeInfo(param.type.?)) {
                     // Commands
-                    .Fn, .Struct, .Union => {
+                    .@"fn", .@"struct", .@"union" => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
                             new_config.cmd_name = arg_name orelse "cmd-" ++ &.{ cmds_idx + 48 };
@@ -1250,7 +1250,7 @@ pub fn Custom(comptime config: Config) type {
                         cmds_idx += 1;
                     },
                     // Values
-                    .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
+                    .bool, .int, .float, .optional, .pointer, .@"enum" => {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_name = arg_name orelse "val-" ++ .{ '0', (vals_idx + 48) },
@@ -1259,11 +1259,11 @@ pub fn Custom(comptime config: Config) type {
                         vals_idx += 1;
                     },
                     // Multi
-                    .Array => |ary| {
+                    .array => |ary| {
                         const ary_info = @typeInfo(ary.child);
                         switch (ary_info) {
                             // Values
-                            .Bool, .Int, .Float, .Optional, .Pointer, .Enum => {
+                            .bool, .int, .float, .optional, .pointer, .@"enum" => {
                                 from_vals[vals_idx] = ValueT.from(param, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_name = arg_name orelse "val-" ++ .{ '0', (vals_idx + 48) },
@@ -1328,7 +1328,7 @@ pub fn Custom(comptime config: Config) type {
         pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             const type_info = @typeInfo(ToT);
-            if (type_info == .Union) { 
+            if (type_info == .@"union") { 
                 const vals_idx = if (self.vals) |vals| valsIdx: {
                     var idx: u8 = 0;
                     for (vals) |val| { if (val.isSet()) idx += 1; }
@@ -1372,53 +1372,53 @@ pub fn Custom(comptime config: Config) type {
                 const field_info = @typeInfo(field.type);
                 switch (field_info) {
                     // Commands
-                    .Struct => {
+                    .@"struct" => {
                         @field(out, field.name) = 
                             if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name))
                                 try self.sub_cmd.?.to(field.type, to_config)
                             else if (to_config.allow_unset) field.type{}
                             else return error.ValueNotSet;
                     },
-                    .Union => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
+                    .@"union" => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
                         return @unionInit(ToT, field.name, try self.sub_cmd.?.to(field.type, to_config));
                     },
                     // Options
-                    .Optional => |f_opt| if (self.opts) |opts| {
+                    .optional => |f_opt| if (self.opts) |opts| {
                         for (opts) |opt| {
                             if (mem.eql(u8, opt.name, arg_name)) {
-                                if (!opt.val.isSet() and type_info == .Struct) {
+                                if (!opt.val.isSet() and type_info == .@"struct") {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     @field(out, field.name) = 
-                                        if (field.default_value) |def_val| @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
+                                        if (field.default_value_ptr) |def_val| @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
                                         else null;
                                     break;
                                 }
-                                if (type_info == .Union) return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
+                                if (type_info == .@"union") return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
                                 @field(out, field.name) = try opt.val.getAs(f_opt.child);
                             }
                         }
                     },
                     // Values
-                    .Bool, .Int, .Float, .Pointer, .Enum => {
+                    .bool, .int, .float, .pointer, .@"enum" => {
                         for (vals) |val| {
                             if (mem.eql(u8, val.name(), arg_name)) {
-                                //if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .Struct) {
-                                if (!val.isSet() and type_info == .Struct) {
+                                //if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .@"struct") {
+                                if (!val.isSet() and type_info == .@"struct") {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
-                                    const def_val = field.default_value orelse {
+                                    const def_val = field.default_value_ptr orelse {
                                         log.err("The Field '{s}' has no default value.", .{ field.name });
                                         return error.NoDefaultValue;
                                     };
                                     @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
                                     break;
                                 }
-                                if (type_info == .Union) return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
+                                if (type_info == .@"union") return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
                                 @field(out, field.name) = val.getAs(field.type) catch |err| setVal: {
                                     if (!to_config.allow_incompatible) return error.IncompatibleType;
                                     break :setVal switch (field_info) {
-                                        .Bool => false,
-                                        .Int, .Float, => @as(field.type, 0),
-                                        .Pointer => "",    
+                                        .bool => false,
+                                        .int, .float, => @as(field.type, 0),
+                                        .pointer => "",    
                                         else => return err,
                                     };
                                 };
@@ -1426,17 +1426,17 @@ pub fn Custom(comptime config: Config) type {
                         } 
                     },
                     // Multi
-                    .Array => |ary| {
+                    .array => |ary| {
                         const ary_info = @typeInfo(ary.child);
                         switch (ary_info) {
                             // - Options
-                            .Optional => |a_opt| if (self.opts) |opts| {
+                            .optional => |a_opt| if (self.opts) |opts| {
                                 for (opts) |opt| {
                                     if (mem.eql(u8, opt.name, arg_name)) {
-                                        if (!opt.val.isSet() and type_info == .Struct) {
+                                        if (!opt.val.isSet() and type_info == .@"struct") {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             @field(out, field.name) =
-                                                if (field.default_value) |def_val|
+                                                if (field.default_value_ptr) |def_val|
                                                     @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
                                                 else .{ null } ** ary.len;
                                             break;
@@ -1444,19 +1444,19 @@ pub fn Custom(comptime config: Config) type {
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
                                         var f_ary: field.type = undefined;
                                         for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
-                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
+                                        if (type_info == .@"union") return @unionInit(ToT, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
                                 }
                             },
                             // - Values
-                            .Bool, .Int, .Float, .Pointer => {
+                            .bool, .int, .float, .pointer => {
                                 for (vals) |val| {
                                     if (mem.eql(u8, val.name(), arg_name)) {
-                                        if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .Struct) {
+                                        if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .@"struct") {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
-                                            const def_val = field.default_value orelse {
+                                            const def_val = field.default_value_ptr orelse {
                                                 log.err("The Field '{s}' has no default value.", .{ field.name });
                                                 return error.NoDefaultValue;
                                             };
@@ -1467,13 +1467,13 @@ pub fn Custom(comptime config: Config) type {
                                         var f_ary: field.type = undefined;
                                         for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx] orelse elmVal: {
                                             break :elmVal switch (ary_info) {
-                                                .Bool => false,
-                                                .Int, .Float, => @as(ary.child, 0),
-                                                .Pointer => "",    
+                                                .bool => false,
+                                                .int, .float, => @as(ary.child, 0),
+                                                .pointer => "",    
                                                 else => if (!to_config.allow_incompatible) return error.IncompatibleType,
                                             };
                                         };
-                                        if (type_info == .Union) return @unionInit(ToT, field.name, f_ary); 
+                                        if (type_info == .@"union") return @unionInit(ToT, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -1499,27 +1499,27 @@ pub fn Custom(comptime config: Config) type {
         pub fn callAs(self: *const @This(), comptime call_fn: anytype, fn_self: anytype, comptime ReturnT: type) !ReturnT {
             const fn_info = @typeInfo(@TypeOf(call_fn));
             const fn_name = @typeName(@TypeOf(call_fn));
-            if (fn_info != .Fn) {
+            if (fn_info != .@"fn") {
                 log.err("Expected a Function but received '{s}'.", .{ fn_name });
                 return error.ExpectedFn;
             }
-            if (self.vals == null or self.vals.?.len < fn_info.Fn.params.len) {
+            if (self.vals == null or self.vals.?.len < fn_info.@"fn".params.len) {
                 log.err("The provided function requires {d} parameters but only {d} was/were provided.", .{ 
-                    fn_info.Fn.params.len, 
+                    fn_info.@"fn".params.len, 
                     if (self.vals == null) 0 else self.vals.?.len });
                 return error.ExpectedMoreParameters;
             }
-            if (fn_info.Fn.return_type.? != ReturnT) checkErrorUnion: {
-                const return_info = @typeInfo(fn_info.Fn.return_type.?);
-                if (return_info == .ErrorUnion and return_info.ErrorUnion.payload == ReturnT) break :checkErrorUnion;
+            if (fn_info.@"fn".return_type.? != ReturnT) checkErrorUnion: {
+                const return_info = @typeInfo(fn_info.@"fn".return_type.?);
+                if (return_info == .error_union and return_info.error_union.payload == ReturnT) break :checkErrorUnion;
                 log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(ReturnT) });
                 return error.ReturnTypeMismatch;
             }
 
             const params = valsToParams: { 
                 const param_types = comptime paramTypes: {
-                    var types: [fn_info.Fn.params.len]type = undefined;
-                    for (types[0..], fn_info.Fn.params) |*T, param| T.* = param.type.?;
+                    var types: [fn_info.@"fn".params.len]type = undefined;
+                    for (types[0..], fn_info.@"fn".params) |*T, param| T.* = param.type.?;
                     break :paramTypes types;
                 };
                 var params_tuple: meta.Tuple(param_types[0..]) = undefined;
@@ -1549,7 +1549,7 @@ pub fn Custom(comptime config: Config) type {
                 };
             }
             return @Type(builtin.Type{
-                .Enum = .{
+                .@"enum" = .{
                     .tag_type = u8,
                     .fields = cmd_fields[0..],
                     .decls = &.{},

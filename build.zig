@@ -162,11 +162,11 @@ fn createDocGenStep(
     program_step: *std.Build.Step.Compile,
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
-    const program_mod = &program_step.root_module;
+    const program_mod = program_step.root_module;
     const cova_gen_exe = b.addExecutable(.{
         .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
         .root_source_file = cova_gen_path,
-        .target = b.host,
+        .target = b.graph.host,
         .optimize = .Debug,
     });
     b.installArtifact(cova_gen_exe);
@@ -179,17 +179,17 @@ fn createDocGenStep(
     sub_conf_map.put("tab_complete_config", null) catch @panic("OOM");
     sub_conf_map.put("arg_template_config", null) catch @panic("OOM");
 
-    inline for (@typeInfo(generate.MetaDocConfig).Struct.fields) |field| {
+    inline for (@typeInfo(generate.MetaDocConfig).@"struct".fields) |field| {
         switch(@typeInfo(field.type)) {
-            .Struct, .Enum => continue,
-            .Optional => |optl| {
+            .@"struct", .@"enum" => continue,
+            .optional => |optl| {
                 switch (@typeInfo(optl.child)) {
-                    .Struct => |struct_info| {
+                    .@"struct" => |struct_info| {
                         const maybe_conf = @field(doc_gen_config, field.name);
                         if (maybe_conf) |conf| {
                             const doc_conf_opts = b.addOptions();
                             inline for (struct_info.fields) |s_field| {
-                                if (@typeInfo(s_field.type) == .Enum) {
+                                if (@typeInfo(s_field.type) == .@"enum") {
                                     doc_conf_opts.addOption(usize, s_field.name, @intFromEnum(@field(conf, s_field.name)));
                                     continue;
                                 }
@@ -203,7 +203,7 @@ fn createDocGenStep(
                     else => {},
                 }
             },
-            .Pointer => |ptr| {
+            .pointer => |ptr| {
                 if (ptr.child == generate.MetaDocConfig.MetaDocKind) {
                     var kinds_list = std.ArrayList(usize).init(b.allocator);
                     for (@field(doc_gen_config, field.name)) |kind|
@@ -247,7 +247,7 @@ fn covaDep(b: *std.Build, args: anytype) *std.Build.Dependency {
     getDep: {
         const all_pkgs = @import("root").dependencies.packages;
         const pkg_hash =
-            inline for (@typeInfo(all_pkgs).Struct.decls) |decl| {
+            inline for (@typeInfo(all_pkgs).@"struct".decls) |decl| {
                 const pkg = @field(all_pkgs, decl.name);
                 if (@hasDecl(pkg, "build_zig") and pkg.build_zig == @This()) break decl.name;
             }

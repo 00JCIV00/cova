@@ -28,6 +28,8 @@ USAGE
     - `-s, --nested_str <nested_str_val (text)>`
     - A nested string option.
 ### Values
+- __nested_str_val__ (text)
+    - A nested string value.
 - __nested_float_val__ (f32)
     - A nested float value.
 

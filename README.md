@@ -3,7 +3,7 @@
 # Commands **⋅** Options **⋅** Values **⋅** Arguments 
 A simple yet robust cross-platform command line argument parsing library for Zig.
 
-[![Static Badge](https://img.shields.io/badge/v0.13(stable)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
+[![Static Badge](https://img.shields.io/badge/v0.14(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
 [![Static Badge](https://img.shields.io/badge/v0.10.1b-blue?logo=GitHub&label=Release)](https://github.com/00JCIV00/cova/releases/tag/v0.10.1-beta)
 [![GitHub commit activity](https://img.shields.io/github/commits-difference/00JCIV00/cova?base=v0.10.1&head=main&logo=Github&label=Commits%20(v0.11.0b))](https://github.com/00JCIV00/cova/commits/main/)
 [![Static Badge](https://img.shields.io/badge/MIT-silver?label=License)](https://github.com/00JCIV00/cova/blob/main/LICENSE)
@@ -29,7 +29,7 @@ logger --log-level info
 ```zig
 // ...
 pub const CommandT = cova.Command.Custom(.{...});
-pub const setup_cmd = CommandT{
+pub const setup_cmd: CommandT = .{
     .name = "logger",
     .description = "A small demo of using the Log Level Enum as an Option.",
     .examples = &.{ "logger --log-level info" },
@@ -39,7 +39,7 @@ pub const setup_cmd = CommandT{
             .description = "An Option using the `log.Level` Enum.",
             .long_name = "log-level",
             .mandatory = true,
-            .val = CommandT.ValueT.ofType(log.Level, .{
+            .val = .ofType(log.Level, .{
                 .name = "log_level_val",
                 .description = " This Value will handle the Enum."
             })
@@ -118,7 +118,7 @@ pub const setup_cmd: CommandT = .{
     .sub_cmds = &.{
         // A Sub Command created from converting a Struct named `User`.
         // Usage Ex: `basic-app new -f Bruce -l Wayne -a 40 -p "555 555 5555" -A " 1007 Mountain Drive, Gotham" true`
-        CommandT.from(User, .{
+        .from(User, .{
             .cmd_name = "new",
             .cmd_description = "Add a new user.",
             .cmd_group = "INTERACT",
@@ -133,26 +133,26 @@ pub const setup_cmd: CommandT = .{
         }),
         // A Sub Command created from a Function named `open`.
         // Usage Ex: `basic-app open users.csv`
-        CommandT.from(@TypeOf(open), .{
+        .from(@TypeOf(open), .{
             .cmd_name = "open",
             .cmd_description = "Open or create a users file.",
             .cmd_group = "INTERACT",
         }),
         // A manually created Sub Command, same as the root `setup_cmd`.
         // Usage Ex: `basic-app clean` or `basic-app delete --file users.csv`
-        CommandT{
+        .{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
             .alias_names = &.{ "delete", "wipe" },
             .cmd_group = "INTERACT",
             .opts = &.{
-                OptionT{
+                .{
                     .name = "clean_file",
                     .description = "Specify a single file to be cleaned (deleted) instead of the defaults.",
                     .alias_long_names = &.{ "delete_file" },
                     .short_name = 'f',
                     .long_name = "file",
-                    .val = ValueT.ofType([]const u8, .{
+                    .val = .ofType([]const u8, .{
                         .name = "clean_file",
                         .description = "The file to be cleaned.",
                         .alias_child_type = "filepath",
@@ -177,7 +177,7 @@ You can call various methods on the Command to use that data however you need.
 ```zig
 // ...continued from the Comptime Setup.
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }){};
+    const gpa: std.heap.DebugAllocator(.{}) = .init;
     const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
@@ -189,7 +189,7 @@ pub fn main() !void {
     defer args_iter.deinit();
     const stdout = std.io.getStdOut().writer();
 
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch (err) {
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
         error.UsageHelpCalled,
         error.TooManyValues,
         error.UnrecognizedArgument,
@@ -199,7 +199,7 @@ pub fn main() !void {
     };
 
     // Analysis (Using the data.)
-    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, &stdout);
+    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
     
     // Glossing over some project variables here.
 
@@ -264,7 +264,7 @@ pub fn build(b: *std.Build) void {
     const cova_gen = @import("cova").addCovaDocGenStep(b, cova_dep, exe, .{
         .kinds = &.{ .all },
         .version = "0.10.1",
-        .ver_date = "12 SEP 2024",
+        .ver_date = "25 MAR 2025",
         .author = "00JCIV00",
         .copyright = "MIT License",
     });

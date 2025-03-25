@@ -332,7 +332,7 @@ pub fn main() !void {
         // Struct, `cova.Command.Custom.ToConfig`, that can be configured to dictate the rules for
         // how the Command is converted.
         var new_user = try new_cmd.to(User, .{});
-        var rand = std.rand.DefaultPrng.init(@as(u64, @truncate(@as(u128, @bitCast(std.time.nanoTimestamp())))));
+        var rand = std.Random.DefaultPrng.init(@as(u64, @truncate(@as(u128, @bitCast(std.time.nanoTimestamp())))));
         var user_id = rand.random().int(u16);
         while (std.mem.indexOfScalar(u16, users_mal.items(._id), user_id)) |_|
             user_id = rand.random().int(u16);
