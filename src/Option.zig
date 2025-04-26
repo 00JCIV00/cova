@@ -5,7 +5,7 @@
 //! ```
 //! # Short Options
 //! -n "Bill" -a=5 -t
-//! 
+//!
 //! # Long Options
 //! --name="Dion" --age 47 --toggle
 //! ```
@@ -37,7 +37,7 @@ pub const Config = struct {
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
-    global_help_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
+    global_help_fn: ?*const fn (anytype, anytype, ?mem.Allocator) anyerror!void = null,
     /// A custom Usage function to override the default `usage()` function globally for ALL Option instances of this custom Option Type.
     /// This function is 2nd in precedence.
     ///
@@ -45,10 +45,10 @@ pub const Config = struct {
     /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
     /// 2. Writer (This is the Writer that will be written to.)
     /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
-    global_usage_fn: ?*const fn(anytype, anytype, ?mem.Allocator)anyerror!void = null,
+    global_usage_fn: ?*const fn (anytype, anytype, ?mem.Allocator) anyerror!void = null,
     /// Custom Help functions to override the default `help()` function for all Option instances with a matching Value Child Type.
     /// These functions are 1st in precedence.
-    child_type_help_fns: ?[]const struct{ 
+    child_type_help_fns: ?[]const struct {
         /// The Child Type this function applies to.
         ChildT: type,
         /// The custom Help Function.
@@ -57,11 +57,11 @@ pub const Config = struct {
         /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
         /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
-        help_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
+        help_fn: *const fn (anytype, anytype, ?mem.Allocator) anyerror!void,
     } = null,
     /// Custom Usage functions to override the default `usage()` function for all Option instances with a matching Value Child Type.
     /// These functions are 1st in precedence.
-    child_type_usage_fns: ?[]const struct{ 
+    child_type_usage_fns: ?[]const struct {
         /// The Child Type this function applies to.
         ChildT: type,
         /// The custom Usage Function.
@@ -70,13 +70,13 @@ pub const Config = struct {
         /// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         /// 2. Writer (This is the Writer that will be written to.)
         /// 3. Allocator (This does not have to be used within the function, but must be supported in case it's needed. If `null` is passed, this function was called at Comptime.)
-        usage_fn: *const fn(anytype, anytype, ?mem.Allocator)anyerror!void,
+        usage_fn: *const fn (anytype, anytype, ?mem.Allocator) anyerror!void,
     } = null,
 
     /// Indent string used for Usage/Help formatting.
-    /// Note, if this is left null, it will inherit from the Command Config. 
+    /// Note, if this is left null, it will inherit from the Command Config.
     indent_fmt: ?[]const u8 = null,
-    /// Format for the Help message. 
+    /// Format for the Help message.
     ///
     // Must support the following format types in this order:
     /// 1. String (Name)
@@ -87,7 +87,7 @@ pub const Config = struct {
     /// Format for the Usage message.
     ///
     /// Must support the following format types in this order:
-    /// 1. Character (Short Prefix) 
+    /// 1. Character (Short Prefix)
     /// 2. Optional Character "{?u}" (Short Name)
     /// 3. String (Name Separator)
     /// 4. String (Long Prefix)
@@ -144,7 +144,9 @@ pub const Config = struct {
 };
 
 /// Create an Option Type with the Base (default) configuration.
-pub fn Base() type { return Custom(.{}); }
+pub fn Base() type {
+    return Custom(.{});
+}
 
 /// Create a Custom Option type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
@@ -181,7 +183,7 @@ pub fn Custom(comptime config: Config) type {
         /// Short Prefix.
         /// Check `Options.Config` for details.
         pub const short_prefix = config.short_prefix;
-        /// Long Prefix. 
+        /// Long Prefix.
         /// Check `Options.Config` for details.
         pub const long_prefix = config.long_prefix;
 
@@ -261,7 +263,7 @@ pub fn Custom(comptime config: Config) type {
         ///// 1. OptionT (This should be the `self` parameter. As such it needs to match the Option Type the function is being called on.)
         ///// 2. Writer (This is the Writer that will be written to.)
         ///// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
-        //help_fn: ?*anyopaque = null, 
+        //help_fn: ?*anyopaque = null,
         ///// A custom Usage function to override the default `usage()` function for this custom Option INSTANCE.
         ///// This function is 1st in precedence.
         /////
@@ -295,7 +297,7 @@ pub fn Custom(comptime config: Config) type {
         /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: anytype) !void {
             // (WIP)
-            //if (self.help_fn) |help_fn_opaque| { 
+            //if (self.help_fn) |help_fn_opaque| {
             //    const helpFn = @as(*const fn(anytype, anytype, mem.Allocator) anyerror!void, @alignCast(@ptrCast(help_fn_opaque)));
             //    return helpFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
@@ -303,18 +305,17 @@ pub fn Custom(comptime config: Config) type {
                 //const val_child_type = self.val.childType();
                 inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
                     for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
-                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type))
                             break :typeHelpFn elm.help_fn;
                     }
-                }
-                else break :typeHelpFn null;
+                } else break :typeHelpFn null;
             }) |helpFn| return helpFn(self, writer, self._alloc);
             if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
             upper_name[0] = toUpper(self.name[0]);
-            for(upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
+            for (upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
             if (help_fmt) |h_fmt| return try writer.print(h_fmt, .{ upper_name, self.description });
             try writer.print("{s}:\n{?s}{?s}{?s}", .{ upper_name, indent_fmt, indent_fmt, indent_fmt });
             try self.usage(writer);
@@ -324,7 +325,7 @@ pub fn Custom(comptime config: Config) type {
         /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: anytype) !void {
             // (WIP)
-            //if (self.usage_fn) |usage_fn_opaque| { 
+            //if (self.usage_fn) |usage_fn_opaque| {
             //    const usageFn = @as(*const fn(anytype, anytype, mem.Allocator) anyerror!void, @alignCast(@ptrCast(usage_fn_opaque)));
             //    return usageFn(self, writer, self._alloc orelse return error.OptionNotInitialized);
             //}
@@ -332,33 +333,32 @@ pub fn Custom(comptime config: Config) type {
                 //const val_child_type = self.val.childType();
                 inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
                     for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
-                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type))
                             break :typeUsageFn elm.usage_fn;
                     }
-                }
-                else break :typeUsageFn null;
+                } else break :typeUsageFn null;
             }) |usageFn| return usageFn(self, writer, self._alloc);
             if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
 
             const AliasFormatter = struct {
                 aliases: ?[]const []const u8,
-                
+
                 pub fn format(
-                    formatter: @This(), 
-                    _: []const u8, 
-                    _: fmt.FormatOptions, 
+                    formatter: @This(),
+                    _: []const u8,
+                    _: fmt.FormatOptions,
                     fmt_writer: anytype,
                 ) !void {
                     if (formatter.aliases == null or formatter.aliases.?.len == 0) {
                         try fmt_writer.print("", .{});
                         return;
                     }
-                    for (formatter.aliases.?) |alias| 
+                    for (formatter.aliases.?) |alias|
                         try fmt_writer.print(alias_fmt, .{ name_sep_fmt, long_prefix.?, alias });
                 }
             };
 
-            try writer.print(usage_fmt, .{ 
+            try writer.print(usage_fmt, .{
                 @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),
                 @as(u21, if (short_prefix != null) self.short_name orelse 0x200B else 0x200B),
                 if (self.short_name != null and self.long_name != null) name_sep_fmt else "",
@@ -394,20 +394,18 @@ pub fn Custom(comptime config: Config) type {
         /// Create an Option from a Valid Optional StructField or UnionField (`field`) with the provided FromConfig (`from_config`).
         pub fn from(comptime field: anytype, from_config: FromConfig) ?@This() {
             const FieldT = @TypeOf(field);
-            if (FieldT != std.builtin.Type.StructField and FieldT != std.builtin.Type.UnionField) 
+            if (FieldT != std.builtin.Type.StructField and FieldT != std.builtin.Type.UnionField)
                 @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(FieldT) ++ "' was provided.");
             const optl_info = @typeInfo(field.type);
             //const optl =
             //    if (optl_info == .optional) optl_info.optional
             //    else if (optl_info == .array and @typeInfo(optl_info.array.child) == .optional) @typeInfo(optl_info.array.child).optional
             //    else @compileError("The field '" ++ field.name ++ "' is not a Valid Optional or Array of Optionals.");
-            const child_info = switch(optl_info) {
+            const child_info = switch (optl_info) {
                 .optional => @typeInfo(optl_info.optional.child),
                 .array => |ary| aryInfo: {
                     const ary_info = @typeInfo(ary.child);
-                    break :aryInfo
-                        if (ary_info == .optional) @typeInfo(ary_info.optional.child)
-                        else ary_info;
+                    break :aryInfo if (ary_info == .optional) @typeInfo(ary_info.optional.child) else ary_info;
                 },
                 inline else => optl_info,
             };
@@ -421,9 +419,10 @@ pub fn Custom(comptime config: Config) type {
                             .val_description = from_config.opt_description,
                         }) orelse return null,
                         inline else => {
-                            if (!from_config.ignore_incompatible) 
+                            if (!from_config.ignore_incompatible)
                                 @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
-                            else return null;
+                            else
+                                return null;
                         },
                     }
                 };
@@ -431,7 +430,7 @@ pub fn Custom(comptime config: Config) type {
                     .name = if (from_config.name) |name| name else field.name,
                     .description = from_config.opt_description orelse "The '" ++ field.name ++ "' Option of type '" ++ opt_val.childTypeName() ++ "'.",
                     .long_name = if (from_config.long_name) |long_name| long_name else field.name,
-                    .short_name = from_config.short_name, 
+                    .short_name = from_config.short_name,
                     //.help_fn = from_config.help_fn,
                     //.usage_fn = from_config.usage_fn,
                     .val = opt_val,
@@ -447,6 +446,4 @@ pub fn Custom(comptime config: Config) type {
             return opt;
         }
     };
-} 
-
-
+}

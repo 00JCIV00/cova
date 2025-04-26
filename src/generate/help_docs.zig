@@ -13,7 +13,7 @@ const utils = @import("../utils.zig");
 
 /// Config for creating Help Docs with `createHelpDoc()`.
 /// Leaving any field `null` will remove it from the created Help Doc.
-pub const HelpDocsConfig = struct{
+pub const HelpDocsConfig = struct {
     /// Help Doc Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`.`section`".
     local_filepath: []const u8 = "meta/help_docs",
@@ -116,7 +116,7 @@ pub const HelpDocsConfig = struct{
     /// 1. String (Value Name)
     /// 2. String (Value Type)
     /// 3. String (Value Description)
-    md_vals_fmt: []const u8 = 
+    md_vals_fmt: []const u8 =
         \\- __{s}__ ({s})
         \\    - {s}
         \\
@@ -128,7 +128,7 @@ pub const HelpDocsConfig = struct{
     md_examples_fmt: []const u8 = "- `{s}`\n",
 
     /// Available Kinds of Help Docs.
-    pub const DocKind = enum{
+    pub const DocKind = enum {
         manpages,
         markdown,
     };
@@ -137,8 +137,8 @@ pub const HelpDocsConfig = struct{
 /// Create a Help Doc for this program based on the provided `CommandT` (`cmd`) and HelpDocConfig (`hd_config`).
 /// Note, Manpages are intended for use on Unix systems (where Manpages are typically found).
 pub fn createHelpDoc(
-    comptime CommandT: type, 
-    comptime cmd: CommandT, 
+    comptime CommandT: type,
+    comptime cmd: CommandT,
     comptime hd_config: HelpDocsConfig,
     comptime doc_kind: HelpDocsConfig.DocKind,
 ) !void {
@@ -166,102 +166,92 @@ const HelpDocContext = struct {
     /// Names of Predecessor Commands.
     pre_names: ?[]const []const u8 = null,
     /// Filepaths of Predecessor Commands.
-    pre_paths: []const []const u8 = &.{ "" },
+    pre_paths: []const []const u8 = &.{""},
 };
 
 /// Create a manpage with Context (`mp_ctx`).
-fn createManpageCtx(
-    comptime CommandT: type,
-    comptime cmd: CommandT,
-    comptime mp_config: HelpDocsConfig,
-    comptime mp_ctx: HelpDocContext
-) !void {
+fn createManpageCtx(comptime CommandT: type, comptime cmd: CommandT, comptime mp_config: HelpDocsConfig, comptime mp_ctx: HelpDocContext) !void {
     //log.info("Generating Manpages for '{s}'...", .{ cmd.name });
     const mp_name = mp_ctx.name;
     const mp_description = mp_config.description orelse cmd.description;
     const title = fmt.comptimePrint(
         \\.TH {s} {u} {s}{s}{s}
         \\
-        , .{
+    ,
+        .{
             mp_name,
             mp_config.section,
             if (mp_config.ver_date) |date| "\"" ++ date ++ "\" " else "",
             if (mp_config.version) |ver| "\"" ++ ver ++ "\" " else "",
             if (mp_config.man_name) |man_name| "\"" ++ man_name ++ "\" " else "",
-        }
+        },
     );
     const name = fmt.comptimePrint(
         \\.SH NAME
         \\.B {s}
         \\
-        , .{ mp_name }
-    );
+    , .{mp_name});
     const synopsis = fmt.comptimePrint(
         \\.SH SYNOPSIS
         \\{s}
         \\
-        , .{ 
-            if (mp_config.synopsis) |synopsis| synopsis 
-            else fmt.comptimePrint(
-                ".B {s}{s}{s}{s}", 
-                .{
-                    mp_name,
-                    if (cmd.opts) |_| "\n.RB [OPTIONS]" else "",
-                    if (cmd.vals) |_| "\n.RB [VALUES]" else "",
-                    if (cmd.sub_cmds) |_| "\n.RB [SUB COMMAND...]" else "",
-                }
-            )
-        }
-    );
+    , .{if (mp_config.synopsis) |synopsis| synopsis else fmt.comptimePrint(
+        ".B {s}{s}{s}{s}",
+        .{
+            mp_name,
+            if (cmd.opts) |_| "\n.RB [OPTIONS]" else "",
+            if (cmd.vals) |_| "\n.RB [VALUES]" else "",
+            if (cmd.sub_cmds) |_| "\n.RB [SUB COMMAND...]" else "",
+        },
+    )});
     const description = fmt.comptimePrint(
         \\.SH DESCRIPTION
         \\.B {s}
         \\
-        , .{ mp_description }
-    );
+    , .{mp_description});
     const examples =
         if (mp_config.examples) |examples|
             fmt.comptimePrint(
                 \\.SH EXAMPLES
                 \\.B {s}
                 \\
-                , .{ examples }
-            )
+            , .{examples})
         else if (CommandT.include_examples) cmdExamples: {
             const examples = cmd.examples orelse break :cmdExamples "";
             comptime var example_str: []const u8 = ".SH EXAMPLES\n\n";
-            inline for (examples) |example| 
-                example_str = example_str ++ fmt.comptimePrint(mp_config.mp_examples_fmt, .{ example });
+            inline for (examples) |example|
+                example_str = example_str ++ fmt.comptimePrint(mp_config.mp_examples_fmt, .{example});
             example_str = example_str ++ "\n";
             const example_str_out = example_str;
             break :cmdExamples example_str_out;
-        }
-        else "";
+        } else "";
     const author =
         if (mp_config.author) |author|
             fmt.comptimePrint(
                 \\.SH AUTHOR
                 \\.B {s}
                 \\
-                , .{ author }
-            )
-        else "";
+            , .{author})
+        else
+            "";
     const copyright =
         if (mp_config.copyright) |copyright|
             fmt.comptimePrint(
                 \\.SH COPYRIGHT
                 \\.B {s}
                 \\
-                , .{ copyright }
-            )
-        else "";
+            , .{copyright})
+        else
+            "";
 
     const filepath = genFilepath: {
         comptime var path = if (mp_config.local_filepath.len >= 0) mp_config.local_filepath else ".";
-        comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
+        comptime {
+            if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/";
+        }
         path = path ++ "manpages/";
         try fs.cwd().makePath(path);
-        break :genFilepath path ++ mp_name ++ "." ++ .{ mp_config.section };
+        break :genFilepath path ++ mp_name ++ "." ++ .{mp_config.section};
     };
     var manpage = try fs.cwd().createFile(filepath, .{});
     var mp_writer = manpage.writer();
@@ -272,13 +262,12 @@ fn createManpageCtx(
         \\{s}
         \\{s}
         \\{s}
-        , .{
-            title,
-            name,
-            synopsis,
-            description,
-        }
-    );
+    , .{
+        title,
+        name,
+        synopsis,
+        description,
+    });
     // Argument Writes
     if (cmd.sub_cmds != null or cmd.opts != null or cmd.vals != null) {
         try mp_writer.print(".SH ARGUMENTS\n", .{});
@@ -307,7 +296,7 @@ fn createManpageCtx(
                 try mp_writer.print(mp_config.mp_vals_fmt, .{
                     val.name(),
                     val.childTypeName(),
-                    val.description()
+                    val.description(),
                 });
         }
     }
@@ -316,12 +305,11 @@ fn createManpageCtx(
         \\{s}
         \\{s}
         \\{s}
-        , .{
-            examples,
-            author,
-            copyright,
-        }
-    );
+    , .{
+        examples,
+        author,
+        copyright,
+    });
     log.info("Generated Manpages for '{s}' into '{s}'.", .{ cmd.name, filepath });
 
     // Recursive sub-Command generation
@@ -336,18 +324,15 @@ fn createManpageCtx(
 }
 
 /// Create a Markdown file with Context (`md_ctx`).
-fn createMarkdownCtx(
-    comptime CommandT: type,
-    comptime cmd: CommandT,
-    comptime md_config: HelpDocsConfig,
-    comptime md_ctx: HelpDocContext
-) !void {
+fn createMarkdownCtx(comptime CommandT: type, comptime cmd: CommandT, comptime md_config: HelpDocsConfig, comptime md_ctx: HelpDocContext) !void {
     //log.info("Generating Manpages for '{s}'...", .{ cmd.name });
     const md_name = md_ctx.name;
     const md_description = md_config.description orelse cmd.description;
     const filepath = genFilepath: {
         comptime var path = if (md_config.local_filepath.len >= 0) md_config.local_filepath else ".";
-        comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
+        comptime {
+            if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/";
+        }
         path = path ++ "markdown/";
         try fs.cwd().makePath(path);
         break :genFilepath path ++ md_name ++ ".md";
@@ -358,23 +343,25 @@ fn createMarkdownCtx(
     defer markdown.close();
 
     // Header
-    try md_writer.print("# {s}\n", .{ cmd.name });
+    try md_writer.print("# {s}\n", .{cmd.name});
     // - Predecessors
     if (md_ctx.pre_names) |pres| preLinks: {
         try md_writer.print("__[{s}]({s})__", .{ pres[0], md_ctx.pre_paths[0] });
-        defer md_writer.print(" > __{s}__\n\n", .{ cmd.name }) catch {};
-        if (pres.len == 1) { break :preLinks; }
-        for (pres[1..], md_ctx.pre_paths[1..]) |pre_name, pre_path| 
+        defer md_writer.print(" > __{s}__\n\n", .{cmd.name}) catch {};
+        if (pres.len == 1) {
+            break :preLinks;
+        }
+        for (pres[1..], md_ctx.pre_paths[1..]) |pre_name, pre_path|
             try md_writer.print(" > __[{s}]({s})__", .{ pre_name, pre_path });
     }
     // - Description
-    try md_writer.print("{s}\n\n", .{ md_description });
+    try md_writer.print("{s}\n\n", .{md_description});
     // - Meta Info
     if (md_ctx.cur_depth == 0) {
-        if (md_config.version) |ver| try md_writer.print("__Version:__ {s}<br>\n", .{ ver });
-        if (md_config.ver_date) |date| try md_writer.print("__Date:__ {s}<br>\n", .{ date });
-        if (md_config.author) |author| try md_writer.print("__Author:__ {s}<br>\n", .{ author });
-        if (md_config.copyright) |copyright| try md_writer.print("__Copyright:__ {s}<br>\n", .{ copyright });
+        if (md_config.version) |ver| try md_writer.print("__Version:__ {s}<br>\n", .{ver});
+        if (md_config.ver_date) |date| try md_writer.print("__Date:__ {s}<br>\n", .{date});
+        if (md_config.author) |author| try md_writer.print("__Author:__ {s}<br>\n", .{author});
+        if (md_config.copyright) |copyright| try md_writer.print("__Copyright:__ {s}<br>\n", .{copyright});
     }
     try md_writer.print("___\n\n", .{});
 
@@ -386,18 +373,19 @@ fn createMarkdownCtx(
     // Aliases
     if (cmd.alias_names) |aliases| addAliases: {
         try md_writer.print("## Alias(es)\n", .{});
-        try md_writer.print("- `{s}`", .{ aliases[0] });
+        try md_writer.print("- `{s}`", .{aliases[0]});
         defer md_writer.print("\n\n", .{}) catch {};
-        if (aliases.len == 1) { break :addAliases; }
-        for (aliases[1..]) |alias| try md_writer.print("\n- `{s}`", .{ alias });
+        if (aliases.len == 1) {
+            break :addAliases;
+        }
+        for (aliases[1..]) |alias| try md_writer.print("\n- `{s}`", .{alias});
     }
-    
+
     // Examples
-    if (md_config.examples) |examples| try md_writer.print("## Examples\n\n{s]}\n", .{ examples })
-    else if (CommandT.include_examples) cmdExamples: {
+    if (md_config.examples) |examples| try md_writer.print("## Examples\n\n{s]}\n", .{examples}) else if (CommandT.include_examples) cmdExamples: {
         const examples = cmd.examples orelse break :cmdExamples;
         try md_writer.print("## Examples\n\n", .{});
-        for (examples) |example| try md_writer.print(md_config.md_examples_fmt, .{ example });
+        for (examples) |example| try md_writer.print(md_config.md_examples_fmt, .{example});
         try md_writer.print("\n", .{});
     }
 
@@ -410,7 +398,7 @@ fn createMarkdownCtx(
             inline for (sub_cmds) |sub_cmd|
                 try md_writer.print(md_config.md_subcmds_fmt, .{
                     sub_cmd.name,
-                    local_path[0..local_path.len - 3] ++ "-" ++ sub_cmd.name ++ ".md",
+                    local_path[0 .. local_path.len - 3] ++ "-" ++ sub_cmd.name ++ ".md",
                     sub_cmd.description,
                 });
         }
@@ -429,8 +417,7 @@ fn createMarkdownCtx(
                         comptime var alias_list: []const u8 = "";
                         inline for (opt_aliases) |opt_alias| alias_list = alias_list ++ md_config.md_opt_names_sep_fmt ++ opt_long_pf ++ opt_alias;
                         break :optAliases alias_list;
-                    }
-                    else "",
+                    } else "",
                     opt.val.name(),
                     opt.val.childTypeName(),
                     opt.description,
@@ -439,7 +426,7 @@ fn createMarkdownCtx(
         if (cmd.vals) |vals| {
             try md_writer.print("### Values\n", .{});
             for (vals) |val|
-                try md_writer.print(md_config.md_vals_fmt , .{
+                try md_writer.print(md_config.md_vals_fmt, .{
                     val.name(),
                     val.childTypeName(),
                     val.description(),
@@ -457,12 +444,10 @@ fn createMarkdownCtx(
         comptime var new_ctx = md_ctx;
         new_ctx.cur_depth += 1;
         new_ctx.name = new_ctx.name ++ "-" ++ sub_cmd.name;
-        new_ctx.pre_names = 
-            if (new_ctx.pre_names) |pre_names| pre_names ++ @as([]const []const u8, &.{ cmd.name })
-            else &.{ cmd.name };
+        new_ctx.pre_names =
+            if (new_ctx.pre_names) |pre_names| pre_names ++ @as([]const []const u8, &.{cmd.name}) else &.{cmd.name};
         new_ctx.pre_paths =
-            if (new_ctx.pre_paths[0].len > 0) new_ctx.pre_paths ++ @as([]const []const u8, &.{ local_path })
-            else &.{ local_path };
+            if (new_ctx.pre_paths[0].len > 0) new_ctx.pre_paths ++ @as([]const []const u8, &.{local_path}) else &.{local_path};
         try createMarkdownCtx(CommandT, sub_cmd, md_config, new_ctx);
     }
 }

@@ -36,7 +36,6 @@ pub fn CommandTemplate(CommandT: type) type {
         /// Values
         vals: ?[]const ValueTemplate(CommandT.ValueT) = null,
 
-
         /// Create a Template from a Command (`cmd`) using the provided Argument Template Config (`at_config`).
         pub fn from(comptime cmd: CommandT, comptime at_config: ArgTemplateConfig) @This() {
             return .{
@@ -83,7 +82,7 @@ pub fn OptionTemplate(OptionT: type) type {
         name: []const u8,
         /// Option Long Name
         long_name: ?[]const u8,
-        /// Option Short Name 
+        /// Option Short Name
         short_name: ?u8,
         /// Option Description
         description: []const u8,
@@ -156,7 +155,7 @@ pub fn ValueTemplate(ValueT: type) type {
 }
 
 /// Meta Info Template
-pub const MetaInfoTemplate = struct{
+pub const MetaInfoTemplate = struct {
     /// Name of the program.
     name: ?[]const u8 = null,
     /// Description of the program.
@@ -172,7 +171,7 @@ pub const MetaInfoTemplate = struct{
 };
 
 /// Config for creating Argument Templates with `createArgTemplate()`.
-pub const ArgTemplateConfig = struct{
+pub const ArgTemplateConfig = struct {
     /// Script Local Filepath
     /// This is the local path the file will be placed in. The file name will be "`name`-template.`template_kind`".
     local_filepath: []const u8 = "meta/arg_templates",
@@ -200,23 +199,20 @@ pub const ArgTemplateConfig = struct{
     include_vals: bool = true,
 
     /// Available Kinds of Argument Template formats.
-    pub const TemplateKind = enum{
+    pub const TemplateKind = enum {
         json,
         kdl,
     };
 };
 /// Create an Argument Template.
-pub fn createArgTemplate(
-    comptime CommandT: type,
-    comptime cmd: CommandT,
-    comptime at_config: ArgTemplateConfig,
-    comptime at_kind: ArgTemplateConfig.TemplateKind
-) !void {
+pub fn createArgTemplate(comptime CommandT: type, comptime cmd: CommandT, comptime at_config: ArgTemplateConfig, comptime at_kind: ArgTemplateConfig.TemplateKind) !void {
     const at_name = at_config.name orelse cmd.name;
     const at_description = at_config.description orelse cmd.description;
     const filepath = genFilepath: {
         comptime var path = if (at_config.local_filepath.len >= 0) at_config.local_filepath else ".";
-        comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
+        comptime {
+            if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/";
+        }
         try fs.cwd().makePath(path);
         break :genFilepath path ++ at_name ++ "-template." ++ @tagName(at_kind);
     };
@@ -266,14 +262,15 @@ pub fn createArgTemplate(
                 \\bin "{s}"
                 \\about "{s}"
                 \\
-                , .{
+            ,
+                .{
                     at_name,
                     at_name,
                     at_description,
-                }
+                },
             );
-            if (at_config.version) |ver| try at_writer.print("version \"{s}\"\n", .{ ver });
-            if (at_config.author) |author| try at_writer.print("author \"{s}\"\n", .{ author });
+            if (at_config.version) |ver| try at_writer.print("version \"{s}\"\n", .{ver});
+            if (at_config.author) |author| try at_writer.print("author \"{s}\"\n", .{author});
             try at_writer.print("\n", .{});
             try argTemplateKDL(
                 CommandT,
@@ -290,7 +287,7 @@ pub fn createArgTemplate(
     });
 }
 
-pub const ArgTemplateContext = struct{
+pub const ArgTemplateContext = struct {
     /// Argument Index
     idx: u8 = 0,
     /// Add a spacer line
@@ -312,12 +309,10 @@ fn argTemplateKDL(
     at_writer: anytype,
     comptime at_ctx: ArgTemplateContext,
 ) !void {
-    const sub_args: bool = (
-        (at_ctx.include_cmds and cmd.sub_cmds != null) or
+    const sub_args: bool = ((at_ctx.include_cmds and cmd.sub_cmds != null) or
         (at_ctx.include_opts and cmd.opts != null) or
         (at_ctx.include_vals and cmd.vals != null) or
-        cmd.alias_names != null
-    );
+        cmd.alias_names != null);
     // if (sub_args and at_ctx.add_line) try at_writer.print("\n", .{});
     if (at_ctx.add_line) try at_writer.print("\n", .{});
     const indent = if (at_ctx.idx > 1) "    " ** (at_ctx.idx - 1) else "";
@@ -340,7 +335,7 @@ fn argTemplateKDL(
     }
 
     if (at_ctx.include_opts) addOpts: {
-        const opts = cmd.opts orelse { 
+        const opts = cmd.opts orelse {
             add_line = false;
             break :addOpts;
         };
@@ -348,8 +343,8 @@ fn argTemplateKDL(
         // TODO Better handling of prefixes. Check if the usage tool supports alternate prefixes.
         inline for (opts) |opt| try at_writer.print("{s}flag \"{s}{s}\" help=\"{s}\"\n", .{
             sub_indent,
-            if (opt.short_name) |short| fmt.comptimePrint("-{c},", .{ short }) else "",
-            if (opt.long_name) |long| fmt.comptimePrint("--{s}", .{ long }) else "",
+            if (opt.short_name) |short| fmt.comptimePrint("-{c},", .{short}) else "",
+            if (opt.long_name) |long| fmt.comptimePrint("--{s}", .{long}) else "",
             opt.description,
         });
         add_line = true;
@@ -383,5 +378,5 @@ fn argTemplateKDL(
         }
     }
 
-    if (at_ctx.idx > 0 and sub_args) try at_writer.print("{s}}}\n", .{ indent });
+    if (at_ctx.idx > 0 and sub_args) try at_writer.print("{s}}}\n", .{indent});
 }

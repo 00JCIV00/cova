@@ -20,9 +20,9 @@ pub const ArgTemplateConfig = arg_template.ArgTemplateConfig;
 pub const createArgTemplate = arg_template.createArgTemplate;
 
 /// Config for setting up all Meta Docs
-pub const MetaDocConfig = struct{
+pub const MetaDocConfig = struct {
     /// Specify which kinds of Meta Docs should be generated.
-    kinds: []const MetaDocKind = &.{ .all },
+    kinds: []const MetaDocKind = &.{.all},
     /// Help Docs Config
     help_docs_config: ?HelpDocsConfig = .{},
     /// Tab Completion Config
@@ -35,7 +35,7 @@ pub const MetaDocConfig = struct{
     /// Setup Command Name.
     /// This is the name of the comptime Setup Command in the main source file.
     setup_cmd_name: []const u8 = "setup_cmd",
-    
+
     /// Name of the program.
     /// Note, if this is left null, the provided CommandT's name will be used.
     name: ?[]const u8 = null,
@@ -72,4 +72,3 @@ pub const MetaDocConfig = struct{
         kdl,
     };
 };
-

@@ -25,7 +25,7 @@ pub const CommandT = Command.Custom(.{
     .help_category_order = &.{ .Prefix, .Header, .Aliases, .Values, .Options, .Commands },
     .allow_abbreviated_cmds = true,
     //.allow_arg_indices = false,
-    .global_usage_fn = struct{
+    .global_usage_fn = struct {
         fn usage(self: anytype, writer: anytype, _: ?mem.Allocator) !void {
             const CmdT = @TypeOf(self.*);
             const OptT = CmdT.OptionT;
@@ -36,15 +36,15 @@ pub const CommandT = Command.Custom(.{
             try writer.print("USAGE\n", .{});
             if (self.opts) |opts| {
                 no_args = false;
-                try writer.print("{s}{s} [", .{ 
+                try writer.print("{s}{s} [", .{
                     indent_fmt,
                     self.name,
                 });
                 for (opts) |opt| {
-                    try writer.print("{s} {s}{s} ", .{ 
+                    try writer.print("{s} {s}{s} ", .{
                         pre_sep,
                         OptT.long_prefix orelse opt.short_prefix,
-                        opt.long_name orelse &.{ opt.short_name orelse 0 },
+                        opt.long_name orelse &.{opt.short_name orelse 0},
                     });
                     pre_sep = "| ";
                 }
@@ -52,13 +52,13 @@ pub const CommandT = Command.Custom(.{
             }
             if (self.sub_cmds) |cmds| {
                 no_args = false;
-                try writer.print("{s}{s} [", .{ 
+                try writer.print("{s}{s} [", .{
                     indent_fmt,
                     self.name,
                 });
                 pre_sep = "";
                 for (cmds) |cmd| {
-                    try writer.print("{s} {s} ", .{ 
+                    try writer.print("{s} {s} ", .{
                         pre_sep,
                         cmd.name,
                     });
@@ -66,14 +66,14 @@ pub const CommandT = Command.Custom(.{
                 }
                 try writer.print("]\n", .{});
             }
-            if (no_args) try writer.print("{s}{s}{s}", .{ 
-                indent_fmt, 
+            if (no_args) try writer.print("{s}{s}{s}", .{
+                indent_fmt,
                 indent_fmt,
                 self.name,
             });
         }
     }.usage,
-    //.help_header_fmt = 
+    //.help_header_fmt =
     //    \\HELP
     //    \\{s}COMMAND: {s}
     //    \\
@@ -86,13 +86,13 @@ pub const CommandT = Command.Custom(.{
     //        const CmdT = @TypeOf(self.*);
     //        const OptT = CmdT.OptionT;
     //        const indent_fmt = CmdT.indent_fmt;
-    //        
+    //
     //        try writer.print("{s}\n", .{ self.help_prefix });
     //        try self.usage(writer);
     //        try writer.print("\n", .{});
-    //        try writer.print(CmdT.help_header_fmt, .{ 
-    //            indent_fmt, self.name, 
-    //            indent_fmt, self.description 
+    //        try writer.print(CmdT.help_header_fmt, .{
+    //            indent_fmt, self.name,
+    //            indent_fmt, self.description
     //        });
 
     //        if (self.sub_cmds) |cmds| {
@@ -101,7 +101,7 @@ pub const CommandT = Command.Custom(.{
     //                try writer.print("{s}{s}: {s}\n", .{
     //                    indent_fmt,
     //                    cmd.name,
-    //                    cmd.description, 
+    //                    cmd.description,
     //                });
     //            }
     //            try writer.print("\n", .{});
@@ -115,11 +115,11 @@ pub const CommandT = Command.Custom(.{
     //                    \\
     //                    \\
     //                    , .{
-    //                        indent_fmt, 
-    //                        OptT.long_prefix orelse OptT.short_prefix, opt.long_name orelse "", 
+    //                        indent_fmt,
+    //                        OptT.long_prefix orelse OptT.short_prefix, opt.long_name orelse "",
     //                        opt.val.name(), opt.val.childType(),
     //                        indent_fmt, indent_fmt,
-    //                        opt.description, 
+    //                        opt.description,
     //                    }
     //                );
     //            }
@@ -145,21 +145,21 @@ pub const CommandT = Command.Custom(.{
         //        const short_prefix = @TypeOf(self.*).short_prefix;
         //        const long_prefix = @TypeOf(self.*).long_prefix;
         //        try writer.print("{?u}{?u}, {?s}{?s}", .{
-        //                short_prefix, 
-        //                self.short_name, 
-        //                long_prefix, 
+        //                short_prefix,
+        //                self.short_name,
+        //                long_prefix,
         //                self.long_name,
         //            }
         //        );
         //    }
         //}.usage,
-        .global_help_fn = struct{
+        .global_help_fn = struct {
             fn help(self: anytype, writer: anytype, _: ?mem.Allocator) !void {
                 const indent_fmt = @TypeOf(self.*).indent_fmt;
                 try self.usage(writer);
                 try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
             }
-        }.help
+        }.help,
     },
     .val_config = .{
         //.allow_arg_indices = false,
@@ -194,29 +194,29 @@ pub const CommandT = Command.Custom(.{
             },
         },
     },
-    //.global_usage_fn = struct{ 
-    //    fn usage(_: anytype, writer: anytype, _: ?mem.Allocator) !void { 
+    //.global_usage_fn = struct{
+    //    fn usage(_: anytype, writer: anytype, _: ?mem.Allocator) !void {
     //        // In a real implementation checks should be done to ensure `self` is a suitable Command Type and extract its sub Argument Types.
-    //        try writer.print("This is an overriding usage message!\n\n", .{}); 
-    //    } 
+    //        try writer.print("This is an overriding usage message!\n\n", .{});
+    //    }
     //}.usage,
-}); 
+});
 pub const ValueT = CommandT.ValueT;
 
 //pub const log_level: log.Level = .err;
 
-pub const SimpleEnum = enum{
+pub const SimpleEnum = enum {
     a,
     b,
 };
 
-pub const DemoStruct = struct{
-    pub const InnerStruct = struct{
+pub const DemoStruct = struct {
+    pub const InnerStruct = struct {
         in_bool: bool = false,
         in_float: f32 = 0,
         h_string: []const u8 = "Just a test for fields starting with 'h'",
     };
-    pub const InnerEnum = enum(u2){
+    pub const InnerEnum = enum(u2) {
         red,
         blue,
         green,
@@ -321,11 +321,11 @@ pub const setup_cmd: CommandT = .{
                     .description = "A nested float value.",
                     .default_val = 0,
                 }),
-            }
+            },
         },
         .{
             .name = "basic",
-            .alias_names = &.{ "basic-cmd" },
+            .alias_names = &.{"basic-cmd"},
             .description = "The most basic Command.",
             .cmd_group = "RAW",
         },
@@ -344,7 +344,7 @@ pub const setup_cmd: CommandT = .{
                                 .{
                                     .name = "nest-4",
                                     .description = "Nested Level 4.",
-                                }
+                                },
                             },
                             .opts = &.{
                                 .{
@@ -353,12 +353,12 @@ pub const setup_cmd: CommandT = .{
                                     .inheritable = true,
                                     .short_name = 'i',
                                     .long_name = "inheritable",
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
         CommandT.from(DemoStruct, .{
             .cmd_name = "struct-cmd",
@@ -400,7 +400,7 @@ pub const setup_cmd: CommandT = .{
         }),
     },
     .opts = &.{
-        .{ 
+        .{
             .name = "string_opt",
             .description = "A string option. (Can be given up to 4 times.)",
             //.hidden = true,
@@ -408,7 +408,7 @@ pub const setup_cmd: CommandT = .{
             .opt_group = "STRING",
             .short_name = 's',
             .long_name = "string",
-            .alias_long_names = &.{ "text" },
+            .alias_long_names = &.{"text"},
             .allow_empty = true,
             .val = ValueT.ofType([]const u8, .{
                 .name = "string_val",
@@ -429,7 +429,12 @@ pub const setup_cmd: CommandT = .{
             .val = ValueT.ofType(i16, .{
                 .name = "int_val",
                 .description = "An integer value.",
-                .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int < 666; } }.valFn,
+                .valid_fn = struct {
+                    fn valFn(int: i16, alloc: mem.Allocator) bool {
+                        _ = alloc;
+                        return int < 666;
+                    }
+                }.valFn,
                 .set_behavior = .Multi,
                 .max_entries = 10,
             }),
@@ -506,7 +511,7 @@ pub const setup_cmd: CommandT = .{
             .opt_group = "BOOL",
             .short_name = 't',
             .long_name = "toggle",
-            .alias_long_names = &.{ "switch" },
+            .alias_long_names = &.{"switch"},
             .val = ValueT.ofType(bool, .{
                 .name = "toggle_val",
                 .description = "A toggle/boolean value.",
@@ -535,7 +540,11 @@ pub const setup_cmd: CommandT = .{
                 .name = "verbosity_level",
                 .description = "The verbosity level from 0 (err) to 3 (debug).",
                 .default_val = 3,
-                .valid_fn = struct{ fn valFn(val: u4, _: mem.Allocator) bool { return val >= 0 and val <= 3; } }.valFn,
+                .valid_fn = struct {
+                    fn valFn(val: u4, _: mem.Allocator) bool {
+                        return val >= 0 and val <= 3;
+                    }
+                }.valFn,
             }),
         },
     },
@@ -561,12 +570,16 @@ pub const setup_cmd: CommandT = .{
             .default_val = 654321,
             .set_behavior = .Multi,
             .max_entries = 3,
-            .parse_fn = struct{ fn parseFn(arg: []const u8, alloc: mem.Allocator) !u64 { _ = alloc; return (try fmt.parseInt(u64, arg, 0)) * 100; } }.parseFn, 
+            .parse_fn = struct {
+                fn parseFn(arg: []const u8, alloc: mem.Allocator) !u64 {
+                    _ = alloc;
+                    return (try fmt.parseInt(u64, arg, 0)) * 100;
+                }
+            }.parseFn,
             .valid_fn = Value.ValidationFns.Builder.inRange(u64, 123456, 9999999999, true),
         }),
-    }
+    },
 };
-
 
 pub fn main() !void {
     // Setup
@@ -581,8 +594,7 @@ pub fn main() !void {
     defer {
         if (gpa.deinit() != .ok) {
             if (builtin.mode == .Debug and gpa.detectLeaks()) log.err("Memory leak detected!", .{});
-        }
-        else log.debug("Memory freed. No leaks detected.", .{});
+        } else log.debug("Memory freed. No leaks detected.", .{});
     }
     const stdout_raw = io.getStdOut().writer();
     var stdout_bw = io.bufferedWriter(stdout_raw);
@@ -594,7 +606,7 @@ pub fn main() !void {
     defer args_iter.deinit();
 
     // Parsing
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ 
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{
         //.auto_handle_usage_help = false,
     }) catch |err| switch (err) {
         error.UsageHelpCalled => {},
@@ -603,11 +615,10 @@ pub fn main() !void {
     try stdout_bw.flush();
 
     // Analysis
-    // - Debug Output of Commands after Parsing. 
+    // - Debug Output of Commands after Parsing.
     try stdout.print("\nCova Demo Argument Results:\n", .{});
     try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, true);
     try stdout_bw.flush();
-
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
     log.debug("Main Cmd", .{});
@@ -616,7 +627,7 @@ pub fn main() !void {
     const val_map = try main_cmd.getVals(.{ .arg_group = "STRING" });
     var val_iter = val_map.valueIterator();
     log.debug("Get String Values:", .{});
-    while (val_iter.next()) |str_val| log.debug("- {s}", .{ str_val.getAs([]const u8) catch "[value not set]" });
+    while (val_iter.next()) |str_val| log.debug("- {s}", .{str_val.getAs([]const u8) catch "[value not set]"});
     // -- Check Options
     const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt", "bool_opt" };
     const and_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .AND });
@@ -628,13 +639,12 @@ pub fn main() !void {
         \\ -  OR: {}
         \\ - XOR: {}
         \\
-        , .{
-            opts_check_names,
-            and_opts_check,
-            or_opts_check,
-            xor_opts_check,
-        }
-    );
+    , .{
+        opts_check_names,
+        and_opts_check,
+        or_opts_check,
+        xor_opts_check,
+    });
     var main_opts = try main_cmd.getOpts(.{});
     if (main_opts.get("string_opt")) |str_opt| strOpt: {
         if (str_opt.val.isEmpty() and str_opt.val.isSet()) {
@@ -642,7 +652,7 @@ pub fn main() !void {
             break :strOpt;
         }
         const opt_strs = try str_opt.val.getAllAs([]const u8);
-        log.debug("Option Strings (--string): {d}", .{ opt_strs.len });
+        log.debug("Option Strings (--string): {d}", .{opt_strs.len});
         for (opt_strs, 0..) |str, idx| log.debug(" {d}. {s}", .{ idx, str });
     }
     //if (main_cmd.opts) |main_opts| {
@@ -651,23 +661,23 @@ pub fn main() !void {
     if (main_cmd.checkSubCmd("sub-cmd"))
         log.debug("-> Sub Cmd", .{});
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
-        log.debug("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
+        log.debug("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{try add_user_cmd.to(ex_structs.add_user, .{})});
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| structCmd: {
-        log.debug("Parent Cmd (struct-cmd): {s]}", .{ struct_cmd.parent_cmd.?.name });
+        log.debug("Parent Cmd (struct-cmd): {s]}", .{struct_cmd.parent_cmd.?.name});
         log.debug("Parent Cmd (int-opt / int-val): {s} / {s}", optPar: {
-            const struct_cmd_opts = struct_cmd.getOpts(.{}) catch break: optPar .{ "[no opts]", "" };
-            const int_opt = struct_cmd_opts.get("int") orelse break: optPar .{ "[no int opt]", "" };
+            const struct_cmd_opts = struct_cmd.getOpts(.{}) catch break :optPar .{ "[no opts]", "" };
+            const int_opt = struct_cmd_opts.get("int") orelse break :optPar .{ "[no int opt]", "" };
             break :optPar .{ if (int_opt.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]", if (int_opt.val.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]" };
         });
         const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
-        log.debug("-> Struct Cmd\n{any}", .{ demo_struct });
+        log.debug("-> Struct Cmd\n{any}", .{demo_struct});
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
-            log.debug("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
+            log.debug("->-> Inner Cmd\n{any}", .{try inner_cmd.to(DemoStruct.InnerStruct, .{})});
         //for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
         break :structCmd;
     }
     if (main_cmd.checkSubCmd("union-cmd"))
-        log.debug("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
+        log.debug("-> Union Cmd\nTo Union:\n{any}\n\n", .{meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{}))});
     if (main_cmd.matchSubCmd("fn-cmd")) |fn_cmd| {
         log.debug("-> Fn Cmd", .{});
         try fn_cmd.callAs(demoFn, null, void);
@@ -677,7 +687,7 @@ pub fn main() !void {
     const arg_str = "cova struct-cmd --multi-str \"demo str\" -m 'a \"quoted string\"' -m \"A string using an 'apostrophe'\" -m (quick parans test) 50";
     const args = try cova.tokenizeArgs(arg_str, alloc, .{ .groupers_open = "\"'(", .groupers_close = "\"')" });
     defer alloc.free(args);
-    log.debug("Tokenized Args:\n{s}", .{ args });
+    log.debug("Tokenized Args:\n{s}", .{args});
 
     // Optimized Config
     //log.debug("Optimized Config:\n{any}", .{ conf_optimized });
