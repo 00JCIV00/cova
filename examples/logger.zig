@@ -5,7 +5,7 @@ const cova = @import("cova");
 // We need to add any Enums we're using to our Value Config.
 pub const CommandT = cova.Command.Custom(.{
     .val_config = .{
-        .custom_types = &.{ log.Level },
+        .custom_types = &.{log.Level},
     },
 });
 pub const setup_cmd = CommandT{
@@ -19,9 +19,9 @@ pub const setup_cmd = CommandT{
             .mandatory = true,
             .val = CommandT.ValueT.ofType(log.Level, .{
                 .name = "log_level_val",
-                .description = " This Value will handle then Enum."
-            })
-        }
+                .description = " This Value will handle then Enum.",
+            }),
+        },
     },
 };
 
@@ -47,5 +47,5 @@ pub fn main() !void {
         log.err("The provided Log Level was invalid.", .{});
         return;
     };
-    log.info("Provided Log Level: {s}", .{ @tagName(log_lvl) });
+    log.info("Provided Log Level: {s}", .{@tagName(log_lvl)});
 }

@@ -11,7 +11,6 @@ const Command = @import("Command.zig");
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 
-
 /// Display what is captured within a Command (`display_cmd`) after Cova parsing.
 pub fn displayCmdInfo(
     comptime CommandT: type,
@@ -22,7 +21,7 @@ pub fn displayCmdInfo(
 ) !void {
     var cur_cmd: ?*const CommandT = display_cmd;
     while (cur_cmd) |cmd| {
-        try writer.print("- Command: {s}\n", .{ cmd.name });
+        try writer.print("- Command: {s}\n", .{cmd.name});
         if (cmd.opts) |opts| {
             for (opts) |opt| {
                 if (hide_unset and !opt.val.isSet()) continue;
@@ -43,7 +42,7 @@ pub fn displayCmdInfo(
 /// Display what is captured within an Option or Value after Cova parsing.
 /// Meant for use within `displayCmdInfo()`.
 fn displayValInfo(
-    comptime ValueT: type, 
+    comptime ValueT: type,
     val: ValueT,
     name: ?[]const u8,
     isOpt: bool,
@@ -55,7 +54,7 @@ fn displayValInfo(
     switch (meta.activeTag(val.generic)) {
         .string => {
             const str_vals = val.generic.string.getAllAlloc(alloc) catch noVal: {
-                const no_val = alloc.dupe([]const u8, &.{ "" }) catch @panic("OOM");
+                const no_val = alloc.dupe([]const u8, &.{""}) catch @panic("OOM");
                 break :noVal no_val;
             };
             defer alloc.free(str_vals);
@@ -70,7 +69,7 @@ fn displayValInfo(
         inline else => |tag| {
             const tag_self = @field(val.generic, @tagName(tag));
             if (tag_self.set_behavior == .Multi) {
-                const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
+                const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: {
                     if (tag_self.getAllAlloc(alloc) catch null) |data| break :rawData data;
                     const data: ?@TypeOf(tag_self).ChildT = tag_self.get() catch null;
                     if (data) |_data| {
@@ -81,16 +80,15 @@ fn displayValInfo(
                     break :rawData null;
                 };
                 defer if (raw_data) |raw| alloc.free(raw);
-                try writer.print("    {s}: {?s}, Data: {any}\n", .{ 
+                try writer.print("    {s}: {?s}, Data: {any}\n", .{
                     prefix,
-                    name, 
+                    name,
                     raw_data,
                 });
-            }
-            else {
-                try writer.print("    {s}: {?s}, Data: {any}\n", .{ 
+            } else {
+                try writer.print("    {s}: {?s}, Data: {any}\n", .{
                     prefix,
-                    name, 
+                    name,
                     tag_self.get() catch null,
                 });
             }

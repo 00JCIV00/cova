@@ -1,5 +1,6 @@
 .{
     .name = .cova,
+    .fingerprint = 0x88c8452ab33b602,
     .paths = .{
         "build.zig",
         "build.zig.zon",
