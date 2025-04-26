@@ -1,9 +1,9 @@
 ![cova_icon_v2 1](https://github.com/00JCIV00/cova/assets/68087632/0b485f6b-ddf4-4772-96eb-899d4606f9cc)
 
-# Commands **⋅** Options **⋅** Values **⋅** Arguments 
+# Commands **⋅** Options **⋅** Values **⋅** Arguments
 A simple yet robust cross-platform command line argument parsing library for Zig.
 
-[![Static Badge](https://img.shields.io/badge/v0.14(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
+[![Static Badge](https://img.shields.io/badge/v0.15(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
 [![Static Badge](https://img.shields.io/badge/v0.10.1b-blue?logo=GitHub&label=Release)](https://github.com/00JCIV00/cova/releases/tag/v0.10.1-beta)
 [![GitHub commit activity](https://img.shields.io/github/commits-difference/00JCIV00/cova?base=v0.10.1&head=main&logo=Github&label=Commits%20(v0.11.0b))](https://github.com/00JCIV00/cova/commits/main/)
 [![Static Badge](https://img.shields.io/badge/MIT-silver?label=License)](https://github.com/00JCIV00/cova/blob/main/LICENSE)
@@ -84,7 +84,7 @@ pub fn main() !void {
   - All argument tokens are parsed to Argument Types: Commands, Options, or Values.
     - Options = _Flags_ and Values = _Positional Arguments_
   - These Argument Types can be *created from* or *converted to* your Structs, Unions, and Functions along with their corresponding Fields and Parameters.
-  - Default Arguments such as `usage` and `help` can be automatically added to all Commands easily. 
+  - Default Arguments such as `usage` and `help` can be automatically added to all Commands easily.
   - This design allows for **infinitely nestable** Commands, Options, and Values in a way that's simple to parse, analyze, and use in your projects.
 - **Multiplatform.** Tested across common architectures of Linux, Mac, and Windows.
 - **Granular, Robust Customization:**
@@ -124,7 +124,7 @@ pub const setup_cmd: CommandT = .{
             .cmd_group = "INTERACT",
             .sub_descriptions = &.{
                 .{ "is_admin", "Add this user as an admin?" },
-                .{ "first_name", "User's First Name." }, 
+                .{ "first_name", "User's First Name." },
                 .{ "last_name", "User's Last Name." },
                 .{ "age", "User's Age." },
                 .{ "phone", "User's Phone #." },
@@ -168,7 +168,7 @@ pub const setup_cmd: CommandT = .{
 </details>
 
 ### Runtime Use
-Once Cova has parsed input from your end users, it puts that data into the Command you set up. 
+Once Cova has parsed input from your end users, it puts that data into the Command you set up.
 You can call various methods on the Command to use that data however you need.
 
 <details>
@@ -181,7 +181,7 @@ pub fn main() !void {
     const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
-    const main_cmd = try setup_cmd.init(alloc, .{}); 
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     // Parsing
@@ -200,7 +200,7 @@ pub fn main() !void {
 
     // Analysis (Using the data.)
     if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
-    
+
     // Glossing over some project variables here.
 
     // Convert a Command back into a Struct.
@@ -250,7 +250,7 @@ Cova's simple Meta Doc Generator build step lets you quickly and easily generate
 
  <details>
 <summary>Code Example</summary>
-   
+
 ```zig
 // Within 'build.zig'
 pub fn build(b: *std.Build) void {
@@ -276,7 +276,7 @@ pub fn build(b: *std.Build) void {
 
 ## Demo
 ![cova_demo](./docs/cova_demo.gif)
-  
+
 ## Alternatives
 - [flags](https://github.com/n0s4/flags)
 - [snek](https://github.com/BitlyTwiser/snek)
