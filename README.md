@@ -3,7 +3,7 @@
 # Commands **⋅** Options **⋅** Values **⋅** Arguments 
 A simple yet robust cross-platform command line argument parsing library for Zig.
 
-[![Static Badge](https://img.shields.io/badge/v0.14(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
+[![Static Badge](https://img.shields.io/badge/v0.14(stable)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
 [![Static Badge](https://img.shields.io/badge/v0.10.1b-blue?logo=GitHub&label=Release)](https://github.com/00JCIV00/cova/releases/tag/v0.10.1-beta)
 [![GitHub commit activity](https://img.shields.io/github/commits-difference/00JCIV00/cova?base=v0.10.1&head=main&logo=Github&label=Commits%20(v0.11.0b))](https://github.com/00JCIV00/cova/commits/main/)
 [![Static Badge](https://img.shields.io/badge/MIT-silver?label=License)](https://github.com/00JCIV00/cova/blob/main/LICENSE)
