@@ -12,6 +12,7 @@ const proc = std.process;
 const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
+const zon = std.zon;
 
 const cova = @import("cova");
 const Command = cova.Command;
@@ -660,9 +661,18 @@ pub fn main() !void {
             break :optPar .{ if (int_opt.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]", if (int_opt.val.parent_cmd) |p_cmd| p_cmd.name else "[no parent?]" };
         });
         const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
-        log.debug("-> Struct Cmd\n{any}", .{ demo_struct });
-        if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd|
-            log.debug("->-> Inner Cmd\n{any}", .{ try inner_cmd.to(DemoStruct.InnerStruct, .{}) });
+        var out_buf: [4096]u8 = undefined;
+        var out_stream: io.FixedBufferStream([]u8) = .{ .buffer = out_buf[0..], .pos = 0 };
+        try zon.stringify.serializeMaxDepth(demo_struct, .{}, out_stream.writer(), 10);
+        //log.debug("-> Struct Cmd\n{any}", .{ demo_struct });
+        log.debug("-> Struct Cmd\n{s}", .{ out_buf[0..] });
+        if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd| {
+            const inner_struct = try inner_cmd.to(DemoStruct.InnerStruct, .{});
+            @memset(out_buf[0..], 0);
+            out_stream.pos = 0;
+            try zon.stringify.serializeMaxDepth(inner_struct, .{}, out_stream.writer(), 10);
+            log.debug("->-> Inner Cmd\n{s}", .{ out_buf[0..] });
+        }
         //for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
         break :structCmd;
     }
