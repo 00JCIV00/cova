@@ -42,13 +42,11 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
     var start: usize = 0;
     var end: usize = 0;
     var quote_char: ?u8 = null;
-    var args_list = std.ArrayList([]const u8).init(alloc);
-
+    var args_list: std.ArrayListUnmanaged([]const u8) = .{};
     if (token_config.groupers_open.len != token_config.groupers_close.len) {
         log.err("The length of `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
         return error.UnbalancedGrouperPairs;
     }
-
     for (arg_str, 0..) |char, idx| {
         if (mem.indexOfScalar(u8, token_config.delimiters, char) != null and quote_char == null) {
             end = idx;
@@ -56,7 +54,7 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
                 start += 1;
                 continue;
             }
-            try args_list.append(arg_str[start..end]);
+            try args_list.append(alloc, arg_str[start..end]);
             start = end + 1;
         }
         else if (quote_char == null and mem.indexOfScalar(u8, token_config.groupers_open, char) != null) {
@@ -68,18 +66,17 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
         else if (quote_char) |q_char| {
             if (char == q_char) {
                 end = idx;
-                try args_list.append(arg_str[start..end]);
+                try args_list.append(alloc, arg_str[start..end]);
                 start = end + 1;
                 quote_char = null;
             }
         }
         else if (idx == arg_str.len - 1) {
             end = arg_str.len;
-            try args_list.append(arg_str[start..end]);
+            try args_list.append(alloc, arg_str[start..end]);
         }
     }
-
-    return try args_list.toOwnedSlice();
+    return try args_list.toOwnedSlice(alloc);
 }
 
 /// A basic Raw Argument Iterator.
@@ -262,7 +259,6 @@ fn parseArgsCtx(
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
-
 
     parseArg: while (args.next()) |arg| {
         // Check for Usage/Help flags and run their respective methods.
@@ -806,23 +802,26 @@ test "tokenize args" {
     defer arena.deinit();
     const alloc = arena.allocator();
     const arg_str = "cova struct-cmd --multi-str \"demo str\" -m 'a \"quoted string\"' -m \"A string using an 'apostrophe'\" 50";
-    const test_args = try tokenizeArgs(arg_str, alloc, .{});
-    const expect_args = [_][]const u8{ "cova", "struct-cmd", "--multi-str", "demo str", "-m", "a \"quoted string\"", "-m", "A string using an 'apostrophe'", "50" };
-    for (test_args, expect_args[0..]) |t_arg, e_arg| try testing.expectEqualStrings(t_arg, e_arg);
+    const test_toks = try tokenizeArgs(arg_str, alloc, .{});
+    const expect_toks = [_][]const u8{ "cova", "struct-cmd", "--multi-str", "demo str", "-m", "a \"quoted string\"", "-m", "A string using an 'apostrophe'", "50" };
+    for (test_toks, expect_toks[0..]) |t_tok, e_tok| try testing.expectEqualStrings(t_tok, e_tok);
 }
 
 test "command setup" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-
     const test_cmd = try test_setup_cmd.init(alloc, .{});
     defer test_cmd.deinit();
-
-    const test_cmd_from_struct = try test_setup_cmd_from_struct.init(alloc, .{
-        .add_help_cmds = false,
-        .add_help_opts = false,
-    });
+    const test_cmd_from_struct = try test_setup_cmd_from_struct.init(
+        alloc,
+        .{
+            .help_config = .{
+                .add_help_cmds = false,
+                .add_help_opts = false,
+            },
+        },
+    );
     defer test_cmd_from_struct.deinit();
 }
 
@@ -831,10 +830,9 @@ test "argument parsing" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    var writer_list = std.ArrayList(u8).init(alloc);
-    defer writer_list.deinit();
-    const writer = writer_list.writer();
-
+    var writer_list: std.ArrayListUnmanaged(u8) = .{};
+    defer writer_list.deinit(alloc);
+    const writer = writer_list.writer(alloc);
     const test_args: []const []const [:0]const u8 = &.{
         &.{ "test-cmd", "sub_test_cmd", "sub-test-cmd", "--sub-string", "sub cmd string opt", "--sub-int=15984" },
         &.{ "test-cmd", "--string", "string opt 1", "--str", "string opt 2", "--string=string_opt_3", "-s", "string opt 4", "-s=string_opt_5", "-s_string_opt_6", "string value text" },
@@ -856,10 +854,9 @@ test "argument analysis" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    var writer_list = std.ArrayList(u8).init(alloc);
-    defer writer_list.deinit();
-    const writer = writer_list.writer();
-
+    var writer_list: std.ArrayListUnmanaged(u8) = .{};
+    defer writer_list.deinit(alloc);
+    const writer = writer_list.writer(alloc);
     const test_cmd = try test_setup_cmd.init(alloc, .{});
     defer test_cmd.deinit();
     const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo=5.1", "-f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
