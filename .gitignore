@@ -1,3 +1,4 @@
 commit_msg
 .zig-*/**
 zig-*/**
+bin/**
