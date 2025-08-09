@@ -18,20 +18,23 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/generator.zig"),
     });
 
-    // Static Lib (Used for Docs)
-    const cova_lib = b.addStaticLibrary(.{
-        .name = "cova",
+    const cova_lib_mod = b.createModule(.{
         .root_source_file = b.path("src/cova.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    // Static Lib (Used for Docs)
+    const cova_lib = b.addLibrary(.{
+        .name = "cova",
+        .linkage = .static,
+        .root_module = cova_lib_mod,
     });
     //b.installArtifact(cova_lib);
 
     // Tests
     const cova_tests = b.addTest(.{
-        .root_source_file = b.path("src/cova.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = cova_lib_mod,
     });
     const run_cova_tests = b.addRunArtifact(cova_tests);
     const test_step = b.step("test", "Run the cova library tests");
@@ -64,11 +67,14 @@ pub fn build(b: *std.Build) void {
             break :exName example;
         };
         // - Exe
-        const ex_exe = b.addExecutable(.{
-            .name = bin_name orelse ex_name,
+        const ex_exe_mod = b.createModule(.{
             .root_source_file = b.path(std.fmt.allocPrint(ex_alloc, "examples/{s}.zig", .{ ex_name }) catch @panic("OOM")),
             .target = target,
             .optimize = optimize,
+        });
+        const ex_exe = b.addExecutable(.{
+            .name = bin_name orelse ex_name,
+            .root_module = ex_exe_mod,
         });
         ex_exe.root_module.addImport("cova", cova_mod);
         const build_ex_demo = b.addInstallArtifact(ex_exe, .{});
@@ -163,11 +169,14 @@ fn createDocGenStep(
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
     const program_mod = program_step.root_module;
-    const cova_gen_exe = b.addExecutable(.{
-        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
+    const cova_gen_exe_mod = b.createModule(.{
         .root_source_file = cova_gen_path,
         .target = b.graph.host,
         .optimize = .Debug,
+    });
+    const cova_gen_exe = b.addExecutable(.{
+        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
+        .root_module = cova_gen_exe_mod,
     });
     b.installArtifact(cova_gen_exe);
     cova_gen_exe.root_module.addImport("cova", cova_mod);
