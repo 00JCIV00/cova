@@ -7,6 +7,7 @@ const fmt = std.fmt;
 const fs = std.fs;
 const log = std.log;
 const mem = std.mem;
+const Io = std.Io;
 
 // Cova
 const utils = @import("../utils.zig");
@@ -65,14 +66,14 @@ pub const HelpDocsConfig = struct{
     mp_subcmds_fmt: []const u8 = ".B {s}:\n{s}\n\n",
     /// Manpages Options Format.
     /// Must support the following format types in this order:
-    /// 1. Character (Option Short Prefix)
-    /// 2. Optional Character "{?u}" (Option Short Name)
-    /// 3. String (Option Long Prefix)
-    /// 4. Optional String "{?s}" (Option Long Name)
-    /// 5. String (Option Value Name)
-    /// 6. String (Option Value Type)
-    /// 7. String (Option Name)
-    /// 8. String (Option Description)
+    /// 1. Character `{c}` (Option Short Prefix)
+    /// 2. Optional UTF-8 Character `{?u}` (Option Short Name)
+    /// 3. String `{s}` (Option Long Prefix)
+    /// 4. Optional String `{?s}` (Option Long Name)
+    /// 5. String `{s}` (Option Value Name)
+    /// 6. String `{s}` (Option Value Type)
+    /// 7. String `{s}` (Option Name)
+    /// 8. String `{s}` (Option Description)
     mp_opts_fmt: []const u8 = ".B {s}:\n[{u}{?u},{s}{?s} \"{s} ({s})\"]:\n  {s}\n\n",
     /// Manpages Values Format.
     /// Must support the following format types in this order:
@@ -82,30 +83,30 @@ pub const HelpDocsConfig = struct{
     mp_vals_fmt: []const u8 = ".B {s}:\n({s}): {s}\n\n",
     /// Manpages Examples Format.
     /// Must support the following format types in this order:
-    /// 1. String (Example)
+    /// 1. String `{s}` (Example)
     mp_examples_fmt: []const u8 = ".B {s}\n\n",
 
     // Markdown Structure
     /// Markdown Sub Commands Format.
     /// Must support the following format types in this order:
-    /// 1. String (Command Name)
-    /// 2. String (Command Description)
+    /// 1. String `{s}` (Command Name)
+    /// 2. String `{s}` (Command Description)
     md_subcmds_fmt: []const u8 = "- [__{s}__]({s}): {s}\n",
     /// Markdown Options Format.
     /// Must support the following format types in this order:
-    /// 1. Character (Option Short Prefix)
-    /// 2. Optional Character "{?u}" (Option Short Name)
-    /// 3. String (Option Name Separator)
-    /// 4. String (Option Long Prefix)
-    /// 5. Optional String "{?s}" (Option Long Name)
-    /// 6. String (Option Aliases)
-    /// 7. String (Option Value Name)
-    /// 8. String (Option Value Type)
-    /// 9. String (Option Name)
-    /// 10. String (Option Description)
+    /// 1. Character `{c}` (Option Short Prefix)
+    /// 2. UTF-8 Character `{u}` (Option Short Name)
+    /// 3. String `{s}` (Option Name Separator)
+    /// 4. String `{s}` (Option Long Prefix)
+    /// 5. String `{s}` (Option Long Name)
+    /// 6. String `{s}` (Option Aliases)
+    /// 7. String `{s}` (Option Value Name)
+    /// 8. String `{s}` (Option Value Type)
+    /// 9. String `{s}` (Option Name)
+    /// 10. String `{s}` (Option Description)
     md_opts_fmt: []const u8 =
         \\- __{s}__:
-        \\    - `{u}{?u}{s}{s}{?s}{s} <{s} ({s})>`
+        \\    - `{u}{u}{s}{s}{s}{s} <{s} ({s})>`
         \\    - {s}
         \\
     ,
@@ -113,9 +114,9 @@ pub const HelpDocsConfig = struct{
     md_opt_names_sep_fmt: []const u8 = ", ",
     /// Markdown Values Format.
     /// Must support the following format types in this order:
-    /// 1. String (Value Name)
-    /// 2. String (Value Type)
-    /// 3. String (Value Description)
+    /// 1. String `{s}` (Value Name)
+    /// 2. String `{s}` (Value Type)
+    /// 3. String `{s}` (Value Description)
     md_vals_fmt: []const u8 = 
         \\- __{s}__ ({s})
         \\    - {s}
@@ -123,7 +124,7 @@ pub const HelpDocsConfig = struct{
     ,
     /// Markdown Examples Format.
     /// Must support the following format types in this order:
-    /// 1. String (Example)
+    /// 1. String `{s}` (Example)
     //md_examples_fmt: []const u8 = "\n```shell\n{s}\n```\n",
     md_examples_fmt: []const u8 = "- `{s}`\n",
 
@@ -264,7 +265,8 @@ fn createManpageCtx(
         break :genFilepath path ++ mp_name ++ "." ++ .{ mp_config.section };
     };
     var manpage = try fs.cwd().createFile(filepath, .{});
-    var mp_writer = manpage.writer();
+    var mp_writer_parent = manpage.writer(&.{});
+    var mp_writer = &mp_writer_parent.interface;
     defer manpage.close();
     // Pre-Argument Writes
     try mp_writer.print(
@@ -354,7 +356,8 @@ fn createMarkdownCtx(
     };
     const local_path = "./" ++ md_name ++ ".md";
     var markdown = try fs.cwd().createFile(filepath, .{});
-    var md_writer = markdown.writer();
+    var md_writer_parent = markdown.writer(&.{});
+    var md_writer = &md_writer_parent.interface;
     defer markdown.close();
 
     // Header

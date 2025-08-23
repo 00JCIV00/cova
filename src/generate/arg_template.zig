@@ -221,7 +221,8 @@ pub fn createArgTemplate(
         break :genFilepath path ++ at_name ++ "-template." ++ @tagName(at_kind);
     };
     var arg_template = try fs.cwd().createFile(filepath, .{});
-    const at_writer = arg_template.writer();
+    var at_writer_parent = arg_template.writer(&.{});
+    const at_writer = &at_writer_parent.interface;
     defer arg_template.close();
 
     const meta_info_template = MetaInfoTemplate{
@@ -242,18 +243,18 @@ pub fn createArgTemplate(
 
     switch (at_kind) {
         .json => {
-            const json_opts_config = json.StringifyOptions{
+            const json_opts_config: json.Stringify.Options = .{
                 .whitespace = .indent_4,
                 .emit_null_optional_fields = false,
             };
             try at_writer.print("\"Meta Info\": ", .{});
-            try json.stringify(
+            try json.Stringify.value(
                 meta_info_template,
                 json_opts_config,
                 at_writer,
             );
             try at_writer.print(",\n\"Arguments\": ", .{});
-            try json.stringify(
+            try json.Stringify.value(
                 cmd_template,
                 json_opts_config,
                 at_writer,
