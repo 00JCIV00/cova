@@ -581,7 +581,7 @@ pub fn main() !void {
     //var arena = std.heap.ArenaAllocator.init(fba.allocator());
     //defer arena.deinit();
     //const alloc = arena.allocator();
-    var gpa = std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }){};
+    var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
     const alloc = gpa.allocator();
     defer {
         if (gpa.deinit() != .ok) {
@@ -589,9 +589,6 @@ pub fn main() !void {
         }
         else log.debug("Memory freed. No leaks detected.", .{});
     }
-    //const stdout_raw = io.getStdOut().writer();
-    //var stdout_bw = io.bufferedWriter(stdout_raw);
-    //const stdout = stdout_bw.writer();
     var stdout_file = fs.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer = stdout_file.writer(stdout_buf[0..]);

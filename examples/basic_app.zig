@@ -2,8 +2,11 @@
 //! Please note that the comments below only cover how to use the Cova library, so there are many
 //! undocumented blocks.
 
-const std = @import("std");
 const builtin = @import("builtin");
+const std = @import("std");
+const ArrayList = std.ArrayList;
+const MultiArrayList = std.MultiArrayList;
+
 const cova = @import("cova");
 
 // Setup
@@ -192,9 +195,7 @@ pub const User = struct {
         });
     }
 
-    pub fn format(value: @This(), comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        _ = fmt;
-        _ = options;
+    pub fn format(value: @This(), writer: anytype) !void {
         try writer.print(
             \\User: {d}
             \\ - Admin: {any}
@@ -249,7 +250,7 @@ pub fn delete(filename: []const u8) !void {
 pub fn main() !void {
     // While any Allocator can be used, Cova is designed to wrap what's provided with an
     // Arena Allocator. This allows for flexiblity.
-    var gpa = std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }){};
+    var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
     const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
@@ -267,7 +268,11 @@ pub fn main() !void {
     defer args_iter.deinit();
     // - Writer
     // Any valid Zig Writer can be used during parsing. Stdout is the easiest option here.
-    const stdout = std.io.getStdOut().writer();
+    var stdout_file = std.fs.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
+    defer stdout.flush() catch {};
 
     // Using `cova.parseArgs()` will parse args from the provided ArgIterator and populate provided
     // Command. It's important to note that, by default, if the user calls for `usage` or `help` it
@@ -294,7 +299,7 @@ pub fn main() !void {
     // The `cova.utils.displayCmdInfo()` function is useful for seeing the results of a parsed 
     // Command. This is done recursively for any sub Argument Types within the Command and can be
     // used to debug said Command.
-    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout, true);
+    if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, true);
 
     // - App Vars
     var user_filename_buf: [100]u8 = .{ 0 } ** 100;
@@ -308,15 +313,18 @@ pub fn main() !void {
 
     var user_file: std.fs.File = try open(user_filename);
     defer user_file.close();
-    const user_file_buf: []const u8 = try user_file.readToEndAlloc(alloc, 8192);
-    var users = std.ArrayList(User).init(alloc);
-    defer users.deinit();
-    var users_mal = std.MultiArrayList(User){};
+    var user_file_reader = user_file.reader(&.{});
+    var user_file_writer = user_file.writer(&.{});
+    defer user_file_writer.interface.flush() catch {};
+    const user_file_buf = try user_file_reader.interface.allocRemaining(alloc, .unlimited);
+    var users: ArrayList(User) = .empty;
+    defer users.deinit(alloc);
+    var users_mal: MultiArrayList(User) = .empty;
     defer users_mal.deinit(alloc);
     var users_iter = std.mem.splitAny(u8, user_file_buf, "\n");
     while (users_iter.next()) |user_ln| {
         const user = User.from(user_ln) catch break;
-        try users.append(user);
+        try users.append(alloc, user);
         try users_mal.append(alloc, user);
     }
 
@@ -337,11 +345,11 @@ pub fn main() !void {
         while (std.mem.indexOfScalar(u16, users_mal.items(._id), user_id)) |_|
             user_id = rand.random().int(u16);
         new_user._id = user_id;
-        try users.append(new_user);
+        try users.append(alloc, new_user);
         try users_mal.append(alloc, new_user);
         var user_buf: [512]u8 = .{ 0 } ** 512;
-        try user_file.writer().print("{s}\n", .{ try new_user.to(user_buf[0..]) });
-        try stdout.print("Added:\n{s}\n", .{ new_user });
+        try user_file_writer.interface.print("{s}\n", .{ try new_user.to(user_buf[0..]) });
+        try stdout.print("Added:\n{f}\n", .{ new_user });
     }
     if (main_cmd.matchSubCmd("open")) |open_cmd| {
         // Using `cova.Command.Custom.callAs()` is similar to the `to()` function but converts the
@@ -362,7 +370,7 @@ pub fn main() !void {
                 .phone => |phone| if (user.phone) |u_phone| std.mem.eql(u8, phone.?, u_phone) else false,
                 .address => |addr| if (user.address) |u_addr| std.mem.eql(u8, addr.?, u_addr) else false,
             } else true;
-            if (print_user) try stdout.print("{s}\n", .{ user });
+            if (print_user) try stdout.print("{f}\n", .{ user });
         }
     }
     if (main_cmd.matchSubCmd("clean")) |clean_cmd| cleanCmd: {
