@@ -3,7 +3,7 @@
 # Commands **⋅** Options **⋅** Values **⋅** Arguments 
 A simple yet robust cross-platform command line argument parsing library for Zig.
 
-[![Static Badge](https://img.shields.io/badge/v0.14.1(stable)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
+[![Static Badge](https://img.shields.io/badge/v0.15.1(stable)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
 [![Static Badge](https://img.shields.io/badge/v0.10.1b-blue?logo=GitHub&label=Release)](https://github.com/00JCIV00/cova/releases/tag/v0.10.1-beta)
 [![GitHub commit activity](https://img.shields.io/github/commits-difference/00JCIV00/cova?base=v0.10.1&head=main&logo=Github&label=Commits%20(v0.11.0b))](https://github.com/00JCIV00/cova/commits/main/)
 [![Static Badge](https://img.shields.io/badge/MIT-silver?label=License)](https://github.com/00JCIV00/cova/blob/main/LICENSE)
@@ -53,11 +53,11 @@ pub fn main() !void {
     // ...
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
     defer args_iter.deinit();
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
-        error.UsageHelpCalled => {},
+        error.UsageHelpCalled => return,
         else => return err,
     };
     // ...
@@ -185,9 +185,13 @@ pub fn main() !void {
     defer main_cmd.deinit();
 
     // Parsing
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
     defer args_iter.deinit();
-    const stdout = std.io.getStdOut().writer();
+    var stdout_file = fs.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
+    defer stdout.flush() catch {};
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
         error.UsageHelpCalled,
@@ -263,8 +267,8 @@ pub fn build(b: *std.Build) void {
 
     const cova_gen = @import("cova").addCovaDocGenStep(b, cova_dep, exe, .{
         .kinds = &.{ .all },
-        .version = "0.10.1",
-        .ver_date = "25 MAR 2025",
+        .version = "0.10.2",
+        .ver_date = "23 AUG 2025",
         .author = "00JCIV00",
         .copyright = "MIT License",
     });
