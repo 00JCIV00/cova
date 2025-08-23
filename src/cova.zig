@@ -1,7 +1,8 @@
 //! Cova. Commands, Options, Values, Arguments. A simple yet robust command line argument parsing library for Zig.
 //!
 //! Cova is based on the idea that Arguments will fall into one of three types: Commands, Options, or Values. These types are assembled into a single Command struct which is then used to parse argument tokens.
-//! Checkout Cova's [GitHub Wiki Guide](https://github.com/00JCIV00/cova/wiki)
+//!
+//! Checkout Cova's [GitHub Wiki Guide](https://github.com/00JCIV00/cova/wiki) for more info!
 
 // Standard
 const builtin = @import("builtin");
@@ -12,6 +13,7 @@ const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
 const testing = std.testing;
+const Io = std.Io;
 
 // Cova
 pub const Command = @import("Command.zig");
@@ -242,9 +244,9 @@ const ParseCtx = struct{
 /// The parsed result is stored to the provided `CommandT` (`cmd`) for user analysis.
 fn parseArgsCtx(
     args: *ArgIteratorGeneric,
-    comptime CommandT: type, 
-    cmd: *const CommandT, 
-    writer: anytype,
+    comptime CommandT: type,
+    cmd: *const CommandT,
+    writer: *Io.Writer,
     parse_config: ParseConfig,
     parse_ctx: *ParseCtx,
 ) !void {
@@ -256,7 +258,7 @@ fn parseArgsCtx(
     // Bypass argument 0 (the filename being executed);
     const init_arg = if (parse_config.skip_first_arg and args.index() == 0) args.next() else args.peek();
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
-    log.debug("Initial Arg: {?s}", .{ init_arg orelse "END OF ARGS!" });
+    log.debug("Initial Arg: {s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
     // Parse all Arguments within the Current Command
     parseArg: while (args.next()) |arg| {
@@ -362,10 +364,10 @@ fn parseArgsCtx(
                                 const opt_arg = short_opts[(short_idx + 2)..];
                                 opt.val.set(opt_arg) catch {
                                     if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                                    log.err("Could not parse Option '{c}{?c}: {s}'.", .{ 
+                                    log.err("Could not parse Option '{c}{?c}: {s}'.", .{
                                         short_pf,
-                                        opt.short_name, 
-                                        opt.name 
+                                        opt.short_name,
+                                        opt.name,
                                     });
                                     try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
@@ -373,18 +375,18 @@ fn parseArgsCtx(
                                 };
                                 try opt.setArgIdx(parse_ctx.arg_idx);
                                 parse_ctx.*.arg_idx += 1;
-                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
                                 continue :parseArg;
                             }
                             // Handle final Option in a chain of Short Options
-                            else if (short_idx == short_opts.len - 1) { 
+                            else if (short_idx == short_opts.len - 1) {
                                 if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
                                 else {
                                     parseOpt(args, OptionT, opt) catch {
                                         if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                                        log.err("Could not parse Option '{c}{?c}: {s}'.", .{
+                                        log.err("Could not parse Option '{c}{c}: {s}'.", .{
                                             short_pf,
-                                            opt.short_name,
+                                            opt.short_name.?,
                                             opt.name,
                                         });
                                         try errReaction(parse_config.err_reaction, opt, writer);
@@ -394,7 +396,7 @@ fn parseArgsCtx(
                                 }
                                 try opt.setArgIdx(parse_ctx.arg_idx);
                                 parse_ctx.*.arg_idx += 1;
-                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
                                 continue :parseArg;
                             }
                             // Handle a boolean Option before the final Short Option in a chain.
@@ -402,12 +404,12 @@ fn parseArgsCtx(
                                 try @constCast(opt).val.set("true");
                                 try opt.setArgIdx(parse_ctx.arg_idx);
                                 parse_ctx.*.arg_idx += 1;
-                                log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                                log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
                                 continue :shortOpts;
                             }
                             // Handle a non-boolean Option that allows an Empty Value.
                             else if (opt.allow_empty) {
-                                opt.val.setEmpty() catch 
+                                opt.val.setEmpty() catch
                                     log.err("The Option '{s}' has already been set.", .{ opt.name });
                                 continue :shortOpts;
                             }
@@ -427,7 +429,7 @@ fn parseArgsCtx(
                         }
                     }
                     if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                    log.err("Could not parse Option '{c}{?c}'.", .{ short_pf, short_opt });
+                    log.err("Could not parse Option '{c}{c}'.", .{ short_pf, short_opt });
                     try errReaction(parse_config.err_reaction, cmd, writer);
                     try writer.print("\n", .{});
                     return error.CouldNotParseOption;
@@ -469,10 +471,10 @@ fn parseArgsCtx(
                         }) {
                             if (sep_flag) {
                                 if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
-                                    log.err("The Option '{s}{?s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
-                                        long_pf, 
-                                        long_name, 
-                                        opt.name 
+                                    log.err("The Option '{s}{s}: {s}' is a Boolean/Toggle and cannot take an argument.", .{ 
+                                        long_pf,
+                                        long_name,
+                                        opt.name,
                                     });
                                     try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
@@ -481,10 +483,10 @@ fn parseArgsCtx(
                                 if (sep_arg.len == 0) return error.EmptyArgumentProvidedToOption;
                                 opt.val.set(sep_arg) catch {
                                     if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
+                                    log.err("Could not parse Option '{s}{s}: {s}'.", .{ 
                                         long_pf,
-                                        long_name, 
-                                        opt.name 
+                                        long_name,
+                                        opt.name,
                                     });
                                     try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
@@ -501,10 +503,10 @@ fn parseArgsCtx(
                             else {
                                 parseOpt(args, OptionT, opt) catch {
                                     if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                                    log.err("Could not parse Option '{s}{?s}: {s}'.", .{ 
+                                    log.err("Could not parse Option '{s}{s}: {s}'.", .{ 
                                         long_pf,
-                                        long_name, 
-                                        opt.name 
+                                        long_name,
+                                        opt.name,
                                     });
                                     try errReaction(parse_config.err_reaction, opt, writer);
                                     try writer.print("\n", .{});
@@ -519,7 +521,7 @@ fn parseArgsCtx(
                     }
                 }
                 if (cmd.allow_inheritable_opts) continue :inheritOpts;
-                log.err("Could not parse Argument '{s}{?s}' to an Option.", .{ long_pf, long_opt });
+                log.err("Could not parse Argument '{s}{s}' to an Option.", .{ long_pf, long_opt });
                 try errReaction(parse_config.err_reaction, cmd, writer);
                 try writer.print("\n", .{});
                 return error.CouldNotParseOption;
@@ -552,7 +554,7 @@ fn parseArgsCtx(
                 if (val.entryIdx() == val.maxEntries()) val_idx += 1;
                 try val.setArgIdx(parse_ctx.arg_idx);
                 parse_ctx.*.arg_idx += 1;
-                log.debug("Parsed Value '{?s}'.", .{ val.name() });
+                log.debug("Parsed Value '{s}'.", .{ val.name() });
                 continue :parseArg;
             }
         }
