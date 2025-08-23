@@ -5,12 +5,30 @@ const std = @import("std");
 const ascii = std.ascii;
 const mem = std.mem;
 const meta = std.meta;
+const Io = std.Io;
 
 // Cova
 const Command = @import("Command.zig");
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 
+
+/// Multi-Slice Formatter
+/// Note, this is intended for slices of Bytes (`[]const u8`) only.
+pub const MultiSliceFormatter = struct {
+    slices: []const []const u8,
+    prefix: []const u8 = "",
+    suffix: []const u8 = "",
+
+    pub fn format(self: @This(), writer: *Io.Writer) Io.Writer.Error!void {
+        _ = try writer.write(self.prefix);
+        try writer.print("{s}", .{ self.slices[0] });
+        if (self.slices.len > 1) {
+            for (self.slices[1..]) |slice| try writer.print(", {s}", .{ slice });
+        }
+        _ = try writer.write(self.suffix);
+    }
+};
 
 /// Display what is captured within a Command (`display_cmd`) after Cova parsing.
 pub fn displayCmdInfo(

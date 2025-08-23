@@ -15,6 +15,8 @@ const ascii = std.ascii;
 const fmt = std.fmt;
 const mem = std.mem;
 const meta = std.meta;
+const ArrayList = std.ArrayList;
+const Io = std.Io;
 
 const toUpper = ascii.toUpper;
 
@@ -79,30 +81,30 @@ pub const Config = struct {
     /// Format for the Help message. 
     ///
     // Must support the following format types in this order:
-    /// 1. String (Name)
-    /// 2. String (Description)
+    /// 1. String `{s}` (Name)
+    /// 2. String `{s}` (Description)
     help_fmt: ?[]const u8 = null,
     /// Name Separator Format
     name_sep_fmt: []const u8 = ",",
     /// Format for the Usage message.
     ///
     /// Must support the following format types in this order:
-    /// 1. Character (Short Prefix) 
-    /// 2. Optional Character "{?u}" (Short Name)
-    /// 3. String (Name Separator)
-    /// 4. String (Long Prefix)
-    /// 5. Optional String "{?s}" (Long Name)
-    /// 6. String (Alias Long Names)
-    /// 7. String (Value Type)
+    /// 1. Character `{c}` (Short Prefix)
+    /// 2. UTF-8 Character `{u}` (Short Name)
+    /// 3. String `{s}` (Name Separator)
+    /// 4. String `{s}` (Long Prefix)
+    /// 5. String `{s}` (Long Name)
+    /// 6. Format `{f}` (Alias Long Names)
+    /// 7. String `{s}` (Value Type)
     ///
     /// Note, the Name Separator (`name_sep_fmt`) will automatically be placed between the short and long name if they both exist.
-    usage_fmt: []const u8 = "{u}{?u}{s}{s}{?s}{s} <{s}>",
+    usage_fmt: []const u8 = "{u}{u}{s}{s}{s}{f} <{s}>",
     /// Format for each Alias Long Name in the Usage message.
     ///
     /// Must support the following format types in this order:
-    /// 1. String (Name Separator)
-    /// 2. String (Long Prefix)
-    /// 3. String "{s}" (Alias Long Name)
+    /// 1. String `{s}` (Name Separator)
+    /// 2. String `{s}` (Long Prefix)
+    /// 3. String `{s}` (Alias Long Name)
     alias_fmt: []const u8 = "{s}{s}{s}",
 
     /// Prefix for Short Options.
@@ -285,9 +287,10 @@ pub fn Custom(comptime config: Config) type {
             switch (self.val.setBehavior()) {
                 .First, .Last => @constCast(self).*.arg_idx.?[0] = arg_idx,
                 .Multi => {
-                    var idx_list = std.ArrayList(u8).fromOwnedSlice(alloc, @constCast(self).arg_idx.?);
-                    try idx_list.append(arg_idx);
-                    @constCast(self).*.arg_idx = try idx_list.toOwnedSlice();
+                    var idx_list: ArrayList(u8) = .fromOwnedSlice(@constCast(self).arg_idx.?);
+                    errdefer idx_list.deinit(alloc);
+                    try idx_list.append(alloc, arg_idx);
+                    @constCast(self).*.arg_idx = try idx_list.toOwnedSlice(alloc);
                 },
             }
         }
@@ -343,12 +346,7 @@ pub fn Custom(comptime config: Config) type {
             const AliasFormatter = struct {
                 aliases: ?[]const []const u8,
                 
-                pub fn format(
-                    formatter: @This(), 
-                    _: []const u8, 
-                    _: fmt.FormatOptions, 
-                    fmt_writer: anytype,
-                ) !void {
+                pub fn format(formatter: @This(), fmt_writer: *Io.Writer) !void {
                     if (formatter.aliases == null or formatter.aliases.?.len == 0) {
                         try fmt_writer.print("", .{});
                         return;
@@ -358,7 +356,7 @@ pub fn Custom(comptime config: Config) type {
                 }
             };
 
-            try writer.print(usage_fmt, .{ 
+            try writer.print(usage_fmt, .{
                 @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),
                 @as(u21, if (short_prefix != null) self.short_name orelse 0x200B else 0x200B),
                 if (self.short_name != null and self.long_name != null) name_sep_fmt else "",

@@ -4,6 +4,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const fmt = std.fmt;
+const fs = std.fs;
 const io = std.io;
 const log = std.log;
 const mem = std.mem;
@@ -13,11 +14,14 @@ const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 const zon = std.zon;
+const Io = std.Io;
 
 const cova = @import("cova");
 const Command = cova.Command;
 const Option = cova.Option;
 const Value = cova.Value;
+const utils = cova.utils;
+const MultiSliceF = utils.MultiSliceFormatter;
 const ex_structs = @import("example_structs.zig");
 const conf_optimized = Command.Config.optimized(.{});
 pub const CommandT = Command.Custom(.{
@@ -577,7 +581,7 @@ pub fn main() !void {
     //var arena = std.heap.ArenaAllocator.init(fba.allocator());
     //defer arena.deinit();
     //const alloc = arena.allocator();
-    var gpa = std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }){};
+    var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
     const alloc = gpa.allocator();
     defer {
         if (gpa.deinit() != .ok) {
@@ -585,9 +589,11 @@ pub fn main() !void {
         }
         else log.debug("Memory freed. No leaks detected.", .{});
     }
-    const stdout_raw = io.getStdOut().writer();
-    var stdout_bw = io.bufferedWriter(stdout_raw);
-    const stdout = stdout_bw.writer();
+    var stdout_file = fs.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
+    defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
@@ -595,19 +601,24 @@ pub fn main() !void {
     defer args_iter.deinit();
 
     // Parsing
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ 
-        //.auto_handle_usage_help = false,
-    }) catch |err| switch (err) {
+    cova.parseArgs(
+        &args_iter,
+        CommandT,
+        main_cmd,
+        stdout, .{
+            //.auto_handle_usage_help = false,
+        },
+    ) catch |err| switch (err) {
         error.UsageHelpCalled => {},
         else => return err,
     };
-    try stdout_bw.flush();
+    try stdout.flush();
 
     // Analysis
     // - Debug Output of Commands after Parsing. 
     try stdout.print("\nCova Demo Argument Results:\n", .{});
     try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, true);
-    try stdout_bw.flush();
+    try stdout.flush();
 
 
     // - Individual Command Analysis (this is how analysis would look in a normal program)
@@ -624,13 +635,13 @@ pub fn main() !void {
     const or_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .OR });
     const xor_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .XOR });
     log.debug(
-        \\ Check Options: {s}
+        \\ Check Options: {f}
         \\ - AND: {}
         \\ -  OR: {}
         \\ - XOR: {}
         \\
         , .{
-            opts_check_names,
+            MultiSliceF{ .slices = opts_check_names },
             and_opts_check,
             or_opts_check,
             xor_opts_check,
@@ -654,7 +665,7 @@ pub fn main() !void {
     if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
         log.debug("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| structCmd: {
-        log.debug("Parent Cmd (struct-cmd): {s]}", .{ struct_cmd.parent_cmd.?.name });
+        log.debug("Parent Cmd (struct-cmd): {s}", .{ struct_cmd.parent_cmd.?.name });
         log.debug("Parent Cmd (int-opt / int-val): {s} / {s}", optPar: {
             const struct_cmd_opts = struct_cmd.getOpts(.{}) catch break: optPar .{ "[no opts]", "" };
             const int_opt = struct_cmd_opts.get("int") orelse break: optPar .{ "[no int opt]", "" };
@@ -662,15 +673,26 @@ pub fn main() !void {
         });
         const demo_struct = try struct_cmd.to(DemoStruct, .{ .default_val_opts = true });
         var out_buf: [4096]u8 = undefined;
-        var out_stream: io.FixedBufferStream([]u8) = .{ .buffer = out_buf[0..], .pos = 0 };
-        try zon.stringify.serializeMaxDepth(demo_struct, .{}, out_stream.writer(), 10);
+        //var out_stream: io.FixedBufferStream([]u8) = .{ .buffer = out_buf[0..], .pos = 0 };
+        var out_writer: Io.Writer = .fixed(out_buf[0..]);
+        try zon.stringify.serializeMaxDepth(
+            demo_struct,
+            .{},
+            &out_writer,
+            10,
+        );
         //log.debug("-> Struct Cmd\n{any}", .{ demo_struct });
         log.debug("-> Struct Cmd\n{s}", .{ out_buf[0..] });
         if (struct_cmd.matchSubCmd("inner-cmd")) |inner_cmd| {
             const inner_struct = try inner_cmd.to(DemoStruct.InnerStruct, .{});
             @memset(out_buf[0..], 0);
-            out_stream.pos = 0;
-            try zon.stringify.serializeMaxDepth(inner_struct, .{}, out_stream.writer(), 10);
+            //out_stream.pos = 0;
+            try zon.stringify.serializeMaxDepth(
+                inner_struct,
+                .{},
+                &out_writer,
+                10,
+            );
             log.debug("->-> Inner Cmd\n{s}", .{ out_buf[0..] });
         }
         //for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
@@ -687,7 +709,7 @@ pub fn main() !void {
     const arg_str = "cova struct-cmd --multi-str \"demo str\" -m 'a \"quoted string\"' -m \"A string using an 'apostrophe'\" -m (quick parans test) 50";
     const args = try cova.tokenizeArgs(arg_str, alloc, .{ .groupers_open = "\"'(", .groupers_close = "\"')" });
     defer alloc.free(args);
-    log.debug("Tokenized Args:\n{s}", .{ args });
+    log.debug("Tokenized Args:\n{f}", .{ MultiSliceF{ .slices = args } });
 
     // Optimized Config
     //log.debug("Optimized Config:\n{any}", .{ conf_optimized });

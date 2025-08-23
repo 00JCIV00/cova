@@ -18,6 +18,7 @@ const fs = std.fs;
 const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
+const ArrayList = std.ArrayList;
 
 const toLower = ascii.lowerString;
 const toUpper = ascii.upperString;
@@ -652,7 +653,10 @@ pub fn Custom(comptime config: Config) type {
                                 inline else => return error.RequestedTypeMismatch,
                             }
                         }
-                        else error.RequestedTypeMismatch;
+                        else {
+                            //log.err("Type Mismatch: {s} vs {s}", .{ @typeName(T), @typeName(@TypeOf(typed_val).ChildT) });
+                            return error.RequestedTypeMismatch;
+                        };
                 },
             };
         }
@@ -673,10 +677,12 @@ pub fn Custom(comptime config: Config) type {
                             const ValT = @typeInfo(@TypeOf(try typed_val.get()));
                             switch (ValT) {
                                 .int => {
+                                    const alloc = self.allocator() orelse return error.ValueNotInitialized;
                                     const vals = try typed_val.getAll();
-                                    var vals_list = std.ArrayList(T).init(self.allocator().?);
-                                    for (vals) |val| try vals_list.append(@enumFromInt(val));
-                                    return try vals_list.toOwnedSlice();
+                                    var vals_list: ArrayList(T) = .empty;
+                                    errdefer vals_list.deinit(alloc);
+                                    for (vals) |val| try vals_list.append(alloc, @enumFromInt(val));
+                                    return try vals_list.toOwnedSlice(alloc);
                                 },
                                 inline else => return error.RequestedTypeMismatch,
                             }
@@ -715,9 +721,10 @@ pub fn Custom(comptime config: Config) type {
             switch (self.setBehavior()) {
                 .First, .Last => self_idx.*.?[0] = arg_idx,
                 .Multi => {
-                    var idx_list = std.ArrayList(u8).fromOwnedSlice(alloc, self_idx.*.?);
-                    try idx_list.append(arg_idx);
-                    self_idx.* = try idx_list.toOwnedSlice();
+                    var idx_list: ArrayList(u8) = .fromOwnedSlice(self_idx.*.?);
+                    errdefer idx_list.deinit(alloc);
+                    try idx_list.append(alloc, arg_idx);
+                    self_idx.* = try idx_list.toOwnedSlice(alloc);
                 },
             }
         }

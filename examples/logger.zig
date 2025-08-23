@@ -26,10 +26,14 @@ pub const setup_cmd = CommandT{
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .{};
     const alloc = gpa.allocator();
     defer if (gpa.deinit() != .ok and gpa.detectLeaks()) log.err("Memory leak detected!", .{});
-    const stdout = std.io.getStdOut().writer();
+    var stdout_file = std.fs.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
+    defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
@@ -37,7 +41,7 @@ pub fn main() !void {
     defer args_iter.deinit();
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
-        error.UsageHelpCalled => {},
+        error.UsageHelpCalled => return,
         else => return err,
     };
 

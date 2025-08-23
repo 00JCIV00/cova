@@ -67,7 +67,8 @@ pub fn createTabCompletion(
         break :genFilepath path_out ++ filename;
     };
     var tab_completion = try fs.cwd().createFile(filepath, .{});
-    var tc_writer = tab_completion.writer();
+    var tc_writer_parent = tab_completion.writer(&.{});
+    var tc_writer = &tc_writer_parent.interface;
     defer tab_completion.close();
 
 

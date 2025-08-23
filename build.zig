@@ -13,35 +13,33 @@ pub fn build(b: *std.Build) void {
     const cova_mod = b.addModule("cova", .{
         .root_source_file = b.path("src/cova.zig"),
     });
+    // - Meta Module (for Docs and Tests)
+    const cova_meta_mod = b.addModule("cova", .{
+        .root_source_file = b.path("src/cova.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     // - Generator Artifact
     _ = b.addModule("cova_gen", .{
         .root_source_file = b.path("src/generator.zig"),
     });
 
-    // Static Lib (Used for Docs)
-    const cova_lib = b.addStaticLibrary(.{
+    // Library (Used for Docs)
+    const cova_lib = b.addLibrary(.{
         .name = "cova",
-        .root_source_file = b.path("src/cova.zig"),
-        .target = target,
-        .optimize = optimize,
+        .linkage = .static,
+        .root_module = cova_meta_mod,
     });
-    //b.installArtifact(cova_lib);
 
     // Tests
-    const cova_tests = b.addTest(.{
-        .root_source_file = b.path("src/cova.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
+    const cova_tests = b.addTest(.{ .root_module = cova_meta_mod });
     const run_cova_tests = b.addRunArtifact(cova_tests);
     const test_step = b.step("test", "Run the cova library tests");
     test_step.dependOn(&run_cova_tests.step);
 
     // Docs
-    const cova_docs = cova_lib;
-    //const cova_docs = cova_tests;
     const build_docs = b.addInstallDirectory(.{
-        .source_dir = cova_docs.getEmittedDocs(),
+        .source_dir = cova_lib.getEmittedDocs(),
         .install_dir = .prefix,
         .install_subdir = "../docs",
     });
@@ -53,7 +51,7 @@ pub fn build(b: *std.Build) void {
     // Examples
     //==========================================
     const examples = &.{ "cova-demo", "basic_app", "logger" };
-    var ex_arena = std.heap.ArenaAllocator.init(b.allocator);
+    var ex_arena: std.heap.ArenaAllocator = .init(b.allocator);
     defer ex_arena.deinit();
     const ex_alloc = ex_arena.allocator();
     inline for (examples) |example| {
@@ -63,12 +61,16 @@ pub fn build(b: *std.Build) void {
             if (std.mem.eql(u8, example, "cova-demo")) break :exName "covademo";
             break :exName example;
         };
-        // - Exe
-        const ex_exe = b.addExecutable(.{
-            .name = bin_name orelse ex_name,
+        // - Mod
+        const ex_mod = b.createModule(.{
             .root_source_file = b.path(std.fmt.allocPrint(ex_alloc, "examples/{s}.zig", .{ ex_name }) catch @panic("OOM")),
             .target = target,
             .optimize = optimize,
+        });
+        // - Exe
+        const ex_exe = b.addExecutable(.{
+            .name = bin_name orelse ex_name,
+            .root_module = ex_mod,
         });
         ex_exe.root_module.addImport("cova", cova_mod);
         const build_ex_demo = b.addInstallArtifact(ex_exe, .{});
@@ -163,21 +165,25 @@ fn createDocGenStep(
     doc_gen_config: generate.MetaDocConfig,
 ) *std.Build.Step.Run {
     const program_mod = program_step.root_module;
-    const cova_gen_exe = b.addExecutable(.{
-        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
+    const cova_gen_mod = b.createModule(.{
         .root_source_file = cova_gen_path,
         .target = b.graph.host,
         .optimize = .Debug,
+    });
+    const cova_gen_exe = b.addExecutable(.{
+        .name = std.fmt.allocPrint(b.allocator, "cova_generator_{s}", .{ program_step.name }) catch @panic("OOM"),
+        .root_module = cova_gen_mod,
     });
     b.installArtifact(cova_gen_exe);
     cova_gen_exe.root_module.addImport("cova", cova_mod);
     cova_gen_exe.root_module.addImport("program", program_mod);
 
     const md_conf_opts = b.addOptions();
-    var sub_conf_map = std.StringHashMap(?*std.Build.Step.Options).init(b.allocator);
-    sub_conf_map.put("help_docs_config", null) catch @panic("OOM");
-    sub_conf_map.put("tab_complete_config", null) catch @panic("OOM");
-    sub_conf_map.put("arg_template_config", null) catch @panic("OOM");
+    var sub_conf_map: std.StringHashMapUnmanaged(?*std.Build.Step.Options) = .empty;
+    defer sub_conf_map.deinit(b.allocator);
+    sub_conf_map.put(b.allocator, "help_docs_config", null) catch @panic("OOM");
+    sub_conf_map.put(b.allocator, "tab_complete_config", null) catch @panic("OOM");
+    sub_conf_map.put(b.allocator, "arg_template_config", null) catch @panic("OOM");
 
     inline for (@typeInfo(generate.MetaDocConfig).@"struct".fields) |field| {
         switch(@typeInfo(field.type)) {
@@ -196,7 +202,7 @@ fn createDocGenStep(
                                 doc_conf_opts.addOption(s_field.type, s_field.name, @field(conf, s_field.name));
                             }
                             doc_conf_opts.addOption(bool, "provided", true);
-                            sub_conf_map.put(field.name, doc_conf_opts) catch @panic("OOM");
+                            sub_conf_map.put(b.allocator, field.name, doc_conf_opts) catch @panic("OOM");
                         }
                         continue;
                     },
@@ -205,13 +211,14 @@ fn createDocGenStep(
             },
             .pointer => |ptr| {
                 if (ptr.child == generate.MetaDocConfig.MetaDocKind) {
-                    var kinds_list = std.ArrayList(usize).init(b.allocator);
+                    var kinds_list: std.ArrayList(usize) = .empty;
+                    defer kinds_list.deinit(b.allocator);
                     for (@field(doc_gen_config, field.name)) |kind|
-                        kinds_list.append(@intFromEnum(kind)) catch @panic("There was an issue with the Meta Doc Config.");
+                        kinds_list.append(b.allocator, @intFromEnum(kind)) catch @panic("There was an issue with the Meta Doc Config.");
                     md_conf_opts.addOption(
                         []const usize,
                         field.name,
-                        kinds_list.toOwnedSlice() catch @panic("There was an issue with the Meta Doc Config."),
+                        kinds_list.toOwnedSlice(b.allocator) catch @panic("There was an issue with the Meta Doc Config."),
                     );
                     continue;
                 }

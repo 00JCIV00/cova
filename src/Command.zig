@@ -25,8 +25,11 @@ const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
 const sort = std.sort;
+const ArrayList = std.ArrayList;
+const Io = std.Io;
 const StaticStringMap = std.StaticStringMap;
-const StringHashMap = std.StringHashMap;
+const StringArrayHashMap = std.StringArrayHashMapUnmanaged;
+const StringHashMap = std.StringHashMapUnmanaged;
 
 const toLower = ascii.toLower;
 const toUpper = ascii.toUpper;
@@ -34,6 +37,7 @@ const toUpper = ascii.toUpper;
 const Option = @import("Option.zig");
 const Value = @import("Value.zig");
 const utils = @import("utils.zig");
+const MultiSliceF = utils.MultiSliceFormatter;
 
 
 /// Config for custom Command Types. 
@@ -106,10 +110,10 @@ pub const Config = struct {
     /// Alias List Format for the displayed Command
     /// Must support the following format types in this order:
     /// 1. String (Indent)
-    /// 2. String (Aliases)
+    /// 2. Format (Aliases)
     /// Note, there will be curly-brackets `{}` surrounding the list due to how Zig handles printing `[]const []const u8`.
     cmd_alias_fmt: []const u8 = 
-        \\{s}ALIAS(ES): {s}
+        \\{s}ALIAS(ES): {f}
         \\
         \\
     ,
@@ -144,9 +148,9 @@ pub const Config = struct {
     subcmds_usage_fmt: []const u8 = "{s}", 
     /// Sub Commands Alias List Format.
     /// Must support the following format types in this order:
-    /// 1. String (Aliases)
+    /// 1. Format (Aliases)
     /// Note, there will be curly-brackets `{}` surrounding the list due to how Zig handles printing `[]const []const u8`.
-    subcmd_alias_fmt: []const u8 = "[alias(es): {s}]",
+    subcmd_alias_fmt: []const u8 = "[alias(es): {f}]",
     /// Example Format
     /// Must support the following format types in this order:
     /// 1. String (Example)
@@ -206,7 +210,7 @@ pub const Config = struct {
 
     /// Configuration for `optimized()`.
     pub const OptimizeConfig = struct{
-        /// Set all `_fmt` fields `""`.
+        /// Set all `_fmt` fields to `""`.
         /// This is useful for trimming down the binary size if Cova's Usage/Help functionality isn't being used.
         no_formats: bool = true,
         /// Remove the following features by setting them to `void`:
@@ -493,7 +497,8 @@ pub fn Custom(comptime config: Config) type {
         /// Gets a StringHashMap of the Options from this Command that have a set Value using the provided Allocator (`alloc`).
         pub fn getOptsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(OptionT) {
             if (self.opts == null) return error.NoOptionsInCommand;
-            var map = StringHashMap(OptionT).init(alloc);
+            var map: StringHashMap(OptionT) = .empty;
+            errdefer map.deinit(alloc);
             for (self.opts.?) |opt| {
                 checkGroup: {
                     const conf_group = get_config.arg_group orelse break :checkGroup;
@@ -505,7 +510,7 @@ pub fn Custom(comptime config: Config) type {
                     .set_or_default => if (!opt.val.isSet() and !opt.val.hasDefault()) continue,
                     else => {},
                 }
-                try map.put(opt.name, opt);
+                try map.put(alloc, opt.name, opt);
             }
             return map;
         }
@@ -572,8 +577,8 @@ pub fn Custom(comptime config: Config) type {
         /// This implementation uses the provided Allocator (`alloc`) to allocate the OptionT slice.
         pub fn matchOptsAlloc(self: *const @This(), opt_names: []const []const u8, alloc: mem.Allocator, check_config: OptionsCheckConfig) ![]OptionT {
             const cmd_opts = self.opts orelse return error.NoOptionsInCommand;
-            var opts_list = std.ArrayList(OptionT).init(alloc);
-            errdefer opts_list.deinit();
+            var opts_list: ArrayList(OptionT) = .empty;
+            errdefer opts_list.deinit(alloc);
             var logic_flag = false;
             for (cmd_opts) |opt| {
                 checkGroup: {
@@ -583,7 +588,7 @@ pub fn Custom(comptime config: Config) type {
                 }
                 _ = utils.indexOfEql([]const u8, opt_names, opt.name) orelse continue;
                 if (!opt.val.isSet()) continue;
-                try opts_list.append(opt);
+                try opts_list.append(alloc, opt);
                 switch (check_config.logic) {
                     .AND => {
                         if (opts_list.items.len == opt_names.len) {
@@ -608,7 +613,7 @@ pub fn Custom(comptime config: Config) type {
                     .XOR => error.MatchOptionLogicFailXOR,
                 };
             }
-            return try opts_list.toOwnedSlice();
+            return try opts_list.toOwnedSlice(alloc);
         }
         /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands using the provided Allocator (`alloc`).
         /// Memory is owned by this Command's Allocator. Look at the `...Alloc()` version of this method to use a different Allocator.
@@ -618,14 +623,15 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Gets a slice of all Inheritable Options from this Command and recursively upward through all Parent Commands.
         pub fn inheritableOptsAlloc(self: *const @This(), alloc: mem.Allocator) ![]OptionT {
-            var opts_list = std.ArrayList(OptionT).init(alloc);
+            var opts_list: ArrayList(OptionT) = .empty;
+            errdefer opts_list.deinit(alloc);
             if (self.opts) |opts| {
                 for (opts) |opt| {
-                    if (opt.inheritable) try opts_list.append(opt);
+                    if (opt.inheritable) try opts_list.append(alloc, opt);
                 }
             }
-            if (self.parent_cmd) |parent| try (opts_list.appendSlice(try parent.inheritableOptsAlloc(alloc)));
-            return try opts_list.toOwnedSlice();
+            if (self.parent_cmd) |parent| try (opts_list.appendSlice(alloc, try parent.inheritableOptsAlloc(alloc)));
+            return try opts_list.toOwnedSlice(alloc);
         }
 
         /// Gets a StringHashMap of this Command's Values using its initialization Allocator.
@@ -637,8 +643,9 @@ pub fn Custom(comptime config: Config) type {
         /// Gets a StringHashMap of this Command's Values using the provided Allocator (`alloc`).
         pub fn getValsAlloc(self: *const @This(), alloc: mem.Allocator, get_config: GetConfig) !StringHashMap(ValueT) {
             if (self.vals == null) return error.NoValuesInCommand;
-            var map = StringHashMap(ValueT).init(alloc);
-            for (self.vals.?) |val| { 
+            var map: StringHashMap(ValueT) = .empty;
+            errdefer map.deinit(alloc);
+            for (self.vals.?) |val| {
                 checkGroup: {
                     const conf_group = get_config.arg_group orelse break :checkGroup;
                     const val_group = val.valGroup() orelse continue;
@@ -649,7 +656,7 @@ pub fn Custom(comptime config: Config) type {
                     .set_or_default => if (!val.isSet() and !val.hasDefault()) continue,
                     else => {},
                 }
-                try map.put(val.name(), val); 
+                try map.put(alloc, val.name(), val);
             }
             return map;
         }
@@ -690,7 +697,7 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Command and writes it to the provided Writer (`writer`).
         /// Check Command.Config for customization options.
-        pub fn help(self: *const @This(), writer: anytype) !void {
+        pub fn help(self: *const @This(), writer: *Io.Writer) !void {
             if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
 
             const alloc = self._alloc orelse return error.CommandNotInitialized;
@@ -705,7 +712,9 @@ pub fn Custom(comptime config: Config) type {
                             indent_fmt, self.description 
                         });
                     },
-                    .Aliases => { if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, aliases }); },
+                    .Aliases => { 
+                        if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, MultiSliceF{ .slices = aliases } }); 
+                    },
                     .Examples => showExamples: {
                         if (!include_examples) break :showExamples;
                         const examples = self.examples orelse break :showExamples;
@@ -719,20 +728,20 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .Commands => if (self.sub_cmds) |sub_cmds| {
                         try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
-                        var cmd_list = std.StringArrayHashMap(@This()).init(alloc);
-                        defer cmd_list.deinit();
-                        for (sub_cmds) |cmd| try cmd_list.put(cmd.name, cmd);
-                        var remove_list = std.ArrayList([]const u8).init(alloc);
-                        defer remove_list.deinit();
+                        var cmd_map: StringArrayHashMap(@This()) = .empty;
+                        defer cmd_map.deinit(alloc);
+                        for (sub_cmds) |cmd| try cmd_map.put(alloc, cmd.name, cmd);
+                        var remove_list: ArrayList([]const u8) = .empty;
+                        defer remove_list.deinit(alloc);
                         if (self.cmd_groups) |groups| {
                             var need_other_title = false;
                             for (groups) |group| {
                                 var need_title = true;
-                                var cmd_iter = cmd_list.iterator();
+                                var cmd_iter = cmd_map.iterator();
                                 cmdGroup: while (cmd_iter.next()) |cmd_entry| {
                                     const cmd = cmd_entry.value_ptr;
                                     if (cmd.hidden) {
-                                        try remove_list.append(cmd.name);
+                                        try remove_list.append(alloc, cmd.name);
                                         continue;
                                     }
                                     if (mem.eql(u8, cmd.cmd_group orelse continue :cmdGroup, group)) {
@@ -745,19 +754,19 @@ pub fn Custom(comptime config: Config) type {
                                         try writer.print(subcmds_help_fmt, .{ cmd.name, cmd.description });
                                         if (cmd.alias_names) |aliases| {
                                             try writer.print("\n{s}{s}{s}", .{ indent_fmt, indent_fmt, indent_fmt });
-                                            try writer.print(subcmd_alias_fmt, .{ aliases });
+                                            try writer.print(subcmd_alias_fmt, .{ MultiSliceF{ .slices = aliases } });
                                         }
                                         try writer.print("\n", .{});
-                                        try remove_list.append(cmd.name);
+                                        try remove_list.append(alloc, cmd.name);
                                     }
                                 }
                                 if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                             }
-                            if (need_other_title and remove_list.items.len < cmd_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            if (need_other_title and remove_list.items.len < cmd_map.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                         }
-                        for (remove_list.items) |rem_name| _ = cmd_list.orderedRemove(rem_name);
+                        for (remove_list.items) |rem_name| _ = cmd_map.orderedRemove(rem_name);
 
-                        var cmd_iter = cmd_list.iterator();
+                        var cmd_iter = cmd_map.iterator();
                         while (cmd_iter.next()) |cmd_entry| {
                             const cmd = cmd_entry.value_ptr;
                             if (cmd.hidden) continue;
@@ -768,21 +777,21 @@ pub fn Custom(comptime config: Config) type {
                         try writer.print("\n", .{});
                     },
                     .Options => if (self.opts) |opts| {
-                    try writer.print(opts_help_title_fmt, .{ indent_fmt });
-                    var opt_list = std.StringArrayHashMap(OptionT).init(alloc);
-                        defer opt_list.deinit();
-                        for (opts) |opt| try opt_list.put(opt.name, opt);
-                        var remove_list = std.ArrayList([]const u8).init(alloc);
-                        defer remove_list.deinit();
+                        try writer.print(opts_help_title_fmt, .{ indent_fmt });
+                        var opt_map: StringArrayHashMap(OptionT) = .empty;
+                        defer opt_map.deinit(alloc);
+                        for (opts) |opt| try opt_map.put(alloc, opt.name, opt);
+                        var remove_list: ArrayList([]const u8) = .empty;
+                        defer remove_list.deinit(alloc);
                         if (self.opt_groups) |groups| {
                             var need_other_title = false;
                             for (groups) |group| {
                                 var need_title = true;
-                                var opt_iter = opt_list.iterator();
+                                var opt_iter = opt_map.iterator();
                                 optGroup: while (opt_iter.next()) |opt_entry| {
                                     const opt = opt_entry.value_ptr;
                                     if (opt.hidden) {
-                                        try remove_list.append(opt.name);
+                                        try remove_list.append(alloc, opt.name);
                                         continue;
                                     }
                                     if (mem.eql(u8, opt.opt_group orelse continue :optGroup, group)) {
@@ -794,16 +803,16 @@ pub fn Custom(comptime config: Config) type {
                                         try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                         try opt.help(writer);
                                         try writer.print("\n", .{});
-                                        try remove_list.append(opt.name);
+                                        try remove_list.append(alloc, opt.name);
                                     }
                                 }
                                 if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                             }
-                            if (need_other_title and remove_list.items.len < opt_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            if (need_other_title and remove_list.items.len < opt_map.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                         }
-                        for (remove_list.items) |rem_name| _ = opt_list.orderedRemove(rem_name);
+                        for (remove_list.items) |rem_name| _ = opt_map.orderedRemove(rem_name);
 
-                        var opt_iter = opt_list.iterator();
+                        var opt_iter = opt_map.iterator();
                         while (opt_iter.next()) |opt_entry| {
                             const opt = opt_entry.value_ptr;
                             if (opt.hidden) continue;
@@ -815,16 +824,16 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .Values => if (self.vals) |vals| {
                         try writer.print(vals_help_title_fmt, .{ indent_fmt });
-                        var val_list = std.StringArrayHashMap(ValueT).init(alloc);
-                        defer val_list.deinit();
-                        for (vals) |val| try val_list.put(val.name(), val);
-                        var remove_list = std.ArrayList([]const u8).init(alloc);
-                        defer remove_list.deinit();
+                        var val_map: StringArrayHashMap(ValueT) = .empty;
+                        defer val_map.deinit(alloc);
+                        for (vals) |val| try val_map.put(alloc, val.name(), val);
+                        var remove_list: ArrayList([]const u8) = .empty;
+                        defer remove_list.deinit(alloc);
                         if (self.val_groups) |groups| {
                             var need_other_title = false;
                             for (groups) |group| {
                                 var need_title = true;
-                                var val_iter = val_list.iterator();
+                                var val_iter = val_map.iterator();
                                 valGroup: while (val_iter.next()) |val_entry| {
                                     const val = val_entry.value_ptr;
                                     if (mem.eql(u8, val.valGroup() orelse continue :valGroup, group)) {
@@ -836,16 +845,16 @@ pub fn Custom(comptime config: Config) type {
                                         try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
                                         try val.help(writer);
                                         try writer.print("\n", .{});
-                                        try remove_list.append(val.name());
+                                        try remove_list.append(alloc, val.name());
                                     }
                                 }
                                 if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                             }
-                            if (need_other_title and remove_list.items.len < val_list.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            if (need_other_title and remove_list.items.len < val_map.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                         }
-                        for (remove_list.items) |rem_name| _ = val_list.orderedRemove(rem_name);
+                        for (remove_list.items) |rem_name| _ = val_map.orderedRemove(rem_name);
 
-                        var val_iter = val_list.iterator();
+                        var val_iter = val_map.iterator();
                         while (val_iter.next()) |val_entry| {
                             const val = val_entry.value_ptr;
                             try writer.print("{s}{s}", .{ indent_fmt, indent_fmt });
@@ -1352,12 +1361,13 @@ pub fn Custom(comptime config: Config) type {
                 }
             }
             const vals = getVals: {
-                var valsList = std.ArrayList(ValueT).init(alloc);
-                try valsList.appendSlice(self.vals orelse &.{});
+                var vals_list: ArrayList(ValueT) = .empty;
+                errdefer vals_list.deinit(alloc);
+                try vals_list.appendSlice(alloc, self.vals orelse &.{});
                 if (to_config.default_val_opts) optVals: {
-                    for (self.opts orelse break :optVals) |opt| try valsList.append(opt.val);
+                    for (self.opts orelse break :optVals) |opt| try vals_list.append(alloc, opt.val);
                 }
-                break :getVals try valsList.toOwnedSlice();
+                break :getVals try vals_list.toOwnedSlice(alloc);
             };
             defer alloc.free(vals);
             var out: ToT = undefined;
