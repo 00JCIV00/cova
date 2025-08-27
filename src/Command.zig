@@ -865,6 +865,8 @@ pub fn Custom(comptime config: Config) type {
                     },
                 }
             }
+
+            try writer.flush();
         }
 
         /// Creates the Usage message for this Command and writes it to the provided Writer (`writer`).
@@ -906,6 +908,7 @@ pub fn Custom(comptime config: Config) type {
             } 
 
             try writer.print("\n\n", .{});
+            try writer.flush();
         }
 
         /// Check if Usage or Help have been set and call their respective methods.
