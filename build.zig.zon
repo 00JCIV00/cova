@@ -1,5 +1,6 @@
 .{
     .name = .cova,
+    .minimum_zig_version = "0.15.1",
     .fingerprint = 0x88c84524738e1fc,
     .paths = .{
         "build.zig",
