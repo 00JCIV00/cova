@@ -71,6 +71,8 @@ pub const Config = struct {
     /// Help Category Order.
     /// The order that Help Categories will be written when writing a Help Message.
     help_category_order: []const HelpCategory = &.{ .Prefix, .Usage, .Header, .Aliases, .Examples, .Commands, .Options, .Values },
+    /// Automatically flush the provided Writer on `usage()` and `help()` calls.
+    auto_flush: bool = true,
 
     /// Indent string used for Usage/Help formatting.
     /// Note, this will be used as the default across all Argument Types,
@@ -275,6 +277,8 @@ pub fn Custom(comptime config: Config) type {
         /// Help Category Order.
         /// Check (`Command.Config`) for details.
         pub const help_category_order = config.help_category_order;
+        /// Automatically flush the provided Writer for `usage()` and `help()` calls.
+        pub const auto_flush = config.auto_flush;
 
         /// Group Title Format.
         /// Check (`Command.Config`) for details.
@@ -664,44 +668,43 @@ pub fn Custom(comptime config: Config) type {
         /// Check if a Flag (`flag_name`) has been set on this Command as a Command, Option, or Value.
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
-            return (
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or
+            return ( //
+                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or //
                 checkOpt: {
                     if (self.opts != null) {
                         for (self.opts.?) |opt| {
-                            if (
-                                mem.eql(u8, opt.name, flag_name) and 
-                                mem.eql(u8, opt.val.childType(), "bool") and 
-                                opt.val.getAs(bool) catch false
-                            )
+                            if ( //
+                                mem.eql(u8, opt.name, flag_name) and  //
+                                mem.eql(u8, opt.val.childType(), "bool") and  //
+                                opt.val.getAs(bool) catch false //
+                            ) //
                                 break :checkOpt true;
                         }
                     }
                     break :checkOpt false;
-                } or
+                } or //
                 checkVal: {
                     if (self.vals != null) {
                         for (self.vals.?) |val| {
-                            if (
-                                mem.eql(u8, val.name(), flag_name) and
-                                mem.eql(u8, val.childType(), "bool") and
-                                val.getAs(bool) catch false
-                            )
+                            if ( //
+                                mem.eql(u8, val.name(), flag_name) and //
+                                mem.eql(u8, val.childType(), "bool") and //
+                                val.getAs(bool) catch false //
+                            ) //
                                 break :checkVal true;
                         }
                     }
                     break :checkVal false;
-                }
+                } //
             );
         }
 
         /// Creates the Help message for this Command and writes it to the provided Writer (`writer`).
         /// Check Command.Config for customization options.
         pub fn help(self: *const @This(), writer: *Io.Writer) !void {
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
-
+            if (global_help_fn) |helpFn| //
+                return helpFn(self, writer, self._alloc);
             const alloc = self._alloc orelse return error.CommandNotInitialized;
-
             for (help_category_order) |cat| {
                 switch (cat) {
                     .Prefix => try writer.print("{s}\n", .{ self.help_prefix }),
@@ -713,14 +716,15 @@ pub fn Custom(comptime config: Config) type {
                         });
                     },
                     .Aliases => { 
-                        if (self.alias_names) |aliases| try writer.print(cmd_alias_fmt, .{ indent_fmt, MultiSliceF{ .slices = aliases } }); 
+                        if (self.alias_names) |aliases| //
+                            try writer.print(cmd_alias_fmt, .{ indent_fmt, MultiSliceF{ .slices = aliases } }); 
                     },
                     .Examples => showExamples: {
                         if (!include_examples) break :showExamples;
                         const examples = self.examples orelse break :showExamples;
                         try writer.print(examples_header_fmt, .{ indent_fmt });
                         for (examples) |example| {
-                            try writer.print("{s}{s}", .{ indent_fmt } ** 2);
+                            try writer.print("{s}{s}", .{ indent_fmt, indent_fmt } );
                             try writer.print(example_fmt, .{ example });
                             try writer.print("\n", .{});
                         }
@@ -730,7 +734,8 @@ pub fn Custom(comptime config: Config) type {
                         try writer.print(subcmds_help_title_fmt, .{ indent_fmt });
                         var cmd_map: StringArrayHashMap(@This()) = .empty;
                         defer cmd_map.deinit(alloc);
-                        for (sub_cmds) |cmd| try cmd_map.put(alloc, cmd.name, cmd);
+                        for (sub_cmds) |cmd| //
+                            try cmd_map.put(alloc, cmd.name, cmd);
                         var remove_list: ArrayList([]const u8) = .empty;
                         defer remove_list.deinit(alloc);
                         if (self.cmd_groups) |groups| {
@@ -760,12 +765,14 @@ pub fn Custom(comptime config: Config) type {
                                         try remove_list.append(alloc, cmd.name);
                                     }
                                 }
-                                if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
+                                if (!need_title) //
+                                    try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                             }
-                            if (need_other_title and remove_list.items.len < cmd_map.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            if (need_other_title and remove_list.items.len < cmd_map.count()) //
+                                try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                         }
-                        for (remove_list.items) |rem_name| _ = cmd_map.orderedRemove(rem_name);
-
+                        for (remove_list.items) |rem_name| //
+                            _ = cmd_map.orderedRemove(rem_name);
                         var cmd_iter = cmd_map.iterator();
                         while (cmd_iter.next()) |cmd_entry| {
                             const cmd = cmd_entry.value_ptr;
@@ -780,7 +787,8 @@ pub fn Custom(comptime config: Config) type {
                         try writer.print(opts_help_title_fmt, .{ indent_fmt });
                         var opt_map: StringArrayHashMap(OptionT) = .empty;
                         defer opt_map.deinit(alloc);
-                        for (opts) |opt| try opt_map.put(alloc, opt.name, opt);
+                        for (opts) |opt| //
+                            try opt_map.put(alloc, opt.name, opt);
                         var remove_list: ArrayList([]const u8) = .empty;
                         defer remove_list.deinit(alloc);
                         if (self.opt_groups) |groups| {
@@ -806,12 +814,14 @@ pub fn Custom(comptime config: Config) type {
                                         try remove_list.append(alloc, opt.name);
                                     }
                                 }
-                                if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
+                                if (!need_title) //
+                                    try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                             }
-                            if (need_other_title and remove_list.items.len < opt_map.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            if (need_other_title and remove_list.items.len < opt_map.count()) //
+                                try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                         }
-                        for (remove_list.items) |rem_name| _ = opt_map.orderedRemove(rem_name);
-
+                        for (remove_list.items) |rem_name| //
+                            _ = opt_map.orderedRemove(rem_name);
                         var opt_iter = opt_map.iterator();
                         while (opt_iter.next()) |opt_entry| {
                             const opt = opt_entry.value_ptr;
@@ -826,7 +836,8 @@ pub fn Custom(comptime config: Config) type {
                         try writer.print(vals_help_title_fmt, .{ indent_fmt });
                         var val_map: StringArrayHashMap(ValueT) = .empty;
                         defer val_map.deinit(alloc);
-                        for (vals) |val| try val_map.put(alloc, val.name(), val);
+                        for (vals) |val| //
+                            try val_map.put(alloc, val.name(), val);
                         var remove_list: ArrayList([]const u8) = .empty;
                         defer remove_list.deinit(alloc);
                         if (self.val_groups) |groups| {
@@ -848,12 +859,14 @@ pub fn Custom(comptime config: Config) type {
                                         try remove_list.append(alloc, val.name());
                                     }
                                 }
-                                if (!need_title) try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
+                                if (!need_title) //
+                                    try writer.print(group_sep_fmt, .{ indent_fmt, indent_fmt });
                             }
-                            if (need_other_title and remove_list.items.len < val_map.count()) try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
+                            if (need_other_title and remove_list.items.len < val_map.count()) //
+                                try writer.print(group_title_fmt, .{ indent_fmt, "OTHER" });
                         }
-                        for (remove_list.items) |rem_name| _ = val_map.orderedRemove(rem_name);
-
+                        for (remove_list.items) |rem_name| //
+                            _ = val_map.orderedRemove(rem_name);
                         var val_iter = val_map.iterator();
                         while (val_iter.next()) |val_entry| {
                             const val = val_entry.value_ptr;
@@ -863,14 +876,16 @@ pub fn Custom(comptime config: Config) type {
                         }
                         try writer.print("\n", .{});
                     },
-                }
+                 }
             }
+            if (auto_flush) //
+                try writer.flush();
         }
 
         /// Creates the Usage message for this Command and writes it to the provided Writer (`writer`).
-        pub fn usage(self: *const @This(), writer: anytype) !void {
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
-
+        pub fn usage(self: *const @This(), writer: *Io.Writer) !void {
+            if (global_usage_fn) |usageFn| //
+                return usageFn(self, writer, self._alloc);
             try writer.print(usage_header_fmt, .{ indent_fmt, self.name });
             if (self.opts) |opts| {
                 var post_sep: []const u8 = " | ";
@@ -884,7 +899,8 @@ pub fn Custom(comptime config: Config) type {
                     if (idx == opts.len - 1) post_sep = "";
                     try writer.print("{s}", .{ post_sep });
                 }
-                if (hidden_count < opts.len) try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
+                if (hidden_count < opts.len) //
+                    try writer.print("\n{s}{s} ", .{ indent_fmt, self.name });
             }
             if (self.vals) |vals| {
                 var post_sep: []const u8 = " | ";
@@ -903,14 +919,15 @@ pub fn Custom(comptime config: Config) type {
                     if (idx == cmds.len - 1) post_sep = "";
                     try writer.print("{s}", .{ post_sep });
                 }
-            } 
-
+            }
             try writer.print("\n\n", .{});
+            if (auto_flush) //
+                try writer.flush();
         }
 
         /// Check if Usage or Help have been set and call their respective methods.
         /// Output will be written to the provided Writer (`writer`).
-        pub fn checkUsageHelp(self: *const @This(), writer: anytype) !bool {
+        pub fn checkUsageHelp(self: *const @This(), writer: *Io.Writer) !bool {
             if (self.checkFlag("usage")) {
                 try self.usage(writer);
                 return true;
@@ -1383,10 +1400,10 @@ pub fn Custom(comptime config: Config) type {
                 switch (field_info) {
                     // Commands
                     .@"struct" => {
-                        @field(out, field.name) = 
-                            if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name))
-                                try self.sub_cmd.?.to(field.type, to_config)
-                            else if (to_config.allow_unset) field.type{}
+                        @field(out, field.name) = //
+                            if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) //
+                                try self.sub_cmd.?.to(field.type, to_config) //
+                            else if (to_config.allow_unset) field.type{} //
                             else return error.ValueNotSet;
                     },
                     .@"union" => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
@@ -1398,12 +1415,14 @@ pub fn Custom(comptime config: Config) type {
                             if (mem.eql(u8, opt.name, arg_name)) {
                                 if (!opt.val.isSet() and type_info == .@"struct") {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
-                                    @field(out, field.name) = 
-                                        if (field.default_value_ptr) |def_val| @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
+                                    @field(out, field.name) = //
+                                        if (field.default_value_ptr) |def_val| //
+                                            @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).* //
                                         else null;
                                     break;
                                 }
-                                if (type_info == .@"union") return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
+                                if (type_info == .@"union") //
+                                    return @unionInit(ToT, field.name, opt.val.getAs(f_opt.child) catch continue); 
                                 @field(out, field.name) = try opt.val.getAs(f_opt.child);
                             }
                         }
@@ -1428,7 +1447,7 @@ pub fn Custom(comptime config: Config) type {
                                     break :setVal switch (field_info) {
                                         .bool => false,
                                         .int, .float, => @as(field.type, 0),
-                                        .pointer => "",    
+                                        .pointer => "",
                                         else => return err,
                                     };
                                 };
@@ -1445,16 +1464,18 @@ pub fn Custom(comptime config: Config) type {
                                     if (mem.eql(u8, opt.name, arg_name)) {
                                         if (!opt.val.isSet() and type_info == .@"struct") {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
-                                            @field(out, field.name) =
-                                                if (field.default_value_ptr) |def_val|
+                                            @field(out, field.name) = //
+                                                if (field.default_value_ptr) |def_val| //
                                                     @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*
                                                 else .{ null } ** ary.len;
                                             break;
                                         }
                                         const val_tag = if (a_opt.child == []const u8) "string" else @typeName(a_opt.child);
                                         var f_ary: field.type = undefined;
-                                        for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
-                                        if (type_info == .@"union") return @unionInit(ToT, field.name, f_ary); 
+                                        for (f_ary[0..], 0..) |*elm, idx| //
+                                            elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
+                                        if (type_info == .@"union") //
+                                            return @unionInit(ToT, field.name, f_ary); 
                                         @field(out, field.name) = f_ary;
                                         break;
                                     }
@@ -1525,7 +1546,6 @@ pub fn Custom(comptime config: Config) type {
                 log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(ReturnT) });
                 return error.ReturnTypeMismatch;
             }
-
             const params = valsToParams: { 
                 const param_types = comptime paramTypes: {
                     var types: [fn_info.@"fn".params.len]type = undefined;
@@ -1539,10 +1559,8 @@ pub fn Custom(comptime config: Config) type {
                     if (idx < start_idx) continue;
                     param.* = try val.getAs(@TypeOf(param.*)); 
                 }
-                
                 break :valsToParams params_tuple;
             };
-
             return @call(.auto, call_fn, params); 
         }
 
@@ -1605,7 +1623,6 @@ pub fn Custom(comptime config: Config) type {
                         distinct_cmd[idx + idx_offset] = cmd.name;
                     }
                 }
-
                 // Check for distinct Options.
                 if (self.opts) |opts| {
                     const idx_offset: u2 = if (valid_config.check_help_cmds) 2 else 0;
@@ -1634,7 +1651,6 @@ pub fn Custom(comptime config: Config) type {
                         distinct_long[idx + idx_offset] = opt.long_name orelse "a!garbage@long#name$";
                     }
                 }
-
                 // Check for distinct Values.
                 if (self.vals) |vals| {
                     var distinct_val: [max_args][]const u8 = .{ "" } ** max_args;
@@ -1644,7 +1660,6 @@ pub fn Custom(comptime config: Config) type {
                         distinct_val[idx] = val.name();
                     }
                 }
-
                 // Check for existing Argument Groups.
                 if (valid_config.check_arg_groups) {
                     // - Command Groups.
@@ -1685,7 +1700,6 @@ pub fn Custom(comptime config: Config) type {
                         }
                     }
                 }
-
                 // Check for Distinct Command Alias Names.
                 if (valid_config.check_cmd_aliases) distinctAliases: {
                     const cmds = self.sub_cmds orelse break :distinctAliases;
@@ -1721,35 +1735,40 @@ pub fn Custom(comptime config: Config) type {
                     const opts = self.opts orelse break :distinctAliases;
                     checkCmds1: for (opts) |opt_1| {
                         const opt_1_ln = opt_1.long_name orelse {
-                            if (opt_1.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_1.name }));
+                            if (opt_1.alias_long_names) |_| //
+                                @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_1.name }));
                             continue :checkCmds1;
                         };
                         checkCmds2: for (opts) |opt_2| {
                             const opt_2_ln = opt_2.long_name orelse {
-                                if (opt_2.alias_long_names) |_| @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_2.name }));
+                                if (opt_2.alias_long_names) |_| //
+                                    @compileError(fmt.comptimePrint("The Option {s} has aliases but no long name.", .{ opt_2.name }));
                                 continue :checkCmds2;
                             };
-                            if (mem.eql(u8, opt_1_ln, opt_2_ln)) continue :checkCmds2;
+                            if (mem.eql(u8, opt_1_ln, opt_2_ln)) //
+                                continue :checkCmds2;
                             checkAliases: for (opt_1.alias_long_names orelse continue :checkCmds1) |alias| {
                                 const case_sense = opt_1.case_sensitive or opt_2.case_sensitive; 
-                                if (
-                                    (case_sense and mem.eql(u8, opt_2_ln, alias)) or
-                                    (!case_sense and ascii.eqlIgnoreCase(opt_2_ln, alias))
-                                )
+                                if ( //
+                                    (case_sense and mem.eql(u8, opt_2_ln, alias)) or //
+                                    (!case_sense and ascii.eqlIgnoreCase(opt_2_ln, alias)) //
+                                ) {
                                     @compileError(
                                         "The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows the Option '" ++ 
                                         opt_2_ln ++ "'.\n" ++ 
                                         "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`."
                                     );
-                                if (
-                                    (case_sense and utils.indexOfEql([]const u8, opt_2.alias_long_names orelse continue :checkAliases, alias) != null) or
-                                    (!case_sense and utils.indexOfEqlIgnoreCase(opt_2.alias_long_names orelse continue :checkAliases, alias) != null)
-                                )
+                                }
+                                if ( //
+                                    (case_sense and utils.indexOfEql([]const u8, opt_2.alias_long_names orelse continue :checkAliases, alias) != null) or //
+                                    (!case_sense and utils.indexOfEqlIgnoreCase(opt_2.alias_long_names orelse continue :checkAliases, alias) != null) //
+                                ) {
                                     @compileError(
                                         "The Option '" ++ opt_1.name ++ "' has Alias '" ++ alias ++ "' which overshadows an Alias of the Option '" ++ 
                                         opt_2.name ++ "'.\n" ++ 
                                         "This validation check can be disabled using `Command.Custom.ValidateConfig.check_opt_aliases`."
                                     );
+                                }
                             }
                         }
                     }
@@ -1787,7 +1806,7 @@ pub fn Custom(comptime config: Config) type {
             help_group_name: []const u8 = "HELP",
 
             /// Determine behavior for adding a Help Argument Group.
-            pub const AddHelpGroup = enum{
+            pub const AddHelpGroup = enum {
                 /// Add if there are other Argument Groups.
                 AddIfOthers,
                 /// Add regardless of other Argument Groups.
@@ -1875,6 +1894,7 @@ pub fn Custom(comptime config: Config) type {
                         .help_prefix = init_cmd.name,
                         .description = usage_description,
                         .parent_cmd = init_cmd,
+                        .sub_cmds_mandatory = false,
                         ._alloc = alloc,
                     },
                     .{
@@ -1883,6 +1903,7 @@ pub fn Custom(comptime config: Config) type {
                         .help_prefix = init_cmd.name,
                         .description = help_description,
                         .parent_cmd = init_cmd,
+                        .sub_cmds_mandatory = false,
                         ._alloc = alloc,
                     }
                 };
@@ -1925,8 +1946,10 @@ pub fn Custom(comptime config: Config) type {
                     },
                     .Add => add: {
                         init_cmd.opt_groups = 
-                            if (init_cmd.opt_groups) |opt_groups| try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ help_config.help_group_name } })
-                            else try alloc.dupe([]const u8, &.{ help_config.help_group_name });
+                            if (init_cmd.opt_groups) |opt_groups| //
+                                try mem.concat(alloc, []const u8, &.{ opt_groups, &.{ help_config.help_group_name } }) //
+                            else //
+                                try alloc.dupe([]const u8, &.{ help_config.help_group_name });
                         break :add true;
                     },
                     .DoNotAdd => false,

@@ -250,7 +250,8 @@ pub fn delete(filename: []const u8) !void {
 pub fn main() !void {
     // While any Allocator can be used, Cova is designed to wrap what's provided with an
     // Arena Allocator. This allows for flexiblity.
-    var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
+    //var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
+    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .{};
     const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
@@ -272,7 +273,7 @@ pub fn main() !void {
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer = stdout_file.writer(stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    //defer stdout.flush() catch {};
 
     // Using `cova.parseArgs()` will parse args from the provided ArgIterator and populate provided
     // Command. It's important to note that, by default, if the user calls for `usage` or `help` it

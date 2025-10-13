@@ -19,6 +19,7 @@ const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
 const ArrayList = std.ArrayList;
+const Io = std.Io;
 
 const toLower = ascii.lowerString;
 const toUpper = ascii.upperString;
@@ -639,12 +640,12 @@ pub fn Custom(comptime config: Config) type {
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const typed_val = @field(self.*.generic, @tagName(tag));
-                    return 
+                    return
                         if (@TypeOf(typed_val).ChildT == T) try typed_val.get()
                         else if (
-                            @typeInfo(T) == .@"enum" or (
-                                @typeInfo(T) == .optional and
-                                @typeInfo(@typeInfo(T).optional.child) == .@"enum"
+                            @typeInfo(T) == .@"enum" or ( //
+                                @typeInfo(T) == .optional and //
+                                @typeInfo(@typeInfo(T).optional.child) == .@"enum" //
                             )
                         ) {
                             const val = try typed_val.get();
@@ -669,9 +670,9 @@ pub fn Custom(comptime config: Config) type {
                     return 
                         if (@TypeOf(typed_val).ChildT == T) try typed_val.getAll()
                         else if (
-                            @typeInfo(T) == .@"enum" or (
-                                @typeInfo(T) == .optional and
-                                @typeInfo(@typeInfo(T).optional.child) == .@"enum"
+                            @typeInfo(T) == .@"enum" or ( //
+                                @typeInfo(T) == .optional and //
+                                @typeInfo(@typeInfo(T).optional.child) == .@"enum" //
                             )
                         ) {
                             const ValT = @typeInfo(@TypeOf(try typed_val.get()));
@@ -693,7 +694,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Set the inner Typed Value if the provided Argument (`arg`) can be Parsed and Validated.
-        pub fn set(self: *const @This(), arg: []const u8) !void { 
+        pub fn set(self: *const @This(), arg: []const u8) !void {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| try @field(self.*.generic, @tagName(tag)).set(arg),
             }
@@ -974,7 +975,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Format function for Values
-        pub fn format(self: @This(), _: []const u8, _: fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(self: @This(), writer: *Io.Writer) !void {
             try writer.print("{s}", .{ @tagName(meta.activeTag(self.generic)) });
             try writer.print("{s}:  Type: {s}, Set: {any}", .{
                 self.name(),
@@ -984,7 +985,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
-        pub fn help(self: *const @This(), writer: anytype) !void {
+        pub fn help(self: *const @This(), writer: *Io.Writer) !void {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));
@@ -995,7 +996,7 @@ pub fn Custom(comptime config: Config) type {
             try writer.print(vals_help_fmt, .{ self.name(), self.childTypeName(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
-        pub fn usage(self: *const @This(), writer: anytype) !void {
+        pub fn usage(self: *const @This(), writer: *Io.Writer) !void {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));

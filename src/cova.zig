@@ -190,7 +190,7 @@ pub const ParseConfig = struct {
     /// This should generally be set to `true`, but the option is here for unforeseen outliers.
     skip_first_arg: bool = true,
     /// Auto-handle Usage/Help messages during parsing.
-    /// This is especially useful if used in conjuction with the default auto-generated Usage/Help messages from Command and Option.
+    /// This is especially useful in conjuction with the default auto-generated Usage/Help messages from Command and Option.
     /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
     auto_handle_usage_help: bool = true,
     /// Decide how to react to parsing errors.
@@ -201,6 +201,8 @@ pub const ParseConfig = struct {
     /// Override the Option Termination Symbol.
     /// Leaving this null will default to the long prefix of the associated Option Type.
     set_opt_termination_symbol: ?[]const u8 = null,
+    /// Automatically Flush the provided `Io.Writer` after parsing.
+    auto_flush: bool = true,
 
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
@@ -217,9 +219,9 @@ pub const ParseConfig = struct {
 /// The parsed result is stored to the provided `CommandT` (`cmd`) for user analysis.
 pub fn parseArgs(
     args: *ArgIteratorGeneric,
-    comptime CommandT: type, 
-    cmd: *const CommandT, 
-    writer: anytype,
+    comptime CommandT: type,
+    cmd: *const CommandT,
+    writer: *Io.Writer,
     parse_config: ParseConfig,
 ) !void {
     var parse_ctx: ParseCtx = .{
@@ -233,6 +235,8 @@ pub fn parseArgs(
         parse_config,
         &parse_ctx,
     );
+    if (parse_config.auto_flush) //
+        try writer.flush();
 }
 
 /// Parse Context used to maintain state for recursive parsing of Commands.
@@ -256,14 +260,14 @@ fn parseArgsCtx(
     var val_idx: u8 = 0;
     var opt_term: bool = false;
     // Bypass argument 0 (the filename being executed);
-    const init_arg = if (parse_config.skip_first_arg and args.index() == 0) args.next() else args.peek();
+    const init_arg = //
+        if (parse_config.skip_first_arg and args.index() == 0) args.next() //
+        else args.peek();
     log.debug("Parsing Command '{s}'...", .{ cmd.name });
     log.debug("Initial Arg: {s}", .{ init_arg orelse "END OF ARGS!" });
     defer log.debug("Finished Parsing '{s}'.", .{ cmd.name });
     // Parse all Arguments within the Current Command
     parseArg: while (args.next()) |arg| {
-        // Check for Usage/Help flags and run their respective methods.
-        if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return error.UsageHelpCalled; 
         // Current Argument State
         log.debug("Current Arg: {s}", .{ arg });
         if (init_arg == null) break :parseArg;
@@ -274,30 +278,34 @@ fn parseArgsCtx(
             checkCmds: for (cmds) |*sub_cmd| {
                 const should_parse = shouldParse: {
                     if (sub_cmd.case_sensitive) {
-                        if (
-                            mem.eql(u8, sub_cmd.name, arg) or
-                            (
-                                CommandT.allow_abbreviated_cmds and
-                                arg.len >= @min(sub_cmd.name.len, CommandT.abbreviated_min_len) and
-                                mem.indexOf(u8, sub_cmd.name, arg) != null and sub_cmd.name[0] == arg[0]
-                            )
-                        ) break :shouldParse true
+                        if ( //
+                            mem.eql(u8, sub_cmd.name, arg) or //
+                            ( //
+                                CommandT.allow_abbreviated_cmds and //
+                                arg.len >= @min(sub_cmd.name.len, CommandT.abbreviated_min_len) and //
+                                mem.indexOf(u8, sub_cmd.name, arg) != null and sub_cmd.name[0] == arg[0] //
+                            ) //
+                        ) break :shouldParse true //
                         else {
                             for (sub_cmd.alias_names orelse continue :checkCmds) |alias| {
-                                if (
-                                    mem.eql(u8, alias, arg) or 
-                                    (
-                                        CommandT.allow_abbreviated_cmds and
-                                        arg.len >= @min(alias.len, CommandT.abbreviated_min_len) and
-                                        mem.indexOf(u8, alias, arg) != null and alias[0] == arg[0]
-                                    )
+                                if ( //
+                                    mem.eql(u8, alias, arg) or //
+                                    ( //
+                                        CommandT.allow_abbreviated_cmds and //
+                                        arg.len >= @min(alias.len, CommandT.abbreviated_min_len) and //
+                                        mem.indexOf(u8, alias, arg) != null and alias[0] == arg[0] //
+                                    ) //
                                 ) break :shouldParse true;
                             }
                         }
-                    }
+                    } //
                     else {
-                        if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) break :shouldParse true
-                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| if (ascii.eqlIgnoreCase(alias, arg)) break :shouldParse true;
+                        if (ascii.eqlIgnoreCase(sub_cmd.name, arg)) //
+                            break :shouldParse true //
+                        else for (sub_cmd.alias_names orelse continue :checkCmds) |alias| {
+                            if (ascii.eqlIgnoreCase(alias, arg)) //
+                                break :shouldParse true;
+                        }
                     }
                     break :shouldParse false;
                 };
@@ -321,16 +329,16 @@ fn parseArgsCtx(
                 inheriting = true;
                 if (inherit_cmd) |i_cmd| log.debug("Attempting to Parse Inherited Options for '{s}'...", .{ i_cmd.name })
                 else log.debug("No higher parent Command to inherit from for '{s}'.", .{ opts_cmd.name });
-            }
+            } //
             else inherit_cmd = null;
         }) {
             const parse_opts = opts_cmd.opts orelse continue;
             log.debug("Attempting to Parse Options...", .{});
             // - Check for Option Termination
             opt_term = optTerm: {
-                const opt_term_sym =
-                    parse_config.set_opt_termination_symbol orelse
-                    OptionT.long_prefix orelse
+                const opt_term_sym = //
+                    parse_config.set_opt_termination_symbol orelse //
+                    OptionT.long_prefix orelse //
                     break :optTerm false;
                 if (mem.eql(u8, arg, opt_term_sym) and parse_config.enable_opt_termination) {
                     log.debug("Terminated Option Parsing!", .{});
@@ -356,7 +364,7 @@ fn parseArgsCtx(
                                         opt.short_name,
                                         opt.name,
                                     });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try errReaction(&parse_config, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.boolCannotTakeArgument;
                                 }
@@ -369,7 +377,7 @@ fn parseArgsCtx(
                                         opt.short_name,
                                         opt.name,
                                     });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try errReaction(&parse_config, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
@@ -389,7 +397,7 @@ fn parseArgsCtx(
                                             opt.short_name.?,
                                             opt.name,
                                         });
-                                        try errReaction(parse_config.err_reaction, opt, writer);
+                                        try errReaction(&parse_config, opt, writer);
                                         try writer.print("\n", .{});
                                         return error.CouldNotParseOption;
                                     };
@@ -430,7 +438,7 @@ fn parseArgsCtx(
                     }
                     if (cmd.allow_inheritable_opts) continue :inheritOpts;
                     log.err("Could not parse Option '{c}{c}'.", .{ short_pf, short_opt });
-                    try errReaction(parse_config.err_reaction, cmd, writer);
+                    try errReaction(&parse_config, cmd, writer);
                     try writer.print("\n", .{});
                     return error.CouldNotParseOption;
                 }
@@ -440,7 +448,7 @@ fn parseArgsCtx(
                 if (arg.len < long_pf.len or !mem.eql(u8, arg[0..long_pf.len], long_pf)) break :checkLongOpt;
                 log.debug("Parsing Long Option...", .{});
                 const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
-                const long_opt = arg[long_pf.len..split_idx]; 
+                const long_opt = arg[long_pf.len..split_idx];
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
                 const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
                 longOpts: for (parse_opts) |*opt| {
@@ -451,22 +459,23 @@ fn parseArgsCtx(
                     long_names[0] = opt_long_name;
                     if (opt.alias_long_names) |aliases| {
                         long_names_len += aliases.len;
-                        for (aliases, 0..) |alias, idx| long_names[idx + 1] = alias;
+                        for (aliases, 0..) |alias, idx| //
+                            long_names[idx + 1] = alias;
                     }
                     for (long_names[0..long_names_len]) |long_name| {
                         if (matchOpt: {
-                            break :matchOpt if (opt.case_sensitive)
-                                mem.eql(u8, long_opt, long_name) or
-                                (
-                                    OptionT.allow_abbreviated_long_opts and
-                                    mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0]
-                                )
-                            else
-                                ascii.eqlIgnoreCase(long_opt, long_name) or
-                                (
-                                    OptionT.allow_abbreviated_long_opts and 
-                                    ascii.indexOfIgnoreCase(long_name, long_opt) != null and 
-                                    ascii.eqlIgnoreCase(long_name[0..1], long_opt[0..1])
+                            break :matchOpt if (opt.case_sensitive) //
+                                mem.eql(u8, long_opt, long_name) or //
+                                ( //
+                                    OptionT.allow_abbreviated_long_opts and //
+                                    mem.indexOf(u8, long_name, long_opt) != null and long_name[0] == long_opt[0] //
+                                ) //
+                            else //
+                                ascii.eqlIgnoreCase(long_opt, long_name) or //
+                                ( //
+                                    OptionT.allow_abbreviated_long_opts and  //
+                                    ascii.indexOfIgnoreCase(long_name, long_opt) != null and  //
+                                    ascii.eqlIgnoreCase(long_name[0..1], long_opt[0..1]) //
                                 );
                         }) {
                             if (sep_flag) {
@@ -476,7 +485,7 @@ fn parseArgsCtx(
                                         long_name,
                                         opt.name,
                                     });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try errReaction(&parse_config, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.boolCannotTakeArgument;
                                 }
@@ -488,7 +497,7 @@ fn parseArgsCtx(
                                         long_name,
                                         opt.name,
                                     });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try errReaction(&parse_config, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
@@ -498,7 +507,8 @@ fn parseArgsCtx(
                                 continue :parseArg;
                             }
                             // Handle Boolean/Toggle Option.
-                            if (mem.eql(u8, opt.val.childType(), "bool")) try @constCast(opt).val.set("true")
+                            if (mem.eql(u8, opt.val.childType(), "bool")) //
+                                try @constCast(opt).val.set("true") //
                             // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, OptionT, opt) catch {
@@ -508,7 +518,7 @@ fn parseArgsCtx(
                                         long_name,
                                         opt.name,
                                     });
-                                    try errReaction(parse_config.err_reaction, opt, writer);
+                                    try errReaction(&parse_config, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
@@ -520,22 +530,24 @@ fn parseArgsCtx(
                         }
                     }
                 }
-                if (cmd.allow_inheritable_opts) continue :inheritOpts;
+                if (cmd.allow_inheritable_opts) //
+                    continue :inheritOpts;
                 log.err("Could not parse Argument '{s}{s}' to an Option.", .{ long_pf, long_opt });
-                try errReaction(parse_config.err_reaction, cmd, writer);
+                try errReaction(&parse_config, cmd, writer);
                 try writer.print("\n", .{});
                 return error.CouldNotParseOption;
             }
             unmatched = true;
             log.debug("No Options Matched for Command '{s}'.", .{ opts_cmd.name });
-            if (cmd.allow_inheritable_opts) continue :inheritOpts;
+            if (cmd.allow_inheritable_opts) //
+                continue :inheritOpts;
         }
         // ...Finally, for any Values.
         if (cmd.vals) |vals| {
             log.debug("Attempting to Parse Values...", .{});
             if (val_idx >= vals.len) {
                 log.err("Too many Values provided for Command '{s}'.", .{ cmd.name });
-                try errReaction(parse_config.err_reaction, cmd, writer);
+                try errReaction(&parse_config, cmd, writer);
                 return error.TooManyValues;
             }
             var cur_val: ?*const CommandT.ValueT = &vals[val_idx];
@@ -547,11 +559,12 @@ fn parseArgsCtx(
                         continue;
                     }
                     log.err("Could not parse Argument '{s}' to any Value for Command '{s}'.", .{ arg, cmd.name });
-                    try errReaction(parse_config.err_reaction, cmd, writer);
+                    try errReaction(&parse_config, cmd, writer);
                     log.err("", .{});
                     return error.CouldNotParseValue;
                 };
-                if (val.entryIdx() == val.maxEntries()) val_idx += 1;
+                if (val.entryIdx() == val.maxEntries()) //
+                    val_idx += 1;
                 try val.setArgIdx(parse_ctx.arg_idx);
                 parse_ctx.*.arg_idx += 1;
                 log.debug("Parsed Value '{s}'.", .{ val.name() });
@@ -561,77 +574,88 @@ fn parseArgsCtx(
         // Check if the Command expected an Argument but didn't get a match.
         if (unmatched) {
             log.err("Unrecognized Argument '{s}' for Command '{s}'.", .{ arg, cmd.name });
-            try errReaction(parse_config.err_reaction, cmd, writer);
+            try errReaction(&parse_config, cmd, writer);
             return error.UnrecognizedArgument;
         }
         // For Commands that expect no Arguments but are given one, fail to the Help message.
         else {
             log.err("Command '{s}' does not expect any arguments, but '{s}' was passed.", .{ cmd.name, arg });
-            try errReaction(parse_config.err_reaction, cmd, writer);
+            try errReaction(&parse_config, cmd, writer);
             return error.UnexpectedArgument;
         }
     }
     // Check if a Sub Command has been set if it is Mandated for the current Command.
-    if (
-        cmd.sub_cmds_mandatory and cmd.sub_cmd == null and
-        !(
-            cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and 
-            (
-                mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or 
-                mem.eql(u8, cmd.sub_cmds.?[0].name, "help")
-            )
-        ) and
+    if ( //
+        cmd.sub_cmds_mandatory and cmd.sub_cmd == null and //
+        !( //
+            cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and //
+            ( //
+                mem.eql(u8, cmd.sub_cmds.?[0].name, "usage") or //
+                mem.eql(u8, cmd.sub_cmds.?[0].name, "help") //
+            ) //
+        ) and //
         !(cmd.checkFlag("help") or cmd.checkFlag("usage")) //and
         // !(mem.eql(u8, cmd.name, "help") or mem.eql(u8, cmd.name, "usage"))
     ) {
         log.err("Command '{s}' requires a Sub Command.", .{ cmd.name });
-        try errReaction(parse_config.err_reaction, cmd, writer);
+        try errReaction(&parse_config, cmd, writer);
         return error.ExpectedSubCommand;
     }
     // Check that all Mandatory Options have been set.
     if (cmd.opts) |opts| manOpts: {
-        if (!parse_ctx.usage_help_flag) parse_ctx.*.usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
-        if (parse_ctx.usage_help_flag) break :manOpts;
+        if (!parse_ctx.usage_help_flag) //
+            parse_ctx.*.usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
+        if (parse_ctx.usage_help_flag) //
+            break :manOpts;
         for (opts) |opt| {
             const group_man = groupMan: {
                 const man_groups = cmd.mandatory_opt_groups orelse break :groupMan false;
                 const group = opt.opt_group orelse break :groupMan false;
                 break :groupMan utils.indexOfEql([]const u8, man_groups, group) != null;
             };
-            if (
-                (opt.mandatory or group_man) and 
-                !(opt.val.isSet() or opt.val.hasDefault())
+            if ( //
+                (opt.mandatory or group_man) and //
+                !(opt.val.isSet() or opt.val.hasDefault()) //
             ) {
                 log.err("Option '{s}' is mandatory.", .{ opt.name });
-                try errReaction(parse_config.err_reaction, cmd, writer);
+                try errReaction(&parse_config, cmd, writer);
                 return error.ExpectedOption;
             }
         }
     }
+    // Check for Usage/Help flags and run their respective methods.
+    if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) {
+        if (parse_config.auto_flush) //
+        try writer.flush();
+        return error.UsageHelpCalled;
+    }
     // Check for missing Values if they are Mandated for the current Command.
-    if (!parse_ctx.usage_help_flag) parse_ctx.*.usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
-    if (cmd.vals_mandatory and 
-        cmd.vals != null and 
-        val_idx < cmd.vals.?.len and
-        !parse_ctx.usage_help_flag
+    if (!parse_ctx.usage_help_flag) //
+        parse_ctx.*.usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
+    if ( //
+        cmd.vals_mandatory and //
+        cmd.vals != null and //
+        val_idx < cmd.vals.?.len and //
+        !parse_ctx.usage_help_flag //
     ) {
         log.err("Command '{s}' expects {d} Value(s), but received {d}.", .{
             cmd.name,
             cmd.vals.?.len,
             val_idx,
         });
-        try errReaction(parse_config.err_reaction, cmd, writer);
+        try errReaction(&parse_config, cmd, writer);
         return error.ExpectedMoreValues;
     }
     // Check for Usage/Help flags and run their respective methods.
-    if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) return error.UsageHelpCalled; 
+    if (parse_config.auto_handle_usage_help and try cmd.checkUsageHelp(writer)) //
+        return error.UsageHelpCalled; 
 }
 
 /// Parse the provided `OptionType` (`opt`).
 fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const OptionType) !void {
     const peek_arg = args.peek();
-    const set_arg = 
-        if (peek_arg == null or peek_arg.?[0] == '-') setArg: {
+    const set_arg = setArg: {
+        if (peek_arg == null or peek_arg.?[0] == '-') {
             if (!(mem.eql(u8, opt.val.childType(), "bool"))) {
                 if (opt.allow_empty) {
                     opt.val.setEmpty() catch 
@@ -644,23 +668,34 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
             _ = args.next();
             break :setArg "true";
         }
-        else args.next().?;
+        break :setArg args.next().?;
+    };
     log.debug("Current Arg: {s}", .{ set_arg });
     try opt.val.set(set_arg);
 }
 
 /// React to Parsing Errors with the given Reaction (`reaction`) based on the provided Argument (`arg`) to the provided Writer (`writer`).
-fn errReaction(reaction: ParseConfig.ParseErrorReaction, arg: anytype, writer: anytype) !void {
-    return switch(reaction) {
-        .Usage => arg.usage(writer),
-        .Help => arg.help(writer),
+fn errReaction(config: *const ParseConfig, arg: anytype, writer: *Io.Writer) !void {
+    return switch(config.err_reaction) {
+        .Usage => {
+            try arg.usage(writer);
+            if (config.auto_flush) //
+                try writer.flush();
+            return error.UsageHelpCalled;
+        },
+        .Help => {
+            try arg.help(writer);
+            if (config.auto_flush) //
+                try writer.flush();
+            return error.UsageHelpCalled;
+        },
         .None => {},
     };
 }
 
 
 // TESTING
-const TestCommand = Command.Custom(.{ 
+const TestCommand = Command.Custom(.{
     .global_vals_mandatory = false,
     .global_sub_cmds_mandatory = false,
 });

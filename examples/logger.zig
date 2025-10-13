@@ -33,11 +33,11 @@ pub fn main() !void {
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer = stdout_file.writer(stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    //defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
     defer args_iter.deinit();
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {

@@ -581,23 +581,25 @@ pub fn main() !void {
     //var arena = std.heap.ArenaAllocator.init(fba.allocator());
     //defer arena.deinit();
     //const alloc = arena.allocator();
-    var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
+    //var gpa: std.heap.DebugAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .init;
+    var gpa: std.heap.DebugAllocator(.{}) = .init;
     const alloc = gpa.allocator();
     defer {
         if (gpa.deinit() != .ok) {
-            if (builtin.mode == .Debug and gpa.detectLeaks()) log.err("Memory leak detected!", .{});
-        }
+            if (builtin.mode == .Debug and gpa.detectLeaks()) //
+                log.err("Memory leak detected!", .{});
+        } //
         else log.debug("Memory freed. No leaks detected.", .{});
     }
     var stdout_file = fs.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer = stdout_file.writer(stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    //defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
     defer args_iter.deinit();
 
     // Parsing
@@ -605,7 +607,8 @@ pub fn main() !void {
         &args_iter,
         CommandT,
         main_cmd,
-        stdout, .{
+        stdout,
+        .{
             //.auto_handle_usage_help = false,
         },
     ) catch |err| switch (err) {

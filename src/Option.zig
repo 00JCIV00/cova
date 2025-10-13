@@ -296,7 +296,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Creates the Help message for this Option and Writes it to the provided Writer (`writer`).
-        pub fn help(self: *const @This(), writer: anytype) !void {
+        pub fn help(self: *const @This(), writer: *Io.Writer) !void {
             // (WIP)
             //if (self.help_fn) |help_fn_opaque| { 
             //    const helpFn = @as(*const fn(anytype, anytype, mem.Allocator) anyerror!void, @alignCast(@ptrCast(help_fn_opaque)));
@@ -325,7 +325,7 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Creates the Usage message for this Option and Writes it to the provided Writer (`writer`).
-        pub fn usage(self: *const @This(), writer: anytype) !void {
+        pub fn usage(self: *const @This(), writer: *Io.Writer) !void {
             // (WIP)
             //if (self.usage_fn) |usage_fn_opaque| { 
             //    const usageFn = @as(*const fn(anytype, anytype, mem.Allocator) anyerror!void, @alignCast(@ptrCast(usage_fn_opaque)));
