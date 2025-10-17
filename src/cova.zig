@@ -327,14 +327,18 @@ fn parseArgsCtx(
             if (cmd.allow_inheritable_opts) {
                 inherit_cmd = inherit_cmd.?.parent_cmd;
                 inheriting = true;
-                if (inherit_cmd) |i_cmd| log.debug("Attempting to Parse Inherited Options for '{s}'...", .{ i_cmd.name })
-                else log.debug("No higher parent Command to inherit from for '{s}'.", .{ opts_cmd.name });
+                if (inherit_cmd) |i_cmd| //
+                    log.debug("Attempting to Parse Inherited Options for '{s}'...", .{ i_cmd.name }) //
+                else //
+                    log.debug("No higher parent Command to inherit from for '{s}'.", .{ opts_cmd.name });
             } //
             else inherit_cmd = null;
         }) {
             const parse_opts = opts_cmd.opts orelse continue;
             log.debug("Attempting to Parse Options...", .{});
             // - Check for Option Termination
+            if (opt_term) //
+                break :inheritOpts;
             opt_term = optTerm: {
                 const opt_term_sym = //
                     parse_config.set_opt_termination_symbol orelse //
@@ -346,15 +350,18 @@ fn parseArgsCtx(
                 }
                 break :optTerm false;
             };
-            if (opt_term) continue :parseArg;
+            if (opt_term) //
+                continue :parseArg;
             // - Short Options
             if (OptionT.short_prefix) |short_pf| checkShortOpt: {
-                if (arg.len < 1 or !(arg[0] == short_pf and arg[1] != short_pf)) break :checkShortOpt;
+                if (arg.len < 1 or !(arg[0] == short_pf and arg[1] != short_pf)) //
+                    break :checkShortOpt;
                 log.debug("Parsing Short Option...", .{});
                 const short_opts = arg[1..];
                 shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
                     for (parse_opts) |*opt| {
-                        if (cmd.allow_inheritable_opts and inheriting and !opt.inheritable) continue :shortOpts;
+                        if (cmd.allow_inheritable_opts and inheriting and !opt.inheritable) //
+                            continue :shortOpts;
                         if (opt.short_name != null and short_opt == opt.short_name.?) {
                             // Handle Argument provided to this Option with the Option/Value Separator (like '=') instead of ' '.
                             if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
@@ -417,7 +424,7 @@ fn parseArgsCtx(
                             }
                             // Handle a non-boolean Option that allows an Empty Value.
                             else if (opt.allow_empty) {
-                                opt.val.setEmpty() catch
+                                opt.val.setEmpty() catch //
                                     log.err("The Option '{s}' has already been set.", .{ opt.name });
                                 continue :shortOpts;
                             }
@@ -425,7 +432,8 @@ fn parseArgsCtx(
                             else if (CommandT.OptionT.allow_opt_val_no_space) {
                                 var short_names_buf: [CommandT.max_args]u8 = undefined;
                                 const short_names = short_names_buf[0..];
-                                for (cmd.opts.?, 0..) |s_opt, idx| short_names[idx] = s_opt.short_name.?;
+                                for (cmd.opts.?, 0..) |s_opt, idx| //
+                                    short_names[idx] = s_opt.short_name.?;
                                 if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
                                     try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
                                     try opt.setArgIdx(parse_ctx.arg_idx);
@@ -436,7 +444,8 @@ fn parseArgsCtx(
                             }
                         }
                     }
-                    if (cmd.allow_inheritable_opts) continue :inheritOpts;
+                    if (cmd.allow_inheritable_opts and inherit_cmd != null and inherit_cmd.? != cmd) //
+                        continue :inheritOpts;
                     log.err("Could not parse Option '{c}{c}'.", .{ short_pf, short_opt });
                     try errReaction(&parse_config, cmd, writer);
                     try writer.print("\n", .{});
@@ -452,7 +461,8 @@ fn parseArgsCtx(
                 const sep_arg = if (split_idx < arg.len) arg[split_idx + 1..] else "";
                 const sep_flag = mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) != null; 
                 longOpts: for (parse_opts) |*opt| {
-                    if (cmd.allow_inheritable_opts and inheriting and !opt.inheritable) continue :longOpts;
+                    if (cmd.allow_inheritable_opts and inheriting and !opt.inheritable) //
+                        continue :longOpts;
                     const opt_long_name = opt.long_name orelse continue :longOpts;
                     var long_names: [17][]const u8 = undefined;
                     var long_names_len: usize = 1;
@@ -530,7 +540,7 @@ fn parseArgsCtx(
                         }
                     }
                 }
-                if (cmd.allow_inheritable_opts) //
+                if (cmd.allow_inheritable_opts and inherit_cmd != null and inherit_cmd.? != cmd) //
                     continue :inheritOpts;
                 log.err("Could not parse Argument '{s}{s}' to an Option.", .{ long_pf, long_opt });
                 try errReaction(&parse_config, cmd, writer);

@@ -471,7 +471,7 @@ pub fn Generic(comptime config: Config) type {
                     .value = tag_info.fields.len
                 } };
             }
-        }
+        } //
         else {
             if (config.add_base_ints) {
                 const int_union = union(enum) {
@@ -560,20 +560,20 @@ pub fn Generic(comptime config: Config) type {
                 adds += 1;
                 union_info.fields = rebuildFields: {
                     var rebuild: [union_info.fields.len]Type.UnionField = undefined;
-                    for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx|
+                    for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx| //
                        r_fld.* = if (r_idx == idx) union_field else o_fld;
                     const rebuild_out = rebuild;
                     break :rebuildFields rebuild_out[0..];
                 };
                 tag_info.fields = rebuildFields: {
                     var rebuild: [tag_info.fields.len]Type.EnumField = undefined;
-                    for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx|
+                    for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx| //
                        r_fld.* = if (r_idx == idx) union_tag else o_fld;
                     const rebuild_out = rebuild;
                     break :rebuildFields rebuild_out[0..];
                 };
                 break;
-            }
+            } //
             else {
                 union_info.fields = union_info.fields ++ [_]builtin.Type.UnionField{ union_field };
                 tag_info.fields = tag_info.fields ++ [_]builtin.Type.EnumField{ union_tag };
