@@ -243,6 +243,7 @@ pub fn parseArgs(
 const ParseCtx = struct{
     usage_help_flag: bool = false,
     arg_idx: u8 = 0,
+    opt_term: bool = false,
 };
 /// Parse the provided Argument tokens (`args`) into Commands, Options, and Values.
 /// The parsed result is stored to the provided `CommandT` (`cmd`) for user analysis.
@@ -258,7 +259,6 @@ fn parseArgsCtx(
     // Current Command State
     const OptionT = CommandT.OptionT;
     var val_idx: u8 = 0;
-    var opt_term: bool = false;
     // Bypass argument 0 (the filename being executed);
     const init_arg = //
         if (parse_config.skip_first_arg and args.index() == 0) args.next() //
@@ -337,9 +337,9 @@ fn parseArgsCtx(
             const parse_opts = opts_cmd.opts orelse continue;
             log.debug("Attempting to Parse Options...", .{});
             // - Check for Option Termination
-            if (opt_term) //
+            if (parse_ctx.opt_term) //
                 break :inheritOpts;
-            opt_term = optTerm: {
+            parse_ctx.opt_term = optTerm: {
                 const opt_term_sym = //
                     parse_config.set_opt_termination_symbol orelse //
                     OptionT.long_prefix orelse //
@@ -350,7 +350,7 @@ fn parseArgsCtx(
                 }
                 break :optTerm false;
             };
-            if (opt_term) //
+            if (parse_ctx.opt_term) //
                 continue :parseArg;
             // - Short Options
             if (OptionT.short_prefix) |short_pf| checkShortOpt: {
