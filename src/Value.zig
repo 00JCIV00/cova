@@ -473,6 +473,7 @@ pub fn Generic(comptime config: Config) type {
             }
         } //
         else {
+            @setEvalBranchQuota(100_000);
             if (config.add_base_ints) {
                 const int_union = union(enum) {
                     u1: Typed(u1, config),
