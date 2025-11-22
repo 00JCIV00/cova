@@ -345,13 +345,21 @@ pub const setup_cmd: CommandT = .{
                         .{
                             .name = "nest-3",
                             .description = "Nested Level 3.",
+                            .allow_inheritable_opts = true,
                             .sub_cmds = &.{
                                 .{
                                     .name = "nest-4",
                                     .description = "Nested Level 4.",
+                                    .allow_inheritable_opts = true,
                                 }
                             },
                             .opts = &.{
+                                .{
+                                    .name = "non_inheritable",
+                                    .description = "Non-Inheritable Option",
+                                    .short_name = 'n',
+                                    .long_name = "non-inheritable",
+                                },
                                 .{
                                     .name = "inheritable",
                                     .description = "Inheritable Option",
