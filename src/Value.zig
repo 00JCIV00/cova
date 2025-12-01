@@ -732,7 +732,8 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Get the inner Typed Value's Argument Index.
         pub fn argIdx(self: *const @This()) !?[]u8 {
-            if (!include_arg_indices) return error.ArgIndicesNotEnabled;
+            if (!include_arg_indices) //
+                return error.ArgIndicesNotEnabled;
             return switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| @field(self.*.generic, @tagName(tag)).arg_idx,
             };

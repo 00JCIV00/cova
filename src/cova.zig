@@ -586,7 +586,7 @@ fn parseArgsCtx(
                     val_idx += 1;
                 try val.setArgIdx(parse_ctx.arg_idx);
                 parse_ctx.*.arg_idx += 1;
-                log.debug("Parsed Value '{s}'.", .{ val.name() });
+                log.debug("Parsed Value ({d}:{d}) '{s}'.", .{ val_idx, val.entryIdx(), val.name() });
                 continue :parseArg;
             }
         }
@@ -652,10 +652,11 @@ fn parseArgsCtx(
     if (!parse_ctx.usage_help_flag) //
         parse_ctx.*.usage_help_flag = (cmd.checkFlag("help") or cmd.checkFlag("usage"));
     if ( //
+        !parse_ctx.usage_help_flag and //
         cmd.vals_mandatory and //
         cmd.vals != null and //
         val_idx < cmd.vals.?.len and //
-        !parse_ctx.usage_help_flag //
+        !cmd.vals.?[0].isSet() //
     ) {
         log.err("Command '{s}' expects {d} Value(s), but received {d}.", .{
             cmd.name,
@@ -677,11 +678,11 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
         if (peek_arg == null or peek_arg.?[0] == '-') {
             if (!(mem.eql(u8, opt.val.childType(), "bool"))) {
                 if (opt.allow_empty) {
-                    opt.val.setEmpty() catch 
+                    opt.val.setEmpty() catch //
                         log.err("The Option '{s}' has already been set.", .{ opt.name });
                     return;
-                }
-                else if (!opt.val.hasCustomParseFn()) 
+                } //
+                else if (!opt.val.hasCustomParseFn()) //
                     return error.EmptyArgumentProvidedToOption;
             }
             _ = args.next();
