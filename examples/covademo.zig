@@ -484,7 +484,7 @@ pub const setup_cmd: CommandT = .{
                 .name = "filepath",
                 .description = "A filepath value.",
                 .alias_child_type = "filepath",
-                .valid_fn = Value.ValidationFns.validFilepath,
+                //.valid_fn = Value.ValidationFns.validFilepath,
             }),
         },
         .{
@@ -581,7 +581,7 @@ pub const setup_cmd: CommandT = .{
 };
 
 
-pub fn main() !void {
+pub fn main(init: proc.Init) !void {
     // Setup
     //var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     //var alloc_buf: [100 << 10]u8 = undefined;
@@ -594,20 +594,21 @@ pub fn main() !void {
     const alloc = gpa.allocator();
     defer {
         if (gpa.deinit() != .ok) {
-            if (builtin.mode == .Debug and gpa.detectLeaks()) //
+            if (builtin.mode == .Debug and gpa.detectLeaks() > 0) //
                 log.err("Memory leak detected!", .{});
         } //
         else log.debug("Memory freed. No leaks detected.", .{});
     }
-    var stdout_file = fs.File.stdout();
+    //var stdout_file = fs.File.stdout();
+    var stdout_file = Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
     //defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(init.minimal.args, alloc);
     defer args_iter.deinit();
 
     // Parsing
@@ -709,7 +710,7 @@ pub fn main() !void {
         //for (struct_cmd.opts orelse break :structCmd) |opt| log.debug("->-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
         break :structCmd;
     }
-    if (main_cmd.checkSubCmd("union-cmd"))
+    if (main_cmd.checkSubCmd("union-cmd")) //
         log.debug("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
     if (main_cmd.matchSubCmd("fn-cmd")) |fn_cmd| {
         log.debug("-> Fn Cmd", .{});

@@ -403,9 +403,7 @@ pub fn Generic(comptime config: Config) type {
     const slim_base = config.use_slim_base or config.custom_types.len > 0;
     return if (!slim_base and !config.use_custom_bit_width_range) union(enum){
         bool: Typed(bool, config),
-        
         string: Typed([]const u8, config),
-        
         u1: Typed(u1, config),
         u2: Typed(u2, config),
         u3: Typed(u3, config),
@@ -417,7 +415,6 @@ pub fn Generic(comptime config: Config) type {
         usize: Typed(usize, config),
         //u128: Typed(u128, config),
         //u256: Typed(u256, config),
-
         i1: Typed(i1, config),
         i2: Typed(i2, config),
         i3: Typed(i3, config),
@@ -429,14 +426,13 @@ pub fn Generic(comptime config: Config) type {
         isize: Typed(isize, config),
         //i128: Typed(i128, config),
         //i256: Typed(i256, config),
-
         f16: Typed(f16, config),
         f32: Typed(f32, config),
         f64: Typed(f64, config),
         //f128: Typed(f128, config),
     }
     // Custom Implementation
-    else customUnion: { 
+    else customUnion: {
         const base_union = union(enum){
             bool: Typed(bool, config),
             string: Typed([]const u8, config),
@@ -456,9 +452,8 @@ pub fn Generic(comptime config: Config) type {
                 } };
                 tag_info.fields = tag_info.fields ++ [_]builtin.Type.UnionField{ .{
                     .name = uint_name,
-                    .value = tag_info.fields.len
+                    .value = tag_info.fields.len,
                 } };
-
                 const int_name = @typeName(meta.int(.signed, bit_width));
                 const int_type = Typed(meta.int(.signed, bit_width), config);
                 union_info.fields = union_info.fields ++ [_]builtin.Type.UnionField{ .{
@@ -468,7 +463,7 @@ pub fn Generic(comptime config: Config) type {
                 } };
                 tag_info.fields = tag_info.fields ++ [_]builtin.Type.UnionField{ .{
                     .name = int_name,
-                    .value = tag_info.fields.len
+                    .value = tag_info.fields.len,
                 } };
             }
         } //
@@ -487,7 +482,6 @@ pub fn Generic(comptime config: Config) type {
                     usize: Typed(usize, config),
                     //u128: Typed(u128, config),
                     //u256: Typed(u256, config),
-
                     i1: Typed(i1, config),
                     i2: Typed(i2, config),
                     i3: Typed(i3, config),
@@ -519,7 +513,9 @@ pub fn Generic(comptime config: Config) type {
                 };
                 const float_info = @typeInfo(float_union).@"union";
                 const float_tag_info = @typeInfo(float_info.tag_type.?).@"enum";
-                const add_val = if (config.add_base_ints) 20 else 2;
+                const add_val = //
+                    if (config.add_base_ints) 20 //
+                    else 2;
                 union_info.fields = union_info.fields ++ float_info.fields;
                 for (float_tag_info.fields) |tag| {
                     tag_info.fields = tag_info.fields ++ [_]builtin.Type.EnumField{ .{
@@ -529,7 +525,6 @@ pub fn Generic(comptime config: Config) type {
                 }
             }
         }
-
         var adds: u16 = 0;
         for (config.custom_types) |T| {
             const AddT = addT: {
@@ -538,9 +533,11 @@ pub fn Generic(comptime config: Config) type {
                     // Check for `Value.Typed`
                     .@"struct" => |struct_info| {
                         const base_fields = @typeInfo(@TypeOf(Typed(bool, config){})).@"struct".fields;
-                        if (struct_info.fields.len != base_fields.len) break :addT Typed(T, config);
+                        if (struct_info.fields.len != base_fields.len) //
+                            break :addT Typed(T, config);
                         for (struct_info.fields, base_fields) |a_field, b_field| {
-                            if (!mem.eql(u8, a_field.name, b_field.name)) break :addT Typed(T, config);
+                            if (!mem.eql(u8, a_field.name, b_field.name)) //
+                                break :addT Typed(T, config);
                         }
                         break :addT Typed(T.ChildT, config);
                     },
@@ -557,19 +554,26 @@ pub fn Generic(comptime config: Config) type {
                 .value = tag_info.fields.len + adds,
             };
             for (union_info.fields, 0..) |field, idx| {
-                if (!mem.eql(u8, field.name, union_field.name)) continue;
+                if (!mem.eql(u8, field.name, union_field.name)) //
+                    continue;
                 adds += 1;
                 union_info.fields = rebuildFields: {
                     var rebuild: [union_info.fields.len]Type.UnionField = undefined;
-                    for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx| //
-                       r_fld.* = if (r_idx == idx) union_field else o_fld;
+                    for (rebuild[0..], union_info.fields, 0..) |*r_fld, o_fld, r_idx| {
+                        r_fld.* = //
+                            if (r_idx == idx) union_field //
+                            else o_fld;
+                    }
                     const rebuild_out = rebuild;
                     break :rebuildFields rebuild_out[0..];
                 };
                 tag_info.fields = rebuildFields: {
                     var rebuild: [tag_info.fields.len]Type.EnumField = undefined;
-                    for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx| //
-                       r_fld.* = if (r_idx == idx) union_tag else o_fld;
+                    for (rebuild[0..], tag_info.fields, 0..) |*r_fld, o_fld, r_idx| {
+                        r_fld.* = //
+                            if (r_idx == idx) union_tag //
+                            else o_fld;
+                    }
                     const rebuild_out = rebuild;
                     break :rebuildFields rebuild_out[0..];
                 };
@@ -580,11 +584,31 @@ pub fn Generic(comptime config: Config) type {
                 tag_info.fields = tag_info.fields ++ [_]builtin.Type.EnumField{ union_tag };
             }
         }
-
-        const tag_info_out = tag_info;
-        union_info.tag_type = @Type(.{ .@"enum" = tag_info_out });
-        const union_info_out = union_info;
-        break :customUnion @Type(.{ .@"union" = union_info_out });
+        break :customUnion @Union(
+            union_info.layout,
+            tag_info.tag_type,
+            fieldNames: {
+                var field_names: [union_info.fields.len][:0]const u8 = undefined;
+                for (union_info.fields, field_names[0..]) |field, *name| //
+                    name.* = field.name;
+                const out_fn = field_names[0..];
+                break :fieldNames out_fn;
+            },
+            fieldTypes: {
+                var field_types: [union_info.fields.len][:0]const u8 = undefined;
+                for (union_info.fields, field_types[0..]) |field, *T| //
+                    T.* = field;
+                const out_fn = field_types[0..];
+                break :fieldTypes out_fn;
+            },
+            fieldNames: {
+                var field_names: [union_info.fields.len][:0]const u8 = undefined;
+                for (union_info.fields, field_names[0..]) |field, *name| //
+                    name.* = field.name;
+                const out_fn = field_names[0..];
+                break :fieldNames out_fn;
+            },
+        );
     };
 }
 
@@ -642,7 +666,8 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| {
                     const typed_val = @field(self.*.generic, @tagName(tag));
                     return
-                        if (@TypeOf(typed_val).ChildT == T) try typed_val.get()
+                        if (@TypeOf(typed_val).ChildT == T) //
+                            try typed_val.get()
                         else if (
                             @typeInfo(T) == .@"enum" or ( //
                                 @typeInfo(T) == .optional and //
@@ -669,7 +694,8 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| {
                     const typed_val = @field(self.*.generic, @tagName(tag));
                     return 
-                        if (@TypeOf(typed_val).ChildT == T) try typed_val.getAll()
+                        if (@TypeOf(typed_val).ChildT == T) //
+                            try typed_val.getAll() //
                         else if (
                             @typeInfo(T) == .@"enum" or ( //
                                 @typeInfo(T) == .optional and //
@@ -710,7 +736,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set a new Argument Index for this Value.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
-            if (!include_arg_indices) return;
+            if (!include_arg_indices) //
+                return;
             const alloc = self.allocator() orelse return error.ValueNotInitialized;
             const self_idx = switch(meta.activeTag(self.*.generic)) {
                 inline else => |tag| &@field(@constCast(self).*.generic, @tagName(tag)).arg_idx,
@@ -778,10 +805,12 @@ pub fn Custom(comptime config: Config) type {
                 inline else => |tag| typeName: {
                     const val = @field(self.*.generic, @tagName(tag));
                     break :typeName 
-                        if (val.alias_child_type) |alias| alias
+                        if (val.alias_child_type) |alias| //
+                            alias //
                         else if (config.child_type_aliases) |aliases| confAlias: {
                             inline for (aliases) |alias| {
-                                if (@TypeOf(val).ChildT == alias.ChildT) break :confAlias alias.alias;
+                                if (@TypeOf(val).ChildT == alias.ChildT) //
+                                    break :confAlias alias.alias;
                             }
                             break :confAlias @typeName(@TypeOf(val).ChildT);
                         }
@@ -883,7 +912,8 @@ pub fn Custom(comptime config: Config) type {
         /// This is intended for use with the corresponding `from()` methods in Command and Option, which ultimately create a Command from a given Struct.
         pub fn from(comptime from_comp: anytype, from_config: FromConfig) ?@This() {
             const comp_name: []const u8 = 
-                if (from_config.val_name) |val_name| val_name
+                if (from_config.val_name) |val_name| //
+                    val_name //
                 else switch (@TypeOf(from_comp)) {
                     std.builtin.Type.StructField, std.builtin.Type.UnionField => from_comp.name,
                     std.builtin.Type.Fn.Param => "",
@@ -898,9 +928,10 @@ pub fn Custom(comptime config: Config) type {
             const comp_info = @typeInfo(FromT);
             if (comp_info == .pointer and comp_info.pointer.child != u8) {
                 if (!from_config.ignore_incompatible) @compileError(
-                    "The component '" ++ 
-                    if (comp_name.len > 0) comp_name else "' function parameter of type '" ++ 
-                    @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'.")
+                    "The component '" ++
+                    if (comp_name.len > 0) comp_name else "' function parameter of type '" ++
+                    @typeName(FromT) ++ "' is incompatible. Pointers must be of type '[]const u8'."
+                ) //
                 else return null;
             }
             var enum_name: ?[]const u8 = null;
@@ -916,8 +947,10 @@ pub fn Custom(comptime config: Config) type {
                 },
                 .array => aryType: {
                     const ary_info = @typeInfo(comp_info.array.child);
-                    if (ary_info == .optional) break :aryType ary_info.optional.child
-                    else break :aryType comp_info.array.child;
+                    if (ary_info == .optional) //
+                        break :aryType ary_info.optional.child //
+                    else //
+                        break :aryType comp_info.array.child;
                 },
                 .@"enum" => |enum_info| EnumT: {
                     enum_name = @typeName(FromT);
@@ -926,8 +959,10 @@ pub fn Custom(comptime config: Config) type {
                 // TODO: Check if Pointer is a String.
                 .bool, .int, .float, .pointer => FromT,
                 else => {
-                    if (!from_config.ignore_incompatible) @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(FromT) ++ "' is incompatible.")
-                    else return null;
+                    if (!from_config.ignore_incompatible) //
+                        @compileError("The comp '" ++ comp_name ++ "' of type '" ++ @typeName(FromT) ++ "' is incompatible.") //
+                    else //
+                        return null;
                 },
             };
             //const out_info = @typeInfo(CompT);
@@ -935,16 +970,16 @@ pub fn Custom(comptime config: Config) type {
                 .name = comp_name,
                 .description = from_config.val_description orelse fmt.comptimePrint("The '{s}' Value of Type '{s}'.", .{ comp_name, @typeName(FromT) }),
                 .alias_child_type = enum_name,
-                .max_entries =
-                    if (comp_info == .array) comp_info.array.len
+                .max_entries = //
+                    if (comp_info == .array) comp_info.array.len //
                     else 1,
-                .set_behavior =
-                    if (comp_info == .array) .Multi
+                .set_behavior = //
+                    if (comp_info == .array) .Multi //
                     else .Last,
                 // TODO: Handle default Array Elements.
                 .default_val = defVal: {
                     if (
-                        utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_value") != null and 
+                        utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_value") != null and
                         from_comp.default_value_ptr != null
                     ) {
                         switch (comp_info) {
@@ -991,10 +1026,12 @@ pub fn Custom(comptime config: Config) type {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));
-                    if (@TypeOf(val).child_type_help_fn)|helpFn| return helpFn(self, writer, self.allocator());
+                    if (@TypeOf(val).child_type_help_fn)|helpFn| //
+                        return helpFn(self, writer, self.allocator());
                 }
             }
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self.allocator());
+            if (global_help_fn) |helpFn| //
+                return helpFn(self, writer, self.allocator());
             try writer.print(vals_help_fmt, .{ self.name(), self.childTypeName(), self.description() });
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
@@ -1005,7 +1042,8 @@ pub fn Custom(comptime config: Config) type {
                     if (@TypeOf(val).child_type_usage_fn)|usageFn| return usageFn(self, writer, self.allocator());
                 }
             }
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self.allocator());
+            if (global_usage_fn) |usageFn| //
+                return usageFn(self, writer, self.allocator());
             try writer.print(vals_usage_fmt, .{ self.name(), self.childTypeName() });
         }
 
@@ -1132,16 +1170,16 @@ pub const ValidationFns = struct {
         }
     };
 
-    /// Check if the provided argument token (`filepath`) is a valid filepath.
-    pub fn validFilepath(filepath: []const u8, alloc: mem.Allocator) bool {
-        _ = alloc;
-        const test_file = fs.cwd().openFile(filepath, .{}) catch {
-            log.err("The file '{s}' could not be found.", .{ filepath });
-            return false;
-        };
-        test_file.close();
-        return true;
-    } 
+    ///// Check if the provided argument token (`filepath`) is a valid filepath.
+    //pub fn validFilepath(filepath: []const u8, alloc: mem.Allocator) bool {
+    //    _ = alloc;
+    //    const test_file = fs.cwd().openFile(filepath, .{}) catch {
+    //        log.err("The file '{s}' could not be found.", .{ filepath });
+    //        return false;
+    //    };
+    //    test_file.close();
+    //    return true;
+    //} 
     /// Check if the provided argument token (`num_str`) is a valid Ordinal Number.
     pub fn ordinalNum(num_str: []const u8, alloc: mem.Allocator) bool {
         _ = alloc;

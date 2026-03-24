@@ -1564,27 +1564,27 @@ pub fn Custom(comptime config: Config) type {
             return @call(.auto, call_fn, params); 
         }
 
-        /// Create Sub Commands Enum.
-        /// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
-        /// Prefer to use `checkSubCmd`() and `matchSubCmd`() with conditional `if` statements.
-        pub fn SubCommandsEnum(comptime self: *const @This()) ?type {
-            if (self.sub_cmds == null) return null; //@compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
-            var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
-            for (self.sub_cmds.?, cmd_fields[0..], 0..) |cmd, *field, idx| {
-                field.* = .{
-                    .name = cmd.name,
-                    .value = idx,
-                };
-            }
-            return @Type(builtin.Type{
-                .@"enum" = .{
-                    .tag_type = u8,
-                    .fields = cmd_fields[0..],
-                    .decls = &.{},
-                    .is_exhaustive = true,
-                }
-            });
-        }
+        ///// Create Sub Commands Enum.
+        ///// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
+        ///// Prefer to use `checkSubCmd`() and `matchSubCmd`() with conditional `if` statements.
+        //pub fn SubCommandsEnum(comptime self: *const @This()) ?type {
+        //    if (self.sub_cmds == null) return null; //@compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
+        //    var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
+        //    for (self.sub_cmds.?, cmd_fields[0..], 0..) |cmd, *field, idx| {
+        //        field.* = .{
+        //            .name = cmd.name,
+        //            .value = idx,
+        //        };
+        //    }
+        //    return @Type(builtin.Type{
+        //        .@"enum" = .{
+        //            .tag_type = u8,
+        //            .fields = cmd_fields[0..],
+        //            .decls = &.{},
+        //            .is_exhaustive = true,
+        //        }
+        //    });
+        //}
 
         /// Config for the Validation of this Command.
         pub const ValidateConfig = struct {

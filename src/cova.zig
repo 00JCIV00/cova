@@ -13,6 +13,7 @@ const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
 const testing = std.testing;
+const ArrayList = std.ArrayList;
 const Io = std.Io;
 
 // Cova
@@ -44,7 +45,7 @@ pub fn tokenizeArgs(arg_str: []const u8, alloc: mem.Allocator, token_config: Tok
     var start: usize = 0;
     var end: usize = 0;
     var quote_char: ?u8 = null;
-    var args_list: std.ArrayListUnmanaged([]const u8) = .{};
+    var args_list: ArrayList([]const u8) = .empty;
     if (token_config.groupers_open.len != token_config.groupers_close.len) {
         log.err("The length of `token_config.groupers_open` must match that of `token_config.groupers_close`. These should be open/close pairs.", .{});
         return error.UnbalancedGrouperPairs;
@@ -104,12 +105,24 @@ pub const RawArgIterator = struct {
 /// A Generic Interface for Argument Iterators.
 pub const ArgIteratorGeneric = union(enum) {
     raw: RawArgIterator,
-    zig: proc.ArgIterator,
+    zig: struct {
+        iter: proc.Args.Iterator,
+        index: usize = 0,
+    },
 
     /// Get the Next argument token and advance this Iterator.
     pub fn next(self: *@This()) ?[:0]const u8 {
         return switch (meta.activeTag(self.*)) {
-            inline else => |tag| @field(self, @tagName(tag)).next(),
+            .raw => self.raw.next(),
+            .zig => zigNext: {
+                self.zig.index +|= 1;
+                if (self.zig.iter.next()) |next_arg| {
+                    self.zig.index += 1;
+                    break :zigNext next_arg;
+                } //
+                else //
+                    break :zigNext null;
+            }
         };
     }
 
@@ -118,20 +131,29 @@ pub const ArgIteratorGeneric = union(enum) {
         switch (self.*) {
             .raw => return self.raw.peek(),
             inline else => |*iter| {
-                if (builtin.os.tag != .windows) {
-                    const peek_arg = iter.next();
-                    iter.inner.index -= 1;
-                    return peek_arg;
-                }
-                else {
-                    const iter_idx = iter.inner.index;
-                    const iter_start = iter.inner.start;
-                    const iter_end = iter.inner.end;
-                    const peek_arg = iter.next();
-                    iter.inner.index = iter_idx;
-                    iter.inner.start = iter_start;
-                    iter.inner.end = iter_end;
-                    return peek_arg;
+                const in_iter = &iter.iter.inner;
+                switch (builtin.os.tag) {
+                    .windows => {
+                        const iter_idx = in_iter.index;
+                        const iter_start = in_iter.start;
+                        const iter_end = in_iter.end;
+                        const peek_arg = iter.next();
+                        in_iter.index = iter_idx;
+                        in_iter.start = iter_start;
+                        in_iter.end = iter_end;
+                        return peek_arg;
+                    } ,
+                    .wasi => {
+                        const peek_arg = iter.next();
+                        in_iter.index -= 1;
+                        return peek_arg;
+                    },
+                    else => {
+                        if (in_iter.remaining.len <= 1) //
+                            return null;
+                        const arg = in_iter.remaining[1];
+                        return std.mem.sliceTo(arg, 0);
+                    },
                 }
             },
         }
@@ -143,7 +165,8 @@ pub const ArgIteratorGeneric = union(enum) {
             .raw => self.raw.index = 0,
             inline else => |tag| {
                 var iter = &@field(self, @tagName(tag));
-                if (builtin.os.tag != .windows) iter.inner.index = 0
+                if (builtin.os.tag != .windows) //
+                    iter.inner.index = 0
                 else {
                     iter.inner.index = 0; 
                     iter.inner.start = 0; 
@@ -157,28 +180,32 @@ pub const ArgIteratorGeneric = union(enum) {
     pub fn index(self: *@This()) usize {
         return switch (meta.activeTag(self.*)) {
             .raw => self.raw.index,
-            .zig => self.zig.inner.index,
+            .zig => switch (builtin.os.tag) {
+                .windows, .wasi =>  self.zig.inner.index,
+                else => self.zig.index,
+            },
         };
     }
     
     /// Create a copy of this Generic Interface from the provided ArgIterator (`arg_iter`).
     pub fn from(arg_iter: anytype) @This() {
-        const iter_type = @TypeOf(arg_iter);
-        return genIter: inline for (meta.fields(@This())) |field| {
-            if (field.type == iter_type) break :genIter @unionInit(@This(), field.name, arg_iter);
-        }
-        else @compileError("The provided Type '" ++ @typeName(iter_type) ++ "' is not supported by the ArgIteratorGeneric Interface.");
+        const IterT = @TypeOf(arg_iter);
+        return switch (IterT) {
+            RawArgIterator => .{ .raw = arg_iter },
+            proc.Args.Iterator => .{ .zig = .{ .iter = arg_iter } },
+            else => @compileError("The provided Type '" ++ @typeName(IterT) ++ "' is not supported by the ArgIteratorGeneric Interface."),
+        };
     }
 
-    /// Initialize a copy of this Generic Interface as a `std.process.ArgIterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
-    pub fn init(alloc: mem.Allocator) !@This() {
-        return from(try proc.argsWithAllocator(alloc));
+    /// Initialize a copy of this Generic Interface as a `std.process.Args.Iterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
+    pub fn init(args: proc.Args, alloc: mem.Allocator) !@This() {
+        return from(try proc.Args.Iterator.initAllocator(args, alloc));
     }
 
     /// De-initialize a copy of this Generic Interface made with `init()`.
     pub fn deinit(self: *@This()) void {
         if (meta.activeTag(self.*) == .zig) //
-            self.zig.deinit();
+            self.zig.iter.deinit();
         return;
     }
 };
@@ -884,7 +911,7 @@ test "argument parsing" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    var writer_list: std.ArrayListUnmanaged(u8) = .{};
+    var writer_list: ArrayList(u8) = .{};
     defer writer_list.deinit(alloc);
     const writer = writer_list.writer(alloc);
     const test_args: []const []const [:0]const u8 = &.{
@@ -908,7 +935,7 @@ test "argument analysis" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    var writer_list: std.ArrayListUnmanaged(u8) = .{};
+    var writer_list: ArrayList(u8) = .{};
     defer writer_list.deinit(alloc);
     const writer = writer_list.writer(alloc);
     const test_cmd = try test_setup_cmd.init(alloc, .{});
