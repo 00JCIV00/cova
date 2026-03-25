@@ -1354,25 +1354,32 @@ pub fn Custom(comptime config: Config) type {
         pub fn to(self: *const @This(), comptime ToT: type, to_config: ToConfig) !ToT {
             const alloc = self._alloc orelse return error.CommandNotInitialized;
             const type_info = @typeInfo(ToT);
-            if (type_info == .@"union") { 
-                const vals_idx = if (self.vals) |vals| valsIdx: {
-                    var idx: u8 = 0;
-                    for (vals) |val| { if (val.isSet()) idx += 1; }
-                    break :valsIdx idx;
-                } else 0;
-                const opts_idx = if (self.opts) |opts| optsIdx: {
-                    var idx: u8 = 0;
-                    for (opts) |opt| { 
-                        if (
-                            opt.val.isSet() and
-                            !mem.eql(u8, opt.name, "usage") and
-                            !mem.eql(u8, opt.name, "help")
-                        ) idx += 1; 
-                    }
-                    break :optsIdx idx;
-                } else 0;
+            if (type_info == .@"union") {
+                const vals_idx = //
+                    if (self.vals) |vals| valsIdx: {
+                        var idx: u8 = 0;
+                        for (vals) |val| {
+                            if (val.isSet()) //
+                                idx += 1;
+                        }
+                        break :valsIdx idx;
+                    } //
+                    else 0;
+                const opts_idx = //
+                    if (self.opts) |opts| optsIdx: {
+                        var idx: u8 = 0;
+                        for (opts) |opt| { 
+                            if (
+                                opt.val.isSet() and
+                                !mem.eql(u8, opt.name, "usage") and
+                                !mem.eql(u8, opt.name, "help")
+                            ) idx += 1; 
+                        }
+                        break :optsIdx idx;
+                    } //
+                    else 0;
                 const total_idx = vals_idx + opts_idx;
-                if (total_idx > 1) { 
+                if (total_idx > 1) {
                     log.err("Commands from Unions can only hold 1 Value or Option, but '{d}' were given.", .{ total_idx });
                     return error.ExpectedOnlyOneValOrOpt;
                 }
@@ -1382,7 +1389,8 @@ pub fn Custom(comptime config: Config) type {
                 errdefer vals_list.deinit(alloc);
                 try vals_list.appendSlice(alloc, self.vals orelse &.{});
                 if (to_config.default_val_opts) optVals: {
-                    for (self.opts orelse break :optVals) |opt| try vals_list.append(alloc, opt.val);
+                    for (self.opts orelse break :optVals) |opt| //
+                        try vals_list.append(alloc, opt.val);
                 }
                 break :getVals try vals_list.toOwnedSlice(alloc);
             };
@@ -1390,7 +1398,8 @@ pub fn Custom(comptime config: Config) type {
             var out: ToT = undefined;
             const fields = meta.fields(ToT);
             inline for (fields) |field| {
-                if (field.type == @This() or field.type == OptionT or field.type == ValueT) continue;
+                if (field.type == @This() or field.type == OptionT or field.type == ValueT) //
+                    continue;
                 var arg_name_buf: [field.name.len]u8 = field.name[0..].*;
                 const arg_name = if (!to_config.convert_syntax) field.name else argName: {
                     _ = mem.replace(u8, field.name[1..], "_", "-", arg_name_buf[1..]);

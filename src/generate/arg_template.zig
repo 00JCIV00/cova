@@ -7,6 +7,7 @@ const fs = std.fs;
 const json = std.json;
 const log = std.log;
 const mem = std.mem;
+const Io = std.Io;
 
 // Cova
 const utils = @import("../utils.zig");
@@ -207,6 +208,7 @@ pub const ArgTemplateConfig = struct{
 };
 /// Create an Argument Template.
 pub fn createArgTemplate(
+    io: Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     comptime at_config: ArgTemplateConfig,
@@ -215,16 +217,17 @@ pub fn createArgTemplate(
     const at_name = at_config.name orelse cmd.name;
     const at_description = at_config.description orelse cmd.description;
     const filepath = genFilepath: {
-        comptime var path = if (at_config.local_filepath.len >= 0) at_config.local_filepath else ".";
+        comptime var path = //
+            if (at_config.local_filepath.len >= 0) at_config.local_filepath //
+            else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
-        try fs.cwd().makePath(path);
+        try Io.Dir.cwd().createDirPath(io, path);
         break :genFilepath path ++ at_name ++ "-template." ++ @tagName(at_kind);
     };
-    var arg_template = try fs.cwd().createFile(filepath, .{});
-    var at_writer_parent = arg_template.writer(&.{});
+    var arg_template = try Io.Dir.cwd().createFile(io, filepath, .{});
+    var at_writer_parent = arg_template.writer(io, &.{});
     const at_writer = &at_writer_parent.interface;
-    defer arg_template.close();
-
+    defer arg_template.close(io);
     const meta_info_template = MetaInfoTemplate{
         .name = at_name,
         .description = at_description,
@@ -234,13 +237,11 @@ pub fn createArgTemplate(
         .copyright = at_config.copyright,
     };
     const cmd_template = CommandTemplate(CommandT).from(cmd, at_config);
-
     const at_ctx = ArgTemplateContext{
         .include_cmds = at_config.include_cmds,
         .include_opts = at_config.include_opts,
         .include_vals = at_config.include_vals,
     };
-
     switch (at_kind) {
         .json => {
             const json_opts_config: json.Stringify.Options = .{
@@ -273,8 +274,10 @@ pub fn createArgTemplate(
                     at_description,
                 }
             );
-            if (at_config.version) |ver| try at_writer.print("version \"{s}\"\n", .{ ver });
-            if (at_config.author) |author| try at_writer.print("author \"{s}\"\n", .{ author });
+            if (at_config.version) |ver| //
+                try at_writer.print("version \"{s}\"\n", .{ ver });
+            if (at_config.author) |author| //
+                try at_writer.print("author \"{s}\"\n", .{ author });
             try at_writer.print("\n", .{});
             try argTemplateKDL(
                 CommandT,
@@ -320,7 +323,8 @@ fn argTemplateKDL(
         cmd.alias_names != null
     );
     // if (sub_args and at_ctx.add_line) try at_writer.print("\n", .{});
-    if (at_ctx.add_line) try at_writer.print("\n", .{});
+    if (at_ctx.add_line) //
+        try at_writer.print("\n", .{});
     const indent = if (at_ctx.idx > 1) "    " ** (at_ctx.idx - 1) else "";
     const sub_indent = if (at_ctx.idx > 0) "    " ** (at_ctx.idx) else "";
     if (at_ctx.idx > 0) {
@@ -331,17 +335,16 @@ fn argTemplateKDL(
             if (sub_args) " {" else "",
         });
     }
-
     var add_line = false;
-
     if (cmd.alias_names) |aliases| addAliases: {
-        if (at_ctx.idx == 0) break :addAliases;
-        inline for (aliases) |alias| try at_writer.print("{s}alias \"{s}\"\n", .{ sub_indent, alias });
+        if (at_ctx.idx == 0) //
+            break :addAliases;
+        inline for (aliases) |alias| //
+            try at_writer.print("{s}alias \"{s}\"\n", .{ sub_indent, alias });
         add_line = true;
     }
-
     if (at_ctx.include_opts) addOpts: {
-        const opts = cmd.opts orelse { 
+        const opts = cmd.opts orelse {
             add_line = false;
             break :addOpts;
         };
@@ -355,27 +358,29 @@ fn argTemplateKDL(
         });
         add_line = true;
     }
-
     if (at_ctx.include_vals) addVals: {
         const vals = cmd.vals orelse {
             add_line = false;
             break :addVals;
         };
-        if (add_line) try at_writer.print("\n", .{});
-        inline for (vals) |val| try at_writer.print("{s}arg \"{s}\" help=\"{s}\"\n", .{
-            sub_indent,
-            val.name(),
-            val.description(),
-        });
+        if (add_line) //
+            try at_writer.print("\n", .{});
+        inline for (vals) |val| {
+            try at_writer.print("{s}arg \"{s}\" help=\"{s}\"\n", .{
+                sub_indent,
+                val.name(),
+                val.description(),
+            });
+        }
         add_line = true;
     }
-
     if (at_ctx.include_cmds) addCmds: {
         const sub_cmds = cmd.sub_cmds orelse {
             add_line = false;
             break :addCmds;
         };
-        if (add_line) try at_writer.print("\n", .{});
+        if (add_line) //
+            try at_writer.print("\n", .{});
         inline for (sub_cmds, 0..) |sub_cmd, idx| {
             comptime var sub_ctx = at_ctx;
             sub_ctx.idx += 1;
@@ -383,6 +388,6 @@ fn argTemplateKDL(
             try argTemplateKDL(CommandT, sub_cmd, at_writer, sub_ctx);
         }
     }
-
-    if (at_ctx.idx > 0 and sub_args) try at_writer.print("{s}}}\n", .{ indent });
+    if (at_ctx.idx > 0 and sub_args) //
+        try at_writer.print("{s}}}\n", .{ indent });
 }

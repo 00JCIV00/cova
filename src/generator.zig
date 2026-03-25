@@ -8,7 +8,9 @@ const json = std.json;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
+const proc = std.process;
 const Build = std.Build;
+const Io = std.Io;
 // The Cova library is needed for the `generate` module.
 const cova = @import("cova");
 const generate = cova.generate;
@@ -37,10 +39,12 @@ const meta_info: []const []const u8 = &.{
 /// Translate Build Options to Meta Doc Generation Configs.
 ///TODO Refactor this once Build Options support Types.
 fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
-    if (!conf_opts.provided) return null;
+    if (!conf_opts.provided) //
+        return null;
     var conf = ConfigT{};
     for (@typeInfo(ConfigT).@"struct".fields) |field| {
-        if (std.mem.eql(u8, field.name, "provided")) continue;
+        if (std.mem.eql(u8, field.name, "provided")) //
+            continue;
         @field(conf, field.name) = @field(conf_opts, field.name);
         if (
             (
@@ -54,17 +58,19 @@ fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
     return conf;
 }
 
-pub fn main() !void {
+pub fn main(init: proc.Init) !void {
     const doc_kinds: []const generate.MetaDocConfig.MetaDocKind = comptime docKinds: {
         var kinds: [md_config.kinds.len]generate.MetaDocConfig.MetaDocKind = undefined;
-        for (md_config.kinds, kinds[0..]) |md_kind, *kind| kind.* = @enumFromInt(md_kind);
+        for (md_config.kinds, kinds[0..]) |md_kind, *kind| //
+            kind.* = @enumFromInt(md_kind);
         if (kinds[0] != .all) {
             const kinds_out = kinds;
             break :docKinds kinds_out[0..];
         }
         const mdk_info = @typeInfo(generate.MetaDocConfig.MetaDocKind);
         var kinds_list: [mdk_info.@"enum".fields[1..].len]generate.MetaDocConfig.MetaDocKind = undefined;
-        for (mdk_info.@"enum".fields[1..], kinds_list[0..]) |field, *kind| kind.* = @enumFromInt(field.value);
+        for (mdk_info.@"enum".fields[1..], kinds_list[0..]) |field, *kind| //
+            kind.* = @enumFromInt(field.value);
         const kinds_out = kinds_list;
         break :docKinds kinds_out[0..];
     };
@@ -78,6 +84,7 @@ pub fn main() !void {
             .manpages, .markdown => |help_doc| {
                 if (help_docs_config) |hd_config| {
                     try generate.createHelpDoc(
+                        init.io,
                         cmd_type_name,
                         setup_cmd_name,
                         hd_config,
@@ -92,6 +99,7 @@ pub fn main() !void {
             .bash, .zsh, .ps1 => |shell| {
                 if (tab_complete_config) |tc_config| {
                     try generate.createTabCompletion(
+                        init.io,
                         cmd_type_name,
                         setup_cmd_name,
                         tc_config,
@@ -106,6 +114,7 @@ pub fn main() !void {
             .json, .kdl => |template| {
                 if (arg_template_config) |at_config| {
                     try generate.createArgTemplate(
+                        init.io,
                         cmd_type_name,
                         setup_cmd_name,
                         at_config,

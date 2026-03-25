@@ -6,6 +6,7 @@ const fmt = std.fmt;
 const fs = std.fs;
 const log = std.log;
 const mem = std.mem;
+const Io = std.Io;
 
 // Cova
 const utils = @import("../utils.zig");
@@ -45,6 +46,7 @@ pub const TabCompletionConfig = struct{
 };
 /// Create a Tab Completion script for the provided CommandT (`cmd`) configured by the given TabCompletionConfig (`tc_config`).
 pub fn createTabCompletion(
+    io: Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     comptime tc_config: TabCompletionConfig,
@@ -57,21 +59,22 @@ pub fn createTabCompletion(
         .zsh => "#compdef " ++ cmd.name,
         .ps1 => "# Requires PowerShell v5.1+",
     };
-
     const filename = (if (shell_kind == .zsh) "_" else "") ++ tc_name ++ "-completion." ++ @tagName(shell_kind);
     const filepath = genFilepath: {
-        comptime var path = if (tc_config.local_filepath.len >= 0) tc_config.local_filepath else ".";
+        comptime var path = //
+            if (tc_config.local_filepath.len >= 0) //
+                tc_config.local_filepath //
+            else //
+                ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
-        try fs.cwd().makePath(path);
+        try Io.Dir.cwd().createDirPath(io, path);
         const path_out = path;
         break :genFilepath path_out ++ filename;
     };
-    var tab_completion = try fs.cwd().createFile(filepath, .{});
-    var tc_writer_parent = tab_completion.writer(&.{});
+    var tab_completion = try Io.Dir.cwd().createFile(io, filepath, .{});
+    var tc_writer_parent = tab_completion.writer(io, &.{});
     var tc_writer = &tc_writer_parent.interface;
-    defer tab_completion.close();
-
-
+    defer tab_completion.close(io);
     // Tab Completion Script Header Write
     try tc_writer.print(
         \\{s}
@@ -94,7 +97,6 @@ pub fn createTabCompletion(
         .include_opts = tc_config.include_opts,
         .include_usage_help = tc_config.include_usage_help,
     };
-       
     switch (shell_kind) {
         .bash => {
             if (tc_config.add_install_instructions) {
@@ -121,7 +123,13 @@ pub fn createTabCompletion(
                     }
                 );
             }
-            try cmdTabCompletionBash(CommandT, cmd, tc_writer, tc_ctx);
+            try cmdTabCompletionBash(
+                io,
+                CommandT,
+                cmd,
+                tc_writer,
+                tc_ctx,
+            );
         },
         .zsh => {
             if (tc_config.add_install_instructions) {
@@ -204,6 +212,7 @@ const TabCompletionContext = struct{
 /// Writes a Bash Tab Completion script snippet for the provided CommandT (`cmd`) to the given Writer (`tc_writer`).
 /// This function passes the provided TabCompletionContext (`tc_ctx`) to track info through recursive calls.
 fn cmdTabCompletionBash(
+    io: Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     tc_writer: anytype,
@@ -215,21 +224,26 @@ fn cmdTabCompletionBash(
         var args: []const u8 = "";
         if (tc_ctx.include_cmds) {
             if (cmd.sub_cmds) |sub_cmds| {
-                for (sub_cmds) |sub_cmd| args = args ++ sub_cmd.name ++ " ";
+                for (sub_cmds) |sub_cmd| //
+                    args = args ++ sub_cmd.name ++ " ";
             }
-            if (tc_ctx.include_usage_help) args = args ++ "help usage ";
+            if (tc_ctx.include_usage_help) //
+                args = args ++ "help usage ";
         }
         if (tc_ctx.include_opts) {
             if (cmd.opts) |opts| {
                 for (opts) |opt| {
-                    if (opt.long_name) |long_name| args = args ++ long_pf ++ long_name ++ " ";
+                    if (opt.long_name) |long_name| //
+                        args = args ++ long_pf ++ long_name ++ " ";
                 }
             }
-            if (tc_ctx.include_usage_help) args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
+            if (tc_ctx.include_usage_help) //
+                args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
         }
         break :genArgList args;
     };
-    if (args_list.len == 0) return;
+    if (args_list.len == 0) //
+        return;
 
     // Tab Completion Script Snippet Write
     try tc_writer.print(
@@ -286,7 +300,13 @@ fn cmdTabCompletionBash(
         next_ctx.idx += 1;
         inline for (sub_cmds) |sub_cmd| {
             next_ctx.name = sub_cmd.name;
-            try cmdTabCompletionBash(CommandT, sub_cmd, tc_writer, next_ctx);
+            try cmdTabCompletionBash(
+                io,
+                CommandT,
+                sub_cmd,
+                tc_writer,
+                next_ctx
+            );
         }
     }
 
@@ -312,22 +332,25 @@ fn cmdTabCompletionZsh(
         var args: []const u8 = "";
         if (tc_ctx.include_cmds) {
             if (cmd.sub_cmds) |sub_cmds| {
-                for (sub_cmds) |sub_cmd| args = args ++ sub_cmd.name ++ " ";
+                for (sub_cmds) |sub_cmd| //
+                    args = args ++ sub_cmd.name ++ " ";
             }
             if (tc_ctx.include_usage_help) args = args ++ "help usage ";
         }
         if (tc_ctx.include_opts) {
             if (cmd.opts) |opts| {
                 for (opts) |opt| {
-                    if (opt.long_name) |long_name| args = args ++ long_pf ++ long_name ++ " ";
+                    if (opt.long_name) |long_name| //
+                        args = args ++ long_pf ++ long_name ++ " ";
                 }
             }
-            if (tc_ctx.include_usage_help) args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
+            if (tc_ctx.include_usage_help) //
+                args = args ++ long_pf ++ "help " ++ long_pf ++ "usage";
         }
         break :genArgList args;
     };
-    if (args_list.len == 0) return;
-
+    if (args_list.len == 0) //
+        return;
     // Set up Arguments Array
     if (tc_ctx.idx == 1) try tc_writer.print(
         \\# Associative array to hold Commands, Options, and their descriptions with arbitrary depth
@@ -336,10 +359,10 @@ fn cmdTabCompletionZsh(
         \\
         , .{}
     );
-
     try tc_writer.print("    \"{s}\" \"{s}\"\n",
         .{
-            if (tc_ctx.idx == 1) cmd.name else tc_ctx.parent_name ++ "_" ++ cmd.name,
+            if (tc_ctx.idx == 1) cmd.name //
+            else tc_ctx.parent_name ++ "_" ++ cmd.name,
             args_list,
         }
     );
