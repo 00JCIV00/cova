@@ -83,7 +83,7 @@
             ],
             "vals": [
                 {
-                    "name": "__nosubdescriptionsprovided__",
+                    "name": "val-00",
                     "description": "",
                     "type_name": "[]const u8",
                     "set_behavior": "Last",

@@ -137,7 +137,8 @@ pub const Config = struct {
         config.val_config = Value.Config.optimized(OptimizeConfig, optimize_config);
         if (optimize_config.no_formats) {
             inline for (meta.fields(@This())) |field| {
-                if (mem.endsWith(u8, field.name, "_fmt")) @field(config, field.name) = "";
+                if (mem.endsWith(u8, field.name, "_fmt")) //
+                    @field(config, field.name) = "";
             }
         }
         const conf = config;
@@ -148,9 +149,10 @@ pub const Config = struct {
 /// Create an Option Type with the Base (default) configuration.
 pub fn Base() type { return Custom(.{}); }
 
-/// Create a Custom Option type from the provided Config (`config`).
+/// Create a Custom Option Type from the provided Config (`config`).
 pub fn Custom(comptime config: Config) type {
-    if (config.short_prefix == null and config.long_prefix == null) @compileError("Either a Short or Long prefix must be set for Option Types!");
+    if (config.short_prefix == null and config.long_prefix == null) //
+        @compileError("Either a Short or Long prefix must be set for Option Types!");
     return struct {
         /// The Custom Command Type of the overall project.
         const CommandT = config.CommandT.?;
@@ -277,7 +279,8 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set a new Argument Index for this Option.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
-            if (!include_arg_indices) return;
+            if (!include_arg_indices) //
+                return;
             const alloc = self._alloc orelse return error.OptionNotInitialized;
             if (self.arg_idx == null) {
                 @constCast(self).*.arg_idx = try alloc.alloc(u8, 1);
@@ -306,19 +309,21 @@ pub fn Custom(comptime config: Config) type {
                 //const val_child_type = self.val.childType();
                 inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
                     for (config.child_type_help_fns orelse break :typeHelpFn null) |elm| {
-                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) //
                             break :typeHelpFn elm.help_fn;
                     }
                 }
                 else break :typeHelpFn null;
             }) |helpFn| return helpFn(self, writer, self._alloc);
-            if (global_help_fn) |helpFn| return helpFn(self, writer, self._alloc);
-
+            if (global_help_fn) |helpFn| //
+                return helpFn(self, writer, self._alloc);
             var upper_name_buf: [100]u8 = undefined;
             const upper_name = upper_name_buf[0..self.name.len];
             upper_name[0] = toUpper(self.name[0]);
-            for(upper_name[1..self.name.len], 1..) |*c, i| c.* = self.name[i];
-            if (help_fmt) |h_fmt| return try writer.print(h_fmt, .{ upper_name, self.description });
+            for(upper_name[1..self.name.len], 1..) |*c, i| //
+                c.* = self.name[i];
+            if (help_fmt) |h_fmt| //
+                return try writer.print(h_fmt, .{ upper_name, self.description });
             try writer.print("{s}:\n{?s}{?s}{?s}", .{ upper_name, indent_fmt, indent_fmt, indent_fmt });
             try self.usage(writer);
             try writer.print("\n{?s}{?s}{?s}{s}", .{ indent_fmt, indent_fmt, indent_fmt, self.description });
@@ -335,14 +340,14 @@ pub fn Custom(comptime config: Config) type {
                 //const val_child_type = self.val.childType();
                 inline for (&.{ self.val.childTypeName(), self.val.childType() }) |val_child_type| {
                     for (config.child_type_usage_fns orelse break :typeUsageFn null) |elm| {
-                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) 
+                        if (mem.eql(u8, @typeName(elm.ChildT), val_child_type)) //
                             break :typeUsageFn elm.usage_fn;
                     }
                 }
                 else break :typeUsageFn null;
             }) |usageFn| return usageFn(self, writer, self._alloc);
-            if (global_usage_fn) |usageFn| return usageFn(self, writer, self._alloc);
-
+            if (global_usage_fn) |usageFn| //
+                return usageFn(self, writer, self._alloc);
             const AliasFormatter = struct {
                 aliases: ?[]const []const u8,
                 
@@ -351,11 +356,10 @@ pub fn Custom(comptime config: Config) type {
                         try fmt_writer.print("", .{});
                         return;
                     }
-                    for (formatter.aliases.?) |alias| 
+                    for (formatter.aliases.?) |alias| //
                         try fmt_writer.print(alias_fmt, .{ name_sep_fmt, long_prefix.?, alias });
                 }
             };
-
             try writer.print(usage_fmt, .{
                 @as(u21, if (self.short_name != null) short_prefix orelse 0x200B else 0x200B),
                 @as(u21, if (short_prefix != null) self.short_name orelse 0x200B else 0x200B),
@@ -392,7 +396,7 @@ pub fn Custom(comptime config: Config) type {
         /// Create an Option from a Valid Optional StructField or UnionField (`field`) with the provided FromConfig (`from_config`).
         pub fn from(comptime field: anytype, from_config: FromConfig) ?@This() {
             const FieldT = @TypeOf(field);
-            if (FieldT != std.builtin.Type.StructField and FieldT != std.builtin.Type.UnionField) 
+            if (FieldT != std.builtin.Type.StructField and FieldT != std.builtin.Type.UnionField) //
                 @compileError("The provided `field` must be a StructField or UnionField but a '" ++ @typeName(FieldT) ++ "' was provided.");
             const optl_info = @typeInfo(field.type);
             //const optl =
@@ -403,8 +407,8 @@ pub fn Custom(comptime config: Config) type {
                 .optional => @typeInfo(optl_info.optional.child),
                 .array => |ary| aryInfo: {
                     const ary_info = @typeInfo(ary.child);
-                    break :aryInfo
-                        if (ary_info == .optional) @typeInfo(ary_info.optional.child)
+                    break :aryInfo //
+                        if (ary_info == .optional) @typeInfo(ary_info.optional.child) //
                         else ary_info;
                 },
                 inline else => optl_info,
@@ -419,8 +423,8 @@ pub fn Custom(comptime config: Config) type {
                             .val_description = from_config.opt_description,
                         }) orelse return null,
                         inline else => {
-                            if (!from_config.ignore_incompatible) 
-                                @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.")
+                            if (!from_config.ignore_incompatible) //
+                                @compileError("The field '" ++ field.name ++ "' of type '" ++ @typeName(field.type) ++ "' is incompatible as it cannot be converted to a Valid Option or Value.") //
                             else return null;
                         },
                     }

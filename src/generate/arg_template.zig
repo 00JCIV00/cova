@@ -47,26 +47,32 @@ pub fn CommandTemplate(CommandT: type) type {
                 .group = cmd.cmd_group,
                 .examples = cmd.examples,
                 .sub_cmds = comptime subCmds: {
-                    if (!at_config.include_cmds) break :subCmds null;
+                    if (!at_config.include_cmds) //
+                        break :subCmds null;
                     const sub_cmds = cmd.sub_cmds orelse break :subCmds null;
                     var cmd_tmplts: [sub_cmds.len]@This() = undefined;
-                    for (sub_cmds, cmd_tmplts[0..]) |sub_cmd, *tmplt| tmplt.* = from(sub_cmd, at_config);
+                    for (sub_cmds, cmd_tmplts[0..]) |sub_cmd, *tmplt| //
+                        tmplt.* = from(sub_cmd, at_config);
                     const cmd_tmplts_out = cmd_tmplts;
                     break :subCmds cmd_tmplts_out[0..];
                 },
                 .opts = comptime setOpts: {
-                    if (!at_config.include_opts) break :setOpts null;
+                    if (!at_config.include_opts) //
+                        break :setOpts null;
                     const opts = cmd.opts orelse break :setOpts null;
                     var opt_tmplts: [opts.len]OptTemplateT = undefined;
-                    for (opts, opt_tmplts[0..]) |opt, *tmplt| tmplt.* = OptTemplateT.from(opt);
+                    for (opts, opt_tmplts[0..]) |opt, *tmplt| //
+                        tmplt.* = OptTemplateT.from(opt);
                     const opt_tmplts_out = opt_tmplts;
                     break :setOpts opt_tmplts_out[0..];
                 },
                 .vals = comptime setvals: {
-                    if (!at_config.include_vals) break :setvals null;
+                    if (!at_config.include_vals) //
+                        break :setvals null;
                     const vals = cmd.vals orelse break :setvals null;
                     var val_tmplts: [vals.len]ValTemplateT = undefined;
-                    for (vals, val_tmplts[0..]) |val, *tmplt| tmplt.* = ValTemplateT.from(val);
+                    for (vals, val_tmplts[0..]) |val, *tmplt| //
+                        tmplt.* = ValTemplateT.from(val);
                     const val_tmplts_out = val_tmplts;
                     break :setvals val_tmplts_out[0..];
                 },
@@ -112,7 +118,9 @@ pub fn OptionTemplate(OptionT: type) type {
                 .aliases = opt.alias_long_names,
                 .group = opt.opt_group,
                 .type_name = opt.val.childType(),
-                .type_alias = if (!mem.eql(u8, opt.val.childTypeName(), opt.val.childType())) opt.val.childTypeName() else null,
+                .type_alias = //
+                    if (!mem.eql(u8, opt.val.childTypeName(), opt.val.childType())) opt.val.childTypeName() //
+                    else null,
                 .set_behavior = @tagName(opt.val.setBehavior()),
                 .max_entries = opt.val.maxEntries(),
             };
@@ -148,7 +156,9 @@ pub fn ValueTemplate(ValueT: type) type {
                 .description = val.description(),
                 .group = val.valGroup(),
                 .type_name = val.childType(),
-                .type_alias = if (!mem.eql(u8, val.childTypeName(), val.childType())) val.childTypeName() else null,
+                .type_alias = //
+                    if (!mem.eql(u8, val.childTypeName(), val.childType())) val.childTypeName() //
+                    else null,
                 .set_behavior = @tagName(val.setBehavior()),
                 .max_entries = val.maxEntries(),
             };

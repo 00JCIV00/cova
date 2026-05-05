@@ -16,7 +16,7 @@ const cova = @import("cova");
 // values. However, customization via `cova.Command.Custom()` and configuration of the provided
 // `cova.Command.Config` will create a Command Type that's more tailored to a project.
 // The most basic example of this is simply adding a title to the help page as seen below.
-pub const CommandT = cova.Command.Custom(.{ 
+pub const CommandT = cova.Command.Custom(.{
     .global_help_prefix = "Basic User Management App", // This will appear at the top of Usage/Help.
 }); 
 // Customized Option and Value Types can also be created via their respective `from()` functions
@@ -111,7 +111,7 @@ pub const setup_cmd: CommandT = .{
                         // matches what a project expects. Parsing Functions similarly allow a
                         // library user to customize how an argument token is parsed into a
                         // specific type.
-                        .valid_fn = cova.Value.ValidationFns.validFilepath,
+                        //.valid_fn = cova.Value.ValidationFns.validFilepath,
                     }),
                 },
             },
@@ -231,27 +231,27 @@ pub const Filter = union(enum){
 // `cova.Command.Custom.from()` and `cova.Command.Custom.FromConfig` are used configure and convert
 // the Function into a Command. Due to a lack of parameter names in a Function's Type Info,
 // Function Parameters can only be converted to Values (not Options).
-pub fn open(filename: []const u8) !std.fs.File {
+pub fn open(io: std.Io, filename: []const u8) !std.Io.File {
     const filename_checked = 
         if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) filename
         else filenameChecked: {
-            var fnc_buf: [100]u8 = .{ 0 } ** 100;
+            var fnc_buf: [100]u8 = @splat(0);
             break :filenameChecked (try std.fmt.bufPrint(fnc_buf[0..], "{s}.csv", .{ filename }))[0..(filename.len + 4)];
         };
-    const open_file = try std.fs.cwd().createFile(filename_checked, .{ .read = true, .truncate = false });
-    try std.fs.cwd().writeFile(.{ .sub_path = ".ba_persist", .data = filename_checked });
+    const open_file = try std.Io.Dir.cwd().createFile(io, filename_checked, .{ .read = true, .truncate = false });
+    try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = ".ba_persist", .data = filename_checked });
     return open_file;
 }
 
-pub fn delete(filename: []const u8) !void {
-    std.fs.cwd().deleteFile(filename) catch std.log.err("There was an issue deleting the '{s}' file!", .{ filename });
+pub fn delete(io: std.Io, filename: []const u8) !void {
+    std.Io.Dir.cwd().deleteFile(io, filename) catch std.log.err("There was an issue deleting the '{s}' file!", .{ filename });
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // While any Allocator can be used, Cova is designed to wrap what's provided with an
     // Arena Allocator. This allows for flexiblity.
     //var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
-    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .{};
+    var gpa: std.heap.DebugAllocator(.{}) = .{};
     const alloc = gpa.allocator();
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
@@ -265,13 +265,13 @@ pub fn main() !void {
     // cross-platform `std.process.ArgIterator`, which will iterate through the arguments provided
     // to this application. Cova also provides `cova.RawArgIterator` which can be used for testing
     // or providing arguments from an alternate source.
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter = try cova.ArgIteratorGeneric.init(alloc, init.minimal.args);
     defer args_iter.deinit();
     // - Writer
     // Any valid Zig Writer can be used during parsing. Stdout is the easiest option here.
-    var stdout_file = std.fs.File.stdout();
+    var stdout_file = std.Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
     //defer stdout.flush() catch {};
 
@@ -304,18 +304,18 @@ pub fn main() !void {
 
     // - App Vars
     var user_filename_buf: [100]u8 = .{ 0 } ** 100;
-    _ = std.fs.cwd().readFile(".ba_persist", user_filename_buf[0..]) catch {
-        try std.fs.cwd().writeFile(.{ .sub_path = ".ba_persist", .data = "users.csv" });
+    _ = std.Io.Dir.cwd().readFile(init.io, ".ba_persist", user_filename_buf[0..]) catch {
+        try std.Io.Dir.cwd().writeFile(init.io, .{ .sub_path = ".ba_persist", .data = "users.csv" });
         for (user_filename_buf[0..9], "users.csv") |*u, c| u.* = c;
     };
     const ufb_end = std.mem.indexOfScalar(u8, user_filename_buf[0..], 0) orelse 9;
     const user_filename = user_filename_buf[0..ufb_end];
     std.log.debug("User File Name: '{s}'", .{ user_filename });
 
-    var user_file: std.fs.File = try open(user_filename);
-    defer user_file.close();
-    var user_file_reader = user_file.reader(&.{});
-    var user_file_writer = user_file.writer(&.{});
+    var user_file: std.Io.File = try open(init.io, user_filename);
+    defer user_file.close(init.io);
+    var user_file_reader = user_file.reader(init.io, &.{});
+    var user_file_writer = user_file.writer(init.io, &.{});
     defer user_file_writer.interface.flush() catch {};
     const user_file_buf = try user_file_reader.interface.allocRemaining(alloc, .unlimited);
     var users: ArrayList(User) = .empty;
@@ -341,10 +341,13 @@ pub fn main() !void {
         // Struct, `cova.Command.Custom.ToConfig`, that can be configured to dictate the rules for
         // how the Command is converted.
         var new_user = try new_cmd.to(User, .{});
-        var rand = std.Random.DefaultPrng.init(@as(u64, @truncate(@as(u128, @bitCast(std.time.nanoTimestamp())))));
-        var user_id = rand.random().int(u16);
-        while (std.mem.indexOfScalar(u16, users_mal.items(._id), user_id)) |_|
-            user_id = rand.random().int(u16);
+        var rand_buf: [2]u8 = undefined;
+        init.io.random(rand_buf[0..]);
+        var user_id = std.mem.readInt(u16, rand_buf[0..], .native);
+        while (std.mem.indexOfScalar(u16, users_mal.items(._id), user_id)) |_| {
+            init.io.random(rand_buf[0..]);
+            user_id = std.mem.readInt(u16, rand_buf[0..], .native);
+        }
         new_user._id = user_id;
         try users.append(alloc, new_user);
         try users_mal.append(alloc, new_user);
@@ -357,7 +360,7 @@ pub fn main() !void {
         // Command to a Function then calls it directly. If the Function being called is a method,
         // (if its first parameter is of an instance's Type) the host instance can be specified as
         // the second parameter to `callAs()`, otherwise that parameter should be null.
-        user_file = try open_cmd.callAs(open, null, std.fs.File);
+        user_file = try open_cmd.callAs(open, null, std.Io.File);
     }
     if (main_cmd.matchSubCmd("list")) |list_cmd| {
         const filter = if (list_cmd.matchSubCmd("filter")) |filter_cmd| try filter_cmd.to(Filter, .{}) else null;
@@ -384,22 +387,22 @@ pub fn main() !void {
         if ((try clean_cmd.getOpts(.{})).get("clean_file")) |clean_opt| {
             if (clean_opt.val.isSet()) {
                 const filename = try clean_opt.val.getAs([]const u8);
-                try delete(filename);
+                try delete(init.io, filename);
                 break :cleanCmd;
             }
         }
-        try delete("users.csv");
-        try delete(".ba_persist");
+        try delete(init.io, "users.csv");
+        try delete(init.io, ".ba_persist");
     }
     // Conversely, the `cova.Command.Custom.checkSubCmd()` method should be used if the Command
     // doesn't need to be returned. This will simply return a boolean check on whether or not
     // the provided string is the same Active Sub Command's name.
     if (main_cmd.checkSubCmd("view-lists")) {
         try stdout.print("Available Lists:\n", .{});
-        var dir_walker = try (try std.fs.cwd().openDir(".", .{ .iterate = true })).walk(alloc);
+        var dir_walker = try (try std.Io.Dir.cwd().openDir(init.io, ".", .{ .iterate = true })).walk(alloc);
         defer dir_walker.deinit();
         var found_list = false;
-        while (try dir_walker.next()) |entry| {
+        while (try dir_walker.next(init.io)) |entry| {
             const filename = entry.basename;
             if (filename.len <= 4) continue;
             if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) {

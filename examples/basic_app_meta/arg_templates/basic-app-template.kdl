@@ -17,7 +17,7 @@ cmd "new" help="Add a new user." {
 }
 
 cmd "open" help="Open or create a users file." {
-    arg "__nosubdescriptionsprovided__" help=""
+    arg "val-00" help=""
 }
 
 cmd "list" help="List all current users." {

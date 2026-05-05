@@ -100,6 +100,7 @@ function _covademo-nest-1-nest-2-nest-3 {
 		'nest-4',
 		'help',
 		'usage',
+		'--non-inheritable',
 		'--inheritable',
 		'--help',
 		'--usage'

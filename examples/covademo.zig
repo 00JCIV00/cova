@@ -5,12 +5,10 @@ const std = @import("std");
 const builtin = @import("builtin");
 const fmt = std.fmt;
 const fs = std.fs;
-const io = std.io;
 const log = std.log;
 const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
-const ComptimeStringMap = std.ComptimeStringMap;
 const StringHashMap = std.StringHashMap;
 const testing = std.testing;
 const zon = std.zon;
@@ -608,7 +606,7 @@ pub fn main(init: proc.Init) !void {
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter: cova.ArgIteratorGeneric = try .init(init.minimal.args, alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 
     // Parsing

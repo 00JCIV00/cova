@@ -8,7 +8,7 @@ ___
 ## Usage
 ```shell
 USAGE:
-    open "__nosubdescriptionsprovided__ ([]const u8)"
+    open "val-00 ([]const u8)"
     open 
 
 ```
@@ -19,6 +19,6 @@ USAGE:
 
 ## Arguments
 ### Values
-- ____nosubdescriptionsprovided____ ([]const u8)
+- __val-00__ ([]const u8)
     - 
 

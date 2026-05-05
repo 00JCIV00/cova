@@ -19,25 +19,25 @@ pub const setup_cmd = CommandT{
             .mandatory = true,
             .val = CommandT.ValueT.ofType(log.Level, .{
                 .name = "log_level_val",
-                .description = " This Value will handle then Enum."
+                .description = " This Value will handle the Enum."
             })
         }
     },
 };
 
-pub fn main() !void {
-    var gpa: std.heap.GeneralPurposeAllocator(.{}) = .{};
+pub fn main(init: std.process.Init) !void {
+    var gpa: std.heap.DebugAllocator(.{}) = .init;
     const alloc = gpa.allocator();
-    defer if (gpa.deinit() != .ok and gpa.detectLeaks()) log.err("Memory leak detected!", .{});
-    var stdout_file = std.fs.File.stdout();
+    defer if (gpa.deinit() != .ok and gpa.detectLeaks() != 0) log.err("Memory leak detected!", .{});
+    var stdout_file = std.Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
     //defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {

@@ -1244,25 +1244,28 @@ pub fn Custom(comptime config: Config) type {
         /// - Note: Options can not be generated from Functions due to the lack of parameter names in `std.builtin.Type.@"fn".Param`.
         pub fn fromFn(comptime FromFn: type, comptime from_config: FromConfig) @This() {
             const from_info = @typeInfo(FromFn);
-            if (from_info != .@"fn") @compileError("Provided Type is not a Function.");
-
+            if (from_info != .@"fn") //
+                @compileError("Provided Type is not a Function.");
             var from_cmds_buf: [from_config.max_cmds]@This() = undefined;
             const from_cmds = from_cmds_buf[0..];
             var cmds_idx: u8 = 0;
             var from_vals_buf: [from_config.max_vals]ValueT = undefined;
             const from_vals = from_vals_buf[0..];
             var vals_idx: u8 = 0;
-
             const arg_details = from_config.sub_descriptions; //StaticStringMap([]const u8).initComptime(from_config.sub_descriptions);
-
             const params = from_info.@"fn".params;
             const start_idx = if (from_config.ignore_first) 1 else 0;
             inline for (params[start_idx..], 0..) |param, idx| {
+                const ParamT = param.type orelse @compileError(fmt.comptimePrint("Missing Parameter Type: {d}", .{ idx }));
+                switch (ParamT) {
+                    Io, mem.Allocator => continue,
+                    else => {},
+                }
                 const arg_name: ?[]const u8 = if (idx < arg_details.len) arg_details[idx][0] else null;
-                const arg_description = if (idx < arg_details.len) arg_details[idx][1] else "";
+                const arg_description: ?[]const u8 = if (idx < arg_details.len) arg_details[idx][1] else null;
                 //const arg_description = "No description. (Descriptions cannot currently be generated from Function Parameters.)";//arg_descriptions.get(param.name);
                 // Handle Argument Types.
-                switch (@typeInfo(param.type.?)) {
+                switch (@typeInfo(ParamT)) {
                     // Commands
                     .@"fn", .@"struct", .@"union" => {
                         const sub_config = comptime subConfig: {
@@ -1272,7 +1275,7 @@ pub fn Custom(comptime config: Config) type {
                             new_config.sub_descriptions = &.{ .{ "__nosubdescriptionsprovided__", "" } };
                             break :subConfig new_config;
                         };
-                        from_cmds[cmds_idx] = from(param, sub_config);
+                        from_cmds[cmds_idx] = from(ParamT, sub_config);
                         cmds_idx += 1;
                     },
                     // Values
@@ -1280,7 +1283,7 @@ pub fn Custom(comptime config: Config) type {
                         from_vals[vals_idx] = (ValueT.from(param, .{
                             .ignore_incompatible = from_config.ignore_incompatible,
                             .val_name = arg_name orelse "val-" ++ .{ '0', (vals_idx + 48) },
-                            .val_description = arg_description,
+                            .val_description = arg_description orelse "",
                         }) orelse continue);
                         vals_idx += 1;
                     },
@@ -1293,7 +1296,7 @@ pub fn Custom(comptime config: Config) type {
                                 from_vals[vals_idx] = ValueT.from(param, .{
                                     .ignore_incompatible = from_config.ignore_incompatible,
                                     .val_name = arg_name orelse "val-" ++ .{ '0', (vals_idx + 48) },
-                                    .val_description = arg_description
+                                    .val_description = arg_description orelse ""
                                 }) orelse continue;
                                 vals_idx += 1;
                             },

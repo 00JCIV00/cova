@@ -38,6 +38,7 @@ cmd "basic" help="The most basic Command." {
 cmd "nest-1" help="Nested Level 1." {
     cmd "nest-2" help="Nested Level 2." {
         cmd "nest-3" help="Nested Level 3." {
+            flag "-n,--non-inheritable" help="Non-Inheritable Option"
             flag "-i,--inheritable" help="Inheritable Option"
             cmd "nest-4" help="Nested Level 4."
         }

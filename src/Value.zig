@@ -439,7 +439,7 @@ pub fn Generic(comptime config: Config) type {
         };
         var union_info = @typeInfo(base_union).@"union";
         var tag_info = @typeInfo(union_info.tag_type.?).@"enum";
-        tag_info.tag_type = usize;
+        tag_info.tag_type = u16;
         if (config.use_custom_bit_width_range) {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
             inline for (config.min_int_bit_width..config.max_int_bit_width) |bit_width| {
@@ -585,28 +585,45 @@ pub fn Generic(comptime config: Config) type {
             }
         }
         break :customUnion @Union(
-            union_info.layout,
-            tag_info.tag_type,
+            .auto,
+            @Enum(
+                tag_info.tag_type,
+                .exhaustive,
+                fieldNames: {
+                    var field_names: [tag_info.fields.len][:0]const u8 = undefined;
+                    for (tag_info.fields, field_names[0..]) |field, *name| //
+                        name.* = field.name;
+                    const out_names = field_names[0..];
+                    break :fieldNames out_names;
+                },
+                fieldValues: {
+                    var field_vals: [tag_info.fields.len]tag_info.tag_type = undefined;
+                    for (tag_info.fields, field_vals[0..]) |field, *val| //
+                        val.* = field.value;
+                    const out_vals = field_vals[0..];
+                    break :fieldValues out_vals;
+                }
+            ),
             fieldNames: {
                 var field_names: [union_info.fields.len][:0]const u8 = undefined;
                 for (union_info.fields, field_names[0..]) |field, *name| //
                     name.* = field.name;
-                const out_fn = field_names[0..];
-                break :fieldNames out_fn;
+                const out_names = field_names[0..];
+                break :fieldNames out_names;
             },
             fieldTypes: {
-                var field_types: [union_info.fields.len][:0]const u8 = undefined;
+                var field_types: [union_info.fields.len]type = undefined;
                 for (union_info.fields, field_types[0..]) |field, *T| //
-                    T.* = field;
-                const out_fn = field_types[0..];
-                break :fieldTypes out_fn;
+                    T.* = field.type;
+                const out_types = field_types[0..];
+                break :fieldTypes out_types;
             },
-            fieldNames: {
-                var field_names: [union_info.fields.len][:0]const u8 = undefined;
-                for (union_info.fields, field_names[0..]) |field, *name| //
-                    name.* = field.name;
-                const out_fn = field_names[0..];
-                break :fieldNames out_fn;
+            fieldAttrs: {
+                var field_attrs: [union_info.fields.len]Type.UnionField.Attributes = undefined;
+                for (union_info.fields, field_attrs[0..]) |field, *attr| //
+                    attr.* = .{ .@"align" = field.alignment };
+                const out_attrs = field_attrs[0..];
+                break :fieldAttrs out_attrs;
             },
         );
     };
@@ -650,7 +667,7 @@ pub fn Custom(comptime config: Config) type {
         pub const indent_fmt = config.indent_fmt orelse CommandT.indent_fmt;
 
         /// Get the Parsed and Validated Value of the inner Typed Value.
-        /// Comptime Only 
+        /// Comptime Only
         // TODO: See if this can be made Runtime
         pub inline fn get(self: *const @This()) !switch (meta.activeTag(self.*.generic)) { 
             inline else => |tag| @TypeOf(@field(self.*.generic, @tagName(tag))).ChildT, 
@@ -667,7 +684,7 @@ pub fn Custom(comptime config: Config) type {
                     const typed_val = @field(self.*.generic, @tagName(tag));
                     return
                         if (@TypeOf(typed_val).ChildT == T) //
-                            try typed_val.get()
+                            try typed_val.get() //
                         else if (
                             @typeInfo(T) == .@"enum" or ( //
                                 @typeInfo(T) == .optional and //
@@ -709,7 +726,8 @@ pub fn Custom(comptime config: Config) type {
                                     const vals = try typed_val.getAll();
                                     var vals_list: ArrayList(T) = .empty;
                                     errdefer vals_list.deinit(alloc);
-                                    for (vals) |val| try vals_list.append(alloc, @enumFromInt(val));
+                                    for (vals) |val| //
+                                        try vals_list.append(alloc, @enumFromInt(val));
                                     return try vals_list.toOwnedSlice(alloc);
                                 },
                                 inline else => return error.RequestedTypeMismatch,
@@ -883,11 +901,11 @@ pub fn Custom(comptime config: Config) type {
 
         /// Create a Custom Value with a specific Type (`T`).
         pub fn ofType(comptime T: type, comptime typed_val: Typed(T, config)) @This() {
-            const active_tag = 
-                if (T == []const u8) "string" 
+            const active_tag = //
+                if (T == []const u8) "string" //
                 //else if (@typeInfo(T) == .@"enum") @typeName(@typeInfo(T).@"enum".tag_type)
                 else @typeName(T);
-            const out_val =
+            const out_val = //
                 if (@typeInfo(T) == .@"enum" and typed_val.parse_fn == null) outVal: {
                     var o_val = typed_val;
                     o_val.parse_fn = ParsingFns.Builder.asEnumTag(T);
@@ -1039,7 +1057,8 @@ pub fn Custom(comptime config: Config) type {
             switch (meta.activeTag(self.*.generic)) {
                 inline else => |tag| {
                     const val = @field(self.*.generic, @tagName(tag));
-                    if (@TypeOf(val).child_type_usage_fn)|usageFn| return usageFn(self, writer, self.allocator());
+                    if (@TypeOf(val).child_type_usage_fn)|usageFn| //
+                        return usageFn(self, writer, self.allocator());
                 }
             }
             if (global_usage_fn) |usageFn| //
@@ -1076,8 +1095,14 @@ pub const ParsingFns = struct {
             return struct {
                 fn boolCheck(arg: []const u8, alloc: mem.Allocator) !bool {
                     _ = alloc;
-                    for (true_words[0..]) |word| { if (mem.eql(u8, word, arg)) return true; } 
-                    else for (false_words[0..]) |word| { if (mem.eql(u8, word, arg)) return false; } 
+                    for (true_words[0..]) |word| {
+                        if (mem.eql(u8, word, arg)) //
+                            return true;
+                    } //
+                    else for (false_words[0..]) |word| {
+                        if (mem.eql(u8, word, arg)) //
+                            return false;
+                    } //
                     else return switch (no_match) {
                         .True => true,
                         .False => false,
@@ -1094,10 +1119,10 @@ pub const ParsingFns = struct {
         /// - 10: Base 10 / Decimal
         /// - 16: Base 16 / Hexadecimal
         pub fn asBase(comptime NumT: type, comptime base: u8) fn([]const u8, mem.Allocator) anyerror!NumT {
-            return struct { 
-                fn toBase(arg: []const u8, alloc: mem.Allocator) !NumT { 
+            return struct {
+                fn toBase(arg: []const u8, alloc: mem.Allocator) !NumT {
                     _ = alloc;
-                    return fmt.parseInt(NumT, arg, base); 
+                    return fmt.parseInt(NumT, arg, base);
                 } 
             }.toBase;
         }
@@ -1105,7 +1130,8 @@ pub const ParsingFns = struct {
         /// Parse the given argument token (`arg`) to an Int based on the Enum Tag Type of the provided `EnumT`.
         pub fn asEnumType(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
-            if (enum_info != .@"enum") @compileError("The Type of `EnumT` must be Enum!");
+            if (enum_info != .@"enum") //
+                @compileError("The Type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!enum_info.@"enum".tag_type;
         } {
             const EnumTagT: type = @typeInfo(EnumT).@"enum".tag_type;
@@ -1121,7 +1147,8 @@ pub const ParsingFns = struct {
         /// Parse the given argument token (`arg`) to an Enum Tag of the provided `EnumT`.
         pub fn asEnumTag(comptime EnumT: type) enumFnType: {
             const enum_info = @typeInfo(EnumT);
-            if (enum_info != .@"enum") @compileError("The Type of `EnumT` must be Enum!");
+            if (enum_info != .@"enum") //
+                @compileError("The Type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!EnumT;
         } {
             return struct { 
@@ -1163,9 +1190,8 @@ pub const ValidationFns = struct {
                 .int, .float => {},
                 inline else => @compileError("The provided Type '" ++ @typeName(NumT) ++ "' is not a numeric Type. It must be an Integer or a Float."),
             }
-
-            return 
-                if (inclusive) struct { fn inRng(num: NumT, alloc: mem.Allocator) bool { _ = alloc; return num >= start and num <= end; } }.inRng
+            return //
+                if (inclusive) struct { fn inRng(num: NumT, alloc: mem.Allocator) bool { _ = alloc; return num >= start and num <= end; } }.inRng //
                 else struct { fn inRng(num: NumT, alloc: mem.Allocator) bool { _ = alloc; return num > start and num < end; } }.inRng;
         }
     };

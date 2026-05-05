@@ -198,7 +198,7 @@ pub const ArgIteratorGeneric = union(enum) {
     }
 
     /// Initialize a copy of this Generic Interface as a `std.process.Args.Iterator` which is Zig's cross-platform ArgIterator. If needed, this will use the provided Allocator (`alloc`).
-    pub fn init(args: proc.Args, alloc: mem.Allocator) !@This() {
+    pub fn init(alloc: mem.Allocator, args: proc.Args) !@This() {
         return from(try proc.Args.Iterator.initAllocator(args, alloc));
     }
 
