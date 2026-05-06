@@ -597,12 +597,10 @@ pub fn main(init: proc.Init) !void {
         } //
         else log.debug("Memory freed. No leaks detected.", .{});
     }
-    //var stdout_file = fs.File.stdout();
     var stdout_file = Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
-    //defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();

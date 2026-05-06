@@ -26,17 +26,16 @@ pub const setup_cmd = CommandT{
 };
 
 pub fn main(init: std.process.Init) !void {
-    var gpa: std.heap.DebugAllocator(.{}) = .init;
-    const alloc = gpa.allocator();
-    defer if (gpa.deinit() != .ok and gpa.detectLeaks() != 0) log.err("Memory leak detected!", .{});
+    const alloc = init.gpa;
     var stdout_file = std.Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
-    //defer stdout.flush() catch {};
 
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
+    for (try init.minimal.args.toSlice(init.arena.allocator()), 0..) |arg, i| //
+        log.debug("Arg {d}: {s}", .{ i, arg });
     var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 

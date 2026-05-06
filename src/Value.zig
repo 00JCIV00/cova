@@ -284,8 +284,11 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
 
         /// Parse the given argument token (`arg`) to this Value's Type.
         pub fn parse(self: *const @This(), arg: []const u8) !ChildT {
-            if (self.parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
-            if (child_type_parse_fn) |parseFn| return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
+            log.debug("Arg: {s}", .{ arg });
+            if (self.parse_fn) |parseFn| //
+                return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
+            if (child_type_parse_fn) |parseFn| //
+                return parseFn(arg, self._alloc orelse return error.ValueNotInitialized) catch error.CannotParseArgToValue;
             return switch (@typeInfo(ChildT)) {
                 .bool => isTrue: {
                     var san_arg_buf: [512]u8 = undefined;
@@ -1135,7 +1138,7 @@ pub const ParsingFns = struct {
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!enum_info.@"enum".tag_type;
         } {
             const EnumTagT: type = @typeInfo(EnumT).@"enum".tag_type;
-            return struct { 
+            return struct {
                 fn enumInt(arg: []const u8, alloc: mem.Allocator) !EnumTagT {
                     _ = alloc;
                     const enum_tag = meta.stringToEnum(EnumT, mem.trim(u8, arg, &.{ 0, ' ', '\t' })) orelse return error.EnumTagDoesNotExist;
@@ -1151,7 +1154,7 @@ pub const ParsingFns = struct {
                 @compileError("The Type of `EnumT` must be Enum!");
             break :enumFnType fn([]const u8, mem.Allocator) anyerror!EnumT;
         } {
-            return struct { 
+            return struct {
                 fn enumTag(arg: []const u8, _: mem.Allocator) !EnumT {
                     return meta.stringToEnum(EnumT, mem.trim(u8, arg, &.{ 0, ' ', '\t' })) orelse error.EnumTagDoesNotExist;
                 }
