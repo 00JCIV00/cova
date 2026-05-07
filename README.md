@@ -3,7 +3,7 @@
 # Commands **⋅** Options **⋅** Values **⋅** Arguments 
 A simple yet robust cross-platform command line argument parsing library for Zig.
 
-[![Static Badge](https://img.shields.io/badge/v0.16(nightly)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
+[![Static Badge](https://img.shields.io/badge/v0.16(stable)-orange?logo=Zig&logoColor=Orange&label=Zig&labelColor=Orange)](https://ziglang.org/download/)
 [![Static Badge](https://img.shields.io/badge/v0.10.1b-blue?logo=GitHub&label=Release)](https://github.com/00JCIV00/cova/releases/tag/v0.10.1-beta)
 [![GitHub commit activity](https://img.shields.io/github/commits-difference/00JCIV00/cova?base=v0.10.1&head=main&logo=Github&label=Commits%20(v0.11.0b))](https://github.com/00JCIV00/cova/commits/main/)
 [![Static Badge](https://img.shields.io/badge/MIT-silver?label=License)](https://github.com/00JCIV00/cova/blob/main/LICENSE)
@@ -49,11 +49,13 @@ pub const setup_cmd: CommandT = .{
 ```
 #### Parse the Command
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // ...
     var main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
-    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
+    for (try init.minimal.args.toSlice(init.arena.allocator()), 0..) |arg, i| //
+        log.debug("Arg {d}: {s}", .{ i, arg });
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
@@ -71,7 +73,7 @@ pub fn main() !void {
         log.err("The provided Log Level was invalid.", .{});
         return;
     };
-    log.info("Provided Log Level: {s}", .{ @tagName(log_lvl) });
+    log.info("Provided Log Level: {t}", .{ log_lvl });
 }
 ```
 
@@ -176,22 +178,20 @@ You can call various methods on the Command to use that data however you need.
 
 ```zig
 // ...continued from the Comptime Setup.
-pub fn main() !void {
-    const gpa: std.heap.DebugAllocator(.{}) = .init;
-    const alloc = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const alloc = init.gpa;
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
-    const main_cmd = try setup_cmd.init(alloc, .{}); 
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     // Parsing
     var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
     defer args_iter.deinit();
-    var stdout_file = fs.File.stdout();
+    var stdout_file = std.Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
     const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
 
     cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
         error.UsageHelpCalled,
@@ -204,7 +204,7 @@ pub fn main() !void {
 
     // Analysis (Using the data.)
     if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, &stdout);
-    
+ 
     // Glossing over some project variables here.
 
     // Convert a Command back into a Struct.
@@ -216,19 +216,19 @@ pub fn main() !void {
     }
     // Convert a Command back into a Function and call it.
     if (main_cmd.matchSubCmd("open")) |open_cmd| {
-        user_file = try open_cmd.callAs(open, null, std.fs.File);
+        user_file = try open_cmd.callAs(open, null, std.IO.File);
     }
     // Get the provided sub Command and check an Option from that sub Command.
     if (main_cmd.matchSubCmd("clean")) |clean_cmd| cleanCmd: {
         if ((try clean_cmd.getOpts(.{})).get("clean_file")) |clean_opt| {
             if (clean_opt.val.isSet()) {
                 const filename = try clean_opt.val.getAs([]const u8);
-                try delete(filename);
+                try delete(init.io, filename);
                 break :cleanCmd;
             }
         }
-        try delete("users.csv");
-        try delete(".ba_persist");
+        try delete(init.io, "users.csv");
+        try delete(init.io, ".ba_persist");
     }
 }
 ```
@@ -268,7 +268,7 @@ pub fn build(b: *std.Build) void {
     const cova_gen = @import("cova").addCovaDocGenStep(b, cova_dep, exe, .{
         .kinds = &.{ .all },
         .version = "0.10.2",
-        .ver_date = "23 AUG 2025",
+        .ver_date = "07 MAY 2026",
         .author = "00JCIV00",
         .copyright = "MIT License",
     });
