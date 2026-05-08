@@ -234,7 +234,7 @@ fn createManpageCtx(
         \\
         , .{ mp_description }
     );
-    const examples =
+    const examples = //
         if (mp_config.examples) |examples|
             fmt.comptimePrint(
                 \\.SH EXAMPLES
@@ -245,14 +245,14 @@ fn createManpageCtx(
         else if (CommandT.include_examples) cmdExamples: {
             const examples = cmd.examples orelse break :cmdExamples "";
             comptime var example_str: []const u8 = ".SH EXAMPLES\n\n";
-            inline for (examples) |example| 
+            inline for (examples) |example| //
                 example_str = example_str ++ fmt.comptimePrint(mp_config.mp_examples_fmt, .{ example });
             example_str = example_str ++ "\n";
             const example_str_out = example_str;
             break :cmdExamples example_str_out;
         }
         else "";
-    const author =
+    const author = //
         if (mp_config.author) |author| //
             fmt.comptimePrint(
                 \\.SH AUTHOR
@@ -448,12 +448,13 @@ fn createMarkdownCtx(
         try md_writer.print("## Arguments\n", .{});
         if (cmd.sub_cmds) |sub_cmds| {
             try md_writer.print("### Commands\n", .{});
-            inline for (sub_cmds) |sub_cmd|
+            inline for (sub_cmds) |sub_cmd| {
                 try md_writer.print(md_config.md_subcmds_fmt, .{
                     sub_cmd.name,
                     local_path[0..local_path.len - 3] ++ "-" ++ sub_cmd.name ++ ".md",
                     sub_cmd.description,
                 });
+            }
         }
         if (cmd.opts) |opts| {
             try md_writer.print("### Options\n", .{});
@@ -494,9 +495,11 @@ fn createMarkdownCtx(
     log.info("Generated Markdown for '{s}' into '{s}'.", .{ cmd.name, filepath });
 
     // Recursive sub-Command generation
-    if (!md_config.recursive_gen or (md_ctx.cur_depth + 1 >= md_config.recursive_max_depth)) return;
+    if (!md_config.recursive_gen or (md_ctx.cur_depth + 1 >= md_config.recursive_max_depth)) //
+        return;
     inline for (cmd.sub_cmds orelse return) |sub_cmd| {
-        comptime if (utils.indexOfEql([]const u8, md_config.recursive_blocklist, sub_cmd.name) != null) continue;
+        comptime if (utils.indexOfEql([]const u8, md_config.recursive_blocklist, sub_cmd.name) != null) //
+            continue;
         comptime var new_ctx = md_ctx;
         new_ctx.cur_depth += 1;
         new_ctx.name = new_ctx.name ++ "-" ++ sub_cmd.name;

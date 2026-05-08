@@ -86,9 +86,9 @@ pub const setup_cmd: CommandT = .{
         CommandT{
             .name = "clean",
             .description = "Clean (delete) the default users file (users.csv) and persistent variable file (.ba_persist).",
-            .examples = &.{ 
+            .examples = &.{
                 "basic-app clean",
-                "basic-app delete --file users.csv"
+                "basic-app delete --file users.csv",
             },
             // Aliases can be created for Commands and Options to give end users alternative words 
             // for using those Arguments.
@@ -135,7 +135,7 @@ pub const User = struct {
     // - Integers `u8` / `i32`
     // - Floats `f32`
     // - Strings `[]const u8`
-    // 
+    //
     // If a field begins with an underscore `_` it will be considered private and not converted
     // to a Value.
     // If a default value is provided for a field, the corresponding Value will inherit it as a
@@ -178,7 +178,7 @@ pub const User = struct {
                 4 => out.age = std.fmt.parseInt(u8, trimmed_field, 10) catch |err| { std.log.err("Age error: {s}", .{ trimmed_field }); return err; },
                 5 => out.phone = trimmed_field,
                 6 => out.address = trimmed_field,
-                else => return error.TooManyTokens, 
+                else => return error.TooManyTokens,
             }
         }
         return out;
@@ -211,7 +211,7 @@ pub const User = struct {
                 value.age,
                 value.phone,
                 value.address,
-            }
+            },
         );
     }
 };
@@ -232,7 +232,7 @@ pub const Filter = union(enum){
 // the Function into a Command. Due to a lack of parameter names in a Function's Type Info,
 // Function Parameters can only be converted to Values (not Options).
 pub fn open(io: std.Io, filename: []const u8) !std.Io.File {
-    const filename_checked = 
+    const filename_checked =
         if (std.mem.eql(u8, filename[(filename.len - 4)..], ".csv")) filename
         else filenameChecked: {
             var fnc_buf: [100]u8 = @splat(0);
@@ -250,12 +250,10 @@ pub fn delete(io: std.Io, filename: []const u8) !void {
 pub fn main(init: std.process.Init) !void {
     // While any Allocator can be used, Cova is designed to wrap what's provided with an
     // Arena Allocator. This allows for flexiblity.
-    //var gpa: std.heap.GeneralPurposeAllocator(.{ .verbose_log = builtin.mode == .Debug }) = .{};
-    var gpa: std.heap.DebugAllocator(.{}) = .{};
-    const alloc = gpa.allocator();
+    const alloc = init.gpa;
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
-    const main_cmd = try setup_cmd.init(alloc, .{}); 
+    const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
     // Parsing
@@ -265,7 +263,7 @@ pub fn main(init: std.process.Init) !void {
     // cross-platform `std.process.ArgIterator`, which will iterate through the arguments provided
     // to this application. Cova also provides `cova.RawArgIterator` which can be used for testing
     // or providing arguments from an alternate source.
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc, init.minimal.args);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
     // - Writer
     // Any valid Zig Writer can be used during parsing. Stdout is the easiest option here.
@@ -303,7 +301,7 @@ pub fn main(init: std.process.Init) !void {
     if (builtin.mode == .Debug) try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, true);
 
     // - App Vars
-    var user_filename_buf: [100]u8 = .{ 0 } ** 100;
+    var user_filename_buf: [100]u8 = @splat(0);
     _ = std.Io.Dir.cwd().readFile(init.io, ".ba_persist", user_filename_buf[0..]) catch {
         try std.Io.Dir.cwd().writeFile(init.io, .{ .sub_path = ".ba_persist", .data = "users.csv" });
         for (user_filename_buf[0..9], "users.csv") |*u, c| u.* = c;
@@ -351,7 +349,7 @@ pub fn main(init: std.process.Init) !void {
         new_user._id = user_id;
         try users.append(alloc, new_user);
         try users_mal.append(alloc, new_user);
-        var user_buf: [512]u8 = .{ 0 } ** 512;
+        var user_buf: [512]u8 = @splat(0);
         try user_file_writer.interface.print("{s}\n", .{ try new_user.to(user_buf[0..]) });
         try stdout.print("Added:\n{f}\n", .{ new_user });
     }

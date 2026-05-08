@@ -1210,8 +1210,8 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Create a deconflicted Option short name from the provided `arg_name` and existing `short_names`.
         fn optShortName(
-            arg_name: []const u8, 
-            short_names: []u8, 
+            arg_name: []const u8,
+            short_names: []u8,
             short_idx: *u8,
             excluded_short_opts: []const u8,
         ) ?u8 {

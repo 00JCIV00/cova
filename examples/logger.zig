@@ -50,5 +50,5 @@ pub fn main(init: std.process.Init) !void {
         log.err("The provided Log Level was invalid.", .{});
         return;
     };
-    log.info("Provided Log Level: {s}", .{ @tagName(log_lvl) });
+    log.info("Provided Log Level: {t}", .{ log_lvl });
 }

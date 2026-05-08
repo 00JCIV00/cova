@@ -335,8 +335,20 @@ fn argTemplateKDL(
     // if (sub_args and at_ctx.add_line) try at_writer.print("\n", .{});
     if (at_ctx.add_line) //
         try at_writer.print("\n", .{});
-    const indent = if (at_ctx.idx > 1) "    " ** (at_ctx.idx - 1) else "";
-    const sub_indent = if (at_ctx.idx > 0) "    " ** (at_ctx.idx) else "";
+    const indent = indent: {
+        var indent = "";
+        for (1..at_ctx.idx) |_| //
+            indent = indent ++ "    ";
+        break :indent indent;
+    };
+    //if (at_ctx.idx > 1) "    " ** (at_ctx.idx - 1) else "";
+    const sub_indent = subIndent: {
+        var sub_indent = "";
+        for (0..at_ctx.idx -| 1) |_| //
+            sub_indent = sub_indent ++ "    ";
+        break :subIndent sub_indent;
+    };
+    //if (at_ctx.idx > 0) "    " ** (at_ctx.idx) else "";
     if (at_ctx.idx > 0) {
         try at_writer.print("{s}cmd \"{s}\" help=\"{s}\"{s}\n", .{
             indent,

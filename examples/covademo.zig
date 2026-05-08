@@ -595,7 +595,8 @@ pub fn main(init: proc.Init) !void {
             if (builtin.mode == .Debug and gpa.detectLeaks() > 0) //
                 log.err("Memory leak detected!", .{});
         } //
-        else log.debug("Memory freed. No leaks detected.", .{});
+        else //
+            log.debug("Memory freed. No leaks detected.", .{});
     }
     var stdout_file = Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
@@ -623,7 +624,7 @@ pub fn main(init: proc.Init) !void {
     try stdout.flush();
 
     // Analysis
-    // - Debug Output of Commands after Parsing. 
+    // - Debug Output of Commands after Parsing.
     try stdout.print("\nCova Demo Argument Results:\n", .{});
     try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, true);
     try stdout.flush();
@@ -636,7 +637,8 @@ pub fn main(init: proc.Init) !void {
     const val_map = try main_cmd.getVals(.{ .arg_group = "STRING" });
     var val_iter = val_map.valueIterator();
     log.debug("Get String Values:", .{});
-    while (val_iter.next()) |str_val| log.debug("- {s}", .{ str_val.getAs([]const u8) catch "[value not set]" });
+    while (val_iter.next()) |str_val| //
+        log.debug("- {s}", .{ str_val.getAs([]const u8) catch "[value not set]" });
     // -- Check Options
     const opts_check_names: []const []const u8 = &.{ "int_opt", "string_opt", "float_opt", "bool_opt" };
     const and_opts_check = main_cmd.checkOpts(opts_check_names, .{ .logic = .AND });
@@ -668,9 +670,9 @@ pub fn main(init: proc.Init) !void {
     //if (main_cmd.opts) |main_opts| {
     //    for (main_opts) |opt| log.debug("-> Opt: {s}, Idx: {d}", .{ opt.name, opt.arg_idx orelse continue });
     //}
-    if (main_cmd.checkSubCmd("sub-cmd"))
+    if (main_cmd.checkSubCmd("sub-cmd")) //
         log.debug("-> Sub Cmd", .{});
-    if (main_cmd.matchSubCmd("add-user")) |add_user_cmd|
+    if (main_cmd.matchSubCmd("add-user")) |add_user_cmd| //
         log.debug("-> Add User Cmd\nTo Struct:\n{any}\n\n", .{ try add_user_cmd.to(ex_structs.add_user, .{}) });
     if (main_cmd.matchSubCmd("struct-cmd")) |struct_cmd| structCmd: {
         log.debug("Parent Cmd (struct-cmd): {s}", .{ struct_cmd.parent_cmd.?.name });
