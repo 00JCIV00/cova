@@ -16,6 +16,7 @@ const ascii = std.ascii;
 const fmt = std.fmt;
 const fs = std.fs;
 const log = std.log.scoped(.cova);
+const math = std.math;
 const mem = std.mem;
 const meta = std.meta;
 const ArrayList = std.ArrayList;
@@ -587,6 +588,7 @@ pub fn Generic(comptime config: Config) type {
                 tag_info.fields = tag_info.fields ++ [_]builtin.Type.EnumField{ union_tag };
             }
         }
+        tag_info.tag_type = math.IntFittingRange(0, tag_info.fields.len);
         break :customUnion @Union(
             .auto,
             @Enum(
