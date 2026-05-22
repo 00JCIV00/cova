@@ -82,49 +82,43 @@ pub fn main(init: proc.Init) !void {
     inline for (doc_kinds[0..]) |kind| {
         switch (kind) {
             .manpages, .markdown => |help_doc| {
-                if (help_docs_config) |hd_config| {
-                    try generate.createHelpDoc(
-                        init.io,
-                        cmd_type_name,
-                        setup_cmd_name,
-                        hd_config,
-                        meta.stringToEnum(generate.HelpDocsConfig.DocKind, @tagName(help_doc)).?,
-                    );
-                }
-                else {
+                const hd_config = help_docs_config orelse {
                     log.warn("Missing Help Doc Configuration! Skipping.", .{});
                     continue;
-                }
+                };
+                try generate.createHelpDoc(
+                    init.io,
+                    cmd_type_name,
+                    setup_cmd_name,
+                    hd_config,
+                    meta.stringToEnum(generate.HelpDocsConfig.DocKind, @tagName(help_doc)).?,
+                );
             },
             .bash, .zsh, .ps1 => |shell| {
-                if (tab_complete_config) |tc_config| {
-                    try generate.createTabCompletion(
-                        init.io,
-                        cmd_type_name,
-                        setup_cmd_name,
-                        tc_config,
-                        meta.stringToEnum(generate.TabCompletionConfig.ShellKind, @tagName(shell)).?,
-                    );
-                }
-                else {
+                const tc_config = tab_complete_config orelse {
                     log.warn("Missing Tab Completion Configuration! Skipping.", .{});
                     continue;
-                }
+                };
+                try generate.createTabCompletion(
+                    init.io,
+                    cmd_type_name,
+                    setup_cmd_name,
+                    tc_config,
+                    meta.stringToEnum(generate.TabCompletionConfig.ShellKind, @tagName(shell)).?,
+                );
             },
             .json, .kdl => |template| {
-                if (arg_template_config) |at_config| {
-                    try generate.createArgTemplate(
-                        init.io,
-                        cmd_type_name,
-                        setup_cmd_name,
-                        at_config,
-                        meta.stringToEnum(generate.ArgTemplateConfig.TemplateKind, @tagName(template)).?,
-                    );
-                }
-                else {
+                const at_config = arg_template_config orelse {
                     log.warn("Missing Argument Template Configuration! Skipping.", .{});
                     continue;
-                }
+                };
+                try generate.createArgTemplate(
+                    init.io,
+                    cmd_type_name,
+                    setup_cmd_name,
+                    at_config,
+                    meta.stringToEnum(generate.ArgTemplateConfig.TemplateKind, @tagName(template)).?,
+                );
             },
             .all => {},
         }

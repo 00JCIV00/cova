@@ -309,7 +309,6 @@ pub const ArgTemplateContext = struct{
     idx: u8 = 0,
     /// Add a spacer line
     add_line: bool = false,
-
     /// Include Commands for Argument Templates.
     include_cmds: bool = true,
     /// Include Options for Argument Templates.
@@ -326,29 +325,29 @@ fn argTemplateKDL(
     at_writer: anytype,
     comptime at_ctx: ArgTemplateContext,
 ) !void {
-    const sub_args: bool = (
-        (at_ctx.include_cmds and cmd.sub_cmds != null) or
-        (at_ctx.include_opts and cmd.opts != null) or
-        (at_ctx.include_vals and cmd.vals != null) or
-        cmd.alias_names != null
+    const sub_args: bool = ( //
+        (at_ctx.include_cmds and cmd.sub_cmds != null) or //
+        (at_ctx.include_opts and cmd.opts != null) or //
+        (at_ctx.include_vals and cmd.vals != null) or //
+        cmd.alias_names != null //
     );
     // if (sub_args and at_ctx.add_line) try at_writer.print("\n", .{});
     if (at_ctx.add_line) //
         try at_writer.print("\n", .{});
-    const indent = indent: {
-        var indent = "";
+    const indent = comptime indent: {
+        var indent: []const u8 = "";
+        if (at_ctx.idx <= 1) //
+            break :indent indent;
         for (1..at_ctx.idx) |_| //
             indent = indent ++ "    ";
         break :indent indent;
     };
-    //if (at_ctx.idx > 1) "    " ** (at_ctx.idx - 1) else "";
-    const sub_indent = subIndent: {
-        var sub_indent = "";
+    const sub_indent = comptime subIndent: {
+        var sub_indent: []const u8 = "";
         for (0..at_ctx.idx -| 1) |_| //
             sub_indent = sub_indent ++ "    ";
         break :subIndent sub_indent;
     };
-    //if (at_ctx.idx > 0) "    " ** (at_ctx.idx) else "";
     if (at_ctx.idx > 0) {
         try at_writer.print("{s}cmd \"{s}\" help=\"{s}\"{s}\n", .{
             indent,
@@ -370,7 +369,8 @@ fn argTemplateKDL(
             add_line = false;
             break :addOpts;
         };
-        if (add_line) try at_writer.print("\n", .{});
+        if (add_line) //
+            try at_writer.print("\n", .{});
         // TODO Better handling of prefixes. Check if the usage tool supports alternate prefixes.
         inline for (opts) |opt| try at_writer.print("{s}flag \"{s}{s}\" help=\"{s}\"\n", .{
             sub_indent,

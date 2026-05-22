@@ -25,7 +25,7 @@ const conf_optimized = Command.Config.optimized(.{});
 pub const CommandT = Command.Custom(.{
     .global_help_prefix = "CovaDemo",
     .global_vals_mandatory = false,
-    .help_category_order = &.{ .Prefix, .Header, .Aliases, .Values, .Options, .Commands },
+    .help_category_order = &.{ .prefix, .header, .aliases, .values, .options, .commands },
     .allow_abbreviated_cmds = true,
     //.allow_arg_indices = false,
     .global_usage_fn = struct{
@@ -39,12 +39,12 @@ pub const CommandT = Command.Custom(.{
             try writer.print("USAGE\n", .{});
             if (self.opts) |opts| {
                 no_args = false;
-                try writer.print("{s}{s} [", .{ 
+                try writer.print("{s}{s} [", .{
                     indent_fmt,
                     self.name,
                 });
                 for (opts) |opt| {
-                    try writer.print("{s} {s}{s} ", .{ 
+                    try writer.print("{s} {s}{s} ", .{
                         pre_sep,
                         OptT.long_prefix orelse opt.short_prefix,
                         opt.long_name orelse &.{ opt.short_name orelse 0 },
@@ -317,7 +317,7 @@ pub const setup_cmd: CommandT = .{
                     .name = "nested_str_val",
                     .description = "A nested string value.",
                     .max_entries = 10,
-                    .set_behavior = .Multi,
+                    .set_behavior = .multi,
                 }),
                 ValueT.ofType(f32, .{
                     .name = "nested_float_val",
@@ -426,7 +426,7 @@ pub const setup_cmd: CommandT = .{
                 .description = "A string value.",
                 .default_val = "Default string value.",
                 .alias_child_type = "string",
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 4,
                 .parse_fn = Value.ParsingFns.toUpper,
             }),
@@ -441,7 +441,7 @@ pub const setup_cmd: CommandT = .{
                 .name = "int_val",
                 .description = "An integer value.",
                 .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int < 666; } }.valFn,
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 10,
             }),
         },
@@ -454,7 +454,7 @@ pub const setup_cmd: CommandT = .{
         //    .val = ValueT.ofType(u1024, .{
         //        .name = "uint_val",
         //        .description = "An unsigned integer value.",
-        //        .set_behavior = .Multi,
+        //        .set_behavior = .multi,
         //        .max_entries = 10,
         //    }),
         //},
@@ -468,7 +468,7 @@ pub const setup_cmd: CommandT = .{
                 .name = "float_val",
                 .description = "A float value.",
                 .valid_fn = Value.ValidationFns.Builder.inRange(f16, 0.0, 36_000.0, true),
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 10,
             }),
         },
@@ -507,7 +507,7 @@ pub const setup_cmd: CommandT = .{
                 .name = "cardinal_val",
                 .description = "A cardinal number value.",
                 .parse_fn = Value.ParsingFns.Builder.asEnumType(enum(u8) { zero, one, two }),
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 3,
             }),
         },
@@ -556,13 +556,13 @@ pub const setup_cmd: CommandT = .{
             .val_group = "STRING",
             .description = "A string value for the command.",
             .max_entries = 10,
-            .set_behavior = .Multi,
+            .set_behavior = .multi,
             .parse_fn = Value.ParsingFns.trimWhitespace,
         }),
         ValueT.ofType(bool, .{
             .name = "cmd_bool",
             .description = "A boolean value for the command.",
-            .set_behavior = .Multi,
+            .set_behavior = .multi,
             .max_entries = 10,
             .parse_fn = Value.ParsingFns.Builder.altBool(&.{ "true", "t", "yes", "y", "1" }, &.{ "false", "f", "no", "n", "0" }, .Error),
         }),
@@ -570,7 +570,7 @@ pub const setup_cmd: CommandT = .{
             .name = "cmd_u64",
             .description = "A u64 value for the command.",
             .default_val = 654321,
-            .set_behavior = .Multi,
+            .set_behavior = .multi,
             .max_entries = 3,
             .parse_fn = struct{ fn parseFn(arg: []const u8, alloc: mem.Allocator) !u64 { _ = alloc; return (try fmt.parseInt(u64, arg, 0)) * 100; } }.parseFn, 
             .valid_fn = Value.ValidationFns.Builder.inRange(u64, 123456, 9999999999, true),

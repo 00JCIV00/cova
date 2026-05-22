@@ -288,8 +288,8 @@ pub fn Custom(comptime config: Config) type {
                 return;
             }
             switch (self.val.setBehavior()) {
-                .First, .Last => @constCast(self).*.arg_idx.?[0] = arg_idx,
-                .Multi => {
+                .first, .last => @constCast(self).*.arg_idx.?[0] = arg_idx,
+                .multi => {
                     var idx_list: ArrayList(u8) = .fromOwnedSlice(@constCast(self).arg_idx.?);
                     errdefer idx_list.deinit(alloc);
                     try idx_list.append(alloc, arg_idx);

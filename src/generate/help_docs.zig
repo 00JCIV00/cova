@@ -309,7 +309,7 @@ fn createManpageCtx(
         }
         if (cmd.opts) |opts| {
             try mp_writer.print(".SS OPTIONS\n", .{});
-            for (opts) |opt|
+            for (opts) |opt| {
                 try mp_writer.print(mp_config.mp_opts_fmt, .{
                     opt.name,
                     CommandT.OptionT.short_prefix orelse 0,
@@ -322,15 +322,17 @@ fn createManpageCtx(
                     opt.val.childTypeName(),
                     opt.description,
                 });
+            }
         }
         if (cmd.vals) |vals| {
             try mp_writer.print(".SS VALUES\n", .{});
-            for (vals) |val|
+            for (vals) |val| {
                 try mp_writer.print(mp_config.mp_vals_fmt, .{
                     val.name(),
                     val.childTypeName(),
                     val.description()
                 });
+            }
         }
     }
     // Post-Argument Writes
@@ -347,9 +349,11 @@ fn createManpageCtx(
     log.info("Generated Manpages for '{s}' into '{s}'.", .{ cmd.name, filepath });
 
     // Recursive sub-Command generation
-    if (!mp_config.recursive_gen or (mp_ctx.cur_depth + 1 >= mp_config.recursive_max_depth)) return;
+    if (!mp_config.recursive_gen or (mp_ctx.cur_depth + 1 >= mp_config.recursive_max_depth)) //
+        return;
     inline for (cmd.sub_cmds orelse return) |sub_cmd| {
-        comptime if (utils.indexOfEql([]const u8, mp_config.recursive_blocklist, sub_cmd.name) != null) continue;
+        comptime if (utils.indexOfEql([]const u8, mp_config.recursive_blocklist, sub_cmd.name) != null) //
+            continue;
         comptime var new_ctx = mp_ctx;
         new_ctx.cur_depth += 1;
         new_ctx.name = new_ctx.name ++ "-" ++ sub_cmd.name;

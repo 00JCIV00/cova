@@ -42,7 +42,7 @@ pub const Config = struct {
 
     /// Default Set Behavior for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.set_behavior` field.
-    global_set_behavior: SetBehavior = .Last,
+    global_set_behavior: SetBehavior = .last,
     /// Default Argument Delimiters for all Values.
     /// This can be overwritten on individual Values using the `Value.Typed.arg_delims` field.
     global_arg_delims: []const u8 = ",;",
@@ -179,11 +179,11 @@ pub const Config = struct {
 /// This applies to Values within Options and standalone Values.
 pub const SetBehavior = enum {
     /// Keeps the First Argument Entry this Value was `set()` to.
-    First,
+    first,
     /// Keeps the Last Argument Entry this Value was `set()` to.
-    Last,
+    last,
     /// Keeps Multiple Argument Entries in this Value up to the Value's `max_entries`.
-    Multi,
+    multi,
 };
 
 /// Create a Value with a specific Type (`SetT`).
@@ -317,7 +317,7 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 }
                 break :checkDelim false;
             };
-            if (self.set_behavior == .Multi and meta.activeTag(@typeInfo(ChildT)) != .pointer and check_delim) {
+            if (self.set_behavior == .multi and meta.activeTag(@typeInfo(ChildT)) != .pointer and check_delim) {
                 var split_args = mem.splitScalar(u8, set_arg, arg_delim);
                 while (split_args.next()) |arg| try self.set(arg);
                 return;
@@ -333,15 +333,15 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 else true;
             if (self.is_set) {
                 switch (self.set_behavior) {
-                    .First => if (self._set_args[0] == null) { 
+                    .first => if (self._set_args[0] == null) { 
                         @constCast(self)._set_args[0] = parsed_arg;
                         @constCast(self)._entry_idx += 1;
                     },
-                    .Last => {
+                    .last => {
                         @constCast(self)._set_args[0] = parsed_arg;
                         if (self._entry_idx < 1) @constCast(self)._entry_idx += 1;
                     },
-                    .Multi => if (self._entry_idx < self.max_entries) {
+                    .multi => if (self._entry_idx < self.max_entries) {
                         @constCast(self)._set_args[self._entry_idx] = parsed_arg;
                         @constCast(self)._entry_idx += 1;
                     }
@@ -647,7 +647,6 @@ pub fn Custom(comptime config: Config) type {
         /// The Parent Command of this Value.
         /// This will be filled in during Initialization.
         parent_cmd: ?*const CommandT = null,
-
         /// Wrapped Generic Value union.
         generic: GenericT = .{ .bool = .{} },
 
@@ -771,8 +770,8 @@ pub fn Custom(comptime config: Config) type {
                 return;
             }
             switch (self.setBehavior()) {
-                .First, .Last => self_idx.*.?[0] = arg_idx,
-                .Multi => {
+                .first, .last => self_idx.*.?[0] = arg_idx,
+                .multi => {
                     var idx_list: ArrayList(u8) = .fromOwnedSlice(self_idx.*.?);
                     errdefer idx_list.deinit(alloc);
                     try idx_list.append(alloc, arg_idx);
@@ -997,8 +996,8 @@ pub fn Custom(comptime config: Config) type {
                     if (comp_info == .array) comp_info.array.len //
                     else 1,
                 .set_behavior = //
-                    if (comp_info == .array) .Multi //
-                    else .Last,
+                    if (comp_info == .array) .multi //
+                    else .last,
                 // TODO: Handle default Array Elements.
                 .default_val = defVal: {
                     if (

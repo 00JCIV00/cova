@@ -87,7 +87,7 @@ fn displayValInfo(
         },
         inline else => |tag| {
             const tag_self = @field(val.generic, @tagName(tag));
-            if (tag_self.set_behavior == .Multi) {
+            if (tag_self.set_behavior == .multi) {
                 const raw_data: ?[]const @TypeOf(tag_self).ChildT = rawData: { 
                     if (tag_self.getAllAlloc(alloc) catch null) |data| break :rawData data;
                     const data: ?@TypeOf(tag_self).ChildT = tag_self.get() catch null;
