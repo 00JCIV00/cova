@@ -20,19 +20,23 @@ pub const ProjectStruct = struct {
 
 const setup_cmd = CommandT.from(ProjectStruct);
 
-pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
+    var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
     const alloc = arena.allocator();
-    const stdout = std.io.getStdOut().writer();
+    var stdout_file = std.Io.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(io, &stdout_buf);
+    const stdout = &stdout_writer.interface;
 
     const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter = try cova.ArgIteratorGeneric.init(init.minimal.args);
     defer args_iter.deinit();
 
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch(err) {
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{ .io = io }) catch |err| switch(err) {
         error.UsageHelpCalled,
         else => return err,
     }
@@ -133,12 +137,13 @@ pub fn main() {
 
 - Parse argument tokens and Display the result.
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
     ...
 
     // The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`)
     // tokens into Argument Types within the provided Command (`main_cmd`).
-    try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{});
+    try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{ .io = io });
 
     // Once parsed, the provided Command will be available for analysis by the
     // project code. Using `utils.displayCmdInfo()` will create a neat display

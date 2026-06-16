@@ -15,9 +15,10 @@ const CommandT = cova.Command.Custom(.{});
 // Comptime Setup Command
 const setup_cmd: CommandT = .{ ... };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
     // Allocator
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
     const alloc = arena.allocator();
 
@@ -27,14 +28,17 @@ pub fn main() !void {
     defer main_cmd.deinit();
 
     // Argument Iterator
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter = try cova.ArgIteratorGeneric.init(init.minimal.args);
     defer args_iter.deinit();
 
     // Writer to stdout
-    const stdout = std.io.getStdOut().writer();
+    var stdout_file = std.Io.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(io, &stdout_buf);
+    const stdout = &stdout_writer.interface;
 
     // Parse Function
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch (err) {
+    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{ .io = io }) catch |err| switch (err) {
         error.UsageHelpCalled,
         else => return err,
     };
@@ -110,7 +114,7 @@ Values and, by extension, Options can be given custom functions for parsing from
 2. `Value.Config.child_type_parse_fn` is the field used to provide a parsing function to all Value's that have a specific Child Type. These functions rank second in priority, behind `Value.Typed.parse_fn` but ahead of the default parsing. An example can be seen [here](../arg_types/value.md#adding-custom-child-types).
 
 #### Validation Functions
-Validation Functions are set up very similarly to Parsing Functions. They differ in that they're used to validate a Value after it's been parsed to its Child Type. As such, their structure differs by requiring the first parameter to be an instance of the Value's Child Type and the Return Type to be an Error Union with a Boolean. Notably, these functions can only be applied directly to a Value.
+Validation Functions are set up very similarly to Parsing Functions. They differ in that they're used to validate a Value after it's been parsed to its Child Type. Regular validation functions use `valid_fn` and receive the parsed value plus an allocator. Validation that needs `std.Io` uses `valid_fn_io` and also requires `.io` in `cova.ParseConfig`. Notably, these functions can only be applied directly to a Value.
 
 Example:
 ```zig

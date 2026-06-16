@@ -54,7 +54,8 @@ fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
     return conf;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
     const doc_kinds: []const generate.MetaDocConfig.MetaDocKind = comptime docKinds: {
         var kinds: [md_config.kinds.len]generate.MetaDocConfig.MetaDocKind = undefined;
         for (md_config.kinds, kinds[0..]) |md_kind, *kind| kind.* = @enumFromInt(md_kind);
@@ -78,6 +79,7 @@ pub fn main() !void {
             .manpages, .markdown => |help_doc| {
                 if (help_docs_config) |hd_config| {
                     try generate.createHelpDoc(
+                        io,
                         cmd_type_name,
                         setup_cmd_name,
                         hd_config,
@@ -92,6 +94,7 @@ pub fn main() !void {
             .bash, .zsh, .ps1 => |shell| {
                 if (tab_complete_config) |tc_config| {
                     try generate.createTabCompletion(
+                        io,
                         cmd_type_name,
                         setup_cmd_name,
                         tc_config,
@@ -106,6 +109,7 @@ pub fn main() !void {
             .json, .kdl => |template| {
                 if (arg_template_config) |at_config| {
                     try generate.createArgTemplate(
+                        io,
                         cmd_type_name,
                         setup_cmd_name,
                         at_config,

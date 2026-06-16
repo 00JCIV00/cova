@@ -3,7 +3,6 @@
 // Standard
 const std = @import("std");
 const fmt = std.fmt;
-const fs = std.fs;
 const log = std.log;
 const mem = std.mem;
 

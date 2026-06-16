@@ -3,9 +3,9 @@
 // Standard
 const std = @import("std");
 const fmt = std.fmt;
-const fs = std.fs;
 const log = std.log;
 const mem = std.mem;
+const Io = std.Io;
 
 // Cova
 const utils = @import("../utils.zig");
@@ -45,6 +45,7 @@ pub const TabCompletionConfig = struct{
 };
 /// Create a Tab Completion script for the provided CommandT (`cmd`) configured by the given TabCompletionConfig (`tc_config`).
 pub fn createTabCompletion(
+    io: std.Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     comptime tc_config: TabCompletionConfig,
@@ -62,14 +63,16 @@ pub fn createTabCompletion(
     const filepath = genFilepath: {
         comptime var path = if (tc_config.local_filepath.len >= 0) tc_config.local_filepath else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
-        try fs.cwd().makePath(path);
+        try Io.Dir.cwd().createDirPath(io, path);
         const path_out = path;
         break :genFilepath path_out ++ filename;
     };
-    var tab_completion = try fs.cwd().createFile(filepath, .{});
-    var tc_writer_parent = tab_completion.writer(&.{});
+    var tab_completion = try Io.Dir.cwd().createFile(io, filepath, .{});
+    var tc_buf: [4096]u8 = undefined;
+    var tc_writer_parent = tab_completion.writer(io, &tc_buf);
     var tc_writer = &tc_writer_parent.interface;
-    defer tab_completion.close();
+    defer Io.File.close(tab_completion, io);
+    defer tc_writer.flush() catch {};
 
 
     // Tab Completion Script Header Write

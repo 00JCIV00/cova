@@ -131,7 +131,7 @@ _covademo_nest-1_nest-2_nest-3_completions() {
             _covademo_nest-1_nest-2nest-3_nest-4_completions
             ;;
         "nest-3")
-            COMPREPLY=($(compgen -W "nest-4 help usage --inheritable --help --usage" -- ${cur}))
+            COMPREPLY=($(compgen -W "nest-4 help usage --non-inheritable --inheritable --help --usage" -- ${cur}))
             ;;
         *)
             COMPREPLY=($(compgen -f -- ${cur}))

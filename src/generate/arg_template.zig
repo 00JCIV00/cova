@@ -3,10 +3,10 @@
 // Standard
 const std = @import("std");
 const fmt = std.fmt;
-const fs = std.fs;
 const json = std.json;
 const log = std.log;
 const mem = std.mem;
+const Io = std.Io;
 
 // Cova
 const utils = @import("../utils.zig");
@@ -207,6 +207,7 @@ pub const ArgTemplateConfig = struct{
 };
 /// Create an Argument Template.
 pub fn createArgTemplate(
+    io: std.Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     comptime at_config: ArgTemplateConfig,
@@ -217,13 +218,15 @@ pub fn createArgTemplate(
     const filepath = genFilepath: {
         comptime var path = if (at_config.local_filepath.len >= 0) at_config.local_filepath else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
-        try fs.cwd().makePath(path);
+        try std.Io.Dir.cwd().createDirPath(io, path);
         break :genFilepath path ++ at_name ++ "-template." ++ @tagName(at_kind);
     };
-    var arg_template = try fs.cwd().createFile(filepath, .{});
-    var at_writer_parent = arg_template.writer(&.{});
+    var arg_template = try std.Io.Dir.cwd().createFile(io, filepath, .{});
+    var at_buf: [4096]u8 = undefined;
+    var at_writer_parent = arg_template.writer(io, &at_buf);
     const at_writer = &at_writer_parent.interface;
-    defer arg_template.close();
+    defer Io.File.close(arg_template, io);
+    defer at_writer.flush() catch {};
 
     const meta_info_template = MetaInfoTemplate{
         .name = at_name,

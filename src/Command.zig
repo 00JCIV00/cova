@@ -1267,12 +1267,13 @@ pub fn Custom(comptime config: Config) type {
                     .@"fn", .@"struct", .@"union" => {
                         const sub_config = comptime subConfig: {
                             var new_config = from_config;
-                            new_config.cmd_name = arg_name orelse "cmd-" ++ &.{ cmds_idx + 48 };
-                            new_config.cmd_description = arg_description orelse "The '" ++ new_config.cmd_name ++ "' Command.";
+                            const cmd_name_resolved = arg_name orelse "cmd-" ++ &.{ cmds_idx + 48 };
+                            new_config.cmd_name = cmd_name_resolved;
+                            new_config.cmd_description = if (arg_description.len > 0) arg_description else "The '" ++ cmd_name_resolved ++ "' Command.";
                             new_config.sub_descriptions = &.{ .{ "__nosubdescriptionsprovided__", "" } };
                             break :subConfig new_config;
                         };
-                        from_cmds[cmds_idx] = from(param, sub_config);
+                        from_cmds[cmds_idx] = from(param.type.?, sub_config);
                         cmds_idx += 1;
                     },
                     // Values
@@ -1568,22 +1569,14 @@ pub fn Custom(comptime config: Config) type {
         /// This is useful for switching on the Sub Commands of this Command during analysis, but the Command (`self`) must be comptime-known.
         /// Prefer to use `checkSubCmd`() and `matchSubCmd`() with conditional `if` statements.
         pub fn SubCommandsEnum(comptime self: *const @This()) ?type {
-            if (self.sub_cmds == null) return null; //@compileError("Could not create Sub Commands Enum. This Command has no Sub Commands.");
-            var cmd_fields: [self.sub_cmds.?.len]builtin.Type.EnumField = undefined;
-            for (self.sub_cmds.?, cmd_fields[0..], 0..) |cmd, *field, idx| {
-                field.* = .{
-                    .name = cmd.name,
-                    .value = idx,
-                };
+            if (self.sub_cmds == null) return null;
+            var cmd_names: [self.sub_cmds.?.len][]const u8 = undefined;
+            var cmd_values: [self.sub_cmds.?.len]u8 = undefined;
+            for (self.sub_cmds.?, cmd_names[0..], cmd_values[0..], 0..) |cmd, *name, *value, idx| {
+                name.* = cmd.name;
+                value.* = idx;
             }
-            return @Type(builtin.Type{
-                .@"enum" = .{
-                    .tag_type = u8,
-                    .fields = cmd_fields[0..],
-                    .decls = &.{},
-                    .is_exhaustive = true,
-                }
-            });
+            return @Enum(u8, .exhaustive, cmd_names[0..], &cmd_values);
         }
 
         /// Config for the Validation of this Command.

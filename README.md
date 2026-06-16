@@ -56,7 +56,8 @@ pub fn main() !void {
     var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
     defer args_iter.deinit();
 
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
+    // Provide `.io = io` when using `valid_fn_io` validators such as `validFilepath`.
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ .io = io }) catch |err| switch (err) {
         error.UsageHelpCalled => return,
         else => return err,
     };
@@ -156,7 +157,7 @@ pub const setup_cmd: CommandT = .{
                         .name = "clean_file",
                         .description = "The file to be cleaned.",
                         .alias_child_type = "filepath",
-                        .valid_fn = cova.Value.ValidationFns.validFilepath,
+                        .valid_fn_io = cova.Value.ValidationFns.validFilepath,
                     }),
                 },
             },
@@ -176,24 +177,24 @@ You can call various methods on the Command to use that data however you need.
 
 ```zig
 // ...continued from the Comptime Setup.
-pub fn main() !void {
-    const gpa: std.heap.DebugAllocator(.{}) = .init;
-    const alloc = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
+    const alloc = init.gpa;
 
     // Initializing the `setup_cmd` with an allocator will make it available for Runtime use.
     const main_cmd = try setup_cmd.init(alloc, .{}); 
     defer main_cmd.deinit();
 
     // Parsing
-    var args_iter: cova.ArgIteratorGeneric = try .init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(init.minimal.args);
     defer args_iter.deinit();
-    var stdout_file = fs.File.stdout();
+    var stdout_file = std.Io.File.stdout();
     var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer = stdout_file.writer(stdout_buf[0..]);
+    var stdout_writer = stdout_file.writer(io, &stdout_buf);
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
-    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{ .io = io }) catch |err| switch (err) {
         error.UsageHelpCalled,
         error.TooManyValues,
         error.UnrecognizedArgument,

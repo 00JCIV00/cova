@@ -91,6 +91,16 @@
                             ],
                             "opts": [
                                 {
+                                    "name": "non_inheritable",
+                                    "long_name": "non-inheritable",
+                                    "short_name": 110,
+                                    "description": "Non-Inheritable Option",
+                                    "type_name": "bool",
+                                    "type_alias": "toggle",
+                                    "set_behavior": "Last",
+                                    "max_entries": 1
+                                },
+                                {
                                     "name": "inheritable",
                                     "long_name": "inheritable",
                                     "short_name": 105,

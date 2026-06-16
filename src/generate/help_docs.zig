@@ -4,7 +4,6 @@
 const std = @import("std");
 const ascii = std.ascii;
 const fmt = std.fmt;
-const fs = std.fs;
 const log = std.log;
 const mem = std.mem;
 const Io = std.Io;
@@ -138,6 +137,7 @@ pub const HelpDocsConfig = struct{
 /// Create a Help Doc for this program based on the provided `CommandT` (`cmd`) and HelpDocConfig (`hd_config`).
 /// Note, Manpages are intended for use on Unix systems (where Manpages are typically found).
 pub fn createHelpDoc(
+    io: Io,
     comptime CommandT: type, 
     comptime cmd: CommandT, 
     comptime hd_config: HelpDocsConfig,
@@ -145,13 +145,13 @@ pub fn createHelpDoc(
 ) !void {
     switch (doc_kind) {
         .manpages => {
-            try createManpageCtx(CommandT, cmd, hd_config, .{
+            try createManpageCtx(io, CommandT, cmd, hd_config, .{
                 .name = hd_config.name orelse cmd.name,
                 .cur_depth = 0,
             });
         },
         .markdown => {
-            try createMarkdownCtx(CommandT, cmd, hd_config, .{
+            try createMarkdownCtx(io, CommandT, cmd, hd_config, .{
                 .name = hd_config.name orelse cmd.name,
                 .cur_depth = 0,
             });
@@ -172,6 +172,7 @@ const HelpDocContext = struct {
 
 /// Create a manpage with Context (`mp_ctx`).
 fn createManpageCtx(
+    io: Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     comptime mp_config: HelpDocsConfig,
@@ -261,13 +262,15 @@ fn createManpageCtx(
         comptime var path = if (mp_config.local_filepath.len >= 0) mp_config.local_filepath else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
         path = path ++ "manpages/";
-        try fs.cwd().makePath(path);
+        try Io.Dir.cwd().createDirPath(io, path);
         break :genFilepath path ++ mp_name ++ "." ++ .{ mp_config.section };
     };
-    var manpage = try fs.cwd().createFile(filepath, .{});
-    var mp_writer_parent = manpage.writer(&.{});
+    var manpage = try Io.Dir.cwd().createFile(io, filepath, .{});
+    var mp_buf: [4096]u8 = undefined;
+    var mp_writer_parent = manpage.writer(io, &mp_buf);
     var mp_writer = &mp_writer_parent.interface;
-    defer manpage.close();
+    defer Io.File.close(manpage, io);
+    defer mp_writer.flush() catch {};
     // Pre-Argument Writes
     try mp_writer.print(
         \\{s}
@@ -333,12 +336,13 @@ fn createManpageCtx(
         comptime var new_ctx = mp_ctx;
         new_ctx.cur_depth += 1;
         new_ctx.name = new_ctx.name ++ "-" ++ sub_cmd.name;
-        try createManpageCtx(CommandT, sub_cmd, mp_config, new_ctx);
+        try createManpageCtx(io, CommandT, sub_cmd, mp_config, new_ctx);
     }
 }
 
 /// Create a Markdown file with Context (`md_ctx`).
 fn createMarkdownCtx(
+    io: Io,
     comptime CommandT: type,
     comptime cmd: CommandT,
     comptime md_config: HelpDocsConfig,
@@ -351,14 +355,16 @@ fn createMarkdownCtx(
         comptime var path = if (md_config.local_filepath.len >= 0) md_config.local_filepath else ".";
         comptime { if (mem.indexOfScalar(u8, &.{ '/', '\\' }, path[path.len - 1]) == null) path = path ++ "/"; }
         path = path ++ "markdown/";
-        try fs.cwd().makePath(path);
+        try Io.Dir.cwd().createDirPath(io, path);
         break :genFilepath path ++ md_name ++ ".md";
     };
     const local_path = "./" ++ md_name ++ ".md";
-    var markdown = try fs.cwd().createFile(filepath, .{});
-    var md_writer_parent = markdown.writer(&.{});
+    var markdown = try Io.Dir.cwd().createFile(io, filepath, .{});
+    var md_buf: [4096]u8 = undefined;
+    var md_writer_parent = markdown.writer(io, &md_buf);
     var md_writer = &md_writer_parent.interface;
-    defer markdown.close();
+    defer Io.File.close(markdown, io);
+    defer md_writer.flush() catch {};
 
     // Header
     try md_writer.print("# {s}\n", .{ cmd.name });
@@ -466,6 +472,6 @@ fn createMarkdownCtx(
         new_ctx.pre_paths =
             if (new_ctx.pre_paths[0].len > 0) new_ctx.pre_paths ++ @as([]const []const u8, &.{ local_path })
             else &.{ local_path };
-        try createMarkdownCtx(CommandT, sub_cmd, md_config, new_ctx);
+        try createMarkdownCtx(io, CommandT, sub_cmd, md_config, new_ctx);
     }
 }
