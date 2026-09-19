@@ -1570,6 +1570,21 @@ pub fn Custom(comptime config: Config) type {
             return out;
         }
 
+        ///// Call Errors
+        //pub const CallError = error {
+        //    ExpectedMoreParameters,
+        //    FunctionRequiresAllocator,
+        //    FunctionRequiresIo,
+        //    FunctionRequiresMoreParameters,
+        //    RequestedTypeMismatch,
+        //    ValueNotSet,
+        //};
+        /// Call Context
+        pub const CallContext = struct {
+            fn_self: ?*anyopaque = null,
+            io: ?Io = null,
+            alloc: ?mem.Allocator = null,
+        };
         /// Call this Command as the provided Function (`call_fn`), returning the provided Return Type (`ReturnT`).
         /// If the Return Type is an Error Union, this method expects only the payload Type.
         /// If the Function has a `self` parameter it can be provided using (`fn_self`), otherwise this can be `null`.
@@ -1577,30 +1592,29 @@ pub fn Custom(comptime config: Config) type {
         pub fn callAs(
             self: *const @This(),
             comptime call_fn: anytype,
-            fn_self: anytype,
+            ctx: CallContext,
             comptime ReturnT: type,
         ) !ReturnT {
             const fn_info = @typeInfo(@TypeOf(call_fn));
             const fn_name = @typeName(@TypeOf(call_fn));
-            if (fn_info != .@"fn") {
-                log.err("Expected a Function but received '{s}'.", .{ fn_name });
-                return error.ExpectedFn;
+            comptime {
+                if (fn_info != .@"fn") //
+                    @compileError(fmt.comptimePrint("Expected a Function but received '{s}'.", .{ fn_name }));
+                if (fn_info.@"fn".return_type.? != ReturnT) checkErrorUnion: {
+                    const return_info = @typeInfo(fn_info.@"fn".return_type.?);
+                    if (return_info == .error_union and return_info.error_union.payload == ReturnT) //
+                        break :checkErrorUnion;
+                    @compileError(fmt.comptimePrint("The Return Type of '{s}' does not match the provided Return Type '{s}'.", .{ fn_name, @typeName(ReturnT) }));
+                }
             }
-            if (self.vals == null or self.vals.?.len < fn_info.@"fn".params.len) {
+            const cmd_vals = self.vals orelse {
                 log.err("The provided function requires {d} parameters but only {d} was/were provided.", .{
                     fn_info.@"fn".params.len,
                     if (self.vals == null) 0 //
                     else self.vals.?.len,
                 });
                 return error.ExpectedMoreParameters;
-            }
-            if (fn_info.@"fn".return_type.? != ReturnT) checkErrorUnion: {
-                const return_info = @typeInfo(fn_info.@"fn".return_type.?);
-                if (return_info == .error_union and return_info.error_union.payload == ReturnT) //
-                    break :checkErrorUnion;
-                log.err("The return type of '{s}' does not match the provided return type '{s}'.", .{ fn_name, @typeName(ReturnT) });
-                return error.ReturnTypeMismatch;
-            }
+            };
             const params = valsToParams: {
                 const param_types = comptime paramTypes: {
                     var types: [fn_info.@"fn".params.len]type = undefined;
@@ -1609,15 +1623,37 @@ pub fn Custom(comptime config: Config) type {
                     break :paramTypes types;
                 };
                 var params_tuple: meta.Tuple(param_types[0..]) = undefined;
-                const start_idx = //
-                    if (@TypeOf(fn_self) == param_types[0]) 1 //
-                    else 0;
-                if (start_idx == 1) //
-                    params_tuple[0] = fn_self;
-                inline for (self.vals.?, &params_tuple, 0..) |val, *param, idx| {
-                    if (idx < start_idx) //
-                        continue;
-                    param.* = try val.getAs(@TypeOf(param.*));
+                var val_idx: usize = 0;
+                inline for (param_types, &params_tuple, 0..) |ParamT, *param, idx| {
+                    param.* = setParam: {
+                        if (idx == 0) if (ctx.fn_self) |fn_self| {
+                            break :setParam switch (@typeInfo(ParamT)) {
+                                .pointer => @alignCast(@ptrCast(fn_self)),
+                                else => @as(*ParamT, @alignCast(@ptrCast(fn_self))).*,
+                            };
+                        };
+                        if (ParamT == Io) {
+                            const io = ctx.io orelse {
+                                log.err("The Function `{s}` requires an `Io` Parameter, but one was not provided", .{ fn_name });
+                                return error.FunctionRequiresIo;
+                            };
+                            val_idx -|= 1;
+                            break :setParam io;
+                        }
+                        if (ParamT == mem.Allocator) {
+                            const alloc = ctx.alloc orelse {
+                                log.err("The Function `{s}` requires an `Allocator` Parameter, but one was not provided", .{ fn_name });
+                                return error.FunctionRequiresAllocator;
+                            };
+                            val_idx -|= 1;
+                            break :setParam alloc;
+                        }
+                        if (val_idx >= cmd_vals.len) {
+                            log.err("The Function `{s}` requires more Parameters than the Command `{s}` provides.", .{ fn_name, self.name });
+                            return error.FunctionRequiresMoreParameters;
+                        }
+                        break :setParam try cmd_vals[val_idx].getAs(@TypeOf(param.*));
+                    };
                 }
                 break :valsToParams params_tuple;
             };
@@ -1710,9 +1746,9 @@ pub fn Custom(comptime config: Config) type {
                             @compileError("The Option Short Name '" ++ .{ opt.short_name.? } ++ "' is set more than once.");
                         distinct_short[idx + idx_offset] = opt.short_name orelse ' ';
                         if (opt.long_name) |long_name| {
-                            if (
-                                (opt.case_sensitive and utils.indexOfEql([]const u8, distinct_long[0..], long_name) != null) or
-                                (!opt.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_long[0..], long_name) != null)
+                            if ( //
+                                (opt.case_sensitive and utils.indexOfEql([]const u8, distinct_long[0..], long_name) != null) or //
+                                (!opt.case_sensitive and utils.indexOfEqlIgnoreCase(distinct_long[0..], long_name) != null) //
                             ) @compileError("The Option Long Name '" ++ long_name ++ "' is set more than once.");
                         }
                         distinct_long[idx + idx_offset] = opt.long_name orelse "a!garbage@long#name$";
@@ -1929,7 +1965,8 @@ pub fn Custom(comptime config: Config) type {
                     cmd._arena = heap.ArenaAllocator.init(init_alloc);
                     cmd._alloc = cmd._arena.?.allocator();
                 } //
-                else cmd._alloc = init_alloc;
+                else //
+                    cmd._alloc = init_alloc;
                 break :setup .{ cmd, cmd._alloc.? };
             };
             init_cmd.parent_cmd = parent_cmd;
@@ -1988,7 +2025,7 @@ pub fn Custom(comptime config: Config) type {
                 const sub_len = init_cmd.sub_cmds.?.len;
                 var init_subcmds = try alloc.alloc(@This(), sub_len);
                 inline for (sub_cmds, 0..) |cmd, idx| //
-                    init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc); 
+                    init_subcmds[idx] = try cmd.initCtx(init_config, false, init_cmd, alloc);
                 if (help_config.add_help_cmds and (utils.indexOfEql([]const u8, &.{ "help", "usage" }, self.name) == null)) {
                     init_subcmds[sub_len - 2] = init_cmd.sub_cmds.?[sub_len - 2];
                     init_subcmds[sub_len - 1] = init_cmd.sub_cmds.?[sub_len - 1];

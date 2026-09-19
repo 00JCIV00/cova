@@ -221,7 +221,7 @@ pub const ParseConfig = struct {
     /// Note, this will return with `error.UsageHelpCalled` so the library user can terminate the program early afterwards if desired.
     auto_handle_usage_help: bool = true,
     /// Decide how to react to parsing errors.
-    err_reaction: ParseErrorReaction = .Help,
+    err_reaction: ParseErrorReaction = .help,
     /// Enable Option Termination using the long prefix without an Option (default `--` per the POSIX standard).
     /// Note, this will cause the remainder of the argument tokens to be read in as either Commands or Values.
     enable_opt_termination: bool = true,
@@ -234,11 +234,11 @@ pub const ParseConfig = struct {
     /// Reactions for Parsing Errors.
     const ParseErrorReaction = enum {
         /// Display the current Argument's Usage message.
-        Usage,
+        usage,
         /// Display the current Argument's Help message.
-        Help,
+        help,
         /// Do nothing. This is useful for custom handling.
-        None,
+        none,
     };
 };
 
@@ -354,12 +354,16 @@ fn parseArgsCtx(
         }
         // ...Then for any Options...
         var inherit_cmd: ?*const CommandT = cmd;
-        var inheriting = false;
+        var inherit_lvl: u8 = 0;
+        var cur_pf: []const u8 = "";
+        var cur_opt: ?[]const u8 = null;
         inheritOpts: while (inherit_cmd) |opts_cmd| : ({
             if (cmd.allow_inheritable_opts) {
-                inheriting = true;
-                if (inherit_cmd) |i_cmd| //
-                    log.debug("Attempting to Parse Inherited Options for '{s}'...", .{ i_cmd.name }) //
+                inherit_cmd = inherit_cmd.?.parent_cmd;
+                if (inherit_cmd) |i_cmd| {
+                    inherit_lvl +|= 1;
+                    log.debug("Attempting to Parse Inherited Options for '{s}' (Level: {d})...", .{ i_cmd.name, inherit_lvl });
+                } //
                 else //
                     log.debug("No higher parent Command to inherit from for '{s}'.", .{ opts_cmd.name });
             } //
@@ -387,135 +391,133 @@ fn parseArgsCtx(
             if (OptionT.short_prefix) |short_pf| checkShortOpt: {
                 if (arg.len < 1 or !(arg[0] == short_pf and arg[1] != short_pf)) //
                     break :checkShortOpt;
+                cur_pf = &.{ short_pf };
                 log.debug("Parsing Short Option...", .{});
                 const short_opts = arg[1..];
                 shortOpts: for (short_opts, 0..) |short_opt, short_idx| {
+                    cur_opt = &.{ short_opt };
                     for (parse_opts) |*opt| {
-                        if (cmd.allow_inheritable_opts and inheriting and !opt.inheritable) //
-                            continue;
-                        if (inheriting) //
+                        if (cmd.allow_inheritable_opts and inherit_lvl > 0) if (inherit_cmd) |_| {
+                            if (!opt.inheritable) //
+                                continue;
                             log.debug("Checking Inheritable Option: {u}", .{ opt.short_name.? });
-                        if (opt.short_name != null and short_opt == opt.short_name.?) {
-                            // Handle Argument provided to this Option with the Option/Value Separator (like '=') instead of ' '.
-                            if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
-                                if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
-                                    log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{
-                                        short_pf,
-                                        opt.short_name,
-                                        opt.name,
-                                    });
-                                    try errReaction(&parse_config, opt, writer);
-                                    try writer.print("\n", .{});
-                                    return error.boolCannotTakeArgument;
-                                }
-                                if (short_idx + 2 >= short_opts.len) //
-                                    return error.EmptyArgumentProvidedToOption;
-                                const opt_arg = short_opts[(short_idx + 2)..];
-                                opt.val.set(opt_arg) catch {
+                        };
+                        const short_name = opt.short_name orelse continue;
+                        if (short_opt != short_name) //
+                            continue;
+                        log.debug("Parsing Option: {s}", .{ opt.name });
+                        // Handle Argument provided to this Option with the Option/Value Separator (like '=') instead of ' '.
+                        if (mem.indexOfScalar(u8, CommandT.OptionT.opt_val_seps, short_opts[short_idx + 1]) != null) {
+                            if (mem.eql(u8, opt.val.childType(), "bool") and !opt.val.hasCustomParseFn()) {
+                                log.err("The Option '{c}{?c}: {s}' is a Boolean/Toggle and cannot take an argument.", .{
+                                    short_pf,
+                                    opt.short_name,
+                                    opt.name,
+                                });
+                                try errReaction(&parse_config, opt, writer);
+                                try writer.print("\n", .{});
+                                return error.BoolCannotTakeArgument;
+                            }
+                            if (short_idx + 2 >= short_opts.len) //
+                                return error.EmptyArgumentProvidedToOption;
+                            const opt_arg = short_opts[(short_idx + 2)..];
+                            opt.val.set(opt_arg) catch {
+                                if (cmd.allow_inheritable_opts) //
+                                    continue :inheritOpts;
+                                log.err("Could not parse Option '{c}{?c}: {s}'.", .{
+                                    short_pf,
+                                    opt.short_name,
+                                    opt.name,
+                                });
+                                try errReaction(&parse_config, opt, writer);
+                                try writer.print("\n", .{});
+                                return error.CouldNotParseOption;
+                            };
+                            try opt.setArgIdx(parse_ctx.arg_idx);
+                            parse_ctx.arg_idx += 1;
+                            log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
+                            continue :parseArg;
+                        }
+                        // Handle final Option in a chain of Short Options
+                        else if (short_idx == short_opts.len - 1) {
+                            if (mem.eql(u8, opt.val.childType(), "bool")) //
+                                try @constCast(opt).val.set("true")
+                            else {
+                                parseOpt(args, OptionT, opt) catch {
                                     if (cmd.allow_inheritable_opts) //
                                         continue :inheritOpts;
-                                    log.err("Could not parse Option '{c}{?c}: {s}'.", .{
+                                    log.err("Could not parse Option '{c}{c}: {s}'.", .{
                                         short_pf,
-                                        opt.short_name,
+                                        opt.short_name.?,
                                         opt.name,
                                     });
                                     try errReaction(&parse_config, opt, writer);
                                     try writer.print("\n", .{});
                                     return error.CouldNotParseOption;
                                 };
-                                try opt.setArgIdx(parse_ctx.arg_idx);
-                                parse_ctx.arg_idx += 1;
-                                log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
-                                continue :parseArg;
                             }
-                            // Handle final Option in a chain of Short Options
-                            else if (short_idx == short_opts.len - 1) {
-                                if (mem.eql(u8, opt.val.childType(), "bool")) //
-                                    try @constCast(opt).val.set("true")
-                                else {
-                                    parseOpt(args, OptionT, opt) catch {
-                                        if (cmd.allow_inheritable_opts) //
-                                            continue :inheritOpts;
-                                        log.err("Could not parse Option '{c}{c}: {s}'.", .{
-                                            short_pf,
-                                            opt.short_name.?,
-                                            opt.name,
-                                        });
-                                        try errReaction(&parse_config, opt, writer);
-                                        try writer.print("\n", .{});
-                                        return error.CouldNotParseOption;
-                                    };
-                                }
-                                try opt.setArgIdx(parse_ctx.arg_idx);
-                                parse_ctx.arg_idx += 1;
-                                log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
-                                continue :parseArg;
+                            try opt.setArgIdx(parse_ctx.arg_idx);
+                            parse_ctx.arg_idx += 1;
+                            log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
+                            continue :parseArg;
+                        }
+                        // Handle a boolean Option before the final Short Option in a chain.
+                        else if (mem.eql(u8, opt.val.childType(), "bool")) {
+                            try @constCast(opt).val.set("true");
+                            try opt.setArgIdx(parse_ctx.arg_idx);
+                            parse_ctx.arg_idx += 1;
+                            log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
+                            continue :shortOpts;
+                        }
+                        // Handle a non-boolean Option that allows an Empty Value.
+                        else if (opt.allow_empty) {
+                            opt.val.setEmpty() catch //
+                                log.warn("The Option '{s}' has already been set.", .{ opt.name });
+                            continue :shortOpts;
+                        }
+                        // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
+                        else if (CommandT.OptionT.allow_opt_val_no_space) {
+                            try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                            try opt.setArgIdx(parse_ctx.arg_idx);
+                            parse_ctx.arg_idx += 1;
+                            log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
+                            //continue :parseArg;
+                            var short_names_buf: [CommandT.max_args]u8 = undefined;
+                            const short_names = short_names_buf[0..];
+                            var idx: usize = 0;
+                            for (cmd.opts.?) |s_opt| {
+                                short_names[idx] = s_opt.short_name orelse continue;
+                                idx += 1;
                             }
-                            // Handle a boolean Option before the final Short Option in a chain.
-                            else if (mem.eql(u8, opt.val.childType(), "bool")) {
-                                try @constCast(opt).val.set("true");
-                                try opt.setArgIdx(parse_ctx.arg_idx);
-                                parse_ctx.arg_idx += 1;
-                                log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
-                                continue :shortOpts;
-                            }
-                            // Handle a non-boolean Option that allows an Empty Value.
-                            else if (opt.allow_empty) {
-                                opt.val.setEmpty() catch //
-                                    log.err("The Option '{s}' has already been set.", .{ opt.name });
-                                continue :shortOpts;
-                            }
-                            // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
-                            else if (CommandT.OptionT.allow_opt_val_no_space) {
+                            if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
                                 try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
                                 try opt.setArgIdx(parse_ctx.arg_idx);
                                 parse_ctx.arg_idx += 1;
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
                                 continue :parseArg;
-                                //var short_names_buf: [CommandT.max_args]u8 = undefined;
-                                //const short_names = short_names_buf[0..];
-                                //var idx: usize = 0;
-                                //for (cmd.opts.?) |s_opt| {
-                                //    short_names[idx] = s_opt.short_name orelse continue;
-                                //    idx += 1;
-                                //}
-                                //if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
-                                //    try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
-                                //    try opt.setArgIdx(parse_ctx.arg_idx);
-                                //    parse_ctx.arg_idx += 1;
-                                //    log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
-                                //    continue :parseArg;
-                                //}
                             }
                         }
                     }
-                    //if (cmd.allow_inheritable_opts and inherit_cmd != null and inherit_cmd.? != cmd) //
-                    if (cmd.allow_inheritable_opts) {
-                        inherit_cmd = inherit_cmd.?.parent_cmd;
-                        if (inherit_cmd != null) //
-                            continue :inheritOpts;
-                    }
-                    log.err("Could not parse Option '{c}{c}'.", .{ short_pf, short_opt });
-                    try errReaction(&parse_config, cmd, writer);
-                    try writer.print("\n", .{});
-                    return error.CouldNotParseOption;
                 }
             }
             // - Long Options
             if (OptionT.long_prefix) |long_pf| checkLongOpt: {
                 if (arg.len < long_pf.len or !mem.eql(u8, arg[0..long_pf.len], long_pf)) //
                     break :checkLongOpt;
+                cur_pf = long_pf;
                 log.debug("Parsing Long Option...", .{});
                 const split_idx = (mem.indexOfAny(u8, arg[long_pf.len..], OptionT.opt_val_seps) orelse arg.len - long_pf.len) + long_pf.len;
                 const long_opt = arg[long_pf.len..split_idx];
+                cur_opt = long_opt;
                 const sep_arg = //
                     if (split_idx < arg.len) arg[(split_idx + 1)..] //
                     else null;
                 longOpts: for (parse_opts) |*opt| {
-                    if (cmd.allow_inheritable_opts and inheriting and !opt.inheritable) //
-                        continue :longOpts;
-                    if (inheriting) //
+                    if (cmd.allow_inheritable_opts and inherit_lvl > 0) if (inherit_cmd) |_| {
+                        if (!opt.inheritable) //
+                            continue;
                         log.debug("Checking Inheritable Option: {s}", .{ opt.long_name.? });
+                    };
                     const opt_long_name = opt.long_name orelse continue :longOpts;
                     var long_names: [17][]const u8 = undefined;
                     var long_names_len: usize = 1;
@@ -597,20 +599,15 @@ fn parseArgsCtx(
                         }
                     }
                 }
-                if (cmd.allow_inheritable_opts) {
-                    inherit_cmd = inherit_cmd.?.parent_cmd;
-                    if (inherit_cmd != null) //
-                        continue :inheritOpts;
-                }
-                log.err("Could not parse Argument '{s}{s}' to an Option.", .{ long_pf, long_opt });
-                try errReaction(&parse_config, cmd, writer);
-                try writer.print("\n", .{});
-                return error.CouldNotParseOption;
             }
             unmatched = true;
             log.debug("No Options Matched for Command '{s}'.", .{ opts_cmd.name });
-            if (cmd.allow_inheritable_opts) //
-                continue :inheritOpts;
+        } //
+        else if (cur_opt) |err_opt| {
+            log.err("Could not parse Option '{s}{s}'.", .{ cur_pf, err_opt });
+            try errReaction(&parse_config, cmd, writer);
+            try writer.print("\n", .{});
+            return error.CouldNotParseOption;
         }
         // ...Finally, for any Values.
         if (cmd.vals) |vals| {
@@ -748,19 +745,19 @@ fn parseOpt(args: *ArgIteratorGeneric, comptime OptionType: type, opt: *const Op
 /// React to Parsing Errors with the given Reaction (`reaction`) based on the provided Argument (`arg`) to the provided Writer (`writer`).
 fn errReaction(config: *const ParseConfig, arg: anytype, writer: *Io.Writer) !void {
     return switch(config.err_reaction) {
-        .Usage => {
+        .usage => {
             try arg.usage(writer);
             if (config.auto_flush) //
                 try writer.flush();
             return error.UsageHelpCalled;
         },
-        .Help => {
+        .help => {
             try arg.help(writer);
             if (config.auto_flush) //
                 try writer.flush();
             return error.UsageHelpCalled;
         },
-        .None => {},
+        .none => {},
     };
 }
 

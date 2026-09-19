@@ -349,7 +349,7 @@ pub fn main(init: std.process.Init) !void {
         new_user._id = user_id;
         try users.append(alloc, new_user);
         try users_mal.append(alloc, new_user);
-        var user_buf: [512]u8 = @splat(0);
+        var user_buf: [512]u8 = undefined;
         try user_file_writer.interface.print("{s}\n", .{ try new_user.to(user_buf[0..]) });
         try stdout.print("Added:\n{f}\n", .{ new_user });
     }
@@ -358,7 +358,7 @@ pub fn main(init: std.process.Init) !void {
         // Command to a Function then calls it directly. If the Function being called is a method,
         // (if its first parameter is of an instance's Type) the host instance can be specified as
         // the second parameter to `callAs()`, otherwise that parameter should be null.
-        user_file = try open_cmd.callAs(open, null, std.Io.File);
+        user_file = try open_cmd.callAs(open, .{ .io = init.io }, std.Io.File);
     }
     if (main_cmd.matchSubCmd("list")) |list_cmd| {
         const filter = if (list_cmd.matchSubCmd("filter")) |filter_cmd| try filter_cmd.to(Filter, .{}) else null;
