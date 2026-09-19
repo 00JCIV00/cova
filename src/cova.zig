@@ -8,6 +8,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const ascii = std.ascii;
+const heap = std.heap;
 const log = std.log.scoped(.cova);
 const mem = std.mem;
 const meta = std.meta;
@@ -808,7 +809,7 @@ const test_setup_cmd: TestCommand = .{
             .val = TestValue.ofType([]const u8, .{
                 .name = "string_opt_val",
                 .description = "A test string opt value.",
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 6,
             }),
         },
@@ -821,7 +822,7 @@ const test_setup_cmd: TestCommand = .{
                 .name = "int_opt_val",
                 .description = "A test integer opt value.",
                 .valid_fn = struct{ fn valFn(int: i16, alloc: mem.Allocator) bool { _ = alloc; return int <= 666; } }.valFn,
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 6,
             }),
         },
@@ -834,7 +835,7 @@ const test_setup_cmd: TestCommand = .{
                 .name = "float_opt_val",
                 .description = "An float opt value.",
                 .valid_fn = struct{ fn valFn(float: f16, alloc: mem.Allocator) bool { _ = alloc; return float < 30000; } }.valFn,
-                .set_behavior = .Multi,
+                .set_behavior = .multi,
                 .max_entries = 6,
             }),
         },
@@ -902,7 +903,7 @@ const TestCmdFromStruct = struct {
 const test_setup_cmd_from_struct = TestCommand.from(TestCmdFromStruct, .{});
 
 test "tokenize args" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
     const arg_str = "cova struct-cmd --multi-str \"demo str\" -m 'a \"quoted string\"' -m \"A string using an 'apostrophe'\" 50";
@@ -912,7 +913,7 @@ test "tokenize args" {
 }
 
 test "command setup" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
     const test_cmd = try test_setup_cmd.init(alloc, .{});
@@ -931,12 +932,12 @@ test "command setup" {
 
 test "argument parsing" {
     testing.log_level = .info;
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    var writer_list: ArrayList(u8) = .{};
-    defer writer_list.deinit(alloc);
-    const writer = writer_list.writer(alloc);
+    var test_w: Io.Writer.Allocating = .init(alloc);
+    defer test_w.deinit();
+    const writer = test_w.writer;
     const test_args: []const []const [:0]const u8 = &.{
         &.{ "test-cmd", "sub_test_cmd", "sub-test-cmd", "--sub-string", "sub cmd string opt", "--sub-int=15984" },
         &.{ "test-cmd", "--string", "string opt 1", "--str", "string opt 2", "--string=string_opt_3", "-s", "string opt 4", "-s=string_opt_5", "-s_string_opt_6", "string value text" },
@@ -955,12 +956,12 @@ test "argument parsing" {
 }
 
 test "argument analysis" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
-    var writer_list: ArrayList(u8) = .{};
-    defer writer_list.deinit(alloc);
-    const writer = writer_list.writer(alloc);
+    var test_w: Io.Writer.Allocating = .init(alloc);
+    defer test_w.deinit();
+    const writer = test_w.writer;
     const test_cmd = try test_setup_cmd.init(alloc, .{});
     defer test_cmd.deinit();
     const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo=5.1", "-f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
@@ -970,10 +971,10 @@ test "argument analysis" {
         switch (err) {
             error.UsageHelpCalled => {},
             else => {
-                try writer.print("Parsing Error during Testing: {!}\n", .{ err });
+                try writer.print("Parsing Error during Testing: {t}\n", .{ err });
                 return err;
             },
-        }    
+        }
     };
 
     try utils.displayCmdInfo(TestCommand, test_cmd, alloc, writer, false);
