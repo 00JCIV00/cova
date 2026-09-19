@@ -116,9 +116,8 @@ pub const ArgIteratorGeneric = union(enum) {
         return switch (meta.activeTag(self.*)) {
             .raw => self.raw.next(),
             .zig => zigNext: {
-                self.zig.index +|= 1;
                 if (self.zig.iter.next()) |next_arg| {
-                    self.zig.index += 1;
+                    self.zig.index +|= 1;
                     break :zigNext next_arg;
                 } //
                 else //
@@ -131,21 +130,24 @@ pub const ArgIteratorGeneric = union(enum) {
     pub fn peek(self: *@This()) ?[:0]const u8 {
         switch (self.*) {
             .raw => return self.raw.peek(),
-            inline else => |*iter| {
-                const in_iter = &iter.iter.inner;
-                switch (builtin.os.tag) {
+            .zig => {
+                const in_iter = &self.zig.iter.inner;
+                const tag = //
+                    if (@hasField(@TypeOf(in_iter.*), "remaining")) .posix //
+                    else builtin.os.tag;
+                switch (tag) {
                     .windows => {
                         const iter_idx = in_iter.index;
                         const iter_start = in_iter.start;
                         const iter_end = in_iter.end;
-                        const peek_arg = iter.next();
+                        const peek_arg = self.next();
                         in_iter.index = iter_idx;
                         in_iter.start = iter_start;
                         in_iter.end = iter_end;
                         return peek_arg;
                     } ,
                     .wasi => {
-                        const peek_arg = iter.next();
+                        const peek_arg = self.next();
                         in_iter.index -= 1;
                         return peek_arg;
                     },
@@ -165,15 +167,16 @@ pub const ArgIteratorGeneric = union(enum) {
     pub fn reset(self: *@This()) void {
         switch (meta.activeTag(self.*)) {
             .raw => self.raw.index = 0,
-            inline else => |tag| {
-                var iter = &@field(self, @tagName(tag));
+            .zig => {
+                const in_iter = &self.zig.iter.inner;
                 if (builtin.os.tag != .windows) //
-                    iter.inner.index = 0
+                    //in_iter.index = 0
+                    @compileError("Arg Iterator Reset is unsupported on this OS")
                 else {
-                    iter.inner.index = 0; 
-                    iter.inner.start = 0; 
-                    iter.inner.end = 0; 
-                } 
+                    in_iter.index = 0;
+                    in_iter.start = 0;
+                    in_iter.end = 0;
+                }
             },
         }
     }
@@ -182,9 +185,12 @@ pub const ArgIteratorGeneric = union(enum) {
     pub fn index(self: *@This()) usize {
         return switch (meta.activeTag(self.*)) {
             .raw => self.raw.index,
-            .zig => switch (builtin.os.tag) {
-                .windows, .wasi =>  self.zig.inner.index,
-                else => self.zig.index,
+            .zig => zig: {
+                const in_iter = self.zig.iter.inner;
+                if (@hasField(@TypeOf(in_iter), "index")) //
+                    break :zig in_iter.index //
+                else //
+                    break :zig self.zig.index;
             },
         };
     }
@@ -937,7 +943,7 @@ test "argument parsing" {
     const alloc = arena.allocator();
     var test_w: Io.Writer.Allocating = .init(alloc);
     defer test_w.deinit();
-    const writer = test_w.writer;
+    const writer = &test_w.writer;
     const test_args: []const []const [:0]const u8 = &.{
         &.{ "test-cmd", "sub_test_cmd", "sub-test-cmd", "--sub-string", "sub cmd string opt", "--sub-int=15984" },
         &.{ "test-cmd", "--string", "string opt 1", "--str", "string opt 2", "--string=string_opt_3", "-s", "string opt 4", "-s=string_opt_5", "-s_string_opt_6", "string value text" },
@@ -961,7 +967,7 @@ test "argument analysis" {
     const alloc = arena.allocator();
     var test_w: Io.Writer.Allocating = .init(alloc);
     defer test_w.deinit();
-    const writer = test_w.writer;
+    const writer = &test_w.writer;
     const test_cmd = try test_setup_cmd.init(alloc, .{});
     defer test_cmd.deinit();
     const test_args: []const [:0]const u8 = &.{ "test-cmd", "--string", "opt string 1", "-s", "opt string 2", "--int=1,22,333,444,555,666", "--flo=5.1", "-f10.1,20.2,30.3", "-t", "val string", "sub-test-cmd", "--sub-s=sub_opt_str", "--sub-int", "21523", "help" }; 
