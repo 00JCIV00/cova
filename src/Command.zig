@@ -1702,6 +1702,7 @@ pub fn Custom(comptime config: Config) type {
         /// - Existing Argument Groups
         /// - Distinct Command & Option Alias Names.
         pub fn validate(comptime self: *const @This(), comptime valid_config: ValidateConfig) void {
+            comptime ensureComptime(@TypeOf(self));
             comptime {
                 @setEvalBranchQuota(100_000);
                 const usage_help_strs: [max_args][]const u8 = uhStrs: {
@@ -1935,6 +1936,7 @@ pub fn Custom(comptime config: Config) type {
         /// Initialize this Command with the provided InitConfig (`init_config`) by duplicating it with the provided Allocator (`alloc`) for Runtime use.
         /// This should be used after this Command has been created in Comptime.
         pub fn init(comptime self: *const @This(), alloc: mem.Allocator, comptime init_config: InitConfig) !*@This() {
+            comptime ensureComptime(@TypeOf(self));
             return self.initCtx(init_config, true, null, alloc);
         }
 
@@ -2086,12 +2088,10 @@ pub fn Custom(comptime config: Config) type {
                 };
                 for (help_opts[0..]) |*opt| //
                     opt.* = opt.init(alloc);
-
                 init_cmd.opts = //
                     if (init_cmd.opts) |init_opts| try mem.concat(alloc, @This().OptionT, &.{ init_opts, help_opts[0..] }) //
                     else try alloc.dupe(OptionT, help_opts[0..]);
             }
-
             if (self.vals) |vals| {
                 var init_vals = try alloc.alloc(@This().ValueT, vals.len);
                 inline for (vals, init_vals[0..]) |val, *i_val| {
@@ -2100,7 +2100,6 @@ pub fn Custom(comptime config: Config) type {
                 }
                 init_cmd.vals = init_vals;
             }
-
             return //
                 if (is_root_cmd) init_cmd //
                 else init_cmd.*;
@@ -2115,12 +2114,11 @@ pub fn Custom(comptime config: Config) type {
                 root_alloc.destroy(self);
         }
 
-        /// Reset the Root Command with the provided Setup Command (`setup_cmd`), InitConfig (`init_config`), and the Command's current Root Allocator.
-        /// If this Command has not yet been initialized or is not the Root Command, this does nothing.
-        pub fn reset(self: *const @This(), comptime setup_cmd: @This(), comptime init_config: InitConfig) !void {
-            const alloc = self._root_alloc orelse return;
-            self.deinit();
-            self = try setup_cmd.init(alloc, init_config);
+        /// Ensure that the provided Command Type `CommandT` is Comptime Generated.
+        /// This provides a more useful error than the Zig compiler in v0.16.
+        fn ensureComptime(CommandT: type) void {
+            comptime if(CommandT != *const @This()) //
+                @compileError("The provided Command Type must be comptime known, but the provided Type is not. Declare it at Container scope or qualify its initializer with `comptime` (ex: `const setup_cmd: CommandT = comptime .{{ ... }};`).");
         }
     };
 }
