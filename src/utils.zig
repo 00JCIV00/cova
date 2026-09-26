@@ -54,7 +54,7 @@ pub fn displayCmdInfo(
             }
         }
         try writer.print("\n", .{});
-        cur_cmd = cmd.sub_cmd;
+        cur_cmd = cmd.subCmd();
     }
 }
 

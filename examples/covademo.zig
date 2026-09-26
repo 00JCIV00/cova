@@ -709,7 +709,7 @@ pub fn main(init: proc.Init) !void {
         break :structCmd;
     }
     if (main_cmd.checkSubCmd("union-cmd")) //
-        log.debug("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.sub_cmd.?.to(DemoUnion, .{})) });
+        log.debug("-> Union Cmd\nTo Union:\n{any}\n\n", .{ meta.activeTag(try main_cmd.subCmd().?.to(DemoUnion, .{})) });
     if (main_cmd.matchSubCmd("fn-cmd")) |fn_cmd| {
         log.debug("-> Fn Cmd", .{});
         try fn_cmd.callAs(demoFn, .{}, void);

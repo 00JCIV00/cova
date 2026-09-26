@@ -357,6 +357,10 @@ pub fn Custom(comptime config: Config) type {
         ///
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
+        /// The Runtime State of this Command, allocated during `init()`.
+        ///
+        /// **Internal Use.** Accessible via `argIdx()` and `subCmd()`.
+        _state: ?*State = null,
 
         /// Command Groups.
         /// These groups are used for organizing sub-Commands in Help messages and other Generated docs.
@@ -372,19 +376,8 @@ pub fn Custom(comptime config: Config) type {
         /// These groups are used for organizing Values in Help messages and other Generated docs.
         val_groups: ?[]const []const u8 = null,
 
-        /// The Argument Index of this Command which is determined during parsing.
-        ///
-        /// *This should be Read-Only for library users.*
-        arg_idx: if (include_arg_indices) ?u8 else void = if (include_arg_indices) null else {},
-
         /// The list of Sub Commands this Command can take.
         sub_cmds: ?[]const @This() = null,
-        //sub_cmds: if (@inComptime()) ?[]const @This() else ?[]@This() = null,
-        /// The Sub Command assigned to this Command during Parsing, if any.
-        ///
-        /// *This should be Read-Only for library users.*
-        sub_cmd: ?*const @This() = null,
-        //sub_cmd: ?*@This() = null,
         /// The Parent Command of this Command.
         /// This will be filled in during Initialization.
         parent_cmd: ?*const @This() = null,
@@ -423,6 +416,22 @@ pub fn Custom(comptime config: Config) type {
         /// This will NOT affect Command Validation nor Tab-Completion.
         case_sensitive: bool = config.global_case_sensitive,
 
+        /// This Command Type
+        const CmdT = @This();
+        /// Parse State
+        pub const State = struct {
+            /// The Argument Index of this Command which is determined during parsing.
+            ///
+            /// *This should be Read-Only for library users.*
+            arg_idx: if (include_arg_indices) ?u8 else void = if (include_arg_indices) null else {},
+            /// The Sub Command assigned to this Command during Parsing, if any.
+            ///
+            /// *This should be Read-Only for library users.*
+            sub_cmd: ?*const CmdT = null,
+
+            pub const default: @This() = .{};
+        };
+
         /// Config for Getting Options and Values.
         pub const GetConfig = struct{
             /// An optional Argument Group to filter the returned Options or Values.
@@ -447,7 +456,7 @@ pub fn Custom(comptime config: Config) type {
         /// Check if an Argument from a specific Argument Group was used.
         pub fn checkArgGroup(self: @This(), ArgGroupT: ArgumentGroupType, arg_group: []const u8) bool {
             if (utils.indexOfEql(ArgumentGroupType, &.{ .command, .all }, ArgGroupT)) |_| checkCmdGroup: {
-                const sub_cmd = self.sub_cmd orelse break :checkCmdGroup;
+                const sub_cmd = self.subCmd() orelse break :checkCmdGroup;
                 const sub_cmd_group = sub_cmd.cmd_group orelse break :checkCmdGroup;
                 if (mem.eql(u8, sub_cmd_group, arg_group)) //
                     return true;
@@ -465,20 +474,37 @@ pub fn Custom(comptime config: Config) type {
             return false;
         }
 
+        /// Get this Command's Runtime State.
+        pub fn state(self: *const @This(), comptime mutable: bool) if (mutable) error{CommandNotInitialized}!*State else *const State {
+            if (self._state) |cmd_state| //
+                return cmd_state
+            else if (mutable) //
+                return error.CommandNotInitialized
+            else //
+                return &State.default;
+        }
+
         /// Set the Argument Index of this Command.
-        pub fn setArgIdx(self: *const @This(), arg_idx: u8) void {
+        pub fn setArgIdx(self: *const @This(), arg_idx: u8) error{CommandNotInitialized}!void {
             if (!include_arg_indices) //
                 return;
-            @constCast(self).arg_idx = arg_idx;
+            const cmd_state = try self.state(true);
+            cmd_state.arg_idx = arg_idx;
+        }
+        /// Get the Argument Index of this Command.
+        pub fn argIdx(self: *const @This()) if (include_arg_indices) ?u8 else void {
+            return self.state(false).arg_idx;
         }
 
         /// Set the active Sub Command for this Command.
-        pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) void {
-            @constCast(self).sub_cmd = set_cmd;
+        pub fn setSubCmd(self: *const @This(), set_cmd: *const @This()) error{CommandNotInitialized}!void {
+            const cmd_state = try self.state(true);
+            cmd_state.sub_cmd = set_cmd;
         }
-        //pub fn setSubCmd(self: *@This(), set_cmd: *@This()) void {
-        //    self.sub_cmd = set_cmd;
-        //}
+        /// Get a reference to the Sub Command of this Command that matches the provided Name (`cmd_name`).
+        pub fn subCmd(self: *const @This()) ?*const @This() {
+            return self.state(false).sub_cmd;
+        }
         /// Get a reference to the Sub Command of this Command that matches the provided Name (`cmd_name`).
         pub fn getSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
             if (self.sub_cmds == null) //
@@ -493,14 +519,14 @@ pub fn Custom(comptime config: Config) type {
         /// This is useful for analyzing Commands that DO NOT have Sub Commands that need to be subsequently analyzed.
         pub fn checkSubCmd(self: *const @This(), cmd_name: []const u8) bool {
             return //
-                if (self.sub_cmd) |cmd| mem.eql(u8, cmd.name, cmd_name) //
+                if (self.subCmd()) |cmd| mem.eql(u8, cmd.name, cmd_name) //
                 else false;
         }
         /// Returns the active Sub Command of this Command if it matches the provided Name (`cmd_name`). 
         /// This is useful for analyzing Commands that DO have Sub Commands that need to be subsequently analyzed.
         pub fn matchSubCmd(self: *const @This(), cmd_name: []const u8) ?*const @This() {
             return //
-                if (self.checkSubCmd(cmd_name)) self.sub_cmd.? //
+                if (self.checkSubCmd(cmd_name)) self.subCmd().? //
                 else null;
         }
 
@@ -690,7 +716,7 @@ pub fn Custom(comptime config: Config) type {
         /// This is particularly useful for checking if Help or Usage has been called.
         pub fn checkFlag(self: *const @This(), flag_name: []const u8) bool {
             return ( //
-                (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, flag_name)) or //
+                (self.subCmd() != null and mem.eql(u8, self.subCmd().?.name, flag_name)) or //
                 checkOpt: {
                     if (self.opts != null) {
                         for (self.opts.?) |opt| {
@@ -1087,22 +1113,22 @@ pub fn Custom(comptime config: Config) type {
                 // Handle Argument Types.
                 switch (field.type) {
                     @This() => {
-                        if (field.default_value_ptr != null) {
-                            from_cmds[cmds_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value_ptr)))).*;
+                        if (field.defaultValue()) |default| {
+                            from_cmds[cmds_idx] = default;
                             cmds_idx += 1;
                             continue;
                         }
                     },
                     OptionT => {
-                        if (field.default_value_ptr != null) {
-                            from_opts[opts_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value_ptr)))).*;
+                        if (field.defaultValue()) |default| {
+                            from_opts[opts_idx] = default;
                             opts_idx += 1;
                             continue;
                         }
                     },
                     ValueT => {
-                        if (field.default_value_ptr != null) {
-                            from_vals[vals_idx] = @as(*field.type, @ptrCast(@alignCast(@constCast(field.default_value_ptr)))).*;
+                        if (field.defaultValue()) |default| {
+                            from_vals[vals_idx] = default;
                             vals_idx += 1;
                             continue;
                         }
@@ -1439,13 +1465,13 @@ pub fn Custom(comptime config: Config) type {
                     // Commands
                     .@"struct" => {
                         @field(out, field.name) = //
-                            if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) //
-                                try self.sub_cmd.?.to(field.type, to_config) //
+                            if (self.subCmd() != null and mem.eql(u8, self.subCmd().?.name, arg_name)) //
+                                try self.subCmd().?.to(field.type, to_config) //
                             else if (to_config.allow_unset) field.type{} //
                             else return error.ValueNotSet;
                     },
-                    .@"union" => if (self.sub_cmd != null and mem.eql(u8, self.sub_cmd.?.name, arg_name)) {
-                        return @unionInit(ToT, field.name, try self.sub_cmd.?.to(field.type, to_config));
+                    .@"union" => if (self.subCmd() != null and mem.eql(u8, self.subCmd().?.name, arg_name)) {
+                        return @unionInit(ToT, field.name, try self.subCmd().?.to(field.type, to_config));
                     },
                     // Options
                     .optional => |f_opt| if (self.opts) |opts| {
@@ -1455,7 +1481,7 @@ pub fn Custom(comptime config: Config) type {
                                     if (!to_config.allow_unset) return error.ValueNotSet;
                                     @field(out, field.name) = //
                                         if (field.default_value_ptr) |def_val| //
-                                            @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).* //
+                                            @as(*const field.type, @ptrCast(@alignCast(def_val))).* //
                                         else null;
                                     break;
                                 }
@@ -1476,7 +1502,7 @@ pub fn Custom(comptime config: Config) type {
                                         log.err("The Field '{s}' has no default value.", .{ field.name });
                                         return error.NoDefaultValue;
                                     };
-                                    @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
+                                    @field(out, field.name) = @as(*const field.type, @ptrCast(@alignCast(def_val))).*;
                                     break;
                                 }
                                 if (type_info == .@"union") return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
@@ -1504,7 +1530,7 @@ pub fn Custom(comptime config: Config) type {
                                             if (!to_config.allow_unset) return error.ValueNotSet;
                                             @field(out, field.name) = //
                                                 if (field.default_value_ptr) |def_val| //
-                                                    @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).* //
+                                                    @as(*const field.type, @ptrCast(@alignCast(def_val))).* //
                                                 else //
                                                     @splat(null);
                                             break;
@@ -1533,7 +1559,7 @@ pub fn Custom(comptime config: Config) type {
                                                 log.err("The Field '{s}' has no default value.", .{ field.name });
                                                 return error.NoDefaultValue;
                                             };
-                                            @field(out, field.name) = @as(*field.type, @ptrCast(@alignCast(@constCast(def_val)))).*;
+                                            @field(out, field.name) = @as(*const field.type, @ptrCast(@alignCast(def_val))).*;
                                             break;
                                         }
                                         const val_tag = //
@@ -1950,6 +1976,7 @@ pub fn Custom(comptime config: Config) type {
             init_alloc: mem.Allocator,
         ) !if (is_root_cmd) *@This() else @This() {
             const help_config = init_config.help_config;
+            // Validate this Command
             if (init_config.validate_cmd) {
                 comptime var valid_config = init_config.valid_config;
                 valid_config.check_help_cmds = help_config.add_help_cmds;
@@ -1957,7 +1984,7 @@ pub fn Custom(comptime config: Config) type {
                 const val_conf = valid_config;
                 self.validate(val_conf);
             }
-
+            // Copy this Command
             var init_cmd,
             const alloc = setup: {
                 var cmd = try init_alloc.create(@This());
@@ -1972,7 +1999,11 @@ pub fn Custom(comptime config: Config) type {
                 break :setup .{ cmd, cmd._alloc.? };
             };
             init_cmd.parent_cmd = parent_cmd;
-
+            init_cmd._state = cmdState: {
+                const cmd_state: *State = try alloc.create(State);
+                cmd_state.* = .{};
+                break :cmdState cmd_state;
+            };
             const usage_description = fmt.comptimePrint(help_config.usage_desc_fmt, .{ self.name });
             const help_description = fmt.comptimePrint(help_config.help_desc_fmt, .{ self.name });
 

@@ -349,10 +349,10 @@ fn parseArgsCtx(
                     break :shouldParse false;
                 };
                 if (should_parse) {
-                    cmd.setArgIdx(parse_ctx.arg_idx);
+                    try cmd.setArgIdx(parse_ctx.arg_idx);
                     parse_ctx.arg_idx += 1;
                     parseArgsCtx(args, CommandT, sub_cmd, writer, parse_config, parse_ctx) catch |err| return err;
-                    cmd.setSubCmd(sub_cmd);
+                    try cmd.setSubCmd(sub_cmd);
                     continue :parseArg;
                 }
             }
@@ -448,7 +448,7 @@ fn parseArgsCtx(
                         // Handle final Option in a chain of Short Options
                         else if (short_idx == short_opts.len - 1) {
                             if (mem.eql(u8, opt.val.childType(), "bool")) //
-                                try @constCast(opt).val.set("true")
+                                try opt.val.set("true")
                             else {
                                 parseOpt(args, OptionT, opt) catch {
                                     if (cmd.allow_inheritable_opts) //
@@ -470,7 +470,7 @@ fn parseArgsCtx(
                         }
                         // Handle a boolean Option before the final Short Option in a chain.
                         else if (mem.eql(u8, opt.val.childType(), "bool")) {
-                            try @constCast(opt).val.set("true");
+                            try opt.val.set("true");
                             try opt.setArgIdx(parse_ctx.arg_idx);
                             parse_ctx.arg_idx += 1;
                             log.debug("Parsed Option '{c}'.", .{ opt.short_name.? });
@@ -484,7 +484,7 @@ fn parseArgsCtx(
                         }
                         // Handle a non-boolean Option which is given a Value without a space ' ' to separate them.
                         else if (CommandT.OptionT.allow_opt_val_no_space) {
-                            try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                            try opt.val.set(short_opts[(short_idx + 1)..]);
                             try opt.setArgIdx(parse_ctx.arg_idx);
                             parse_ctx.arg_idx += 1;
                             log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
@@ -497,7 +497,7 @@ fn parseArgsCtx(
                                 idx += 1;
                             }
                             if (mem.indexOfScalar(u8, short_names, short_opts[short_idx + 1]) == null) {
-                                try @constCast(opt).val.set(short_opts[(short_idx + 1)..]);
+                                try opt.val.set(short_opts[(short_idx + 1)..]);
                                 try opt.setArgIdx(parse_ctx.arg_idx);
                                 parse_ctx.arg_idx += 1;
                                 log.debug("Parsed Option '{?c}'.", .{ opt.short_name });
@@ -583,7 +583,7 @@ fn parseArgsCtx(
                             }
                             // Handle Boolean/Toggle Option.
                             if (mem.eql(u8, opt.val.childType(), "bool")) //
-                                try @constCast(opt).val.set("true") //
+                                try opt.val.set("true") //
                             // Handle Option with normal Argument.
                             else {
                                 parseOpt(args, OptionT, opt) catch {
@@ -660,7 +660,7 @@ fn parseArgsCtx(
     }
     // Check if a Sub Command has been set if it is Mandated for the current Command.
     if ( //
-        cmd.sub_cmds_mandatory and cmd.sub_cmd == null and //
+        cmd.sub_cmds_mandatory and cmd.subCmd() == null and //
         !( //
             cmd.sub_cmds != null and cmd.sub_cmds.?.len == 2 and //
             ( //

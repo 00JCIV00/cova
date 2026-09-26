@@ -1000,20 +1000,20 @@ pub fn Custom(comptime config: Config) type {
                     else .last,
                 // TODO: Handle default Array Elements.
                 .default_val = defVal: {
-                    if (
-                        utils.indexOfEql([]const u8, meta.fieldNames(@TypeOf(from_comp))[0..], "default_value") != null and
-                        from_comp.default_value_ptr != null
+                    if ( //
+                        @hasField(@TypeOf(from_comp), "default_value_ptr") and //
+                        from_comp.default_value_ptr != null //
                     ) {
                         switch (comp_info) {
                             .array => break :defVal null,
                             .optional => |optl| {
                                 break :defVal switch (@typeInfo(optl.child)) {
                                     .@"enum" => break :defVal null,
-                                    inline else => break :defVal @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value_ptr)))).*,
+                                    inline else => break :defVal @as(*const FromT, @ptrCast(@alignCast(from_comp.default_value_ptr))).*,
                                 };
                             },
-                            .@"enum" => break :defVal 0, 
-                            inline else => break :defVal @as(*FromT, @ptrCast(@alignCast(@constCast(from_comp.default_value_ptr.?)))).*
+                            .@"enum" => break :defVal 0,
+                            inline else => break :defVal @as(*const FromT, @ptrCast(@alignCast(from_comp.default_value_ptr.?))).*
                         }
                     }
                     else break :defVal null;
