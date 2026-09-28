@@ -201,33 +201,19 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         ///
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
+        /// This Value's Runtime Parse State.
+        ///
+        /// **Internal Use.** Accessible via `argIdx()`, `isSet()`, `isEmpty()` and `isMaxed()`.
+        _state: ?*State = null,
 
         /// Value Group of this Value.
         /// This must line up with one of the Value Groups in the `val_groups` of the parent Command or it will be ignored.
         /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.
         val_group: ?[]const u8 = null,
 
-        /// The Argument Indeces of this Value which are determined during parsing.
-        ///
-        /// *This should be Read-Only for library users.*
-        //arg_idx: ?[]u8 = null,
-        arg_idx: if (config.include_arg_indices) ?[]u8 else void = if (config.include_arg_indices) null else {},
-
-        /// The Parsed and Validated Argument(s) this Value has been set to.
-        ///
-        /// **Internal Use.**
-        _set_args: [config.max_children]?ChildT = .{ null } ** config.max_children,
-        /// The current Index of Raw Argument Entries for this Value.
-        ///
-        /// **Internal Use.**
-        _entry_idx: u7 = 0,
         /// The Max number of Raw Argument Entries that can be provided. 
         /// This must be between 1 to the value of `config.max_children`.
         max_entries: u7 = 1,
-        /// Flag to determine if this Value is at max capacity for Raw Arguments.
-        ///
-        /// *This should be Read-Only for library users.*
-        is_maxed: bool = false,
         /// Delimiter Characters that can be used to split up Multi-Values or Multi-Options. 
         /// This is only applicable if `set_behavior = .Multi`.
         arg_delims: []const u8 = config.global_arg_delims,
@@ -235,15 +221,6 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         set_behavior: SetBehavior = config.global_set_behavior,
         /// An optional Default value for this Value.
         default_val: ?ChildT = null,
-        /// Flag to determine if this Value has been Parsed and Validated.
-        ///
-        /// *This should be Read-Only for library users.*
-        is_set: bool = false,
-        /// Flag to determine if this Value has been set to Empty. 
-        /// This is intended to be used w/ Options.
-        ///
-        /// *This should be Read-Only for library users.*
-        is_empty: bool = true,
 
         /// A Parsing Function to be used in place of the normal `parse()` for Argument Parsing for this specific Value.
         /// This will be used FIRST, before `type_parse_fn` then the normal `parse()` functions are tried.
@@ -256,6 +233,48 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         name: []const u8 = "",
         /// The Description of this Value for Usage/Help messages.
         description: []const u8 = "",
+
+        /// Runtime Parse State
+        pub const State = struct {
+            /// The Argument Indeces of this Value which are determined during parsing.
+            ///
+            /// *This should be Read-Only for library users.*
+            //arg_idx: ?[]u8 = null,
+            arg_idx: if (config.include_arg_indices) ?[]u8 else void = if (config.include_arg_indices) null else {},
+            /// The Parsed and Validated Argument(s) this Value has been set to.
+            ///
+            /// **Internal Use.**
+            _set_args: [config.max_children]?ChildT = @splat(null),
+            /// The current Index of Raw Argument Entries for this Value.
+            ///
+            /// **Internal Use.**
+            _entry_idx: u7 = 0,
+            /// Flag to determine if this Value is at max capacity for Raw Arguments.
+            ///
+            /// *This should be Read-Only for library users.*
+            is_maxed: bool = false,
+            /// Flag to determine if this Value has been Parsed and Validated.
+            ///
+            /// *This should be Read-Only for library users.*
+            is_set: bool = false,
+            /// Flag to determine if this Value has been set to Empty. 
+            /// This is intended to be used w/ Options.
+            ///
+            /// *This should be Read-Only for library users.*
+            is_empty: bool = true,
+
+            pub const default: @This() = .{};
+        };
+
+        /// Get this Value's Runtime Parse State.
+        pub fn state(self: *const @This(), comptime mutable: bool) if (mutable) error{ValueNotInitialized}!*State else *const State {
+            if (self._state) |val_state| //
+                return val_state
+            else if (mutable) //
+                return error.ValueNotInitialized
+            else //
+                return &State.default;
+        }
 
         /// Custom Parsing function for this Value Type.
         /// Check `Value.Config` for details.
@@ -319,35 +338,41 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
             };
             if (self.set_behavior == .multi and meta.activeTag(@typeInfo(ChildT)) != .pointer and check_delim) {
                 var split_args = mem.splitScalar(u8, set_arg, arg_delim);
-                while (split_args.next()) |arg| try self.set(arg);
+                while (split_args.next()) //
+                    |arg| try self.set(arg);
                 return;
             }
 
             // Single Arg
             const parsed_arg = try self.parse(set_arg);
-            @constCast(self).is_set =
-                if (self.valid_fn) |validFn| validFn(parsed_arg, self._alloc orelse { 
+            const val_state: *State = try self.state(true);
+            val_state.is_set = isSet: {
+                const val_alloc = self._alloc orelse {
                     log.err("The Value '{s}' does not have an Allocator!", .{ self.name }); 
-                    return error.ValueNotInitialized; }
-                )
-                else true;
-            if (self.is_set) {
+                    return error.ValueNotInitialized;
+                };
+                break :isSet //
+                    if (self.valid_fn) |validFn| validFn(parsed_arg, val_alloc)
+                    else true;
+            };
+            if (val_state.is_set) {
                 switch (self.set_behavior) {
-                    .first => if (self._set_args[0] == null) { 
-                        @constCast(self)._set_args[0] = parsed_arg;
-                        @constCast(self)._entry_idx += 1;
+                    .first => if (val_state._set_args[0] == null) { 
+                        val_state._set_args[0] = parsed_arg;
+                        val_state._entry_idx += 1;
                     },
                     .last => {
-                        @constCast(self)._set_args[0] = parsed_arg;
-                        if (self._entry_idx < 1) @constCast(self)._entry_idx += 1;
+                        val_state._set_args[0] = parsed_arg;
+                        if (val_state._entry_idx < 1) //
+                            val_state._entry_idx += 1;
                     },
-                    .multi => if (self._entry_idx < self.max_entries) {
-                        @constCast(self)._set_args[self._entry_idx] = parsed_arg;
-                        @constCast(self)._entry_idx += 1;
+                    .multi => if (val_state._entry_idx < self.max_entries) {
+                        val_state._set_args[val_state._entry_idx] = parsed_arg;
+                        val_state._entry_idx += 1;
                     }
                 }
-                @constCast(self).is_maxed = self._entry_idx == self.max_entries;
-                @constCast(self).is_empty = false;
+                val_state.is_maxed = val_state._entry_idx == self.max_entries;
+                val_state.is_empty = false;
             }
             else return error.InvalidValue;
         }
@@ -355,15 +380,18 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// Set this Value without actual data so that it's "empty". 
         /// This is intended to be used with Options.
         pub fn setEmpty(self: *const @This()) !void {
-            if (!self.is_empty) return error.NotEmpty;
-            @constCast(self).is_set = true;
+            const val_state: *State = try self.state(true);
+            if (!val_state.is_empty) //
+                return error.NotEmpty;
+            val_state.is_set = true;
         }
 
         /// Get the first Parsed and Validated value of this Value.
         /// This will pull the first value from `_set_args` and should be used with the `First` or `Last` Set Behaviors.
         pub fn get(self: *const @This()) !ChildT {
-            return 
-                if (self.is_set and !self.is_empty) self._set_args[0].?
+            const val_state: *const State = self.state(false);
+            return //
+                if (val_state.is_set and !val_state.is_empty) val_state._set_args[0].?
                 else if (self.default_val) |def_val| def_val
                 else if (ChildT == bool) false
                 else error.ValueNotSet;
@@ -372,7 +400,8 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         /// Get All Parsed and Validated Arguments of this Value using the provided Allocator (`alloc`).
         /// This will pull All values from `_set_args` and should be used with `Multi` Set Behavior.
         pub fn getAllAlloc(self: *const @This(), alloc: mem.Allocator) ![]ChildT {
-            if (!self.is_set) {
+            const val_state: *const State = self.state(false);
+            if (!val_state.is_set) {
                 if (self.default_val) |def_val| {
                     var val = try alloc.alloc(ChildT, 1);
                     val[0] = def_val;
@@ -380,8 +409,9 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
                 }
                 else return error.ValueNotSet;
             }
-            var vals = try alloc.alloc(ChildT, self._entry_idx);
-            for (self._set_args[0..self._entry_idx], 0..) |arg, idx| vals[idx] = arg.?;
+            var vals = try alloc.alloc(ChildT, val_state._entry_idx);
+            for (val_state._set_args[0..val_state._entry_idx], 0..) |arg, idx| //
+                vals[idx] = arg.?;
             return vals;
         }
 
@@ -392,9 +422,14 @@ pub fn Typed(comptime SetT: type, comptime config: Config) type {
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).
-        pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
+        pub fn init(self: *const @This(), alloc: mem.Allocator) mem.Allocator.Error!@This() {
             var val = self.*;
             val._alloc = alloc;
+            val._state = valState: {
+                const val_state: *State = try alloc.create(State);
+                val_state.* = .{};
+                break :valState val_state;
+            };
             return val;
         }
     };
@@ -673,19 +708,19 @@ pub fn Custom(comptime config: Config) type {
         /// Get the Parsed and Validated Value of the inner Typed Value.
         /// Comptime Only
         // TODO: See if this can be made Runtime
-        pub inline fn get(self: *const @This()) !switch (meta.activeTag(self.*.generic)) { 
-            inline else => |tag| @TypeOf(@field(self.*.generic, @tagName(tag))).ChildT, 
+        pub inline fn get(self: *const @This()) !switch (meta.activeTag(self.generic)) { 
+            inline else => |tag| @TypeOf(@field(self.generic, @tagName(tag))).ChildT, 
         } {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| try @field(self.*.generic, @tagName(tag)).get(),
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| try @field(self.generic, @tagName(tag)).get(),
             };
         }
 
         /// Get the Parsed and Validated value of the inner Typed Value as the specified Type (`T`).
         pub fn getAs(self: *const @This(), comptime T: type) !T {
-            return switch (meta.activeTag(self.*.generic)) {
+            return switch (meta.activeTag(self.generic)) {
                 inline else => |tag| {
-                    const typed_val = @field(self.*.generic, @tagName(tag));
+                    const typed_val = @field(self.generic, @tagName(tag));
                     return
                         if (@TypeOf(typed_val).ChildT == T) //
                             try typed_val.get() //
@@ -711,9 +746,9 @@ pub fn Custom(comptime config: Config) type {
 
         /// Get All of the Parsed and Validated values of the inner Typed Value as a Slice of the specified Type (`T`).
         pub fn getAllAs(self: *const @This(), comptime T: type) ![]T {
-            return switch (meta.activeTag(self.*.generic)) {
+            return switch (meta.activeTag(self.generic)) {
                 inline else => |tag| {
-                    const typed_val = @field(self.*.generic, @tagName(tag));
+                    const typed_val = @field(self.generic, @tagName(tag));
                     return 
                         if (@TypeOf(typed_val).ChildT == T) //
                             try typed_val.getAll() //
@@ -744,15 +779,15 @@ pub fn Custom(comptime config: Config) type {
 
         /// Set the inner Typed Value if the provided Argument (`arg`) can be Parsed and Validated.
         pub fn set(self: *const @This(), arg: []const u8) !void {
-            switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| try @field(self.*.generic, @tagName(tag)).set(arg),
+            switch (meta.activeTag(self.generic)) {
+                inline else => |tag| try @field(self.generic, @tagName(tag)).set(arg),
             }
         }
         /// Set the inner Typed Value without data so that it is "empty". 
         /// This is meant to be used with Options
         pub fn setEmpty(self: *const @This()) !void { 
-            switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| try @field(self.*.generic, @tagName(tag)).setEmpty(),
+            switch (meta.activeTag(self.generic)) {
+                inline else => |tag| try @field(self.generic, @tagName(tag)).setEmpty(),
             }
         }
 
@@ -761,8 +796,8 @@ pub fn Custom(comptime config: Config) type {
             if (!include_arg_indices) //
                 return;
             const alloc = self.allocator() orelse return error.ValueNotInitialized;
-            const self_idx = switch(meta.activeTag(self.*.generic)) {
-                inline else => |tag| &@field(@constCast(self).*.generic, @tagName(tag)).arg_idx,
+            const self_idx = switch(meta.activeTag(self.generic)) {
+                inline else => |tag| &(try @field(self.generic, @tagName(tag)).state(true)).arg_idx,
             };
             if (self_idx.* == null) {
                 self_idx.* = try alloc.alloc(u8, 1);
@@ -783,38 +818,38 @@ pub fn Custom(comptime config: Config) type {
         pub fn argIdx(self: *const @This()) !?[]u8 {
             if (!include_arg_indices) //
                 return error.ArgIndicesNotEnabled;
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).arg_idx,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).state(false).arg_idx,
             };
         }
 
         /// Get the inner Typed Value's Allocator.
         pub fn allocator(self: *const @This()) ?mem.Allocator {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag))._alloc,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag))._alloc,
             };
         }
 
         /// Get the inner Typed Value's Group.
         pub fn valGroup(self: *const @This()) ?[]const u8 {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).val_group,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).val_group,
             };
         }
 
         /// Get the inner Typed Value's Name.
         pub fn name(self: *const @This()) []const u8 {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).name,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).name,
             };
         }
         /// Get the inner Typed Value's Child Type Name.
         /// This will provide the actual Child Type Name without aliasing.
         pub fn childType(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
-            return switch (meta.activeTag(self.*.generic)) {
+            return switch (meta.activeTag(self.generic)) {
                 inline else => |tag| typeName: {
-                    const val = @field(self.*.generic, @tagName(tag));
+                    const val = @field(self.generic, @tagName(tag));
                     break :typeName @typeName(@TypeOf(val).ChildT);
                 }
             };
@@ -823,9 +858,9 @@ pub fn Custom(comptime config: Config) type {
         /// This is where aliasing happens via `Value.Typed.alias_child_type` or `Value.Config.child_type_aliases`.
         pub fn childTypeName(self: *const @This()) []const u8 {
             @setEvalBranchQuota(config.max_int_bit_width * 10);
-            return switch (meta.activeTag(self.*.generic)) {
+            return switch (meta.activeTag(self.generic)) {
                 inline else => |tag| typeName: {
-                    const val = @field(self.*.generic, @tagName(tag));
+                    const val = @field(self.generic, @tagName(tag));
                     break :typeName 
                         if (val.alias_child_type) |alias| //
                             alias //
@@ -842,60 +877,60 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Get the inner Typed Value's Description.
         pub fn description(self: *const @This()) []const u8 {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).description,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).description,
             };
         }
         /// Check if the inner Typed Value is Set.
         pub fn isSet(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).is_set,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).state(false).is_set,
             };
         }
         /// Check if the inner Typed Value is Empty.
         pub fn isEmpty(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).is_empty,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).state(false).is_empty,
             };
         }
         /// Check if the inner Typed Value has a default value.
         pub fn hasDefault(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).default_val != null,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).default_val != null,
             };
         }
         /// Get the inner Typed Value's Current Entry Index for Value Parsing.
         /// Note, this should not be confused with this Value's Argument Index.
         pub fn entryIdx(self: *const @This()) u7 {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag))._entry_idx,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).state(false)._entry_idx,
             };
         }
         /// Get the inner Typed Value's Max Entries.
         pub fn maxEntries(self: *const @This()) u7 {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).max_entries,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).max_entries,
             };
         }
         /// Get the inner Typed Value's Set Behavior.
         pub fn setBehavior(self: *const @This()) SetBehavior {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).set_behavior,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).set_behavior,
             };
         }
         /// Check if the inner Typed Value's has a custom `parse_fn`.
         pub fn hasCustomParseFn(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*.generic)) {
+            return switch (meta.activeTag(self.generic)) {
                 inline else => |tag| hasFn: {
-                    const val = @field(self.*.generic, @tagName(tag));
+                    const val = @field(self.generic, @tagName(tag));
                     break :hasFn val.parse_fn != null or @TypeOf(val).child_type_parse_fn != null;
                 }
             };
         }
         /// Check if the inner Typed Value's has a custom `valid_fn`.
         pub fn hasCustomValidFn(self: *const @This()) bool {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @field(self.*.generic, @tagName(tag)).valid_fn != null,
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| @field(self.generic, @tagName(tag)).valid_fn != null,
             };
         }
         /// Check if the inner Typed Value's has a custom `parse_fn` or `valid_fn`.
@@ -1045,9 +1080,9 @@ pub fn Custom(comptime config: Config) type {
 
         /// Creates the Help message for this Value and Writes it to the provided Writer (`writer`).
         pub fn help(self: *const @This(), writer: *Io.Writer) !void {
-            switch (meta.activeTag(self.*.generic)) {
+            switch (meta.activeTag(self.generic)) {
                 inline else => |tag| {
-                    const val = @field(self.*.generic, @tagName(tag));
+                    const val = @field(self.generic, @tagName(tag));
                     if (@TypeOf(val).child_type_help_fn)|helpFn| //
                         return helpFn(self, writer, self.allocator());
                 }
@@ -1058,9 +1093,9 @@ pub fn Custom(comptime config: Config) type {
         }
         /// Creates the Usage message for this Value and Writes it to the provided Writer (`writer`).
         pub fn usage(self: *const @This(), writer: *Io.Writer) !void {
-            switch (meta.activeTag(self.*.generic)) {
+            switch (meta.activeTag(self.generic)) {
                 inline else => |tag| {
-                    const val = @field(self.*.generic, @tagName(tag));
+                    const val = @field(self.generic, @tagName(tag));
                     if (@TypeOf(val).child_type_usage_fn)|usageFn| //
                         return usageFn(self, writer, self.allocator());
                 }
@@ -1071,9 +1106,9 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Initialize this Value with the provided Allocator (`alloc`).
-        pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
-            return switch (meta.activeTag(self.*.generic)) {
-                inline else => |tag| @This(){ .generic = @unionInit(GenericT, @tagName(tag), @field(self.*.generic, @tagName(tag)).init(alloc)) },
+        pub fn init(self: *const @This(), alloc: mem.Allocator) mem.Allocator.Error!@This() {
+            return switch (meta.activeTag(self.generic)) {
+                inline else => |tag| .{ .generic = @unionInit(GenericT, @tagName(tag), try @field(self.generic, @tagName(tag)).init(alloc)) },
             };
         }
     };

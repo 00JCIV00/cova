@@ -207,6 +207,10 @@ pub fn Custom(comptime config: Config) type {
         ///
         /// **Internal Use.**
         _alloc: ?mem.Allocator = null,
+        /// This Option's Runtime Parse State.
+        ///
+        ///**Internal Use.** Accessible via `argIdx()`.
+        _state: ?*State = null,
 
         /// The Parent Command of this Option.
         /// This will be filled in during Initialization.
@@ -221,12 +225,6 @@ pub fn Custom(comptime config: Config) type {
         /// This must line up with one of the Option Groups in the `opt_groups` of the parent Command or it will be ignored.
         /// This can be Validated using `Command.Custom.ValidateConfig.check_arg_groups`.
         opt_group: ?[]const u8 = null,
-
-        /// The Argument Indeces of this Option which are determined during parsing.
-        ///
-        /// *This should be Read-Only for library users.*
-        //arg_idx: ?[]u8 = null,
-        arg_idx: if (include_arg_indices) ?[]u8 else void = if (include_arg_indices) null else {},
 
         /// This Option's Short Name (ex: `-s`).
         short_name: ?u8 = null,
@@ -243,7 +241,7 @@ pub fn Custom(comptime config: Config) type {
         name: []const u8,
         /// The Description of this Option for Usage/Help messages.
         description: []const u8 = "",
-        /// Hide this Command from Usage/Help messages.
+        /// Hide this Option from Usage/Help messages.
         hidden: bool = false,
 
         /// During parsing, mandate that THIS Option must be used in a case-sensitive manner when called by its Long Name.
@@ -277,23 +275,49 @@ pub fn Custom(comptime config: Config) type {
         ///// 3. Allocator (This does not have to be used within in the function, but must be supported in case it's needed.)
         //usage_fn: ?*anyopaque = null,
 
+        /// Parse State
+        pub const State = struct {
+            /// The Argument Indeces of this Option which are determined during parsing.
+            ///
+            /// *This should be Read-Only for library users.*
+            arg_idx: if (include_arg_indices) ?[]u8 else void = if (include_arg_indices) null else {},
+
+            pub const default: @This() = .{};
+        };
+
+        /// Get this Option's Runtime Parse State.
+        pub fn state(self: *const @This(), comptime mutable: bool) if (mutable) error{OptionNotInitialized}!*State else *const State {
+            if (self._state) |opt_state| //
+                return opt_state
+            else if (mutable) //
+                return error.OptionNotInitialized
+            else //
+                return &State.default;
+        }
+
+        /// Get the Argument Indeces of this Option.
+        pub fn argIdx(self: *const @This()) if (include_arg_indices) ?[]const u8 else void {
+            return self.state(false).arg_idx;
+        }
+
         /// Set a new Argument Index for this Option.
         pub fn setArgIdx(self: *const @This(), arg_idx: u8) !void {
             if (!include_arg_indices) //
                 return;
             const alloc = self._alloc orelse return error.OptionNotInitialized;
-            if (self.arg_idx == null) {
-                @constCast(self).*.arg_idx = try alloc.alloc(u8, 1);
-                @constCast(self).*.arg_idx.?[0] = arg_idx;
+            const opt_state = try self.state(true);
+            if (opt_state.arg_idx == null) {
+                opt_state.arg_idx = try alloc.alloc(u8, 1);
+                opt_state.arg_idx.?[0] = arg_idx;
                 return;
             }
             switch (self.val.setBehavior()) {
-                .first, .last => @constCast(self).*.arg_idx.?[0] = arg_idx,
+                .first, .last => opt_state.arg_idx.?[0] = arg_idx,
                 .multi => {
-                    var idx_list: ArrayList(u8) = .fromOwnedSlice(@constCast(self).arg_idx.?);
+                    var idx_list: ArrayList(u8) = .fromOwnedSlice(opt_state.arg_idx.?);
                     errdefer idx_list.deinit(alloc);
                     try idx_list.append(alloc, arg_idx);
-                    @constCast(self).*.arg_idx = try idx_list.toOwnedSlice(alloc);
+                    opt_state.arg_idx = try idx_list.toOwnedSlice(alloc);
                 },
             }
         }
@@ -442,10 +466,15 @@ pub fn Custom(comptime config: Config) type {
         }
 
         /// Initialize this Option with the provided Allocator (`alloc`).
-        pub fn init(self: *const @This(), alloc: mem.Allocator) @This() {
+        pub fn init(self: *const @This(), alloc: mem.Allocator) mem.Allocator.Error!@This() {
             var opt = self.*;
             opt._alloc = alloc;
-            opt.val = self.*.val.init(alloc);
+            opt._state = optState: {
+                const opt_state: *State = try alloc.create(State);
+                opt_state.* = .{};
+                break :optState opt_state;
+            };
+            opt.val = try self.val.init(alloc);
             return opt;
         }
     };

@@ -1497,7 +1497,8 @@ pub fn Custom(comptime config: Config) type {
                             if (mem.eql(u8, val.name(), arg_name)) {
                                 //if (!val.isSet() and val.entryIdx() == val.maxEntries() and type_info == .@"struct") {
                                 if (!val.isSet() and type_info == .@"struct") {
-                                    if (!to_config.allow_unset) return error.ValueNotSet;
+                                    if (!to_config.allow_unset) //
+                                        return error.ValueNotSet;
                                     const def_val = field.default_value_ptr orelse {
                                         log.err("The Field '{s}' has no default value.", .{ field.name });
                                         return error.NoDefaultValue;
@@ -1507,7 +1508,8 @@ pub fn Custom(comptime config: Config) type {
                                 }
                                 if (type_info == .@"union") return @unionInit(ToT, field.name, val.getAs(field.type) catch continue); 
                                 @field(out, field.name) = val.getAs(field.type) catch |err| setVal: {
-                                    if (!to_config.allow_incompatible) return error.IncompatibleType;
+                                    if (!to_config.allow_incompatible) //
+                                        return error.IncompatibleType;
                                     break :setVal switch (field_info) {
                                         .bool => false,
                                         .int, .float, => @as(field.type, 0),
@@ -1540,7 +1542,7 @@ pub fn Custom(comptime config: Config) type {
                                             else @typeName(a_opt.child);
                                         var f_ary: field.type = undefined;
                                         for (f_ary[0..], 0..) |*elm, idx| //
-                                            elm.* = @field(opt.val.generic, val_tag)._set_args[idx];
+                                            elm.* = @field(opt.val.generic, val_tag).state(false)._set_args[idx];
                                         if (type_info == .@"union") //
                                             return @unionInit(ToT, field.name, f_ary);
                                         @field(out, field.name) = f_ary;
@@ -1566,7 +1568,7 @@ pub fn Custom(comptime config: Config) type {
                                             if (ary.child == []const u8) "string" //
                                             else @typeName(ary.child);
                                         var f_ary: field.type = undefined;
-                                        for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(val.generic, val_tag)._set_args[idx] orelse elmVal: {
+                                        for (f_ary[0..], 0..) |*elm, idx| elm.* = @field(val.generic, val_tag).state(false)._set_args[idx] orelse elmVal: {
                                             break :elmVal switch (ary_info) {
                                                 .bool => false,
                                                 .int, .float, => @as(ary.child, 0),
@@ -2069,7 +2071,7 @@ pub fn Custom(comptime config: Config) type {
             if (self.opts) |opts| {
                 var init_opts = try alloc.alloc(@This().OptionT, opts.len);
                 inline for (opts, init_opts[0..]) |opt, *i_opt| {
-                    i_opt.* = opt.init(alloc);
+                    i_opt.* = try opt.init(alloc);
                     i_opt.*.parent_cmd = init_cmd;
                     i_opt.*.val.parent_cmd = init_cmd;
                 }
@@ -2118,7 +2120,7 @@ pub fn Custom(comptime config: Config) type {
                     },
                 };
                 for (help_opts[0..]) |*opt| //
-                    opt.* = opt.init(alloc);
+                    opt.* = try opt.init(alloc);
                 init_cmd.opts = //
                     if (init_cmd.opts) |init_opts| try mem.concat(alloc, @This().OptionT, &.{ init_opts, help_opts[0..] }) //
                     else try alloc.dupe(OptionT, help_opts[0..]);
@@ -2126,7 +2128,7 @@ pub fn Custom(comptime config: Config) type {
             if (self.vals) |vals| {
                 var init_vals = try alloc.alloc(@This().ValueT, vals.len);
                 inline for (vals, init_vals[0..]) |val, *i_val| {
-                    i_val.* = val.init(alloc);
+                    i_val.* = try val.init(alloc);
                     i_val.*.parent_cmd = init_cmd;
                 }
                 init_cmd.vals = init_vals;
