@@ -3,14 +3,10 @@
 
 // Standard library
 const std = @import("std");
-const heap = std.heap;
-const json = std.json;
-const log = std.log;
+const log = std.log.scoped(.cova_gen);
 const mem = std.mem;
 const meta = std.meta;
 const proc = std.process;
-const Build = std.Build;
-const Io = std.Io;
 // The Cova library is needed for the `generate` module.
 const cova = @import("cova");
 const generate = cova.generate;
@@ -43,12 +39,12 @@ fn optsToConf(comptime ConfigT: type, comptime conf_opts: anytype) ?ConfigT {
         return null;
     var conf = ConfigT{};
     for (@typeInfo(ConfigT).@"struct".fields) |field| {
-        if (std.mem.eql(u8, field.name, "provided")) //
+        if (mem.eql(u8, field.name, "provided")) //
             continue;
         @field(conf, field.name) = @field(conf_opts, field.name);
         if (
             (
-                @typeInfo(@TypeOf(@field(conf, field.name))) == .optional and 
+                @typeInfo(@TypeOf(@field(conf, field.name))) == .optional and
                 @field(conf, field.name) != null
             ) or
             utils.indexOfEql([]const u8, meta_info, field.name) == null

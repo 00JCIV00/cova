@@ -1,12 +1,5 @@
 //! Functions to generate Help Docs, Tab Completion Scripts, and Argument Templates.
 
-// Standard
-const std = @import("std");
-const fmt = std.fmt;
-const fs = std.fs;
-const log = std.log;
-const mem = std.mem;
-
 // Cova
 const utils = @import("utils.zig");
 pub const help_docs = @import("generate/help_docs.zig");
