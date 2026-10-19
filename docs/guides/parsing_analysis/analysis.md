@@ -6,13 +6,11 @@ The `cova.Command.Custom.checkSubCmd`() and `cova.Command.Custom.matchSubCmd`() 
 
 For a detailed example of these methods in action, refer to the [Basic-App](https://github.com/00JCIV00/cova/blob/main/examples/basic_app.zig) demo under the `// - Handle Parsed Commands` comment in the `main()` function.
 
-Of note, there is also the `cova.Command.Custom.SubCommandsEnum`() method which will create an Enum of all of the sub-Commands of a given Command. Unfortunately, the Command this is called from must be comptime-known, making it cumbersome to use in all but the most basic of cases. For the time being, the check and match methods above should be preferred.
-
 ## Conversions
 ### To a Struct or Union
 Once a Command has been initialized and parsed to, using the `cova.Command.Custom.to`() method will convert it into a struct or union of a comptime-known Struct or Union Type. The function takes a valid comptime-known Struct or Union Type (`ToT`) and a ToConfig (`to_config`). Details for the method, including the rules for a valid Struct or Union Type, can be found under `cova.Command.Custom.to`(). Once sucessfully created, the new struct or union can be used normally throughout the rest of the project. This process looks as follows:
 ```zig
-const DemoStruct {
+const DemoStruct = struct {
     // Valid field values
     ...
 };
@@ -26,7 +24,7 @@ pub fn main() !void {
     ...
 
     // Convert to struct
-    const demo_struct = main_cmd.to(DemoStruct, .{}); 
+    const demo_struct = try main_cmd.to(DemoStruct, .{});
 
     // Use the struct normally
     some_fn(demo_struct);
@@ -37,7 +35,7 @@ pub fn main() !void {
 The `cova.Command.Custom.ToConfig` can be used to specify how the Command will be converted to a struct.
 
 ### To a Function
-Alternatively, the Command can also be called as a comptime-known function using `cova.Command.Custom.callAs`(). This method takes a function (`call_fn`), an optional self parameter for the function (`fn_self`), and the return Type of the function (`ReturnT`) to call the function using the Command's Arguments as the parameters. Example:
+Alternatively, the Command can also be called as a comptime-known function using `cova.Command.Custom.callAs`(). This method takes a function (`call_fn`), a `CallContext` (`ctx`) containing optional self, `Io`, and Allocator values, and the return Type of the function (`ReturnT`) to call the function using the Command's Values as the parameters. Example:
 ```zig
 pub fn projectFn(some: anytype, params: []const u8) void {
     _ = some;
@@ -53,7 +51,7 @@ pub fn main() !void {
     ...
 
     // Call as a Function
-    main_cmd.callAs(projectFn, null, void); 
+    try main_cmd.callAs(projectFn, .{}, void);
 }
 
 ```
@@ -62,7 +60,7 @@ pub fn main() !void {
 There are a few ways to analyze Options as well, which include the `cova.Command.Custom.checkOpts`() and `cova.Command.Custom.matchOpts`() methods. These work similarly to their sub-Command counterparts detailed above. Additionally, the `cova.Command.Custom.OptionsCheckConfig` can be passed to these methods to change the kind of boolean logic they use.
 
 ## Direct Access
-To directly access the sub-Argument of a Command the following fields and methods of `cova.Command.Custom` can be used: 
+To directly access the sub-Argument of a Command the following fields and methods of `cova.Command.Custom` can be used:
 ### Fields
 - `sub_cmd`: Access the sub Command of this Command if set.
 - `opts`: Access the Options of this Command if any.

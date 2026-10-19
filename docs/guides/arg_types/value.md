@@ -12,71 +12,54 @@ This process mirrors that of Option Types nearly one-for-one. A `cova.Value.Conf
 ### Adding Custom Child Types
 Adding custom Child Types allows Cova to parse argument tokens into virtually any Type. This is accomplished by first adding the custom Child Types to the `Value.Config.custom_types` field, then (non-primitive Types) specifying parsing functions for these Types via `Value.Config.child_type_parse_fns` as seen here:
 ```zig
-const CommandT = cova.Command.Custom(cova.Command.Config{
+const MyType = struct {
+    value: u32,
+};
+
+const CommandT = cova.Command.Custom(.{
     .global_help_prefix = "Example",
     .val_config = .{
-        .custom_types = &.{ 
-            std.net.Address,
-            std.fs.File,
+        .custom_types = &.{
+            MyType,
         },
-        .child_type_parse_fns = &.{ 
+        .child_type_parse_fns = &.{
             .{
-                .ChildT = std.net.Address,
+                .ChildT = MyType,
                 .parse_fn = struct{
-                    pub fn parseIP(addr: []const u8, _: std.mem.Allocator) !std.net.Address {
-                        var iter = std.mem.splitScalar(u8, addr, ':');
-                        return net.Address.parseIp(
-                            iter.first(), 
-                            try std.fmt.parseInt(u16, iter.next() orelse "-", 10), 
-                        ) catch |err| {
-                            std.log.err("The provided IP address '{s}' is invalid.", .{ addr }); 
-                            return err;
-                        };
+                    pub fn parseMyType(arg: []const u8, _: std.mem.Allocator) !MyType {
+                        return .{ .value = try std.fmt.parseInt(u32, arg, 10) };
                     }
-                }.parseIP,
-            },
-            .{
-                .ChildT = std.fs.File,
-                .parse_fn = struct{
-                    pub fn parseFile(path: []const u8, _: std.mem.Allocator) !std.fs.File {
-                        var cwd = std.fs.cwd();
-                        return cwd.openFile(path, .{ .lock = .shared }) catch |err| {
-                            std.log.err("The provided path to the File '{s}' is invalid.", .{ path }); 
-                            return err;
-                        };
-                    }
-                }.parseFile,
+                }.parseMyType,
             },
         },
-    }   
+    },
 });
 ```
 
 ## Setting up a Value
-Similar to Options, Values are designed to be set up within a Command. Specifically, within a Command's `cova.Command.Custom.vals` field. This can be done using a combination of Zig's Union and Anonymous Struct (Tuple) syntax or by using the `cova.Value.ofType`() function.
+Similar to Options, Values are designed to be set up within a Command. Specifically, within a Command's `cova.Command.Custom.vals` field. This can be done by using the configured Value Type's `ofType`() function.
 
 Values can be given a Default value using the `cova.Value.Typed.default_val` field as well as an alternate Parsing Function and a Validation Function using the `cova.Value.Typed.parse_fn` and `cova.Value.Typed.valid_fn` fields respectively. An example of how to create an anonymous function for these fields can be seen below. There are also common functions and function builders available within both `cova.Value.ParsingFns` and `cova.Value.ValidationFns`. 
 
-These functions allow for simple and powerful additions to how Values are parsed. For instance, the `true` value for Booleans can be expanded to include more words (i.e. `true = "yes", "y", "on"`), a numeric value can be limited to a certain range of numbers (i.e. `arg > 10 and arg <= 1000`), or an arbitrary string can be converted to something else (i.e. `"eight" = 8`). Moreover, since these functions all follow normal Zig syntax, they can be combined into higher level functions for more complex parsing and validation. Finally, the custom parsing functions in particular allow Custom Types to be parsed directly from a given argument token. For example, converting a given filepath into a `std.fs.File`.
+These functions allow for simple and powerful additions to how Values are parsed. For instance, the `true` value for Booleans can be expanded to include more words (i.e. `true = "yes", "y", "on"`), a numeric value can be limited to a certain range of numbers (i.e. `arg > 10 and arg <= 1000`), or an arbitrary string can be converted to something else (i.e. `"eight" = 8`). Moreover, since these functions all follow normal Zig syntax, they can be combined into higher level functions for more complex parsing and validation. Finally, the custom parsing functions in particular allow Custom Types to be parsed directly from a given argument token. For example, converting a given argument token into a custom Type.
 
 Example:
 ```zig
 // Within a Command
 ...
 .vals = &.{
-    Value.ofType([]const u8, .{
+    ValueT.ofType([]const u8, .{
         .name = "str_val",
         .description = "A string value for the command.",
     }),
-    // Using Zig's union creation syntax
-    .{ .generic = .{ .u128, .{
-        .name = "cmd_u128",
-        .description = "A u128 value for the command.",
+    ValueT.ofType(u64, .{
+        .name = "cmd_u64",
+        .description = "A u64 value for the command.",
         // Default Value
         .default_val = 654321,
         // Validation Function
-        .valid_fn = struct{ fn valFn(val: u128) bool { return val > 123 and val < 987654321; } }.valFn,
-    } } },
+        .valid_fn = struct{ fn valFn(val: u64, _: std.mem.Allocator) bool { return val > 123 and val < 987654321; } }.valFn,
+    }),
 }
 ```
 

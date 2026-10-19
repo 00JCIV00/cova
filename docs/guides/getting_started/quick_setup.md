@@ -9,34 +9,36 @@ const CommandT = cova.Command.Base();
 pub const ProjectStruct = struct {
     pub const SubStruct = struct {
         sub_uint: ?u8 = 5,
-        sub_string: []const u8,
-    },
+        sub_string: []const u8 = "default",
+    };
 
     subcmd: SubStruct = .{},
-    int: ?i4 = 10,
+    int: ?i8 = 10,
     flag: ?bool = false,
-    strings: [3]const []const u8 = .{ "Three", "default", "strings." },
+    strings: [3][]const u8 = .{ "Three", "default", "strings." },
 };
 
-const setup_cmd = CommandT.from(ProjectStruct);
+const setup_cmd = CommandT.from(ProjectStruct, .{});
 
-pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
-    const stdout = std.io.getStdOut().writer();
+pub fn main(init: std.process.Init) !void {
+    const alloc = init.gpa;
 
     const main_cmd = try setup_cmd.init(alloc, .{});
     defer main_cmd.deinit();
 
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch(err) {
-        error.UsageHelpCalled,
+    var stdout_file = std.Io.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
+
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
+        error.UsageHelpCalled => return,
         else => return err,
-    }
-    try cova.utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
+    };
+    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, false);
 }
 ``` 
 
@@ -67,15 +69,15 @@ pub const ProjectStruct = struct {
         sub_uint: ?u8 = 5,
 
         // Primitive type fields will be converted into Values.
-        sub_string: []const u8,
-    },
+        sub_string: []const u8 = "default",
+    };
 
     // Struct fields will be converted into cova Commands.
     subcmd: SubStruct = .{},
 
     // The default values of Primitive type fields will be applied as the default value
     // of the converted Option or Value.
-    int: ?i4 = 10,
+    int: ?i8 = 10,
 
     // Optional Booleans will become cova Options that don't take a Value and are set to
     // `true` simply by calling the Option's short or long name.
@@ -83,7 +85,7 @@ pub const ProjectStruct = struct {
 
     // Arrays will be turned into Multi-Values or Multi-Options based on the array's
     // child type.
-    strings: [3]const []const u8 = .{ "Three", "default", "strings." },
+    strings: [3][]const u8 = .{ "Three", "default", "strings." },
 };
 ...
 ```
@@ -94,14 +96,15 @@ pub const ProjectStruct = struct {
 // `from()` method will convert the above Struct into a Command.
 // This must be done at Comptime for proper Validation before Initialization to memory
 // for Runtime use.
-const setup_cmd = CommandT.from(ProjectStruct);
+const setup_cmd = CommandT.from(ProjectStruct, .{});
 ...
 ```
 
 - Command Validation and Initialization to memory for Runtime Use.
 ```zig
 ...
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    const alloc = init.gpa;
     ...
 
     // The `init()` method of a Command instance will Validate the Command's
@@ -117,14 +120,15 @@ pub fn main() !void {
 
 - Set up the Argument Iterator.
 ```zig
-pub fn main() {
+pub fn main(init: std.process.Init) !void {
+    const alloc = init.gpa;
     ...
 
     // The ArgIteratorGeneric is used to step through argument tokens.
     // By default (using `init()`), it will provide Zig's native, cross-platform ArgIterator
     // with end user argument tokens. There's also cova's RawArgIterator that can be used to
     // parse any slice of strings as argument tokens.
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 
     ...
@@ -133,16 +137,25 @@ pub fn main() {
 
 - Parse argument tokens and Display the result.
 ```zig
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    const alloc = init.gpa;
     ...
+
+    var stdout_file = std.Io.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
 
     // The `parseArgs()` function will parse the provided ArgIterator's (`&args_iter`)
     // tokens into Argument Types within the provided Command (`main_cmd`).
-    try cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{});
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
+        error.UsageHelpCalled => return,
+        else => return err,
+    };
 
     // Once parsed, the provided Command will be available for analysis by the
-    // project code. Using `utils.displayCmdInfo()` will create a neat display
+    // project code. Using `cova.utils.displayCmdInfo()` will create a neat display
     // of the parsed Command for debugging.
-    try utils.displayCmdInfo(CommandT, &main_cmd, alloc, stdout);
+    try cova.utils.displayCmdInfo(CommandT, main_cmd, alloc, stdout, false);
 }
 ```

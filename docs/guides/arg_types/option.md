@@ -35,7 +35,7 @@ An Option must have a Short Name (ex: `-h`), a Long Name (ex: `--name "Lilly"`),
         .val = ValueT.ofType(i16, .{
             .name = "int_opt_val",
             .description = "An integer option value.",
-            .val_fn = struct{ fn valFn(int: i16) bool { return int < 666; } }.valFn
+            .valid_fn = struct{ fn valFn(int: i16, _: std.mem.Allocator) bool { return int < 666; } }.valFn
         }),
     },
 },

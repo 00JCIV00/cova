@@ -15,9 +15,11 @@ const cova_mod = cova_dep.module("cova");
 // Executable
 const exe = b.addExecutable(.{
     .name = "cova_example",
-    .root_source_file = .{ .path = "src/main.zig" },
-    .target = target,
-    .optimize = optimize,
+    .root_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    }),
 });
 // Add the Cova Module to the Executable
 exe.root_module.addImport("cova", cova_mod);
@@ -36,15 +38,15 @@ Note, this method makes Cova easier to update by simply re-running `zig fetch --
 
 
 ## Build the Basic-App Demo from source
-1. Use Zig v0.12 for your system. Available [here](https://ziglang.org/download/).
+1. Use Zig v0.16 for your system. Available [here](https://ziglang.org/download/).
 2. Run the following in whichever directory you'd like to install to:
 ```
 git clone https://github.com/00JCIV00/cova.git
 cd cova
-zig build basic-app -Doptimize=ReleaseSafe
+zig build basic_app -Doptimize=ReleaseSafe
 ```
 3. Try it out!
 ```
 cd bin 
-./basic-app help
+./basic_app help
 ```

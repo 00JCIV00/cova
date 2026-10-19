@@ -4,7 +4,7 @@ Parsing is handled by the `cova.parseArgs`() function. It takes in a pointer to 
 Notably, the `cova.parseArgs`() function can return several errorrs, most of which (especially `error.UsageHelpCalled`) can be safely ignored when using the default behavior. This is demonstrated below.
 
 ## Default Setup
-For the default setup, all that's needed is a pointer to an initialized `cova.ArgIteratorGeneric` (`&args_iter`), the project's Command Type (`CommandT`), a pointer to an initialized Command (`&main_cmd`), a Writer to stdout (`stdout`), and the default `ParseConfig` (`.{}`) as shown here:
+For the default setup, all that's needed is a pointer to an initialized `cova.ArgIteratorGeneric` (`&args_iter`), the project's Command Type (`CommandT`), a pointer to an initialized Command (`main_cmd`), a Writer to stdout (`stdout`), and the default `ParseConfig` (`.{}`) as shown here:
 
 ```zig
 const cova = @import("cova");
@@ -15,11 +15,9 @@ const CommandT = cova.Command.Custom(.{});
 // Comptime Setup Command
 const setup_cmd: CommandT = .{ ... };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // Allocator
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    const alloc = init.gpa;
 
     // Command
     // Note, the Command Type and `setup_cmd` are created during comptime before the `main()` function.
@@ -27,14 +25,17 @@ pub fn main() !void {
     defer main_cmd.deinit();
 
     // Argument Iterator
-    var args_iter = try cova.ArgIteratorGeneric.init(alloc);
+    var args_iter: cova.ArgIteratorGeneric = try .init(alloc, init.minimal.args);
     defer args_iter.deinit();
 
     // Writer to stdout
-    const stdout = std.io.getStdOut().writer();
+    var stdout_file = std.Io.File.stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout_file.writer(init.io, stdout_buf[0..]);
+    const stdout = &stdout_writer.interface;
 
     // Parse Function
-    cova.parseArgs(&args_iter, CommandT, &main_cmd, stdout, .{}) catch |err| switch (err) {
+    cova.parseArgs(&args_iter, CommandT, main_cmd, stdout, .{}) catch |err| switch (err) {
         error.UsageHelpCalled,
         else => return err,
     };
@@ -78,9 +79,9 @@ var arena = std.heap.ArenaAllocator.init(testing.allocator);
 defer arena.deinit();
 const alloc = arena.allocator();
 
-var writer_list = std.ArrayList(u8).init(alloc);
+var writer_list: std.Io.Writer.Allocating = .init(alloc);
 defer writer_list.deinit();
-const writer = writer_list.writer();
+const writer = &writer_list.writer;
 ```
 
 ### Parsing Configuration
@@ -99,8 +100,8 @@ Values and, by extension, Options can be given custom functions for parsing from
         .description = "An example boolean that must be set as 'positive' or 'negative'.",
         .parse_fn = struct{
             pub fn parseBool(arg: []const u8, _: std.mem.Allocator) !bool {
-                if (std.ascii.eqlIgnoreCase(arg, "positive") return true;
-                if (std.ascii.eqlIgnoreCase(arg, "negative") return false;
+                if (std.ascii.eqlIgnoreCase(arg, "positive")) return true;
+                if (std.ascii.eqlIgnoreCase(arg, "negative")) return false;
                 else return error.BoolParseError;
             }
         }.parseBool,
